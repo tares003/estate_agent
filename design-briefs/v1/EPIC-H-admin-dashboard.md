@@ -20,6 +20,7 @@ The full admin shell — 28 sub-areas listed in master spec Section H. Designs a
 - Page builder (H.10 — covered by EPIC-D).
 - Theme editor (H.11 — covered by EPIC-M).
 - Email and SMS template editors (H.12).
+- Per-tenant SMTP configuration screen (H.12a) — Settings → Email → Outbound SMTP. Sections: (a) provider picker (radio group: Office 365 / Microsoft 365 via OAuth, Google Workspace / Gmail via OAuth, Generic SMTP via basic auth, Outlook.com / Hotmail via basic auth); (b) connection panel rendered per provider — for OAuth providers a "Connect with Microsoft" / "Connect with Google" button initiating the OAuth flow with a status pill (`not connected`, `connecting…`, `connected as user@example.com`, `connection expired`); for basic-auth providers, fields for host, port, encryption (STARTTLS / SSL/TLS / none), username, password (`type="password"`, never echoed back from the server); (c) sender identity (from-name, from-address, optional reply-to); (d) test-send block with a destination input and a primary "Send test email" button, plus a status console that shows the verbatim SMTP response on failure (red panel, copy-error button); (e) save button is disabled until the most-recent test send succeeded; (f) audit trail strip with last successful send timestamp, last failure timestamp + reason, send-count last 24h. Visual treatment follows EPIC-H integrations admin patterns — same masked-credentials affordance, same test-connection pattern. Empty state copy: "No outbound mail account configured. The platform cannot send email on your tenant's behalf until you connect one." This screen is core (not pack-gated).
 - Notification rules matrix (H.13).
 - Users and roles (H.17).
 - Settings hierarchy (H.19).
@@ -100,23 +101,4 @@ Admin surfaces use:
 - `--colour-surface-base` for content, `--colour-surface-sunken` for the sidebar.
 - `--colour-border` for table dividers.
 - `--radius-md` for buttons and inputs, `--radius-lg` for cards.
-- `--space-6` for default content padding.
-
-## Open design questions
-
-1. Confirm the dashboard overview's primary widget layout (4 + 3 + sidebar vs flexible per role).
-2. Confirm the table density default (recommended: comfortable).
-3. Confirm the visual treatment of the command palette (centred modal with backdrop vs slim top-anchored).
-4. Confirm the impersonation visual indicator (banner, ribbon, sidebar tag).
-
-## Pack-state behaviour
-
-Per `design-requirements.md` §2a — the admin shell is the principal pack-state surface:
-
-- **Sidebar navigation**: pack-gated sections dynamically appear / disappear. The locked-section pattern handles direct-URL hits.
-- **Dashboard alerts panel**: pack-related alerts (trial ending, cancellation pending, pack newly enabled) join the standard alert types.
-- **Notification rules editor**: events that are pack-dependent (e.g. `vendor.offer.received` requires `sales_plus`) appear in the event-picker with a `PackLockPill`.
-- **Form builder field palette**: pack-dependent fields are marked with `PackLockPill`.
-- **Theme editor**: customisation depth depends on tier (per `PRODUCT.md` §5e). Tenants on Starter see only the brand-primary and accent colour pickers; Professional and Enterprise see the full token set.
-- **Reports section**: agent league table (a `feedback_reviews` pack feature) is `UpsellEmptyState`-gated when the pack is off.
-- **Operator-side packs tab**: covered in EPIC-AB design brief addendum.
+- `--space-6` for defaul

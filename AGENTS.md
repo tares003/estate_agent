@@ -105,7 +105,7 @@ The autonomous prompt's PHASE discovery uses this layout. If the stack chosen ma
 
 Conventional Commits. One of `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`. Each phase produces at least three commits: `test()` for RED, `feat()` for GREEN, `refactor()` for clean-up (omit if no refactor was needed).
 
-Include a `Co-Authored-By: Codex <noreply@anthropic.com>` trailer (or the actual model identifier of whichever AI assisted) on commits where an AI contributed substantively.
+Include a `Co-Authored-By: Claude <noreply@anthropic.com>` trailer (or the actual model identifier of whichever AI assisted) on commits where an AI contributed substantively.
 
 ### PR shape
 
@@ -126,7 +126,7 @@ One PR per phase as described in the autonomous build prompt. PR description mus
 Follow the blocker policy in the autonomous build prompt:
 
 1. Commit progress on the phase branch.
-2. Write the blocker to `.Codex/master-prompt-log.md` with enough detail for a human to resume.
+2. Write the blocker to `.claude/master-prompt-log.md` with enough detail for a human to resume.
 3. Continue with the next phase if possible.
 4. Pause subsequent phases that depend on a foundation-level blocker.
 
@@ -135,7 +135,7 @@ Follow the blocker policy in the autonomous build prompt:
 - `PRODUCT.md` (naming conventions and tier model are business decisions).
 - `DESIGN.md` (design tokens are owned by design — additions only via amendment).
 - The master spec `Property-Agency-Website-Implementation-Spec.md` (requirements are the input, not the output, of the agent's work).
-- Any file under `.Codex/` other than `master-prompt-log.md` and `discovery-summary.md`.
+- Any file under `.claude/` other than `master-prompt-log.md` and `discovery-summary.md`.
 
 ## 8. Notes on AI-generated content
 
@@ -143,15 +143,13 @@ Follow the blocker policy in the autonomous build prompt:
 - Any AI-generated property description shown to end-users must be flagged on the admin side per `PRODUCT.md` section 8.
 - AI-generated test data (seed scripts) is fine to ship without review, but must use deterministic fixtures so that re-runs are stable.
 
-## 9. Standing question to confirm before code begins
+## 9. Stack — RECORDED
 
-When the team is ready to commit to a stack and start building, the following must be confirmed and recorded in this file under section 1:
+The stack has been chosen. Code may now be committed. The choices below are the **authoritative** answers; subsequent additions or substitutions require an amendment PR against this file.
 
-- Web application framework, language, runtime.
-- Database product and hosting service.
-- Object-storage product, CDN, email provider, SMS provider, mapping provider, analytics provider, error-monitoring product, logging product.
-- Hosting model (per master spec Section S.13).
-- CI/CD product.
-- Deployment pipeline tool.
+### Architecture pattern — hybrid two-stack
 
-Until these are recorded, the agent must not commit code.
+The product is built as two cooperating applications sharing one database and one design system:
+
+- **A Django + Wagtail "content" application** serving the content-heavy surfaces (public marketing site, agency editorial content, CMS page builder, knowledge hub, the platform's own marketing site).
+- **A Next.js "a

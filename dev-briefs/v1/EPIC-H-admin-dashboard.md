@@ -23,6 +23,7 @@ This is the largest epic. It is implemented across multiple sprints; this brief 
 - **FR-H-8.** The CMS page-builder editor shall provide a sortable section list with live preview, versioning and scheduled publish (see EPIC-D).
 - **FR-H-9.** The theme editor shall expose every overridable token per master spec Section H.11 with a live preview pane.
 - **FR-H-10.** The email and SMS template editors shall support rich-text and source modes, a variable sidebar, conditional blocks, live preview and send-test.
+- **FR-H-10a.** A per-tenant SMTP configuration screen shall allow the tenant to register the outbound email account used for every email the platform sends on the tenant's behalf (transactional, marketing, repair notifications, etc.). The screen shall support: (a) basic-auth SMTP (host, port, encryption, username, password) for self-hosted or generic SMTP servers; (b) OAuth-based authentication for Office 365 / Microsoft 365 (Microsoft Graph) and Google Workspace / Gmail (Google API) to satisfy modern providers' basic-auth deprecation; (c) sender-identity fields (from-name, from-address, reply-to); (d) a "send test email" button that delivers a sample message to a tenant-chosen address and surfaces SMTP errors verbatim; (e) credentials shall be encrypted at rest using the platform-wide key; (f) the screen shall display the last successful send and the last failure with timestamp; (g) the tenant may not save a configuration that fails the test-send. The platform shall never bill the tenant for outbound email — the tenant pays their own SMTP provider directly.
 - **FR-H-11.** A notification-rules matrix shall map every notifiable event against every channel with recipients, throttling and conditions.
 - **FR-H-12.** A no-code form builder shall allow non-developers to create new forms from a field palette with conditional logic.
 - **FR-H-13.** A workflow automation builder shall allow trigger → condition → action canvases with multi-step delays.
@@ -66,31 +67,11 @@ FR-H-6  → tests/integration/repair-inbox.test.*
 FR-H-7  → tests/integration/contacts-tabs.test.*, tests/integration/duplicate-merge.test.*
 FR-H-8  → tests/e2e/page-builder.spec.* (also in EPIC-D)
 FR-H-9  → tests/integration/theme-editor.test.*
-FR-H-10 → tests/integration/email-template-editor.test.*, tests/integration/sms-template-editor.test.*
+FR-H-10  → tests/integration/email-template-editor.test.*, tests/integration/sms-template-editor.test.*
+FR-H-10a → tests/integration/tenant-smtp-config.test.*, tests/e2e/tenant-smtp-test-send.spec.*
 FR-H-11 → tests/integration/notification-rules-matrix.test.*
 FR-H-12 → tests/integration/form-builder.test.*
 FR-H-13 → tests/integration/automation-builder.test.*
 FR-H-14 → tests/integration/integrations-admin.test.*
 FR-H-15 → tests/integration/role-matrix.test.*, tests/integration/role-simulator.test.*
-FR-H-16 → tests/integration/settings-hierarchy.test.*
-FR-H-17 → tests/integration/audit-log-viewer.test.*
-FR-H-18 → tests/integration/reports-prebuilt.test.*, tests/integration/reports-custom.test.*
-FR-H-19 → tests/integration/scheduled-tasks-console.test.*
-FR-H-20 → tests/integration/maintenance-mode.test.*, tests/integration/feature-flags.test.*
-FR-H-21 → tests/component/keyboard-shortcuts.test.*, tests/component/command-palette.test.*
-A11y → tests/a11y/admin-routes.spec.*
-Visual → tests/visual/admin-screens.spec.* (per major screen)
-```
-
-## Dependencies
-
-- Every other implementation epic — EPIC-H is the surface through which every back-end capability is operated.
-- EPIC-N — auth, RBAC, audit logging.
-- EPIC-M — every primitive component.
-
-## Open questions
-
-1. Confirm the V1 scope of the no-code form builder — full feature set or simplified V1?
-2. Confirm the V1 scope of the workflow automation builder — full feature set or simplified V1?
-3. Confirm the V1 scope of A/B testing in the page builder (recommended: defer to Phase 8).
-4. Confirm the policy on impersonation — who can impersonate whom, and what session indicators must show during impersonation.
+FR-H-16 → tests/integrati

@@ -2402,26 +2402,20 @@ The platform is sold as a SaaS — each agency that buys the product gets their 
 
 ### S.13 Hosting options under consideration (informative only)
 
-The following hosting models all satisfy the requirements above in principle. The implementation choice will be deferred until target customer profile, year-1 tenant count and team operational capacity are confirmed.
+The following hosting models all satisfy the requirements above in principle. The committed implementation is **pure self-hosted on Hetzner** (see below).
 
 | Model | Indicative cost profile | Operational burden | Compliance posture |
 |---|---|---|---|
 | Pure hyperscaler (managed services from a major cloud provider) | Highest | Lowest | Strongest (inherited certifications) |
 | Hybrid (rented compute combined with managed data and edge services) | Moderate | Moderate | Moderate (depends on chosen managed services) |
-| Pure self-hosted (rented dedicated servers under full team control) | Lowest | Highest | Weakest (team must achieve compliance independently) |
+| **Pure self-hosted (rented dedicated servers under full team control) — COMMITTED** | **Lowest** | **Highest** | **Weakest (team must achieve compliance independently)** |
 
 The cost saving of moving away from a pure hyperscaler can be substantial (60–80% at scale), but is only realised if the team has the operational capacity to absorb the work the hyperscaler would otherwise have done. The hybrid model is the typical answer for cost-sensitive B2B SaaS that needs to keep operational burden manageable.
 
-### S.14 What is intentionally not specified
+### S.13a Committed implementation — pure self-hosted on Hetzner
 
-- The specific hosting provider or providers.
-- The specific container runtime, orchestrator, database product, object storage product, CDN, email provider, or monitoring service.
-- The specific deployment pipeline or infrastructure-as-code tool.
-- The specific tenant-provisioning workflow technology.
-- The specific cost figures for any tenant or scale point — these will be set when the architecture is committed and re-evaluated quarterly.
+The team has committed to the pure-self-hosted model. The chosen stack is recorded authoritatively in `AGENTS.md` §9 / `CLAUDE.md` §9. Summary:
 
-These remain implementation decisions to be made when the architecture is committed.
-
----
-
-**End of specification.**
+- **Compute:** Hetzner dedicated server (AX/CCX class), Dockerised containers, deployed via Coolify or Dokku.
+- **Database:** PostgreSQL 16 + PostGIS, on the same Hetzner host. Shared DB with Row-Level Security for multi-tenancy.
+- **Object storage:** Local filesystem on the Hetzner host (no S3 / R2 / MinIO dependency). Files served via signed-token middleware. `restic` snapshots to a separate Hetzner Storage Box for backup
