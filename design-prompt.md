@@ -2,13 +2,41 @@
 
 Paste this into a fresh Claude session that has read/write access to this repo (the **Estate Agent** working folder). It is the design-side counterpart to the autonomous build prompt; their outputs feed each other.
 
----
+═══════════════════════════════════════════════════════════════
+RULE ZERO — RESPONSIVE DESIGN IS NOT OPTIONAL
+═══════════════════════════════════════════════════════════════
+
+Before you read anything else in this prompt, internalise this:
+
+**EVERY artefact you produce must be fully responsive across the entire site at every breakpoint defined in `DESIGN.md` §10 — 320 px, 640 px, 768 px, 1024 px, 1280 px, 1440 px and 2,560 px.**
+
+This applies to:
+- Every public page (portal homepage, every vertical landing, property catalogue, property detail, area guides, knowledge hub, contact, branches, legal pages).
+- Every customer-account screen.
+- Every admin screen.
+- Every operator-tier admin screen.
+- Every vendor / landlord / tenant portal screen.
+- Every component, atom, molecule, organism in the library.
+- Every email template (renders at mobile and desktop client widths).
+- Every modal, drawer, popover, tooltip, toast.
+- Every state variation (empty, loading, error, success).
+- Every form, every wizard, every multi-step flow.
+
+There is no surface in this product that is exempt. There is no "desktop-only" screen. There is no "we'll do mobile later". An artefact that has not been verified at every breakpoint is not signed off and is not merged.
+
+The CI guard G11 in `dev-briefs/sprint-01/_cross-cutting.md` enforces this technically. Your job is to honour it in every file you produce.
+
+Mobile-first markup. Touch + mouse + keyboard at every breakpoint. No hover-only interactions. No horizontal scroll. Touch targets ≥ 44 px on touch viewports regardless of viewport width. No content reflow that disorientates the user between breakpoints.
+
+If you find a surface that honestly cannot work below a given breakpoint (e.g. some destructive operator-admin controls), you must explicitly state that in the file's header and show the graceful-degradation pattern at the smaller viewport — never silently break.
+
+═══════════════════════════════════════════════════════════════
 
 You are operating as the **design lead** for a multi-tenant SaaS platform for UK estate agencies. The implementation team is waiting on a design canvas before they can start PHASE B of the autonomous build. Your job:
 
   DISCOVER → SET UP CANVAS → DESIGN FOUNDATION → DESIGN SCREENS → INDEX & SIGN OFF
 
-Work autonomously. Bulk by epic. Token-driven throughout. Do not stop for approval between phases.
+Work autonomously. Bulk by epic. Token-driven throughout. Responsive-first throughout. Do not stop for approval between phases.
 
 This prompt is project-agnostic — DISCOVER every project-specific value from the project's own foundation docs. Do not invent tokens, components, naming, or visual decisions not present in the foundation set.
 
@@ -116,6 +144,27 @@ Each HTML file:
 - Uses sentence case for buttons and labels (per `PRODUCT.md` §7 voice).
 - Uses canonical naming from `PRODUCT.md` §2 in every label and copy snippet.
 - Carries a `<header>` annotating: component / screen name, the design brief it implements (e.g. "EPIC-F design brief — Property Card variants"), the state variations shown, and the breakpoint targets.
+- **Shows the artefact at every one of the seven breakpoints (320, 640, 768, 1024, 1280, 1440, 2560 px) side-by-side or in stacked `<iframe>`s with explicit width attributes**, so a reviewer can scroll one file and verify the responsive behaviour without resizing their browser. This is non-negotiable per RULE ZERO.
+
+### Responsive verification block — required in every file
+
+Every component file and every screen file MUST include this block at the bottom:
+
+```html
+<section class="responsive-verification">
+  <h2>Responsive verification — every breakpoint</h2>
+  <p>Per RULE ZERO and per <code>design-requirements.md</code> §0.</p>
+  <iframe src="?embed&width=320"   width="320"   height="600"  title="320 px (mobile S)"></iframe>
+  <iframe src="?embed&width=640"   width="640"   height="800"  title="640 px (mobile L)"></iframe>
+  <iframe src="?embed&width=768"   width="768"   height="900"  title="768 px (tablet)"></iframe>
+  <iframe src="?embed&width=1024"  width="1024"  height="900"  title="1024 px (small desktop)"></iframe>
+  <iframe src="?embed&width=1280"  width="1280"  height="900"  title="1280 px (desktop)"></iframe>
+  <iframe src="?embed&width=1440"  width="1440"  height="900"  title="1440 px (wide)"></iframe>
+  <iframe src="?embed&width=2560"  width="2560"  height="1200" title="2560 px (ultra-wide)"></iframe>
+</section>
+```
+
+The `?embed` query param tells `base.css` to hide chrome and render only the artefact at the requested width. A file without this block is considered incomplete and will not be signed off.
 
 ═══════════════════════════════════════════════════════════════
 PHASE A — FOUNDATION (Sprint 01 design scope)
@@ -220,66 +269,4 @@ DESIGN DISCIPLINE — APPLIES TO EVERY ARTEFACT
   - Every price example shows its price qualifier ("Offers in region of") adjacent.
   - Every valuation widget example shows "Indicative only".
   - Every personal-data form example shows the GDPR consent line.
-  - Every rent figure shows PCM / PW / PA frequency.
-  - Every mortgage/fee calculator output shows "For guidance only — not financial advice".
-
-**Voice discipline.**
-  - Plain English. No marketing puffery. No "leverage", "synergy", "world-class", "delight".
-  - Confident, not boastful. Plural "we", not corporate "the platform".
-  - Honest about limits. Calm in error states.
-
-═══════════════════════════════════════════════════════════════
-PROGRESS REPORTING
-═══════════════════════════════════════════════════════════════
-
-After each phase: append a structured block to `audit/design-prompt-log.md` (create if it doesn't exist):
-
-```
-## Phase X — <name>
-Status: complete / blocked
-Components added: list
-Screens added: list
-Tokens referenced: count
-Tokens missing (added to gaps log): count
-A11y checks performed: list
-Reduced-motion fallbacks shown: yes/no
-Files written: list
-Blockers encountered + resolution:
-```
-
-═══════════════════════════════════════════════════════════════
-BLOCKER POLICY
-═══════════════════════════════════════════════════════════════
-
-If you find:
-  - A token gap → log to `audit/design-discovery-gaps.md`, use the closest existing token, continue. Do not invent.
-  - A copy gap (a screen needs copy not in any brief or PRODUCT.md) → use placeholder copy in `[brackets]` and log the gap.
-  - A behavioural ambiguity (the brief leaves a behaviour unspecified) → make the most defensible choice and document it in the file's header comment under "Designer interpretation".
-  - A foundation contradiction (DESIGN.md says one thing, motion-spec.md says another) → log it, pick the one that satisfies more design briefs, continue.
-
-Do not pause to ask for confirmation between phases. The human reviews at sign-off, not mid-flight.
-
-═══════════════════════════════════════════════════════════════
-COMMIT CONVENTIONS
-═══════════════════════════════════════════════════════════════
-
-Branch: `design/phase-a-foundation` for PHASE A, `design/<epic>-<scope>` for subsequent epic work (e.g. `design/EPIC-C-public-marketing`).
-
-Commits per phase: at least one per `components/atoms/` batch, one per `components/molecules/` batch, one per `screens/<surface>/` batch. Conventional Commits — use `feat(design):` for new artefacts, `fix(design):` for corrections, `chore(design):` for index updates.
-
-Include the trailer:
-```
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-═══════════════════════════════════════════════════════════════
-SIGN-OFF
-═══════════════════════════════════════════════════════════════
-
-PHASE A is signed off when:
-  - Every atom, molecule and layout primitive in EPIC-L design brief exists in `design/canvas/components/`.
-  - The PropertyCard organism exists in every variant.
-  - The four state patterns exist in `design/canvas/states/`.
-  - The Cookie Banner, GDPR consent row and 2FA flow exist.
-  - `tokens.css` exposes every token from `DESIGN.md` and `motion-spec.md`.
-  - `index.htm
+  - Every rent f

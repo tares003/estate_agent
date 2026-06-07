@@ -51,6 +51,7 @@ You are building a **multi-vertical property agency platform** consisting of sev
 - A page-builder CMS (`pages` ⇒ `page_sections[]` with typed JSON payloads) — *not* hard-coded marketing pages. Every editorial page is editable without a deploy.
 - A federation-friendly design that can later swap individual modules (repairs, valuations, property data) for established third-party products without re-architecting.
 - Implementation-neutral interface contracts so the same back-end can serve a web application, a future mobile application, or an embeddable widget.
+- **Every visual surface of the platform is fully responsive at every breakpoint from 320 px to 2,560 px.** Public marketing, property catalogue, property detail, customer-account, all administrative surfaces, all portal surfaces (vendor / landlord / tenant), all platform-operator surfaces, all email templates, all modals and overlays. There is no "desktop-only" screen anywhere in this product. Mobile-first markup, touch + mouse + keyboard at every viewport, no hover-only interactions, no horizontal scroll. The technical mandate lives in `design-requirements.md` §0 and §2; the CI guard G11 in `dev-briefs/sprint-01/_cross-cutting.md` §4 enforces it.
 
 **Out of scope (deliberately):**
 
@@ -1738,13 +1739,14 @@ This section translates the *style of the reference site* into an original desig
 
 ### M.1 Design principles
 
-1. **Photography is the design.** Property photos and lifestyle shots do the heavy lifting; the chrome around them stays quiet.
-2. **One reusable property card.** Search, landing carousels, related rails, saved-list — same card, same anatomy. Consistency over novelty.
-3. **Dark accent + warm neutral.** Brand contrast comes from a single saturated accent against warm neutrals; we don't pile on colour.
-4. **Editorial typography.** Oversized display headlines on landing pages; quiet, dense type for property detail facts.
-5. **Sticky utility at the edges.** Phone, reviews badge, WhatsApp, valuation CTA live in persistent edge surfaces — not in the user's way, always within reach.
-6. **Conversion buttons are unmissable.** "Book a Viewing" and "Get a Free Valuation" must read at 3 metres.
-7. **Mobile first, fingertip-friendly.** Minimum 44×44 hit targets; one-thumb navigation on every page.
+1. **Responsive on every surface, no exceptions.** Every page, every component, every modal, every email — fully responsive from 320 px to 2,560 px. There is no desktop-only screen in this product. The mandate is documented in `design-requirements.md` §0 and enforced by CI guard G11.
+2. **Photography is the design.** Property photos and lifestyle shots do the heavy lifting; the chrome around them stays quiet.
+3. **One reusable property card.** Search, landing carousels, related rails, saved-list — same card, same anatomy. Consistency over novelty.
+4. **Dark accent + warm neutral.** Brand contrast comes from a single saturated accent against warm neutrals; we don't pile on colour.
+5. **Editorial typography.** Oversized display headlines on landing pages; quiet, dense type for property detail facts.
+6. **Sticky utility at the edges.** Phone, reviews badge, WhatsApp, valuation CTA live in persistent edge surfaces — not in the user's way, always within reach.
+7. **Conversion buttons are unmissable.** "Book a Viewing" and "Get a Free Valuation" must read at 3 metres.
+8. **Mobile first, fingertip-friendly.** Minimum 44×44 hit targets; one-thumb navigation on every page; touch + mouse + keyboard supported at every breakpoint.
 
 ### M.2 Colour tokens
 
@@ -2406,20 +2408,4 @@ The following hosting models all satisfy the requirements above in principle. Th
 |---|---|---|---|
 | Pure hyperscaler (managed services from a major cloud provider) | Highest | Lowest | Strongest (inherited certifications) |
 | Hybrid (rented compute combined with managed data and edge services) | Moderate | Moderate | Moderate (depends on chosen managed services) |
-| Pure self-hosted (rented dedicated servers under full team control) | Lowest | Highest | Weakest (team must achieve compliance independently) |
-
-The cost saving of moving away from a pure hyperscaler can be substantial (60–80% at scale), but is only realised if the team has the operational capacity to absorb the work the hyperscaler would otherwise have done. The hybrid model is the typical answer for cost-sensitive B2B SaaS that needs to keep operational burden manageable.
-
-### S.14 What is intentionally not specified
-
-- The specific hosting provider or providers.
-- The specific container runtime, orchestrator, database product, object storage product, CDN, email provider, or monitoring service.
-- The specific deployment pipeline or infrastructure-as-code tool.
-- The specific tenant-provisioning workflow technology.
-- The specific cost figures for any tenant or scale point — these will be set when the architecture is committed and re-evaluated quarterly.
-
-These remain implementation decisions to be made when the architecture is committed.
-
----
-
-**End of specification.**
+| Pure self-hosted (rented dedicated servers under full team control) | Lowest | Highest |
