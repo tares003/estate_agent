@@ -33,21 +33,14 @@ Each component's canvas entry must show:
 1. Every prop variant.
 2. Default, hover, focus, active, disabled and loading states.
 3. Empty, error and success states where applicable.
-4. Responsive variations at every breakpoint defined in `DESIGN.md`.
+4. **Responsive variations at every breakpoint defined in `DESIGN.md` §10 — 320, 640, 768, 1024, 1280, 1440 and 2560 px** (mandate from `design-requirements.md` §0).
 5. Reduced-motion variation.
 6. Dark-mode variation (if dark mode is in scope; otherwise deferred).
 7. Accessibility annotations: focus management, label association, ARIA roles, keyboard support.
 8. Token references — every colour, spacing, size, motion value annotated with its token.
 
-## Acceptance for the design library
+## Responsive
 
-- Every component in the inventory has an approved canvas entry.
-- Every variant and state is documented.
-- A second designer has reviewed and signed off.
-- The implementation team can build any component without further clarification.
+Every component in this library is **responsive by default** — there is no "desktop component" vs "mobile component" split, only one component that adapts. The canvas entries above are the contract: a component with a missing breakpoint variant is incomplete and will not pass the responsive-coverage CI guard.
 
-## Open design questions
-
-1. Confirm the family of icons (single-style line set vs duotone vs custom).
-2. Confirm whether `Switch` is included in V1 (recommended: yes).
-3. Confirm dark-mode scope (recommended: deferred).
+- Mobile-first markup: default styles target 320 px; media queries

@@ -180,8 +180,6 @@ The platform does not (and will not in the foreseeable roadmap):
 - Operate as a conveyancing service.
 - Provide a regulated lettings agency service — the platform is a tooling product sold to regulated lettings agencies.
 
-## 10. Authority and amendment
+## 9a. Responsive design — universal expectation
 
-- This document is part of the foundation set. Amendments require review.
-- When this document changes, the master spec, all briefs and all live code must be reconciled in the next sprint at the latest.
-- If the master spec and this document disagree, this document wins for naming and tier; the spec wins for behaviour. Conflicts must be resolved by amending both.
+Every customer-facing surface this platform produces is **responsive by default** at every viewport from 320 px to 2,560 px wide. This is a commercial expectation, not just a technical one. UK estate-agency customers browse on phones during a commute, on tablets in the office, and on desktops at home. A website that looks broken on any of these

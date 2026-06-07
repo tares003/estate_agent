@@ -9,15 +9,16 @@ A piece of work is "done" only when **all** of the following are true for it. Pe
 1. Every functional requirement in the brief is demonstrated by an automated test.
 2. The work passes type-check, lint and all tests in CI.
 3. Test coverage for any touched file meets or exceeds the threshold in `_tdd-protocol.md`.
-4. Any new or changed personal-data form captures a GDPR consent affirmation per `PRODUCT.md` section 6.
-5. Any new or changed state-changing capability emits an audit-log entry.
-6. Any new public-facing surface meets the accessibility requirements in `design-requirements.md` section 1, verified by automated and manual checks.
-7. Any new public-facing route meets the performance budget in `design-requirements.md` section 3, verified by the performance-budget CI gate.
-8. Any new colour, spacing, radius or motion value is sourced from a token in `DESIGN.md` or `motion-spec.md` — verified by the token-enforcement lint.
-9. Any new entity reference in code obeys the canonical-noun table in `PRODUCT.md` section 2 — verified by the naming lint.
-10. Any new or changed user-facing copy follows the brand-voice rules in `PRODUCT.md` section 7 and uses the UI vocabulary in section 4.
-11. The change is documented for engineers (in-repo) and, where it affects staff workflow, in the admin help content.
-12. The PR description references the brief IDs being closed and the audit-report row IDs being resolved.
+4. **Every visual artefact is verified responsive at every breakpoint defined in `DESIGN.md` §10** — 320 px, 640 px, 768 px, 1024 px, 1280 px, 1440 px and 2560 px. Mobile-first markup. No hover-only interactions. The responsive-coverage CI guard (G11 — see §4 below) rejects PRs whose component or page tests do not include a viewport assertion per breakpoint.
+5. Any new or changed personal-data form captures a GDPR consent affirmation per `PRODUCT.md` section 6.
+6. Any new or changed state-changing capability emits an audit-log entry.
+7. Any new public-facing surface meets the accessibility requirements in `design-requirements.md` section 1, verified **at every breakpoint** by automated and manual checks.
+8. Any new public-facing route meets the performance budget in `design-requirements.md` section 3 **at every viewport**, verified by the performance-budget CI gate on mobile and desktop simulated profiles.
+9. Any new colour, spacing, radius or motion value is sourced from a token in `DESIGN.md` or `motion-spec.md` — verified by the token-enforcement lint.
+10. Any new entity reference in code obeys the canonical-noun table in `PRODUCT.md` section 2 — verified by the naming lint.
+11. Any new or changed user-facing copy follows the brand-voice rules in `PRODUCT.md` section 7 and uses the UI vocabulary in section 4.
+12. The change is documented for engineers (in-repo) and, where it affects staff workflow, in the admin help content.
+13. The PR description references the brief IDs being closed and the audit-report row IDs being resolved.
 
 ## 2. Foundation shared packages (PHASE B scope)
 
@@ -95,6 +96,10 @@ Runs an automated accessibility check on every new public route added in the dif
 
 Fails if the diff adds a runtime dependency that calls an external service without that service appearing in the published sub-processor list.
 
+### G11 — Responsive-coverage guard
+
+For every component test and every page test in the diff, requires assertions at each of the seven defined viewports (320, 640, 768, 1024, 1280, 1440, 2560 px). Fails if any breakpoint is unasserted. A test surface may opt out per assertion with an explicit `responsive-coverage: opt-out reason` comment (used sparingly — e.g. operator admin destructive controls explicitly disabled below `--breakpoint-md`). The CI publishes a coverage map per PR showing which surfaces are responsive-verified at which breakpoints.
+
 ## 5. PR sequencing within the sprint
 
 PRs must be opened and merged in this order:
@@ -124,22 +129,4 @@ The event names follow `subject.verb` casing (e.g. `enquiry.submitted`, `propert
 
 - Every shared package must ship a README explaining what it does, its public surface, and how to extend it.
 - Every CI guard must ship a one-page explainer in `docs/ci-guards/<guard-id>.md` describing what it catches and how to satisfy it.
-- The README at the repo root must list every shared package and every CI guard with a one-line description and a link.
-
-## 9. Failure modes the foundation must handle
-
-- Database connection loss (retry with exponential backoff up to 30 seconds).
-- Email provider timeout (queue for retry; do not lose the message).
-- SMS provider failure on an emergency repair (fallback to a second channel; log the failure).
-- Anti-spam service outage (fail closed — reject submission with a "please try again shortly" message).
-- Object-storage upload failure (return a clear error to the user; do not orphan a half-saved record).
-
-## 10. Out of scope for sprint 01
-
-- Multi-tenancy implementation work (covered by the hosting NFRs in Section S; deferred until a stack is chosen).
-- Outbound portal syndication (Phase 7 of the build roadmap).
-- Customer-account email alerts (Phase 6 of the build roadmap).
-- A/B testing of page-builder sections (Phase 8).
-- Multi-language and multi-currency.
-
-If a brief surfaces work that falls into one of these areas, defer with a clearly labelled "Deferred to <phase>" note.
+- The README at the repo root must list every shared package and every CI guard with a on

@@ -198,11 +198,17 @@ DESIGN DISCIPLINE — APPLIES TO EVERY ARTEFACT
   - Every image has `alt` text — never empty unless decorative.
   - Body-text contrast must meet AA against the chosen background.
 
-**Responsive discipline.**
+**Responsive discipline. This is the first rule of the project.**
+  - **Every artefact you produce must be fully responsive at every breakpoint defined in `DESIGN.md` §10** — 320, 640, 768, 1024, 1280, 1440 and 2560 px. Mandate is in `design-requirements.md` §0.
+  - For each component HTML file, show the component at every breakpoint side-by-side or in stacked iframes so reviewers can scroll a single page and see every viewport.
+  - For each screen HTML file, produce the full layout at 320 px (mobile) and at 1280 px (desktop) as the minimum; include 768 px (tablet) for non-trivial screens.
   - Mobile-first markup; widen via `@media (min-width: var(--breakpoint-md))`.
-  - Touch targets at minimum `--size-touch-target-min` on touch viewports.
+  - Touch targets at minimum `--size-touch-target-min` (44 px) on touch viewports, regardless of breakpoint.
   - No horizontal scroll except inside containers explicitly designed for it.
+  - No hover-only interactions — every interaction must work on touch.
+  - No content reflow that disorientates the user between breakpoints.
   - Property card image always `--ratio-card`. Hero always `--ratio-hero`.
+  - If a surface honestly cannot work below a given breakpoint (e.g. operator admin destructive controls), explicitly state that in the file header and show the graceful-degradation pattern (e.g. "Use a desktop to perform this action") at the smaller viewport.
 
 **Motion discipline.**
   - Durations and easings reference `--motion-duration-*` and `--motion-ease-*` only.
@@ -276,18 +282,4 @@ PHASE A is signed off when:
   - The four state patterns exist in `design/canvas/states/`.
   - The Cookie Banner, GDPR consent row and 2FA flow exist.
   - `tokens.css` exposes every token from `DESIGN.md` and `motion-spec.md`.
-  - `index.html` lists every artefact with a working link.
-  - `.design-canvas-url` points at `./design/canvas/index.html`.
-  - A human reviewer ticks every entry in the index.
-
-After PHASE A sign-off, PHASE B (screen-level design) begins, working through EPIC-C through EPIC-S as listed.
-
-═══════════════════════════════════════════════════════════════
-START NOW
-═══════════════════════════════════════════════════════════════
-
-Begin with STEP 0 (read 0a · 0b · 0c · 0d · 0e in order). Then PHASE A in the order A1 through A8. Do not ask for confirmation between phases.
-
-If `.design-canvas-url` already points at a non-placeholder canvas, ASK the user once whether to extend it or to start fresh in a new folder. Otherwise proceed.
-
-— end of design Claude prompt —
+  - `index.htm

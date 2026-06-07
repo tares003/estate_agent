@@ -25,20 +25,6 @@ The status column reflects implementation state — initially every epic is NOT_
 | EPIC-Q | Build roadmap (functional phases) | [dev-briefs/v1/EPIC-Q-build-roadmap.md](dev-briefs/v1/EPIC-Q-build-roadmap.md) | CONTEXT | — | No code; sequences the build phases. |
 | EPIC-R | Cross-cutting (definition of done, glossary, open questions) | [dev-briefs/v1/EPIC-R-cross-cutting.md](dev-briefs/v1/EPIC-R-cross-cutting.md) | CONTEXT | — | No code; defers to `_cross-cutting.md` and `_tdd-protocol.md`. |
 | EPIC-S | Hosting and multi-tenancy NFRs | [dev-briefs/v1/EPIC-S-hosting-multi-tenancy.md](dev-briefs/v1/EPIC-S-hosting-multi-tenancy.md) | NOT_STARTED | — | Non-functional. Tested by hosting choice + integration tests. |
-
-## Status legend
-
-- **CONTEXT** — informational, not a unit of implementation work; the brief sets direction.
-- **NOT_STARTED** — implementation work exists but has not been picked up.
-- **PARTIAL** — some implementation in place, some FRs unmet.
-- **STUB** — placeholder file exists, no real implementation.
-- **COMPLETE_BUT_DRIFTED** — implementation exists but contradicts the current brief.
-- **COMPLETE_AND_CORRECT** — implementation matches the brief.
-
-## Sprint scope
-
-For the current sprint's scope, see [dev-todo-sprint-01.md](dev-todo-sprint-01.md).
-
-## Designer-side mirror
-
-The matching designer index is at [designer-todo.md](designer-todo.md). Every dev brief has a paired design brief; the agent should consult both when implementing visual work.
+| EPIC-T | Customer accounts | [dev-briefs/v1/EPIC-T-customer-accounts.md](dev-briefs/v1/EPIC-T-customer-accounts.md) | NOT_STARTED | EPIC-J, EPIC-K, EPIC-N, EPIC-U | Customer-side shell: register, sign-in, account dashboard, saved properties, saved searches, viewings. |
+| EPIC-U | Background workers and scheduled tasks | [dev-briefs/v1/EPIC-U-workers-scheduled-tasks.md](dev-briefs/v1/EPIC-U-workers-scheduled-tasks.md) | NOT_STARTED | EPIC-J, EPIC-N, EPIC-K, EPIC-S | Cross-cutting backend. Owns ~19 workers spanning EPIC-G, I, N, O, S. |
+| EPIC-V | Outbound portal syndication | [dev-briefs/v1/EPIC-V-portal-syndication.md](dev-briefs/v1/EPIC-V-portal-syndication.md) | NOT_STARTED (DEFERRED to Phase 7) | EPIC-F, EPIC-U, EPIC-H | Rightmove / Zoopla / OnTheMarket outbou

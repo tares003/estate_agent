@@ -2,6 +2,16 @@
 
 This document captures the **non-visual requirements** that constrain every design decision. These are universal; they apply to every component, every surface, every release.
 
+## 0. UNIVERSAL MANDATES (no exceptions)
+
+The three rules below are absolute. No component, no screen, no admin surface, no operator-tier admin, no email template is exempt. The CI guards reject any work that violates them.
+
+1. **Every visual artefact must be fully responsive at every breakpoint defined in `DESIGN.md` §10** — from 320 px mobile through to 2,560 px wide-desktop. Mobile-first markup, progressive enhancement upward. A surface that "only works at desktop width" does not ship.
+2. **Every interactive surface must meet WCAG 2.2 AA at every breakpoint.** Accessibility is not a desktop-only consideration; touch targets, focus management, label association, reduced-motion handling apply equally at every viewport.
+3. **Every public route must meet the performance budget in §3** at every viewport, on a mid-range mobile device, on a 4G network, at the 75th percentile of real-user metrics.
+
+A change that fails any of the three rules is not merged. A design that has not been verified at every breakpoint is not signed off. A component test suite missing a responsive variant is incomplete.
+
 ## 1. Accessibility
 
 ### Conformance target
@@ -40,15 +50,22 @@ This document captures the **non-visual requirements** that constrain every desi
 
 ## 2. Responsive behaviour
 
+Responsive design is the **first rule** of this project (see §0). Every artefact must work, look right and behave correctly at every breakpoint from 320 px through to 2,560 px wide-desktop. "It works on my laptop" is not a sign-off criterion.
+
 ### Breakpoints
 
-Defined in `DESIGN.md` section 10. Layout rules:
+Defined in `DESIGN.md` §10. Five primary breakpoints: `--breakpoint-sm` (640), `--breakpoint-md` (768), `--breakpoint-lg` (1024), `--breakpoint-xl` (1280), `--breakpoint-2xl` (1440). Every design surface must be verified at each.
 
-- **Mobile-first.** Default styles target the smallest viewport; media queries widen up.
-- **Single-column on small.** Forms, property detail content, dashboards collapse to one column at `<= --breakpoint-md`.
-- **Touch targets.** Every interactive target is at least `--size-touch-target-min` (44 px) in both dimensions on touch devices.
+### Universal responsive rules
+
+- **Mobile-first.** Default styles target the smallest viewport (320 px). Media queries widen up. Never the other way around.
+- **Verified at every breakpoint.** Every component, every page, every admin surface, every operator surface, every email template, every PDF — verified at 320, 640, 768, 1024, 1280, 1440 and 2560 px before sign-off.
 - **No horizontal scroll** on any viewport from 320 px upwards except inside table containers that are explicitly horizontally scrollable with a visual cue.
+- **Touch targets.** Every interactive target is at least `--size-touch-target-min` (44 px) in both dimensions on touch devices, regardless of viewport width.
 - **Hit areas extend beyond visual boundaries** where the visual target is small (icons under 24 px).
+- **Single-column on small.** Forms, property detail content, dashboards, admin tables collapse to a single column or stacked-card layout at `<= --breakpoint-md`. Multi-column layouts are an enhancement above that, never a requirement.
+- **Content-priority on small.** When space runs out, lower-priority content collapses, hides or moves below — never the primary action.
+- **Touch + mouse + keyboard** — every breakpoint supports every input mode. Hover-only interactions are forbidden because they don't work on touch.
 
 ### Surface-specific responsive rules
 
@@ -104,47 +121,4 @@ Tightly coupled to SEO (master spec Section O.5) and to per-tenant cost (Section
 - All user-facing text is sourced from translation keys, even when only English is shipped. This positions the platform for future locales without a refactor.
 - Numbers, dates and currencies are formatted via the runtime's locale-aware formatters, never by hand.
 - Right-to-left layouts are not in scope for V1 but the underlying styling system must support them when they arrive (`dir="rtl"` flips correctly).
-- Property prices use the configured currency token; mixing of currencies on one tenant's site is not supported.
-
-## 5. Print
-
-- Property detail pages must produce a clean printed page (background colours off, gallery collapsed to a small grid, agent contact prominent).
-- Admin screens are not print-optimised.
-
-## 6. Browser support
-
-| Browser | Versions supported |
-|---|---|
-| Chrome | Current and previous two major releases |
-| Safari | Current and previous major release |
-| Firefox | Current and previous two major releases |
-| Edge | Current |
-| iOS Safari | Current and previous major release |
-| Android Chrome | Current and previous major release |
-
-No support for browsers older than this. A polite "your browser is too old" overlay shows on detected unsupported browsers.
-
-## 7. Empty, loading, error and success states
-
-Every interactive surface must define its behaviour in all four states.
-
-- **Empty state:** clearly explains why the surface is empty and offers the next useful action.
-- **Loading state:** skeleton matches the final layout's shape (no spinners on content surfaces).
-- **Error state:** plain language, no jargon, no error codes by default. Offer the user a retry, or a way to contact support if retry is impossible.
-- **Success state:** confirms the action and surfaces the next relevant action.
-
-Each of these is captured as a story-level acceptance criterion in every dev brief.
-
-## 8. Content guidelines for designers
-
-- Default to **dense, scannable** layouts in the admin; default to **generous, editorial** layouts on the public site.
-- Headings shrink with depth — never larger inside than the page title.
-- Buttons describe the action verb-first ("Save changes", "Send enquiry"), never "OK" or "Submit" except where unavoidable.
-- Forms never submit without explicit user action; auto-submit is not used.
-- Long lists always offer search and filter at the top.
-
-## 9. Authority and amendment
-
-- This document is part of the foundation set. Amendments require review.
-- Conformance to this document is verified by automated checks in the CI pipeline (the checks themselves are described in `dev-briefs/sprint-01/_cross-cutting.md`).
-- If this document and the master spec disagree, the master spec wins for behaviour; this document wins for accessibility and performance constraints.
+- Property prices use the configured currency token; mixing of cur

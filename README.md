@@ -48,6 +48,7 @@ When the team is ready to build, an autonomous coding agent should be able to re
 - **Architecture / stack:** undecided. The master spec is deliberately implementation-neutral. Section P captures the technology capabilities the chosen stack must provide; Section S captures the non-functional requirements for hosting and multi-tenancy. The team will pick the stack when target customer profile, year-1 tenant count and team operational capacity are confirmed.
 - **Design canvas:** not yet created. `.design-canvas-url` is a placeholder. When the design canvas is set up (in any visual design tool — the choice is open), record its URL or local path in that file.
 - **Code:** none yet. The autonomous build prompt will run when the foundation set is approved and a stack is chosen.
+- **Brief set status:** **Locked at 29 epics (A through AC) on 2026-06-05.** Subsequent additions require an amendment PR against the index files and a corresponding update to the audit report.
 
 ## Master spec — section map
 
@@ -77,6 +78,4 @@ When the team is ready to build, an autonomous coding agent should be able to re
 
 - The master spec is the single source of truth. If anything in a brief, an index, a design document, or eventually any code, contradicts the master spec, the master spec wins until it's amended.
 - Naming follows `PRODUCT.md`. Always.
-- Design follows `DESIGN.md`. Always.
-- Briefs reference the master spec by section letter and sub-section number; do not duplicate spec content into briefs.
-- All changes to foundation docs should be reviewed before merging.
+- Design follows `DESIGN.md`. Al

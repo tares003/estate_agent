@@ -25,11 +25,4 @@ The status column reflects design state. Initially every epic is NOT_STARTED bec
 | EPIC-Q | Build roadmap | [design-briefs/v1/EPIC-Q-build-roadmap.md](design-briefs/v1/EPIC-Q-build-roadmap.md) | CONTEXT | No standalone surface. |
 | EPIC-R | Cross-cutting | [design-briefs/v1/EPIC-R-cross-cutting.md](design-briefs/v1/EPIC-R-cross-cutting.md) | CONTEXT | Informs DoD acceptance criteria. |
 | EPIC-S | Hosting and multi-tenancy | [design-briefs/v1/EPIC-S-hosting-multi-tenancy.md](design-briefs/v1/EPIC-S-hosting-multi-tenancy.md) | NOT_STARTED | Custom-domain wizard, tenant lifecycle states, billing usage view. |
-
-## Sprint scope
-
-For the current sprint's design scope, see [designer-todo-sprint-01.md](designer-todo-sprint-01.md).
-
-## Pairing
-
-Every design brief pairs with the dev brief at the same epic ID. Read both before starting visual work.
+| EPIC-T | Customer accounts | [design-briefs/v1/EPIC-T-customer-accounts.md](design-briefs/v1/EPIC-T-customer-accounts.md) | NOT_STARTED | Register, sign-in, account dashboard, saved properties, saved searches, viewings, profile, setti
