@@ -64,3 +64,12 @@
 1. Confirm the visual treatment of the live preview pane (iframe inside the editor vs server-rendered HTML).
 2. Confirm whether section types are searchable in the picker (recommended: yes, by typed name + tag).
 3. Confirm the destructive-action confirmation pattern (a delete-section action — modal confirm or two-stage destructive button?).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — the page-builder is the platform's richest pack-gated picker UI:
+
+- **Section catalogue picker**: pack-dependent section types (developments grid, calculators embed, commercial property carousel, etc.) appear with a `PackLockPill` next to their label. The locked section types remain keyboard-focusable; activating one opens the pack-enable modal (not the section editor).
+- **Editing a page that uses a now-disabled section**: if a tenant disables a pack while pages exist using that pack's section types, the section remains in the page-builder source data (no data destruction) but renders nothing on the public site. The admin editor shows a warning banner: "This section type requires the X pack. Re-enable to publish."
+- **Per-section visibility flags**: a tenant on trial can preview pack-dependent sections; if the trial lapses without conversion, those sections fall back to the disabled-section warning state.
+- **Email templates**: pack-aware welcome / trial / cancellation emails per `design-requirements.md` §2a.7. The email-template editor surfaces pack-specific variables.

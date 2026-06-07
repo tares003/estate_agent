@@ -90,3 +90,13 @@
 2. Confirm whether the compliance panel includes the actual certificate as a downloadable link (recommended: yes).
 3. Confirm the visual treatment of overdue repairs awaiting landlord approval (banner vs sash on the repair tile).
 4. Confirm the rent timeline granularity (recommended: monthly).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — this brief is owned by `core` (Lettings is part of core per `PRODUCT.md` §5). Therefore the landlord portal is **always on** for every tenant. No `UpsellEmptyState` applies.
+
+However, surfaces within the landlord portal that depend on optional packs do follow the standard patterns:
+
+- **Vendor-comparison panel** (if a landlord also occupies the vendor role for a property they own and are selling): this draws on `sales_plus` data and is shown with `PackLockPill` when `sales_plus` is off.
+- **Feedback tile** (showing landlord-feedback aggregate): a `feedback_reviews`-dependent component; uses `PackLockPill` when off.
+- **Per-property tenancy details** (always shown — pure core).

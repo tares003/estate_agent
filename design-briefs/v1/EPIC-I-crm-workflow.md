@@ -84,3 +84,12 @@
 1. Confirm the slide-over width (recommended: 480 px desktop).
 2. Confirm whether the rule editor uses a visual flow-chart metaphor or a stacked-statement metaphor.
 3. Confirm the composer template-picker placement (inline above body vs slide-out panel).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — the CRM queue reflects pack state at the lead-type level:
+
+- **Lead-type filter dropdown**: only lead types corresponding to enabled packs appear. `developer_enquiry` only shown with `new_homes`; `commercial_enquiry` only with `commercial`; `business_enquiry` only with `business_transfer`.
+- **Lead-type tabs / saved views**: the seeded saved views ("Unassigned vendor enquiries", "Repair tickets by SLA") are filtered to enabled packs.
+- **Assignment rules editor**: conditions that reference pack-gated lead types appear with a `PackLockPill`.
+- **CRM reports** (lead conversion by source, by agent, by branch): metric definitions remain stable across packs; counts naturally reflect which lead types are receivable.

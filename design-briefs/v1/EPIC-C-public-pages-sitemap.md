@@ -72,3 +72,13 @@
 2. Confirm whether the knowledge hub article surface is full-width or has a sidebar.
 3. Confirm the legal-page typography — full-width prose or constrained reading width.
 4. Confirm whether the testimonials block uses a carousel or a static three-quote layout.
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — the public marketing site reflects the tenant's enabled packs at every level:
+
+- **Portal homepage tiles**: only the verticals belonging to enabled packs render. A tenant with only `core` (Sales + Lettings, the default) sees Buyers / Sellers / Tenants / Landlords tiles. A tenant who enables `new_homes` gains a fifth tile.
+- **Vertical landing pages**: `/new-homes`, `/commercial`, `/business-transfer`, `/care-homes` return 404 when their owning pack is off. They are excluded from the sitemap and from internal navigation links. The behaviour is silent (no "this pack is locked" surfaced to the visitor).
+- **Unified `/properties` filters**: the listing-type filter only offers packs the tenant has enabled. The "new homes only" toggle is hidden unless `new_homes` is on.
+- **Knowledge hub categories**: if a tenant disables the New Homes pack, knowledge-hub posts in the "New Homes" category remain visible to visitors who land via direct URL or external link (no data destruction), but the category does not appear in the navigation.
+- **Footer**: regulatory and certificate badges are pack-independent (always shown).

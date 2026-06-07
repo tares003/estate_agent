@@ -86,3 +86,13 @@
 2. Confirm the visual treatment of the offer card when multiple offers compete (stacked vs side-by-side comparison view).
 3. Confirm whether marketing assets are downloadable directly or only viewable inline.
 4. Confirm whether the magic-link sign-in adds a "Remember this device" toggle (recommended: not in V1).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — this brief is itself owned by the `sales_plus` pack. Surface behaviour:
+
+- **Vendor sign-in page**: `/vendor/sign-in` returns 404 for tenants without `sales_plus`. The route is excluded from the sitemap.
+- **Vendor portal entry points**: links to the vendor portal from the public site (e.g. "Vendor login" in the header utility row) appear only when the pack is enabled.
+- **Admin Vendors section**: at `/admin/vendors`, when `sales_plus` is off, the `UpsellEmptyState` pattern surfaces with the Sales-plus upsell.
+- **Pack-trial state**: during a Sales-plus trial, the vendor portal works fully; the `TrialCountdownPill` appears at the top-right of every vendor-portal screen and every Vendors admin screen.
+- **Pack-cancellation state**: when a cancellation is requested but not yet processed, the portal remains active; the admin shows a "Cancellation pending" banner.

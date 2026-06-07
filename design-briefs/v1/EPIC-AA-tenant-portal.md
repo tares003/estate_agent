@@ -106,3 +106,14 @@
 2. Confirm whether tenants see a count of any disputed deposit claims (recommended: yes, with a clear "Disputed" status pill).
 3. Confirm the visual treatment of "rolling monthly" tenancy state.
 4. Confirm whether the joint-tenant case shows the other tenant's name (recommended: yes, but only the name).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — this brief is owned by `core` (Lettings is part of core). The tenant portal is **always on** for every tenant. No `UpsellEmptyState` applies at the portal level.
+
+Surfaces within the tenant portal that depend on optional packs:
+
+- **Feedback prompt after repair completion** (the in-portal CTA to leave feedback): depends on `feedback_reviews`. When off, the prompt is silently hidden.
+- **Tenant-side AI-assist for query drafting** (a potential future feature): depends on `ai_assistant` — uses `PackLockPill`.
+
+Otherwise the tenant portal is unaffected by packs and behaves identically across all tenant configurations.

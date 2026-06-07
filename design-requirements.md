@@ -77,48 +77,27 @@ Defined in `DESIGN.md` §10. Five primary breakpoints: `--breakpoint-sm` (640), 
 - **Admin tables:** convert to stacked cards below `--breakpoint-md` with the most-important column promoted to the title.
 - **Calendar:** day view by default on mobile; week view default from `--breakpoint-lg` upward.
 
-## 3. Performance budgets
+## 2a. Modular product — pack-state design patterns
 
-Tightly coupled to SEO (master spec Section O.5) and to per-tenant cost (Section S.2).
+The platform is a **modular product**: a tenant agency's enabled feature packs (per `PRODUCT.md` §5a) determine which screens, components, capabilities and public surfaces are active. Every brief in this repo carries a `**Pack:**` header that names its owning pack.
 
-### Core Web Vitals targets
+Surfaces that depend on pack state — admin sections, page-builder section types, property-editor attribute groups, public verticals, customer-portal entry points — all use a **single, consistent visual vocabulary** so that the user (whether tenant operator, agency staff member, applicant, vendor or landlord) is never confused about why a surface is or isn't available. The patterns below are universal; every design brief inherits them by reference.
 
-- **Largest Contentful Paint (LCP):** ≤ 2.5 seconds at the 75th percentile.
-- **Interaction to Next Paint (INP):** ≤ 200 ms at the 75th percentile.
-- **Cumulative Layout Shift (CLS):** ≤ 0.1 at the 75th percentile.
+### 2a.1 The "locked admin section" pattern
 
-### Bundle budgets (per route, gzipped)
+When a tenant operator (or any authenticated tenant-side user) navigates to an admin section their pack does not include — for example `/admin/feedback` without the `feedback_reviews` pack, or `/admin/vendors` without `sales_plus` — they shall **not** see a 404 or a "permission denied" error. They shall see a branded **upsell empty state**:
 
-- **Public marketing routes:** JavaScript ≤ 150 KB, CSS ≤ 50 KB.
-- **Property catalogue:** JavaScript ≤ 200 KB, CSS ≤ 60 KB.
-- **Property detail:** JavaScript ≤ 220 KB, CSS ≤ 60 KB.
-- **Admin shell:** JavaScript ≤ 350 KB (one-time load, code-split per section thereafter).
-- **Customer account:** JavaScript ≤ 200 KB.
+- Pack name and what it enables, in plain language.
+- A representative illustration or screenshot (CMS-managed per tenant theme).
+- The pack's monthly cost.
+- A primary CTA "Enable for £X / month" that opens the pack-enable modal directly (per EPIC-AD design brief).
+- A secondary "Learn more" link to the pack's marketing page.
 
-### Image performance
+This pattern uses the `UpsellEmptyState` component (EPIC-L). The component is responsive at every breakpoint per Section 0.
 
-- WebP or AVIF first, JPEG fallback.
-- `width` and `height` attributes mandatory on every image to prevent layout shift.
-- `loading="lazy"` for any image below the fold.
-- Only the LCP image (typically the property hero) uses `fetchpriority="high"`.
-- Maximum source image dimension served on any viewport: 1920 px on the longest edge.
-- Maximum file size for a single served property image: 500 KB at the largest variant.
+### 2a.2 The "pack-gated catalogue" pattern
 
-### Font loading
+In any **picker / catalogue / palette** UI where the user chooses an item from a set — the page-builder section catalogue (EPIC-D), the form-builder field palette (EPIC-H), the notification-rule event picker (EPIC-H), the page-builder layout picker, the workflow-automation trigger picker — items that depend on a pack the tenant doesn't have shall be **shown** (not hidden) with a `PackLockPill` (EPIC-L) adjacent to the item:
 
-- `font-display: swap` on every web-font face.
-- One woff2 preloaded per family (display + body).
-- Variable fonts preferred over multiple weight files where the family supports them.
-
-### Third-party scripts
-
-- Cookie-consent-gated. Nothing loads before consent.
-- Maximum five third-party origins on any public page (analytics, error monitoring, reviews widget, anti-spam challenge, chat).
-- Each third-party script must declare a `crossorigin` and `referrerpolicy` and use `defer` or `async` loading.
-
-## 4. Internationalisation
-
-- All user-facing text is sourced from translation keys, even when only English is shipped. This positions the platform for future locales without a refactor.
-- Numbers, dates and currencies are formatted via the runtime's locale-aware formatters, never by hand.
-- Right-to-left layouts are not in scope for V1 but the underlying styling system must support them when they arrive (`dir="rtl"` flips correctly).
-- Property prices use the configured currency token; mixing of cur
+- `🔒 Requires New Homes pack`.
+- The locked item is keyboard-focusable but its primary action is replaced.

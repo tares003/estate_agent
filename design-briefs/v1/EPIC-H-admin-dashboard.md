@@ -108,3 +108,15 @@ Admin surfaces use:
 2. Confirm the table density default (recommended: comfortable).
 3. Confirm the visual treatment of the command palette (centred modal with backdrop vs slim top-anchored).
 4. Confirm the impersonation visual indicator (banner, ribbon, sidebar tag).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — the admin shell is the principal pack-state surface:
+
+- **Sidebar navigation**: pack-gated sections dynamically appear / disappear. The locked-section pattern handles direct-URL hits.
+- **Dashboard alerts panel**: pack-related alerts (trial ending, cancellation pending, pack newly enabled) join the standard alert types.
+- **Notification rules editor**: events that are pack-dependent (e.g. `vendor.offer.received` requires `sales_plus`) appear in the event-picker with a `PackLockPill`.
+- **Form builder field palette**: pack-dependent fields are marked with `PackLockPill`.
+- **Theme editor**: customisation depth depends on tier (per `PRODUCT.md` §5e). Tenants on Starter see only the brand-primary and accent colour pickers; Professional and Enterprise see the full token set.
+- **Reports section**: agent league table (a `feedback_reviews` pack feature) is `UpsellEmptyState`-gated when the pack is off.
+- **Operator-side packs tab**: covered in EPIC-AB design brief addendum.

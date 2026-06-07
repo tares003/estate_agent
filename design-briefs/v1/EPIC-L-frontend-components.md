@@ -23,25 +23,14 @@ Define every component in the canvas — every atom, every molecule, every organ
 
 `Header`, `MobileMenu`, `Footer`, `StickyValuationCTA`, `ReviewsBadge`, `CookieBanner`, `AdminSidebar`, `AdminTopbar`, `AdminBreadcrumbs`.
 
-### Organisms (referenced from feature epics)
+### Modular product (pack-state) — new in this pass
 
-`PropertyCard`, `PropertyGrid`, `PropertyCarousel`, `PropertyHero`, `PropertyGallery`, `PropertyFactsStrip`, `PropertyMap`, `AgentCard`, `TeamGrid`, `BranchCard`, `TestimonialsCarousel`, `FAQAccordion`, `PartnerLogosRow`, `CTAStrip`, `BookViewingForm`, `ContactAgentModal`, `RegistrationBanner`, `RichTextEditor`, `PageBuilder`, `AdminTable`, `AdminForm`, `AdminImageManager`, `AdminFileUpload`, `StatusBadge`, `NotificationPanel`, `CalendarView`, `ActivityFeed`.
+`PackLockPill`, `UpsellEmptyState`, `TrialCountdownPill`, `PackEnableModal` (consumed from EPIC-AD's design but the component lives in the shared library).
 
-## Per-component documentation requirement
+These four components are referenced by every pack-gated surface across the product (see `design-requirements.md` §2a for the universal pack-state patterns). The first two are the most heavily reused:
 
-Each component's canvas entry must show:
+- **`PackLockPill`** — a small badge attached to any element that is pack-gated. Variants: inline (next to a control or list item), corner (top-right of a card), full-row (in a list). Accessible name: "Requires [Pack-name] pack". Click / activate opens the pack-enable modal. Used in: page-builder section catalogue, form-builder field palette, notification-rule event picker, automation-rule trigger picker, property-editor attribute group affordances, lead-type filter dropdowns, customer-portal links in the public site.
 
-1. Every prop variant.
-2. Default, hover, focus, active, disabled and loading states.
-3. Empty, error and success states where applicable.
-4. **Responsive variations at every breakpoint defined in `DESIGN.md` §10 — 320, 640, 768, 1024, 1280, 1440 and 2560 px** (mandate from `design-requirements.md` §0).
-5. Reduced-motion variation.
-6. Dark-mode variation (if dark mode is in scope; otherwise deferred).
-7. Accessibility annotations: focus management, label association, ARIA roles, keyboard support.
-8. Token references — every colour, spacing, size, motion value annotated with its token.
+- **`UpsellEmptyState`** — the "locked admin section" pattern. Used in place of a 404 when a tenant operator navigates to an admin section whose owning pack is off. Includes pack name, what it enables, illustration slot, monthly cost, primary "Enable" CTA opening the pack-enable modal, secondary "Learn more" link. Variants: full-screen (when the entire section is locked), inline (when a sub-section within an otherwise-enabled section is locked).
 
-## Responsive
-
-Every component in this library is **responsive by default** — there is no "desktop component" vs "mobile component" split, only one component that adapts. The canvas entries above are the contract: a component with a missing breakpoint variant is incomplete and will not pass the responsive-coverage CI guard.
-
-- Mobile-first markup: default styles target 320 px; media queries
+- **`TrialCountdownPill`** — a small status pill rendered at the top-right of any screen contributing to a pack on trial. Colour shifts at ≤ 3 days (`--colour-warning`) and ≤ 1 day (`--colour

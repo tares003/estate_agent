@@ -105,3 +105,12 @@ Status badges use `--colour-status-*` tokens 1:1 with `market_status`. Cards use
 2. Confirm the visual treatment of "+N photos" overlay (corner pill vs full-width gradient).
 3. Confirm the placement of the assigned agent card on desktop (right rail vs bottom of detail).
 4. Confirm whether key feature chips are rendered as plain pills or with icons (3-icon limit).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — the property editor adapts to pack state at the attribute-group level:
+
+- **Per-vertical attribute groups**: Commercial, Business Transfer, Care Home attribute groups appear in the editor only when their respective pack is enabled. When off, an inline `+ Add Commercial attributes` (etc.) affordance appears in the editor sidebar, opening the pack-enable modal on click.
+- **Listing-type dropdown**: the `listing_type` field offers only the listing types whose owning pack is enabled, plus `residential` (always available in core).
+- **Public property card**: a property created under a now-disabled listing_type remains in the database but does not appear in any public list, search result, or sitemap. The admin can still view and edit it; the card shows a "Pack required to publish" warning.
+- **New-home-specific flags** (`is_new_home`, `is_off_plan`, `from_price` qualifier): only available when `new_homes` is enabled.

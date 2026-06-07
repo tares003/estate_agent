@@ -117,3 +117,14 @@ The operator admin uses a deliberately distinct visual identity from tenant admi
 2. Confirm the impersonation entry UX (single click vs typed confirmation — recommended: typed confirmation).
 3. Confirm whether the system-health dashboard is the default landing or whether the tenant directory is (recommended: system health, since operators check that first).
 4. Confirm whether tenant detail's "Settings" tab can override tenant-side settings (recommended: yes for emergency operator intervention, audit-logged).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — this brief is owned by the Operator scope (always on for the platform operator; not tenant-facing).
+
+The platform-operator admin **manages** pack state across tenants and therefore has its own pack-aware surfaces that supplement EPIC-AD's tenant-side design:
+
+- **Per-tenant Packs tab** (covered in EPIC-AD design brief but referenced here for completeness): the operator sees a per-tenant pack matrix with current state, trial status, billing total, and the "Enable on tenant's behalf" affordance for support intervention.
+- **Cancellation queue**: lists pending pack-cancellation requests with reason, requested-at, tenant primary contact. Processing flow: review reason → confirm by email → execute disable → write audit-log entry with operator identifier.
+- **Per-pack adoption dashboard**: aggregate analytics — total active per pack, churn per pack, trial-to-paid conversion per pack, support-ticket count per pack. Helps the operator prioritise pack investment.
+- **Forced-state controls** (emergency operator intervention): can temporarily force a pack on / off for a specific tenant outside the normal lifecycle (e.g. enable bulk_import temporarily for a tenant whose paid period has lapsed mid-import). Every forced-state action requires typed confirmation and writes an audit-log entry.

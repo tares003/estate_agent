@@ -48,7 +48,7 @@ When the team is ready to build, an autonomous coding agent should be able to re
 - **Architecture / stack:** undecided. The master spec is deliberately implementation-neutral. Section P captures the technology capabilities the chosen stack must provide; Section S captures the non-functional requirements for hosting and multi-tenancy. The team will pick the stack when target customer profile, year-1 tenant count and team operational capacity are confirmed.
 - **Design canvas:** not yet created. `.design-canvas-url` is a placeholder. When the design canvas is set up (in any visual design tool — the choice is open), record its URL or local path in that file.
 - **Code:** none yet. The autonomous build prompt will run when the foundation set is approved and a stack is chosen.
-- **Brief set status:** **Locked at 30 epics (A through AD) on 2026-06-05.** Every brief carries a `**Pack:**` header per `PRODUCT.md` §5a. Subsequent additions require an amendment PR against the index files and a corresponding update to the audit report.
+- **Brief set status:** **Locked at 31 epics (A through AE) on 2026-06-05.** Every brief carries a `**Pack:**` header per `PRODUCT.md` §5a. Subsequent additions require an amendment PR against the index files and a corresponding update to the audit report.
 - **Modular product:** the platform is sold as a **core pack** (Sales + Lettings, always on) plus optional **feature packs** (Sales-plus, New Homes, Commercial, Business Transfer, Care Homes, Portal Syndication, Calculators, Bulk Import, Feedback & Reviews, Live Chat, AI Assistant) that tenants enable as add-ons. The catalogue and tier inclusions live in `PRODUCT.md` §5; the entitlement mechanism is owned by EPIC-AD.
 
 ## Master spec — section map

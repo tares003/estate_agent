@@ -93,3 +93,12 @@
 1. Confirm the cookie-banner placement (bottom centre, bottom right corner, top of viewport).
 2. Confirm the visual treatment of the SAR export wizard (modal vs full-screen flow).
 3. Confirm the 2FA mechanism (TOTP only in V1, or also WebAuthn?).
+
+## Pack-state behaviour
+
+Per `design-requirements.md` §2a — security and access patterns are pack-aware:
+
+- **Permissions catalogue**: the role editor exposes a new `pack.manage` permission, granted by default only to the tenant's super-admin role.
+- **Audit-log viewer**: pack-related events (`pack.enabled`, `pack.disabled`, `pack.trial.started`, `pack.trial.ended`, `pack.cancellation.requested`, `pack.cancellation.processed`) render with a dedicated event-type pill and a per-event detail view showing the actor, the pack, and the billing implication.
+- **GDPR Subject Access Request export**: per-tenant exports include the tenant's pack history alongside other lifecycle data.
+- **GDPR erasure**: pack-dependent personal data (e.g. vendor-portal saved offers under `sales_plus`) is included in the erasure scan regardless of current pack state. Disabling a pack does not exclude its data from erasure.
