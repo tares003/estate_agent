@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error state patterns — Estate Agent canvas</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../base.css">
+<script src="../canvas.js"></script>
+<style>
+  .state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); }
+  .state .emblem { width: var(--space-16); height: var(--space-16); display: grid; place-items: center; border-radius: var(--radius-circle); background: rgba(239,68,68,0.1); color: var(--colour-danger); }
+  .state .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .state h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .state p { color: var(--colour-text-secondary); max-width: 46ch; }
+  .state .acts { display: flex; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); text-decoration: none; }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .grid { display: grid; gap: var(--space-8); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+  .inline { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); border-radius: var(--radius-md); background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35); max-width: 560px; }
+  .inline svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-danger); flex: 0 0 auto; }
+  .inline strong { display: block; font-size: var(--text-body-md); color: #8f2018; }
+  .inline p { font-size: var(--text-body-sm); color: #8f2018; margin-top: var(--space-1); }
+  .field { display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
+  .field label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .control { height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--colour-danger); border-radius: var(--radius-md); }
+  .control:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(239,68,68,0.35); }
+  .ferr { display: flex; gap: var(--space-2); align-items: center; color: var(--colour-danger); font-size: var(--text-body-sm); }
+  .ferr svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../index.html">← Canvas index</a>
+    <h1>Error state patterns</h1>
+    <span class="brief">design-requirements.md §7 — calm, honest, recoverable (PRODUCT.md §7 "calm in crisis")</span>
+    <dl class="annotations">
+      <div><dt>Levels</dt><dd>field-level · form-level · section-level · full-page (404 / 500)</dd></div>
+      <div><dt>Voice</dt><dd>acknowledge, don't blame; say what to do next; never lose the user's input</dd></div>
+      <div><dt>Rule</dt><dd>errors announced via live region; associated with their field</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Field &amp; form level</h2>
+      <p class="lede">The smallest, most common errors. A field error is associated via <code>aria-describedby</code>; the message is specific and tells the user how to fix it.</p>
+      <div class="demo-tray col">
+        <div class="field">
+          <label for="e1">Email address</label>
+          <input id="e1" class="control" type="email" value="jordan@" aria-invalid="true" aria-describedby="e1m">
+          <span class="ferr" id="e1m" role="alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>Enter a complete email address, like name@example.co.uk.</span>
+        </div>
+        <div class="inline" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>
+          <div><strong>We couldn't send your enquiry</strong><p>Something went wrong our end — your message wasn't lost. Please try again in a moment.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Section &amp; full-page</h2>
+      <p class="lede">When a whole region or page fails to load. Always offer a retry and a route out — never strand the user.</p>
+      <div class="grid">
+        <div class="state">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+          <h3>This section didn't load</h3>
+          <p>We had trouble loading the property map. The rest of the page is fine.</p>
+          <div class="acts"><button class="btn primary">Try again</button></div>
+        </div>
+        <div class="state">
+          <span class="emblem" style="background:var(--colour-surface-sunken);color:var(--colour-text-muted)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></span>
+          <h3>We can't find that page</h3>
+          <p>The link may be old or the property may have been removed. Let's get you back on track.</p>
+          <div class="acts"><a class="btn primary" href="#">Browse properties</a><a class="btn secondary" href="#">Go to homepage</a></div>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> error emblem <code>rgba(239,68,68,0.1)</code> on <b>--colour-danger</b> · inline banner <b>--colour-danger</b> tints · field border <b>--colour-danger</b>, focus <code>rgba(239,68,68,0.35)</code> · container <b>--radius-lg</b>, <b>--colour-border</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> field errors use <code>aria-invalid</code> + <code>aria-describedby</code>; banners use <code>role="alert"</code> (assertive). The 404 keeps the global header/footer so navigation never disappears. Retry and exit are real focusable buttons/links.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

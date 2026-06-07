@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay molecules — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .stage { position: relative; min-height: 420px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--colour-border); background:
+    linear-gradient(135deg, #e7e2d8, #f4f2ec); padding: var(--space-6); }
+  .scrim { position: absolute; inset: 0; background: rgba(26,26,26,0.45); display: grid; place-items: center; padding: var(--space-4); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .btn.ghost { background: transparent; color: var(--colour-brand-primary); }
+
+  /* modal */
+  .modal { width: 100%; max-width: 480px; background: var(--colour-surface-base); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .modal header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: var(--space-6) var(--space-6) var(--space-4); }
+  .modal header h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .modal .x { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); }
+  .modal .x:hover { background: var(--colour-surface-raised); }
+  .modal .mbody { padding: 0 var(--space-6); color: var(--colour-text-secondary); }
+  .modal footer { display: flex; gap: var(--space-3); justify-content: flex-end; padding: var(--space-6); flex-wrap: wrap; }
+
+  /* drawer */
+  .drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(380px, 86%); background: var(--colour-surface-base); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
+  .drawer header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); }
+  .drawer header h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+  .drawer .dbody { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); overflow: auto; }
+  .drawer .x { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); }
+
+  /* dropdown */
+  .menu { width: 240px; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: var(--space-2); }
+  .menu a { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-primary); text-decoration: none; min-height: var(--size-touch-target-min); }
+  .menu a:hover { background: var(--colour-surface-raised); }
+  .menu a svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); }
+  .menu hr { border: none; border-top: 1px solid var(--colour-divider); margin: var(--space-2) 0; }
+  .menu a.danger { color: var(--colour-danger); }
+
+  /* popover */
+  .popover { width: 280px; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: var(--space-5); }
+  .popover h4 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-2); }
+  .popover p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .grid2 { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Overlay molecules</h1>
+    <span class="brief">EPIC-L design brief — Molecules · Modal · Drawer · Dropdown · Popover (shown open)</span>
+    <dl class="annotations">
+      <div><dt>Molecules</dt><dd>Modal · Drawer · Dropdown · Popover</dd></div>
+      <div><dt>States</dt><dd>open (focus-trapped) · Escape closes · backdrop click closes</dd></div>
+      <div><dt>Motion</dt><dd>modal scale 0.96→1 + fade over --motion-duration-base</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Modal</h2>
+      <p class="lede">Centered dialog over a scrim. Shown here in its open state. In: scale 0.96 → 1 + opacity over <code>--motion-duration-base --motion-ease-standard</code>; out reverses with <code>--motion-ease-exit</code>.</p>
+      <div class="stage">
+        <div class="scrim">
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+            <header>
+              <h3 id="m-title">Contact agent</h3>
+              <button class="x" aria-label="Close dialog"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </header>
+            <div class="mbody"><p>Send a message about <strong>Palatine Road, Didsbury</strong>. The branch usually replies within one working day.</p></div>
+            <footer>
+              <button class="btn ghost">Cancel</button>
+              <button class="btn primary">Send message</button>
+            </footer>
+          </div>
+        </div>
+      </div>
+      <div class="a11y-note"><strong>Focus management:</strong> on open, focus moves into the dialog and is <strong>trapped</strong> (Tab cycles within). <strong>Escape</strong> closes; focus <strong>restores</strong> to the trigger. The dialog has <code>role="dialog" aria-modal="true"</code> and is labelled by its title.</div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Drawer</h2>
+      <p class="lede">Side panel for filters (desktop) and menus. Slides from the edge over <code>--motion-duration-base</code>. On mobile, the advanced-filters drawer opens from the bottom instead.</p>
+      <div class="stage">
+        <div class="scrim" style="place-items:stretch">
+          <div class="drawer" role="dialog" aria-modal="true" aria-label="Filters">
+            <header><h3>Filters</h3><button class="x" aria-label="Close filters"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></header>
+            <div class="dbody">
+              <div><div style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-2)">Price up to</div><div style="height:var(--size-input-md);border:1px solid var(--colour-border);border-radius:var(--radius-md);display:flex;align-items:center;padding-inline:var(--space-4);color:var(--colour-text-secondary)">£600,000</div></div>
+              <div><div style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-2)">Bedrooms</div><div style="height:var(--size-input-md);border:1px solid var(--colour-border);border-radius:var(--radius-md);display:flex;align-items:center;padding-inline:var(--space-4);color:var(--colour-text-secondary)">2 or more</div></div>
+              <button class="btn primary" style="width:100%">Show 48 properties</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid2">
+      <section class="demo-section" style="margin-bottom:0">
+        <h2>Dropdown</h2>
+        <p class="lede">Action / account menu. In: fade + <code>translateY(-4px)</code> over <code>--motion-duration-base</code>.</p>
+        <div class="stage" style="min-height:280px;display:flex;align-items:flex-start;gap:var(--space-4)">
+          <button class="btn secondary">Account ▾</button>
+          <div class="menu" role="menu" aria-label="Account">
+            <a href="#" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>My account</a>
+            <a href="#" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>Saved properties</a>
+            <a href="#" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg>Saved searches</a>
+            <hr>
+            <a href="#" role="menuitem" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5V3h4M14 7l5 5-5 5M19 12H9"/></svg>Sign out</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo-section" style="margin-bottom:0">
+        <h2>Popover</h2>
+        <p class="lede">Anchored explanatory panel — richer than a tooltip, dismissible.</p>
+        <div class="stage" style="min-height:280px;display:flex;align-items:flex-start">
+          <div class="popover" role="dialog" aria-label="About this estimate">
+            <h4>How we estimate</h4>
+            <p>This figure is based on recent comparable sales nearby. It's <strong>indicative only</strong> and not a formal valuation. Book a free valuation for an accurate figure.</p>
+            <button class="btn primary" style="margin-top:var(--space-4);width:100%">Book a free valuation</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="token-ref"><b>Tokens:</b> modal <b>--radius-lg</b> + <b>--shadow-lg</b> · drawer / dropdown / popover <b>--shadow-md/sm</b> · scrim <code>rgba(26,26,26,0.45)</code> · z: modal/drawer <b>--z-overlay-mid</b>, dropdown/popover <b>--z-overlay-low</b> · motion <b>--motion-duration-base --motion-ease-standard</b>.</div>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

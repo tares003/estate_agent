@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Search admin — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .cols { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .cols { grid-template-columns: minmax(0,1fr) 320px; align-items: start; } }
+  .card2 { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; margin-bottom: var(--space-6); }
+  .card2 .ch { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); } .card2 .ch h2 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); } .card2 .ch p { font-size: var(--text-body-sm); color: var(--colour-text-muted); margin-top: 2px; }
+  .card2 .cb { padding: var(--space-5); }
+  /* synonym chips */
+  .syn { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .synrow { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--colour-divider); flex-wrap: wrap; } .synrow:last-child { border-bottom: none; }
+  .synrow .term { font-weight: var(--weight-semibold); font-size: var(--text-body-sm); min-width: 120px; }
+  .chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-3); border-radius: var(--radius-pill); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-size: var(--text-body-sm); }
+  .chip button { color: var(--colour-text-muted); } .chip button svg { width: 12px; height: 12px; }
+  .addsyn { display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-3); border-radius: var(--radius-pill); border: 1px dashed var(--colour-border); color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  /* zero-results table */
+  .barmini { height: var(--space-2); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); overflow: hidden; min-width: 80px; } .barmini > i { display: block; height: 100%; background: var(--colour-warning); border-radius: var(--radius-pill); }
+  .reindex { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-5); }
+  .reindex h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-2); } .reindex p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-bottom: var(--space-4); }
+  .idxbar { height: var(--space-2); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); overflow: hidden; margin-bottom: var(--space-2); } .idxbar > i { display: block; height: 100%; width: 100%; background: var(--colour-success); }
+  .idxmeta { display: flex; justify-content: space-between; font-size: var(--text-caption); color: var(--colour-text-muted); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Search admin">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Search admin</h1>
+    <span class="brief">EPIC-H design brief — site-search administration (H.25)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>synonym manager · zero-result queries (what visitors searched with no match) · re-index status</dd></div>
+      <div><dt>Use</dt><dd>tune the public property search — synonyms, redirects for common misspellings, index health</dd></div>
+      <div><dt>Insight</dt><dd>zero-result queries surface unmet demand &amp; missing stock</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Search admin</h1><p>Tune how visitors find properties on your site</p></div></div>
+
+    <div class="cols">
+      <div>
+        <div class="card2">
+          <div class="ch"><h2>Synonyms</h2><p>Map alternative terms to the same results</p></div>
+          <div class="cb">
+            <div class="synrow"><span class="term">Apartment</span><span style="color:var(--colour-text-muted)">→</span><div class="syn"><span class="chip">Flat <button aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span><span class="chip">Maisonette <button aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span><button class="addsyn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add</button></div></div>
+            <div class="synrow"><span class="term">Bungalow</span><span style="color:var(--colour-text-muted)">→</span><div class="syn"><span class="chip">Single storey <button aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span><button class="addsyn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add</button></div></div>
+            <div class="synrow"><span class="term">Didsbury</span><span style="color:var(--colour-text-muted)">→</span><div class="syn"><span class="chip">M20 <button aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span><span class="chip">West Didsbury <button aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span><button class="addsyn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add</button></div></div>
+          </div>
+        </div>
+
+        <div class="card2">
+          <div class="ch"><h2>Zero-result searches</h2><p>What visitors searched for but found nothing — last 30 days</p></div>
+          <div class="scrollx"><table class="t">
+            <thead><tr><th>Query</th><th>Searches</th><th>Trend</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="mono" style="font-family:var(--font-mono)">"new build chorlton"</td><td>84</td><td><span class="barmini"><i style="width:90%"></i></span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none;font-size:var(--text-body-sm)">Create redirect</a></td></tr>
+              <tr><td class="mono" style="font-family:var(--font-mono)">"studio flat"</td><td>52</td><td><span class="barmini"><i style="width:60%"></i></span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none;font-size:var(--text-body-sm)">Add synonym</a></td></tr>
+              <tr><td class="mono" style="font-family:var(--font-mono)">"didsbery"</td><td>37</td><td><span class="barmini"><i style="width:42%"></i></span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none;font-size:var(--text-body-sm)">Add spelling</a></td></tr>
+              <tr><td class="mono" style="font-family:var(--font-mono)">"commercial unit"</td><td>21</td><td><span class="barmini"><i style="width:24%"></i></span></td><td><span style="font-size:var(--text-body-sm);color:var(--colour-text-muted)">Needs Commercial pack</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <div class="reindex">
+        <h3>Search index</h3>
+        <p>312 properties indexed · last rebuilt 14 minutes ago.</p>
+        <div class="idxbar"><i></i></div>
+        <div class="idxmeta"><span>100% healthy</span><span>312 / 312 documents</span></div>
+        <button class="btn secondary" style="width:100%;justify-content:center;margin-top:var(--space-5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Rebuild index</button>
+        <p style="font-size:var(--text-caption);color:var(--colour-text-muted);margin-top:var(--space-3)">Rebuilding takes ~2 minutes and doesn't affect the live site.</p>
+      </div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

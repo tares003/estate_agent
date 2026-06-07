@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — features — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(79,70,229,0.3), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto; max-width: 18ch; }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 50ch; margin-inline: auto; }
+  .anchors { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; margin-top: var(--space-6); }
+  .anchors a { padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); border: 1px solid var(--mkt-border-dark); color: var(--mkt-on-dark); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); text-decoration: none; } .anchors a:hover { background: rgba(255,255,255,0.08); }
+
+  .featsec { padding: var(--space-20) var(--space-6); border-bottom: 1px solid var(--mkt-border); }
+  .featsec:nth-child(even) { background: var(--mkt-raised); }
+  .featsec .mkt-inner { display: grid; gap: var(--space-12); grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 1024px) { .featsec .mkt-inner { grid-template-columns: 1fr 1fr; } .featsec.flip .copy { order: 2; } }
+  .featsec h2 { font-size: var(--text-display-sm); margin: var(--space-2) 0 var(--space-4); }
+  .featsec .copy p { color: var(--mkt-ink-2); line-height: var(--text-body-lg-lh); margin-bottom: var(--space-5); }
+  .featsec ul { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .featsec li { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-body-sm); } .featsec li svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--mkt-primary); flex: 0 0 auto; margin-top: 2px; }
+  .shot { border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--mkt-border); box-shadow: var(--shadow-lg); }
+  .shot .bar { display: flex; gap: 6px; padding: var(--space-3) var(--space-4); background: var(--mkt-bg); } .shot .bar span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+  .shot .body { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#e9ebf6,#f6f7fb); display: grid; place-items: center; color: var(--mkt-ink-2); }
+  .shot .body svg { width: 56px; height: 56px; opacity: 0.4; }
+
+  /* demo modal */
+  .stage { position: relative; min-height: 480px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--mkt-border); margin: var(--space-12) var(--space-6) 0; }
+  .scrim { position: absolute; inset: 0; background: rgba(11,16,32,0.6); display: grid; place-items: center; padding: var(--space-4); }
+  .dmodal { width: 100%; max-width: 480px; background: var(--mkt-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .dmodal .dh { padding: var(--space-6) var(--space-6) var(--space-2); display: flex; align-items: flex-start; justify-content: space-between; }
+  .dmodal h3 { font-weight: var(--weight-bold); font-size: var(--text-heading-md); letter-spacing: -0.01em; } .dmodal .x { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--mkt-ink-2); } .dmodal .x svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .dmodal .db { padding: 0 var(--space-6) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .dmodal label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); display: block; margin-bottom: var(--space-2); }
+  .dmodal input, .dmodal select { width: 100%; height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--mkt-border); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+  .dmodal input:focus-visible, .dmodal select:focus-visible { outline: none; border-color: var(--mkt-primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.3); }
+  .dmodal .consent { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-body-sm); color: var(--mkt-ink-2); } .dmodal .consent input { width: var(--space-5); height: var(--space-5); flex: 0 0 auto; }
+  .grid2 { display: grid; gap: var(--space-4); grid-template-columns: 1fr 1fr; }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — features</h1>
+    <span class="brief">EPIC-AE design brief — features by pack + DemoRequestModal</span>
+    <dl class="annotations">
+      <div><dt>Pattern</dt><dd>one FeaturePackSection per pack (alternating layout) with screenshot + "Add to my signup" deep-link CTA</dd></div>
+      <div><dt>Components</dt><dd>FeaturePackSection · DemoRequestModal (shown open) · anchor nav</dd></div>
+      <div><dt>Compliance</dt><dd>demo form carries the GDPR consent line</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="#" aria-current="page">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="marketing-trust.html">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Features</p>
+      <h1 class="display">Every pack, in detail.</h1>
+      <p>Switch on only what you need. Here's what each pack adds to your platform.</p>
+      <div class="anchors"><a href="#core">Core</a><a href="#lettings">Lettings</a><a href="#newhomes">New Homes</a><a href="#feedback">Feedback</a><a href="#automation">Automation</a></div>
+    </div>
+  </section>
+
+  <section class="featsec" id="core">
+    <div class="mkt-inner">
+      <div class="copy"><p class="mkt-eyebrow">Core · always on</p><h2 class="display">Your website, listings &amp; leads</h2><p>The foundation every agency runs on — a fast public site, the universal property card, enquiry capture and the full admin.</p>
+        <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Editorial website with CMS page builder</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Property catalogue, detail &amp; map search</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>CRM lead queue with assignment rules</li></ul>
+      </div>
+      <div class="shot"><div class="bar"><span></span><span></span><span></span></div><div class="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg></div></div>
+    </div>
+  </section>
+
+  <section class="featsec flip" id="lettings">
+    <div class="mkt-inner">
+      <div class="copy"><p class="mkt-eyebrow">Lettings pack · £99/mo</p><h2 class="display">Tenancies, rent &amp; repairs</h2><p>Everything a lettings desk needs — and a tenant portal that cuts the phone calls.</p>
+        <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Rent tracking &amp; landlord statements</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Six-step repair reporting + contractor portal</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Tenant &amp; landlord dashboards</li></ul>
+        <a class="mkt-btn primary" href="marketing-pricing.html">Add to my signup</a>
+      </div>
+      <div class="shot"><div class="bar"><span></span><span></span><span></span></div><div class="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg></div></div>
+    </div>
+  </section>
+
+  <section class="featsec" id="feedback">
+    <div class="mkt-inner">
+      <div class="copy"><p class="mkt-eyebrow">Feedback &amp; reviews pack · £49/mo</p><h2 class="display">Reviews that win instructions</h2><p>Collect verified reviews automatically and turn them into social proof on your site.</p>
+        <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Automated post-sale &amp; post-let requests</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Moderation queue + public replies</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Reviews badge, testimonials &amp; agent league table</li></ul>
+        <a class="mkt-btn primary" href="marketing-pricing.html">Add to my signup</a>
+      </div>
+      <div class="shot"><div class="bar"><span></span><span></span><span></span></div><div class="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3 2.6 6.3 6.4.5-4.9 4.2 1.5 6.5L12 17l-5.6 3.5 1.5-6.5L3 9.8l6.4-.5z"/></svg></div></div>
+    </div>
+  </section>
+
+  <section class="mkt-section mkt-dark" style="text-align:center">
+    <div class="mkt-inner"><p class="mkt-eyebrow">Not sure which packs?</p><h2 class="display" style="font-size:var(--text-display-sm);margin:var(--space-2) auto var(--space-6);max-width:20ch">See it on your own properties.</h2><a class="mkt-btn primary lg" href="#">Book a demo</a></div>
+  </section>
+
+  <!-- DemoRequestModal (shown open) -->
+  <div class="stage">
+    <div class="scrim">
+      <div class="dmodal" role="dialog" aria-modal="true" aria-labelledby="dm-t">
+        <div class="dh"><h3 id="dm-t">Book a demo</h3><button class="x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+        <div class="db">
+          <div class="grid2"><div><label for="dn">Your name</label><input id="dn" type="text"></div><div><label for="dc">Agency</label><input id="dc" type="text"></div></div>
+          <div class="grid2"><div><label for="de">Work email</label><input id="de" type="email"></div><div><label for="dp">Phone</label><input id="dp" type="tel"></div></div>
+          <div><label for="dbr">Branches</label><select id="dbr"><option>1 branch</option><option>2–5 branches</option><option>6+ branches</option></select></div>
+          <label class="consent"><input type="checkbox" aria-required="true"><span>I agree to the <a href="#" style="color:var(--mkt-primary)">privacy policy</a> and to being contacted about a demo.</span></label>
+          <button class="mkt-btn primary lg">Request my demo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="#">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

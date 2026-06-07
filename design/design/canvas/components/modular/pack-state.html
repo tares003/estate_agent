@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pack-state components — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* PackLockPill */
+  .lockpill { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-3); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); color: var(--colour-text-muted); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); border: 1px solid var(--colour-border); cursor: pointer; }
+  .lockpill svg { width: 12px; height: 12px; }
+  .lockpill:hover { border-color: var(--colour-text-muted); color: var(--colour-text-secondary); }
+  .lockpill.corner { position: absolute; top: var(--space-3); right: var(--space-3); }
+  .lockrow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); }
+  .lockrow.muted { opacity: 0.72; }
+  .lockrow .nm { font-size: var(--text-body-sm); font-weight: var(--weight-medium); }
+
+  .demo-card { position: relative; width: 240px; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .demo-card .ph { aspect-ratio: var(--ratio-card); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .demo-card .b { padding: var(--space-4); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+
+  /* UpsellEmptyState */
+  .upsell { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-16) var(--space-6); border: 1px dashed var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-raised); }
+  .upsell .ill { width: var(--space-20); height: var(--space-20); border-radius: var(--radius-xl); background: linear-gradient(135deg, var(--colour-surface-sunken), var(--colour-surface-base)); display: grid; place-items: center; color: var(--colour-text-muted); }
+  .upsell .ill svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .upsell h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .upsell p { color: var(--colour-text-secondary); max-width: 46ch; }
+  .upsell .cost { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); margin-top: var(--space-2); }
+  .upsell .acts { display: flex; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; justify-content: center; }
+
+  /* TrialCountdownPill */
+  .trial { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--space-8); padding-inline: var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); border: 1px solid; }
+  .trial svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+  .trial.ok { background: var(--colour-surface-raised); color: var(--colour-text-secondary); border-color: var(--colour-border); }
+  .trial.warn { background: rgba(245,158,11,0.12); color: #8a5a00; border-color: rgba(245,158,11,0.4); }
+  .trial.danger { background: rgba(239,68,68,0.1); color: var(--colour-priority-emergency); border-color: rgba(239,68,68,0.4); }
+  .trial .x { color: inherit; opacity: 0.7; } .trial .keep { text-decoration: underline; }
+
+  /* PackEnableModal */
+  .stage { position: relative; min-height: 440px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--colour-border); background: linear-gradient(135deg,#e7e2d8,#f4f2ec); }
+  .scrim { position: absolute; inset: 0; background: rgba(26,26,26,0.45); display: grid; place-items: center; padding: var(--space-4); }
+  .pmodal { width: 100%; max-width: 460px; background: var(--colour-surface-base); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .pmodal .ph { padding: var(--space-6); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .pmodal .ph .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent); }
+  .pmodal .ph h3 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-top: var(--space-1); }
+  .pmodal .ph .price { font-size: var(--text-body-md); opacity: 0.85; margin-top: var(--space-2); }
+  .pmodal .pb { padding: var(--space-6); }
+  .pmodal .feat { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; font-size: var(--text-body-sm); } .pmodal .feat svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-success); flex: 0 0 auto; }
+  .pmodal .pf { display: flex; gap: var(--space-3); justify-content: flex-end; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--colour-divider); background: var(--colour-surface-raised); flex-wrap: wrap; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); } .btn.ghost { background: transparent; color: var(--colour-brand-primary); }
+
+  /* pack-gated catalogue */
+  .palette { display: grid; gap: var(--space-3); grid-template-columns: repeat(2,1fr); max-width: 520px; } @media (min-width: 640px) { .palette { grid-template-columns: repeat(3,1fr); } }
+  .pitem { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); text-align: center; position: relative; }
+  .pitem svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-text-secondary); } .pitem span { font-size: var(--text-body-sm); }
+  .pitem.locked { background: var(--colour-surface-raised); } .pitem.locked svg, .pitem.locked span { opacity: 0.55; }
+
+  /* toast */
+  .toast { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 420px; padding: var(--space-4); border-radius: var(--radius-md); background: var(--colour-surface-base); box-shadow: var(--shadow-md); border: 1px solid var(--colour-border); }
+  .toast .bar { width: 4px; align-self: stretch; border-radius: var(--radius-pill); background: var(--colour-success); }
+  .toast svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-success); flex: 0 0 auto; }
+  .toast strong { display: block; } .toast p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-1); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Pack-state components</h1>
+    <span class="brief">EPIC-L design brief — modular-product components + design-requirements §2a patterns</span>
+    <dl class="annotations">
+      <div><dt>Components</dt><dd>PackLockPill · UpsellEmptyState · TrialCountdownPill · PackEnableModal</dd></div>
+      <div><dt>Patterns (§2a)</dt><dd>locked admin section · pack-gated catalogue · trial countdown · pack-state toast</dd></div>
+      <div><dt>Tokens (gaps #7)</dt><dd>no new colour tokens — lock on muted/sunken; trial warn→danger; upsell on brand-primary</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>PackLockPill</h2>
+      <p class="lede">Attaches to any pack-gated element. Accessible name "Requires [Pack-name] pack"; activating opens the pack-enable modal. Three variants: inline · corner · full-row.</p>
+      <div class="demo-tray" style="align-items:flex-start;gap:var(--space-8)">
+        <div class="cell"><span class="cap">Inline</span><span style="display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-body-sm)">Commercial attributes <button class="lockpill" aria-label="Requires Commercial pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Commercial</button></span></div>
+        <div class="cell"><span class="cap">Corner (on a card)</span><div class="demo-card"><div class="ph"></div><button class="lockpill corner" aria-label="Requires New Homes pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>New Homes</button><div class="b">New-build development</div></div></div>
+        <div class="cell" style="min-width:260px"><span class="cap">Full-row (in a list)</span><div class="lockrow muted"><span class="nm">Automation rules</span><button class="lockpill" aria-label="Requires Automation pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Automation</button></div></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>UpsellEmptyState</h2>
+      <p class="lede">Replaces a 404 when a tenant navigates to an admin section whose pack is off (§2a.1). Pack name, what it enables, illustration, monthly cost, "Enable" CTA → pack-enable modal, "Learn more" → marketing page.</p>
+      <div class="demo-tray">
+        <div class="upsell" style="width:100%">
+          <span class="ill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+          <h3>Feedback &amp; reviews isn't enabled yet</h3>
+          <p>Collect verified reviews after every sale and let, publish them to your site, and reply in one place.</p>
+          <div class="cost">£49 <span style="font-size:var(--text-body-md);font-weight:var(--weight-regular);color:var(--colour-text-secondary)">/ month</span></div>
+          <div class="acts"><button class="btn primary">Enable for £49 / month</button><a class="btn ghost" href="#">Learn more</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>TrialCountdownPill</h2>
+      <p class="lede">Top-right of any screen contributing to a pack on trial (§2a.4). Colour shifts at ≤ 3 days (warning) and ≤ 1 day (danger). Real button; countdown announced via <code>aria-live</code> on day changes only.</p>
+      <div class="demo-tray tight" style="align-items:center">
+        <div class="cell"><span class="cap">&gt; 3 days</span><span class="trial ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Trial · 9 days left <button class="keep">Keep</button></span></div>
+        <div class="cell"><span class="cap">≤ 3 days</span><span class="trial warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Trial · 2 days left <button class="keep">Keep</button></span></div>
+        <div class="cell"><span class="cap">≤ 1 day</span><span class="trial danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Trial ends today <button class="keep">Keep</button></span></div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>PackEnableModal</h2>
+      <p class="lede">Launched whenever a user activates a pack-locked element. Standard modal motion; focus-trapped; Escape closes. Shows what's included, monthly cost, and the enable / start-trial actions.</p>
+      <div class="stage"><div class="scrim">
+        <div class="pmodal" role="dialog" aria-modal="true" aria-labelledby="pm-t">
+          <div class="ph"><span class="k">Add a pack</span><h3 id="pm-t">Feedback &amp; reviews</h3><div class="price">£49 / month + VAT · cancel anytime</div></div>
+          <div class="pb">
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Automated review requests after sale &amp; let</div>
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Moderation queue + public replies</div>
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Reviews badge + testimonials on your site</div>
+          </div>
+          <div class="pf"><button class="btn ghost">Cancel</button><button class="btn secondary">Start 14-day trial</button><button class="btn primary">Enable now</button></div>
+        </div>
+      </div></div>
+      <div class="a11y-note"><strong>Accessibility:</strong> dialog is <code>role="dialog" aria-modal="true"</code>, focus-trapped, Escape-closes with focus restored to the lock pill that opened it. Lock pills are real buttons with a verbatim "Requires [Pack] pack" accessible name.</div>
+    </section>
+
+    <section class="demo-section">
+      <h2>§2a patterns — gated catalogue &amp; pack-state toast</h2>
+      <p class="lede">In any picker/palette, locked items stay <strong>visible but de-emphasised</strong> with a lock pill, so users learn what other packs unlock (§2a.2). Pack toggles confirm with a standard toast (§2a.5).</p>
+      <div class="demo-block"><h3>Page-builder section catalogue</h3>
+        <div class="palette">
+          <div class="pitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/></svg><span>Hero</span></div>
+          <div class="pitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="5" height="16"/><rect x="10" y="4" width="5" height="16"/><rect x="17" y="4" width="4" height="16"/></svg><span>Pillars</span></div>
+          <div class="pitem locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg><span>Stats counter</span><button class="lockpill corner" aria-label="Requires Marketing pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button></div>
+          <div class="pitem locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>Testimonials</span><button class="lockpill corner" aria-label="Requires Feedback pack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></button></div>
+          <div class="pitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="1"/></svg><span>CTA strip</span></div>
+          <div class="pitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>FAQ</span></div>
+        </div>
+      </div>
+      <div class="demo-block"><h3>Pack-state toast</h3>
+        <div class="demo-tray"><div class="toast" role="status"><span class="bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Feedback &amp; reviews enabled</strong><p>The Reviews section is now available in your admin. Your 14-day trial ends 21 June.</p></div></div></div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> lock <b>--colour-text-muted</b> on <b>--colour-surface-sunken</b> · upsell CTA <b>--colour-brand-primary</b> · trial <b>--colour-warning</b> (≤3d) → <b>--colour-danger</b> (≤1d) · modal <b>--shadow-lg</b>, <b>--radius-lg</b> · toast per standard rules. No new named tokens (gaps log #7).</div>
+    </section>
+
+    <section class="demo-section">
+      <h2>§2a.3 pattern — pack-gated attribute group</h2>
+      <p class="lede">In a multi-tab form (e.g. the property editor), attribute groups that depend on a pack appear as a <code>+ Add [Pack-name] attributes</code> secondary CTA. Activating it opens the pack-enable modal; after enabling, the group appears in place at the next form load (a toast confirms — no reload needed in-session).</p>
+      <div class="demo-tray col" style="max-width:560px">
+        <div style="border:1px solid var(--colour-border);border-radius:var(--radius-lg);background:var(--colour-surface-base);overflow:hidden;width:100%">
+          <div style="padding:var(--space-4) var(--space-5);border-bottom:1px solid var(--colour-divider);font-weight:var(--weight-semibold)">Specification</div>
+          <div style="padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4)">
+            <div><div style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-2)">Bedrooms</div><div style="height:var(--size-input-md);border:1px solid var(--colour-border);border-radius:var(--radius-md);display:flex;align-items:center;padding-inline:var(--space-4);color:var(--colour-text-secondary)">4</div></div>
+            <div style="padding-top:var(--space-4);border-top:1px dashed var(--colour-border)">
+              <div style="font-size:var(--text-body-sm);color:var(--colour-text-muted);margin-bottom:var(--space-3)">Commercial attributes (rateable value, tenure class, use class) need the Commercial pack.</div>
+              <button class="btn secondary" style="border-style:dashed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Commercial attributes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="a11y-note"><strong>Accessibility:</strong> the <code>+ Add [Pack]</code> control is a real button that opens the focus-trapped pack-enable modal; on enable, focus returns and a <code>role="status"</code> toast confirms the group is now available. Locked groups are described in text, never conveyed by styling alone.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

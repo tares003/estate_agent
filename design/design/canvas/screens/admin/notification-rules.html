@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notification rules — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .matrix-wrap { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  table.m { width: 100%; border-collapse: collapse; }
+  table.m th, table.m td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); text-align: center; }
+  table.m thead th { background: var(--colour-surface-raised); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); white-space: nowrap; }
+  table.m th.event { text-align: left; font-weight: var(--weight-medium); color: var(--colour-text-primary); text-transform: none; letter-spacing: 0; font-size: var(--text-body-sm); background: var(--colour-surface-base); position: sticky; left: 0; }
+  table.m tbody th.event { background: var(--colour-surface-base); }
+  table.m th.event small { display: block; color: var(--colour-text-muted); font-weight: var(--weight-regular); }
+  table.m tr:last-child td, table.m tr:last-child th { border-bottom: none; }
+  /* channel toggle cell */
+  .cw { display: inline-flex; }
+  .cw input { position: absolute; opacity: 0; }
+  .cw label { display: grid; place-items: center; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); cursor: pointer; color: var(--colour-border); }
+  .cw input:checked + label { color: var(--colour-success); }
+  .cw input:focus-visible + label { box-shadow: var(--shadow-focus); }
+  .cw label svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .cw.forced label { color: var(--colour-text-muted); cursor: not-allowed; }
+  .scrollx { overflow-x: auto; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Notifications">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Notification-rules matrix</h1>
+    <span class="brief">EPIC-H design brief — notification rules matrix (H.13)</span>
+    <dl class="annotations">
+      <div><dt>Pattern</dt><dd>events (rows) × channels (columns: in-app, email, SMS) · toggle each cell · some are forced-on for compliance</dd></div>
+      <div><dt>Responsive</dt><dd>matrix scrolls horizontally in its container below the breakpoint; event column sticky</dd></div>
+      <div><dt>A11y</dt><dd>each cell is a labelled checkbox; forced cells explained, not just disabled</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Notifications</h1><p>Choose how each team is notified · forced items are required for compliance</p></div><a class="btn primary" href="#">Save</a></div>
+
+    <div class="matrix-wrap"><div class="scrollx">
+      <table class="m">
+        <thead><tr><th class="event" style="text-align:left">Event</th><th>In-app</th><th>Email</th><th>SMS</th></tr></thead>
+        <tbody>
+          <tr>
+            <th class="event">New enquiry<small>Assigned agent</small></th>
+            <td><span class="cw"><input type="checkbox" id="e1a" checked><label for="e1a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e1b" checked><label for="e1b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e1c"><label for="e1c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+          </tr>
+          <tr>
+            <th class="event">Viewing booked<small>Agent + customer</small></th>
+            <td><span class="cw"><input type="checkbox" id="e2a" checked><label for="e2a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e2b" checked><label for="e2b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e2c" checked><label for="e2c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+          </tr>
+          <tr>
+            <th class="event">Emergency repair<small>Property manager</small></th>
+            <td><span class="cw forced"><input type="checkbox" id="e3a" checked disabled><label for="e3a" title="Required"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw forced"><input type="checkbox" id="e3b" checked disabled><label for="e3b" title="Required"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw forced"><input type="checkbox" id="e3c" checked disabled><label for="e3c" title="Required"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+          </tr>
+          <tr>
+            <th class="event">SLA breach warning<small>Branch manager</small></th>
+            <td><span class="cw"><input type="checkbox" id="e4a" checked><label for="e4a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e4b" checked><label for="e4b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e4c"><label for="e4c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+          </tr>
+          <tr>
+            <th class="event">New review submitted<small>Marketing</small></th>
+            <td><span class="cw"><input type="checkbox" id="e5a" checked><label for="e5a"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e5b"><label for="e5b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+            <td><span class="cw"><input type="checkbox" id="e5c"><label for="e5c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></label></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div></div>
+    <p style="font-size:var(--text-body-sm);color:var(--colour-text-muted);margin-top:var(--space-4)"><strong>Emergency repair</strong> notifications are required on all channels and can't be switched off — they're part of your safety-and-compliance obligations.</p>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Property card — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* ---- The universal property card (one card, used everywhere) ---------- */
+  .pcard {
+    display: flex; flex-direction: column;
+    background: var(--colour-surface-base);
+    border: 1px solid var(--colour-border); border-radius: var(--radius-md);
+    overflow: hidden; text-decoration: none; color: inherit; width: 100%;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard),
+                box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+  .pcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .pcard:focus-visible { box-shadow: var(--shadow-focus); outline: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .pcard:hover { transform: none; border-color: var(--colour-text-muted); }
+  }
+
+  .pcard .media {
+    position: relative; aspect-ratio: var(--ratio-card); width: 100%;
+    background:
+      linear-gradient(180deg, rgba(31,41,55,0.05), rgba(31,41,55,0.18)),
+      linear-gradient(135deg, #d9d3c6, #efede6 55%, #cfd6d0);
+  }
+  .pcard .media .roof { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(31,41,55,0.28); }
+  .pcard .media .roof svg { width: 64px; height: 64px; }
+
+  .pcard .badge {
+    position: absolute; top: var(--space-3); left: var(--space-3);
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill);
+    font-size: var(--text-caption); line-height: var(--text-caption-lh);
+    letter-spacing: var(--text-caption-ls); text-transform: uppercase;
+    font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on);
+    box-shadow: var(--shadow-xs);
+  }
+  .b-available { background: var(--colour-status-available); }
+  .b-under-offer { background: var(--colour-status-under-offer); color: var(--colour-brand-accent-on); }
+  .b-sold-stc { background: var(--colour-status-sold-stc); }
+  .b-sold { background: var(--colour-status-sold); }
+  .b-let-agreed { background: var(--colour-status-let-agreed); color: var(--colour-brand-accent-on); }
+  .b-let { background: var(--colour-status-let); }
+  .b-withdrawn { background: var(--colour-status-withdrawn); }
+  .b-new { background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); }
+
+  .pcard .photos {
+    position: absolute; top: var(--space-3); right: var(--space-3);
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill);
+    background: rgba(26,26,26,0.66); color: var(--colour-text-inverse);
+    font-size: var(--text-caption); line-height: var(--text-caption-lh); font-weight: var(--weight-semibold);
+  }
+  .pcard .photos svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+
+  .pcard .save {
+    position: absolute; bottom: var(--space-3); right: var(--space-3);
+    width: var(--size-touch-target-min); height: var(--size-touch-target-min);
+    display: grid; place-items: center; border-radius: var(--radius-circle);
+    background: var(--colour-surface-base); color: var(--colour-text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .pcard .save svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .pcard .save:hover { color: var(--colour-danger); }
+
+  .pcard .body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  .pcard .qual { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .pcard .price { font-family: var(--font-display); font-size: var(--text-heading-md); line-height: var(--text-heading-md-lh); font-weight: var(--weight-semibold); }
+  .pcard .price .freq { font-family: var(--font-body); font-size: var(--text-body-sm); font-weight: var(--weight-regular); color: var(--colour-text-secondary); }
+  .pcard .addr { font-size: var(--text-heading-sm); line-height: var(--text-heading-sm-lh); font-weight: var(--weight-semibold); }
+  .pcard .street { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .pcard .meta { display: flex; flex-wrap: wrap; gap: var(--space-4); padding-top: var(--space-1); color: var(--colour-text-secondary); font-size: var(--text-body-sm); }
+  .pcard .meta span { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+  .pcard .meta svg { width: var(--size-icon-sm); height: var(--size-icon-sm); color: var(--colour-text-muted); }
+  .pcard .foot { display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-3); margin-top: auto; border-top: 1px solid var(--colour-divider); }
+  .pcard .added { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .pcard .branch { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  /* dimmed media for sold / let / withdrawn */
+  .pcard.muted .media { filter: grayscale(0.4); }
+  .pcard.muted .media::after { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,0.28); }
+
+  .pcard .notify { margin-top: var(--space-2); display: inline-flex; align-items: center; justify-content: center; height: var(--size-button-sm); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); background: var(--colour-surface-base); color: var(--colour-brand-primary); }
+  .pcard .notify:hover { background: var(--colour-surface-raised); }
+
+  /* layout grid for the canvas display */
+  .pgrid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px)  { .pgrid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .pgrid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1440px) { .pgrid { grid-template-columns: repeat(4, 1fr); } }
+
+  .ph-house { width: 64px; height: 64px; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Property card</h1>
+    <span class="brief">EPIC-F design brief — the universal card used in search results, carousels, related rails and saved lists</span>
+    <dl class="annotations">
+      <div><dt>Variants</dt><dd>for sale · to rent · under offer · sold STC · sold · let agreed · let · withdrawn · new home</dd></div>
+      <div><dt>States</dt><dd>default · hover (lift 2px) · focus · no-photos · hidden-address</dd></div>
+      <div><dt>Trust markers</dt><dd>price qualifier above price · rent frequency (PCM/PW) adjacent</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Every market-status variant</h2>
+      <p class="lede">One component, nine states. The status badge reads <code>--colour-status-*</code> 1:1 with <code>market_status</code> and carries an <code>aria-label</code>. Image is always <code>--ratio-card</code> (4:3). Price always shows its qualifier; rent always shows frequency (PRODUCT.md §8).</p>
+
+      <div class="pgrid">
+
+        <!-- For sale -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-available" aria-label="Status: for sale"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>For sale</span>
+            <span class="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>+18</span>
+            <button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button>
+          </div>
+          <div class="body">
+            <p class="qual">Offers in region of</p>
+            <p class="price">£525,000</p>
+            <p class="addr">Edwardian semi · 4 bed</p>
+            <p class="street">Palatine Road, Didsbury, M20</p>
+            <div class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-5h18v5"/><path d="M5 13V8h14v5"/></svg>4 beds</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M7 12V6a2 2 0 0 1 4 0"/></svg>2 baths</span><span>Semi-detached</span></div>
+            <div class="foot"><span class="added">Added 3 days ago</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+
+        <!-- To rent -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-available" aria-label="Status: to rent"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>To rent</span>
+            <span class="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>+11</span>
+            <button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button>
+          </div>
+          <div class="body">
+            <p class="qual">Asking rent</p>
+            <p class="price">£1,450 <span class="freq">PCM</span></p>
+            <p class="addr">Riverside apartment · 2 bed</p>
+            <p class="street">Ellesmere Street, Castlefield, M15</p>
+            <div class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-5h18v5"/><path d="M5 13V8h14v5"/></svg>2 beds</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M7 12V6a2 2 0 0 1 4 0"/></svg>1 bath</span><span>Apartment</span></div>
+            <div class="foot"><span class="added">Added today</span><span class="branch">City branch</span></div>
+          </div>
+        </a>
+
+        <!-- New home (featured / accent) -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-new" aria-label="New home development">New home</span>
+            <span class="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>+24</span>
+            <button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button>
+          </div>
+          <div class="body">
+            <p class="qual">Prices from</p>
+            <p class="price">£319,950</p>
+            <p class="addr">The Sidings · 3 &amp; 4 bed homes</p>
+            <p class="street">Burton Road, Withington, M20</p>
+            <div class="meta"><span>Help to Buy</span><span>12 plots remaining</span></div>
+            <div class="foot"><span class="added">New release</span><span class="branch">New Homes team</span></div>
+          </div>
+        </a>
+
+        <!-- Under offer -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-under-offer" aria-label="Status: under offer">Under offer</span>
+            <button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button>
+          </div>
+          <div class="body">
+            <p class="qual">Guide price</p>
+            <p class="price">£399,995</p>
+            <p class="addr">Victorian terrace · 3 bed</p>
+            <p class="street">Acomb Street, Rusholme, M14</p>
+            <div class="meta"><span>3 beds</span><span>1 bath</span><span>Terraced</span></div>
+            <div class="foot"><span class="added">Added 2 weeks ago</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+
+        <!-- Sold STC -->
+        <a class="pcard muted" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-sold-stc" aria-label="Status: sold subject to contract">Sold STC</span>
+          </div>
+          <div class="body">
+            <p class="qual">Sold for the asking price of</p>
+            <p class="price">£465,000</p>
+            <p class="addr">Detached family home · 4 bed</p>
+            <p class="street">Brooklawn Drive, West Didsbury, M20</p>
+            <div class="meta"><span>4 beds</span><span>2 baths</span><span>Detached</span></div>
+            <button class="notify" type="button">Notify me of similar</button>
+            <div class="foot"><span class="added">Sold 5 days ago</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+
+        <!-- Let agreed -->
+        <a class="pcard muted" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-let-agreed" aria-label="Status: let agreed">Let agreed</span>
+          </div>
+          <div class="body">
+            <p class="qual">Agreed rent</p>
+            <p class="price">£1,100 <span class="freq">PCM</span></p>
+            <p class="addr">Modern flat · 1 bed</p>
+            <p class="street">Wilmslow Road, Fallowfield, M14</p>
+            <div class="meta"><span>1 bed</span><span>1 bath</span><span>Flat</span></div>
+            <button class="notify" type="button">Notify me of similar</button>
+            <div class="foot"><span class="added">Agreed 1 week ago</span><span class="branch">Lettings team</span></div>
+          </div>
+        </a>
+
+        <!-- Sold -->
+        <a class="pcard muted" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-sold" aria-label="Status: sold">Sold</span>
+          </div>
+          <div class="body">
+            <p class="qual">Completed sale</p>
+            <p class="price">£280,000</p>
+            <p class="addr">Mid-terrace · 2 bed</p>
+            <p class="street">Cromwell Grove, Levenshulme, M19</p>
+            <div class="meta"><span>2 beds</span><span>1 bath</span><span>Terraced</span></div>
+            <button class="notify" type="button">Notify me of similar</button>
+            <div class="foot"><span class="added">Completed Mar 2026</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+
+        <!-- Let -->
+        <a class="pcard muted" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-let" aria-label="Status: let">Let</span>
+          </div>
+          <div class="body">
+            <p class="qual">Now let at</p>
+            <p class="price">£2,200 <span class="freq">PCM</span></p>
+            <p class="addr">Townhouse · 3 bed</p>
+            <p class="street">Burton Road, West Didsbury, M20</p>
+            <div class="meta"><span>3 beds</span><span>2 baths</span><span>Townhouse</span></div>
+            <button class="notify" type="button">Notify me of similar</button>
+            <div class="foot"><span class="added">Let Feb 2026</span><span class="branch">Lettings team</span></div>
+          </div>
+        </a>
+
+        <!-- Withdrawn -->
+        <a class="pcard muted" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-withdrawn" aria-label="Status: withdrawn">Withdrawn</span>
+          </div>
+          <div class="body">
+            <p class="qual">Marketing withdrawn</p>
+            <p class="price">£610,000</p>
+            <p class="addr">Detached · 5 bed</p>
+            <p class="street">Parrs Wood Road, Didsbury, M20</p>
+            <div class="meta"><span>5 beds</span><span>3 baths</span><span>Detached</span></div>
+            <button class="notify" type="button">Notify me of similar</button>
+            <div class="foot"><span class="added">Withdrawn Apr 2026</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Edge-case states</h2>
+      <p class="lede">From EPIC-F "State variations": no photos uploaded, and hidden exact address.</p>
+      <div class="pgrid">
+        <!-- No photos -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof" style="flex-direction:column;gap:var(--space-2)">
+              <svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>
+              <span style="font-size:var(--text-caption);letter-spacing:var(--text-caption-ls);text-transform:uppercase;font-weight:var(--weight-semibold)">Photos coming soon</span>
+            </div>
+            <span class="badge b-available" aria-label="Status: for sale">For sale</span>
+          </div>
+          <div class="body">
+            <p class="qual">Offers over</p>
+            <p class="price">£340,000</p>
+            <p class="addr">Semi-detached · 3 bed</p>
+            <p class="street">Mauldeth Road, Burnage, M19</p>
+            <div class="meta"><span>3 beds</span><span>1 bath</span><span>Semi-detached</span></div>
+            <div class="foot"><span class="added">Added today</span><span class="branch">Didsbury branch</span></div>
+          </div>
+        </a>
+        <!-- Hidden address -->
+        <a class="pcard" href="#">
+          <div class="media">
+            <div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div>
+            <span class="badge b-available" aria-label="Status: for sale">For sale</span>
+            <span class="photos">+9</span>
+          </div>
+          <div class="body">
+            <p class="qual">Guide price</p>
+            <p class="price">£1,250,000</p>
+            <p class="addr">Substantial detached residence · 6 bed</p>
+            <p class="street">Postcode area M20 — full address on enquiry</p>
+            <div class="meta"><span>6 beds</span><span>4 baths</span><span>Detached</span></div>
+            <div class="foot"><span class="added">Added 1 day ago</span><span class="branch">Prime &amp; Country</span></div>
+          </div>
+        </a>
+      </div>
+
+      <div class="token-ref"><b>Tokens:</b> card <b>--radius-md</b>, border <b>--colour-border</b> · image <b>--ratio-card</b> · hover lift <code>translateY(-2px)</code> + <b>--shadow-sm</b> over <b>--motion-duration-fast</b> · status fills <b>--colour-status-*</b> · price <b>--text-heading-md</b> · address <b>--text-heading-sm</b> · meta <b>--text-body-sm</b> · "added" caption <b>--text-caption</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> the whole card is one focusable link with a visible ring. Status badge has a verbatim <code>aria-label</code> (colour is never the only signal). Save button is a separate 44 px control with its own label. Sold / let / withdrawn cards replace the disabled "Book a viewing" affordance with an active "Notify me of similar" — never a dead control. Under reduced-motion, hover swaps the lift for a border-colour cue.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

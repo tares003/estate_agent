@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card molecule — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .card { background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .card .ch { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .card .ch h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+  .card .cb { padding: var(--space-6); color: var(--colour-text-secondary); }
+  .card .cf { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--colour-divider); background: var(--colour-surface-raised); display: flex; gap: var(--space-3); }
+  .card.interactive { transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); cursor: pointer; }
+  .card.interactive:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  @media (prefers-reduced-motion: reduce) { .card.interactive:hover { transform: none; border-color: var(--colour-text-muted); } }
+  .card.flush .cb { padding: 0; }
+  .media { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .grid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  .stat { font-family: var(--font-display); font-size: var(--text-display-sm); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; height: var(--size-button-sm); padding-inline: var(--space-4); border-radius: var(--radius-md); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { border: 1px solid var(--colour-border); color: var(--colour-brand-primary); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Card</h1>
+    <span class="brief">EPIC-L design brief — Molecules · Card (the generic surface container)</span>
+    <dl class="annotations">
+      <div><dt>Anatomy</dt><dd>optional header · body · optional footer · optional media</dd></div>
+      <div><dt>Variants</dt><dd>basic · with header+footer · media · interactive (hover lift) · stat</dd></div>
+      <div><dt>Note</dt><dd>PropertyCard is its own organism — see organisms/property-card</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+    <section class="demo-section">
+      <h2>Card variants</h2>
+      <p class="lede">The neutral container the rest of the system composes on. Radius <code>--radius-lg</code>, 1 px <code>--colour-border</code>, dividers between header / body / footer.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="cb"><h3 class="t-heading-sm" style="font-family:var(--font-display);margin-bottom:var(--space-2)">Basic card</h3><p>Just a bordered surface with padded body content. Used for grouping information across the admin and public site.</p></div>
+        </div>
+        <div class="card">
+          <div class="ch"><h3>With header &amp; footer</h3></div>
+          <div class="cb"><p>A header rule and a raised footer for actions. The footer sits on <code>--colour-surface-raised</code>.</p></div>
+          <div class="cf"><button class="btn primary">Save changes</button><button class="btn secondary">Cancel</button></div>
+        </div>
+        <div class="card interactive flush">
+          <div class="media"></div>
+          <div class="cb" style="padding:var(--space-5) var(--space-6)"><h3 class="t-heading-sm" style="font-family:var(--font-display);margin-bottom:var(--space-1)">Media card · interactive</h3><p>16:9 media, lifts 2 px on hover (border-colour cue under reduced motion).</p></div>
+        </div>
+        <div class="card">
+          <div class="cb"><div class="t-caption">Active listings</div><div class="stat" style="margin-block:var(--space-2)">312</div><p style="color:var(--colour-success);font-size:var(--text-body-sm)">▲ 18 this month</p></div>
+        </div>
+        <div class="card">
+          <div class="cb"><div class="t-caption">Open enquiries</div><div class="stat" style="margin-block:var(--space-2)">47</div><p style="color:var(--colour-warning);font-size:var(--text-body-sm)">6 near SLA breach</p></div>
+        </div>
+        <div class="card">
+          <div class="cb"><div class="t-caption">Viewings this week</div><div class="stat" style="margin-block:var(--space-2)">23</div><p style="font-size:var(--text-body-sm);color:var(--colour-text-muted)">across 3 branches</p></div>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> radius <b>--radius-lg</b> · border <b>--colour-border</b> · divider <b>--colour-divider</b> · footer bg <b>--colour-surface-raised</b> · media <b>--ratio-hero</b> · hover lift + <b>--shadow-sm</b> over <b>--motion-duration-fast</b> · stat type <b>--text-display-sm</b> / <b>--font-display</b>.</div>
+    </section>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

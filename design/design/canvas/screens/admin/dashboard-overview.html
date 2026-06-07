@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin dashboard — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .app { display: flex; min-height: 760px; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  html.embed .app { border: none; border-radius: 0; min-height: 100vh; }
+
+  /* ---- sidebar ---- */
+  .sidebar { width: 240px; flex: 0 0 240px; background: var(--colour-surface-sunken); border-right: 1px solid var(--colour-border); display: flex; flex-direction: column; }
+  @media (max-width: 1024px) { .sidebar { width: 64px; flex-basis: 64px; } .sidebar .lbl, .sidebar .sect { display: none; } .sidebar .brand span.name { display: none; } }
+  @media (max-width: 768px) { .sidebar { display: none; } }
+  .sidebar .brand { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); height: 56px; }
+  .sidebar .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-weight: var(--weight-bold); font-family: var(--font-display); flex: 0 0 auto; }
+  .sidebar .brand span.name { font-family: var(--font-display); font-size: var(--text-heading-sm); }
+  .sidebar nav { padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
+  .sidebar .sect { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); padding: var(--space-4) var(--space-3) var(--space-2); }
+  .sidebar a { display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-touch-target-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--colour-text-secondary); text-decoration: none; font-size: var(--text-body-sm); font-weight: var(--weight-medium); }
+  .sidebar a svg { width: var(--size-icon-md); height: var(--size-icon-md); flex: 0 0 auto; }
+  .sidebar a:hover { background: var(--colour-surface-raised); color: var(--colour-text-primary); }
+  .sidebar a[aria-current] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .sidebar a .pip { margin-left: auto; background: var(--colour-priority-emergency); color: var(--colour-brand-primary-on); font-size: var(--text-caption); font-weight: var(--weight-semibold); border-radius: var(--radius-pill); padding: 0 var(--space-2); min-width: 20px; text-align: center; }
+
+  /* ---- main ---- */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { height: 56px; display: flex; align-items: center; gap: var(--space-4); padding-inline: var(--space-6); border-bottom: 1px solid var(--colour-border); background: var(--colour-surface-base); }
+  .topbar .crumbs { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .topbar .crumbs b { color: var(--colour-text-primary); font-weight: var(--weight-semibold); }
+  .topbar .gsearch { margin-left: auto; display: none; align-items: center; gap: var(--space-2); height: var(--space-10); width: 280px; padding-inline: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  @media (min-width: 1024px) { .topbar .gsearch { display: flex; } }
+  .topbar .gsearch svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .topbar .gsearch kbd { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-caption); background: var(--colour-surface-sunken); border-radius: var(--radius-sm); padding: 2px var(--space-2); }
+  .topbar .tbicon { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-secondary); border-radius: var(--radius-md); position: relative; }
+  .topbar .gsearch + .tbicon { margin-left: 0; }
+  .topbar .tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+  @media (min-width: 1024px) { .topbar .tools { margin-left: var(--space-3); } }
+  .topbar .tbicon:hover { background: var(--colour-surface-raised); }
+  .topbar .tbicon svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .topbar .tbicon .dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: var(--radius-circle); background: var(--colour-danger); border: 2px solid var(--colour-surface-base); }
+  .topbar .avatar { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .topbar .ham { display: grid; } @media (min-width: 768px) { .topbar .ham { display: none; } }
+
+  .content { padding: var(--space-6); overflow: auto; flex: 1; }
+  .page-h { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6); }
+  .page-h h1 { font-family: var(--font-display); font-size: var(--text-heading-lg); line-height: var(--text-heading-lg-lh); font-weight: var(--weight-semibold); }
+  .page-h p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .btn svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* KPI cards */
+  .kpis { display: grid; gap: var(--space-4); grid-template-columns: 1fr; margin-bottom: var(--space-6); }
+  @media (min-width: 640px) { .kpis { grid-template-columns: repeat(2,1fr); } }
+  @media (min-width: 1280px) { .kpis { grid-template-columns: repeat(4,1fr); } }
+  .kpi { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--colour-surface-base); }
+  .kpi .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .kpi .v { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-2) 0; }
+  .kpi .d { font-size: var(--text-body-sm); display: inline-flex; align-items: center; gap: var(--space-1); }
+  .kpi .d.up { color: var(--colour-success); } .kpi .d.warn { color: var(--colour-warning); } .kpi .d.flat { color: var(--colour-text-muted); }
+
+  /* two-column body */
+  .cols { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .cols { grid-template-columns: minmax(0,1fr) 320px; } }
+  .card { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .card .ch { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .card .ch h2 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  .card .ch a { font-size: var(--text-body-sm); color: var(--colour-brand-accent-hover); text-decoration: none; font-weight: var(--weight-semibold); }
+
+  /* table */
+  table.t { width: 100%; }
+  table.t th { text-align: left; padding: var(--space-3) var(--space-5); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); border-bottom: 1px solid var(--colour-divider); }
+  table.t td { padding: var(--space-3) var(--space-5); font-size: var(--text-body-sm); border-bottom: 1px solid var(--colour-divider); }
+  table.t tr:last-child td { border-bottom: none; }
+  table.t tr:hover td { background: var(--colour-surface-raised); }
+  table.t .name { font-weight: var(--weight-semibold); color: var(--colour-text-primary); }
+  table.t .sub { color: var(--colour-text-muted); display: block; font-size: var(--text-caption); }
+  .pill { display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); font-weight: var(--weight-semibold); letter-spacing: var(--text-caption-ls); text-transform: uppercase; }
+  .pill.emergency { background: rgba(220,38,38,0.12); color: var(--colour-priority-emergency); }
+  .pill.urgent { background: rgba(245,158,11,0.16); color: #8a5a00; }
+  .pill.standard { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); }
+  .pill.new { background: rgba(16,185,129,0.14); color: #0b6b4f; }
+
+  /* activity feed / today */
+  .feed { padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .feed .item { display: flex; gap: var(--space-3); }
+  .feed .item .ic { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .feed .item .ic svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .feed .item p { font-size: var(--text-body-sm); } .feed .item small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+  .today .item { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .today .item:last-child { border-bottom: none; }
+  .today .time { font-family: var(--font-mono); font-size: var(--text-body-sm); color: var(--colour-text-secondary); flex: 0 0 56px; }
+  .today .what strong { display: block; font-size: var(--text-body-sm); } .today .what small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Admin dashboard overview</h1>
+    <span class="brief">EPIC-H design brief — admin shell + dashboard (Phase B · H.4)</span>
+    <dl class="annotations">
+      <div><dt>Shell</dt><dd>collapsible sidebar (240 → 64 px → drawer) · 56 px topbar with global search + Cmd+K · notifications · profile</dd></div>
+      <div><dt>Designer interpretation</dt><dd>Q1 → 4 KPI cards + main table / right rail · Q2 → comfortable density default</dd></div>
+      <div><dt>Components</dt><dd>AdminSidebar · AdminTopbar · DashboardCards · AdminTable · ActivityFeed · StatusBadge</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app">
+
+    <aside class="sidebar" aria-label="Admin navigation">
+      <div class="brand"><span class="mark">EA</span><span class="name">Admin</span></div>
+      <nav>
+        <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span class="lbl">Dashboard</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg><span class="lbl">Properties</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg><span class="lbl">Enquiries</span><span class="pip">12</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="lbl">Calendar</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg><span class="lbl">Repairs</span><span class="pip">3</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11h5M18.5 8.5v5"/></svg><span class="lbl">Contacts</span></a>
+        <div class="sect">Configure</div>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span class="lbl">Pages</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.6h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z"/></svg><span class="lbl">Settings</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/></svg><span class="lbl">Users &amp; roles</span></a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="tbicon ham" aria-label="Open navigation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <nav class="crumbs" aria-label="Breadcrumb"><span>Admin</span><span>›</span><b>Dashboard</b></nav>
+        <div class="gsearch" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>Search or jump to…<kbd>⌘K</kbd></div>
+        <div class="tools">
+          <button class="tbicon" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 2 8 2 8H4s2-1 2-8z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="dot"></span></button>
+          <span class="avatar" aria-label="Your account">JM</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="page-h">
+          <div>
+            <h1>Good morning, Jess</h1>
+            <p>Didsbury branch · Thursday 7 June 2026</p>
+          </div>
+          <a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add a property</a>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="k">Active listings</div><div class="v">312</div><div class="d up"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 15l7-7 7 7"/></svg>18 this month</div></div>
+          <div class="kpi"><div class="k">Open enquiries</div><div class="v">47</div><div class="d warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>6 near SLA</div></div>
+          <div class="kpi"><div class="k">Viewings this week</div><div class="v">23</div><div class="d flat">across 3 branches</div></div>
+          <div class="kpi"><div class="k">Open repairs</div><div class="v">3</div><div class="d warn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>1 emergency</div></div>
+        </div>
+
+        <div class="cols">
+          <div class="card">
+            <div class="ch"><h2>Latest enquiries</h2><a href="#">View all enquiries</a></div>
+            <table class="t">
+              <thead><tr><th>Applicant</th><th>Property</th><th>Type</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><span class="name">Daniel O'Hara</span><span class="sub">2 hours ago</span></td><td>Palatine Road, M20</td><td>Book a viewing</td><td><span class="pill new">New</span></td></tr>
+                <tr><td><span class="name">Aisha Rahman</span><span class="sub">4 hours ago</span></td><td>Acomb Street, M14</td><td>Contact agent</td><td><span class="pill new">New</span></td></tr>
+                <tr><td><span class="name">Mark Whitfield</span><span class="sub">Yesterday</span></td><td>Free valuation</td><td>Valuation</td><td><span class="pill urgent">Assigned</span></td></tr>
+                <tr><td><span class="name">Sophie Lin</span><span class="sub">Yesterday</span></td><td>Brooklawn Drive, M20</td><td>Book a viewing</td><td><span class="pill standard">In progress</span></td></tr>
+                <tr><td><span class="name">Tom Beckett</span><span class="sub">2 days ago</span></td><td>The Sidings, M20</td><td>New homes</td><td><span class="pill standard">In progress</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+            <div class="card today">
+              <div class="ch"><h2>Today's viewings</h2><a href="#">Calendar</a></div>
+              <div class="item"><span class="time">10:00</span><span class="what"><strong>Palatine Road, M20</strong><small>Daniel O'Hara · with Priya</small></span></div>
+              <div class="item"><span class="time">13:30</span><span class="what"><strong>Acomb Street, M14</strong><small>Aisha Rahman · with Tom</small></span></div>
+              <div class="item"><span class="time">16:00</span><span class="what"><strong>Valuation — Clyde Rd</strong><small>Mark Whitfield · with Jess</small></span></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Recent activity</h2></div>
+              <div class="feed">
+                <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span><div><p>Priya published <strong>Palatine Road</strong></p><small>1 hour ago</small></div></div>
+                <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span><div><p>New enquiry from <strong>Daniel O'Hara</strong></p><small>2 hours ago</small></div></div>
+                <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg></span><div><p>Repair <strong>RP-1192</strong> marked urgent</p><small>3 hours ago</small></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

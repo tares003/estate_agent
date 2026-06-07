@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Property catalogue — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display: none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); }
+  .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); }
+  .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  /* search summary bar */
+  .searchbar2 { background: var(--colour-surface-raised); border-bottom: 1px solid var(--colour-border); }
+  .searchbar2 .inner { max-width: var(--size-container-2xl); margin-inline: auto; padding: var(--space-5) var(--space-6); display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+  .searchfield { flex: 1; min-width: 200px; display: flex; align-items: center; gap: var(--space-2); height: var(--size-input-md); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding-inline: var(--space-4); }
+  .searchfield input { border: none; flex: 1; font-size: var(--text-body-md); }
+  .searchfield input:focus-visible { outline: none; }
+  .searchfield svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); }
+  .filterbtn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-input-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+  .filterbtn svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* active filter chips */
+  .chips { max-width: var(--size-container-2xl); margin-inline: auto; padding: var(--space-4) var(--space-6) 0; display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .chip { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--space-8); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); border: 1px solid var(--colour-border); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-size: var(--text-body-sm); }
+  .chip svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+  .chip.clear { background: transparent; color: var(--colour-brand-accent-hover); border: none; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* results header */
+  .reshead { max-width: var(--size-container-2xl); margin-inline: auto; padding: var(--space-6); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .reshead h1 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+  .reshead .count { color: var(--colour-text-muted); font-size: var(--text-body-sm); display: block; margin-top: var(--space-1); }
+  .reshead .tools { display: flex; gap: var(--space-3); align-items: center; }
+  .sortwrap { position: relative; }
+  .sortwrap select { appearance: none; height: var(--size-button-md); padding-inline: var(--space-4) var(--space-10); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); font-size: var(--text-body-sm); }
+  .sortwrap svg { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); pointer-events: none; }
+  .viewtoggle { display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .viewtoggle button { width: var(--size-button-md); height: var(--size-button-md); display: grid; place-items: center; color: var(--colour-text-muted); }
+  .viewtoggle button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .viewtoggle svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* results grid */
+  .results { max-width: var(--size-container-2xl); margin-inline: auto; padding: 0 var(--space-6) var(--space-12); }
+  .pgrid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .pgrid { grid-template-columns: repeat(2,1fr); } }
+  @media (min-width: 1024px) { .pgrid { grid-template-columns: repeat(3,1fr); } }
+  @media (min-width: 1440px) { .pgrid { grid-template-columns: repeat(4,1fr); } }
+
+  /* property card (from organism) */
+  .pcard { display: flex; flex-direction: column; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; text-decoration: none; color: inherit; transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+  .pcard:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .pcard:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+  @media (prefers-reduced-motion: reduce) { .pcard:hover { transform: none; border-color: var(--colour-text-muted); } }
+  .pcard .media { position: relative; aspect-ratio: var(--ratio-card); background: linear-gradient(180deg, rgba(31,41,55,0.05), rgba(31,41,55,0.18)), linear-gradient(135deg,#d9d3c6,#efede6 55%,#cfd6d0); }
+  .pcard .media .roof { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(31,41,55,0.28); }
+  .pcard .media .roof svg { width: 56px; height: 56px; }
+  .pcard .badge { position: absolute; top: var(--space-3); left: var(--space-3); display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); }
+  .b-available { background: var(--colour-status-available); }
+  .b-under-offer { background: var(--colour-status-under-offer); color: var(--colour-brand-accent-on); }
+  .b-sold-stc { background: var(--colour-status-sold-stc); }
+  .b-new { background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); }
+  .pcard .photos { position: absolute; top: var(--space-3); right: var(--space-3); display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); background: rgba(26,26,26,0.66); color: var(--colour-text-inverse); font-size: var(--text-caption); font-weight: var(--weight-semibold); }
+  .pcard .photos svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+  .pcard .save { position: absolute; bottom: var(--space-3); right: var(--space-3); width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; border-radius: var(--radius-circle); background: var(--colour-surface-base); color: var(--colour-text-primary); box-shadow: var(--shadow-sm); }
+  .pcard .save svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .pcard .save:hover { color: var(--colour-danger); }
+  .pcard .body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  .pcard .qual { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .pcard .price { font-family: var(--font-display); font-size: var(--text-heading-md); line-height: var(--text-heading-md-lh); font-weight: var(--weight-semibold); }
+  .pcard .price .freq { font-family: var(--font-body); font-size: var(--text-body-sm); font-weight: var(--weight-regular); color: var(--colour-text-secondary); }
+  .pcard .addr { font-size: var(--text-heading-sm); line-height: var(--text-heading-sm-lh); font-weight: var(--weight-semibold); }
+  .pcard .street { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .pcard .meta { display: flex; flex-wrap: wrap; gap: var(--space-4); padding-top: var(--space-1); color: var(--colour-text-secondary); font-size: var(--text-body-sm); }
+  .pcard .meta span { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; }
+  .pcard .meta svg { width: var(--size-icon-sm); height: var(--size-icon-sm); color: var(--colour-text-muted); }
+  .pcard .foot { display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-3); margin-top: auto; border-top: 1px solid var(--colour-divider); }
+  .pcard .added { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .pcard .branch { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  /* pagination */
+  .pager { display: flex; justify-content: center; align-items: center; gap: var(--space-1); flex-wrap: wrap; padding-top: var(--space-10); }
+  .pager a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--size-touch-target-min); height: var(--size-touch-target-min); padding-inline: var(--space-2); border-radius: var(--radius-md); font-size: var(--text-body-sm); color: var(--colour-text-secondary); text-decoration: none; }
+  .pager a:hover { background: var(--colour-surface-raised); color: var(--colour-text-primary); }
+  .pager a[aria-current="page"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+  .pager .gap { color: var(--colour-text-muted); padding-inline: var(--space-1); }
+
+  .ph-house { width: 56px; height: 56px; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Property catalogue</h1>
+    <span class="brief">EPIC-F design brief — search results grid (Phase B · public property surfaces)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>search summary bar · active filter chips · sort + view toggle · responsive card grid · pagination</dd></div>
+      <div><dt>Responsive</dt><dd>filters open in a bottom drawer on mobile, side on desktop; grid 1→4 columns</dd></div>
+      <div><dt>Components</dt><dd>Header · filter chips · PropertyCard · Pagination</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <header class="site-header">
+    <div class="row">
+      <a class="brand" href="../public/portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="#" aria-current="page">For sale</a><a href="#">To rent</a><a href="#">New homes</a><a href="#">Area guides</a><a href="#">Branches</a><a href="#">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <div class="searchbar2">
+    <div class="inner">
+      <form class="searchfield" role="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+        <label for="q" style="position:absolute;left:-9999px">Search area or postcode</label>
+        <input id="q" type="search" value="Didsbury, M20" aria-label="Search area or postcode">
+      </form>
+      <button class="filterbtn" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filters</button>
+    </div>
+  </div>
+
+  <div class="chips" aria-label="Active filters">
+    <span class="chip">For sale <button aria-label="Remove for sale filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+    <span class="chip">2+ beds <button aria-label="Remove bedrooms filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+    <span class="chip">Up to £600k <button aria-label="Remove price filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+    <button class="chip clear">Clear all</button>
+  </div>
+
+  <div class="reshead">
+    <div>
+      <h1>Property for sale in Didsbury</h1>
+      <span class="count">48 properties · within 3 miles · updated 5 minutes ago</span>
+    </div>
+    <div class="tools">
+      <div class="sortwrap">
+        <label for="sort" style="position:absolute;left:-9999px">Sort results</label>
+        <select id="sort"><option>Newest first</option><option>Price: low to high</option><option>Price: high to low</option><option>Most bedrooms</option></select>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="viewtoggle" role="group" aria-label="View mode">
+        <button aria-pressed="true" aria-label="Grid view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+        <button aria-pressed="false" aria-label="Map view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 4 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="results">
+    <div class="pgrid" aria-label="Search results">
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-available">For sale</span><span class="photos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>+18</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Offers in region of</p><p class="price">£525,000</p><p class="addr">Edwardian semi · 4 bed</p><p class="street">Palatine Road, Didsbury, M20</p><div class="meta"><span>4 beds</span><span>2 baths</span><span>Semi-detached</span></div><div class="foot"><span class="added">Added 3 days ago</span><span class="branch">Didsbury</span></div></div>
+      </a>
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-under-offer">Under offer</span><span class="photos">+12</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Guide price</p><p class="price">£399,995</p><p class="addr">Victorian terrace · 3 bed</p><p class="street">Acomb Street, Rusholme, M14</p><div class="meta"><span>3 beds</span><span>1 bath</span><span>Terraced</span></div><div class="foot"><span class="added">Added 2 weeks ago</span><span class="branch">Didsbury</span></div></div>
+      </a>
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-new">New home</span><span class="photos">+24</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Prices from</p><p class="price">£319,950</p><p class="addr">The Sidings · 3 &amp; 4 bed</p><p class="street">Burton Road, Withington, M20</p><div class="meta"><span>Help to Buy</span><span>12 plots left</span></div><div class="foot"><span class="added">New release</span><span class="branch">New Homes</span></div></div>
+      </a>
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-available">For sale</span><span class="photos">+9</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Offers over</p><p class="price">£465,000</p><p class="addr">Detached · 4 bed</p><p class="street">Brooklawn Drive, West Didsbury, M20</p><div class="meta"><span>4 beds</span><span>2 baths</span><span>Detached</span></div><div class="foot"><span class="added">Added 6 days ago</span><span class="branch">Didsbury</span></div></div>
+      </a>
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-available">For sale</span><span class="photos">+15</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Asking price</p><p class="price">£289,950</p><p class="addr">Mid-terrace · 2 bed</p><p class="street">Cromwell Grove, Levenshulme, M19</p><div class="meta"><span>2 beds</span><span>1 bath</span><span>Terraced</span></div><div class="foot"><span class="added">Added today</span><span class="branch">Didsbury</span></div></div>
+      </a>
+
+      <a class="pcard" href="property-detail.html">
+        <div class="media"><div class="roof"><svg class="ph-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/><path d="M9 19v-5h6v5"/></svg></div><span class="badge b-available">For sale</span><span class="photos">+21</span><button class="save" type="button" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div>
+        <div class="body"><p class="qual">Guide price</p><p class="price">£725,000</p><p class="addr">Detached · 5 bed</p><p class="street">Parrs Wood Road, Didsbury, M20</p><div class="meta"><span>5 beds</span><span>3 baths</span><span>Detached</span></div><div class="foot"><span class="added">Added 1 week ago</span><span class="branch">Prime</span></div></div>
+      </a>
+
+    </div>
+
+    <nav class="pager" aria-label="Search results pages">
+      <a href="#" aria-label="Previous page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg></a>
+      <a href="#" aria-current="page">1</a><a href="#">2</a><a href="#">3</a><span class="gap">…</span><a href="#">8</a>
+      <a href="#" aria-label="Next page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></a>
+    </nav>
+  </div>
+
+</main>
+<section data-rv></section>
+</body>
+</html>

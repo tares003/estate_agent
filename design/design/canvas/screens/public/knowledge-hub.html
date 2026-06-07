@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge hub — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display:none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .wrap { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-16) var(--space-6); }
+  .head { margin-bottom: var(--space-10); }
+  .head .eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+  .head h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); font-weight: var(--weight-regular); margin-top: var(--space-2); }
+
+  /* featured */
+  .featured { display: grid; gap: var(--space-6); grid-template-columns: 1fr; border: 1px solid var(--colour-border); border-radius: var(--radius-xl); overflow: hidden; margin-bottom: var(--space-10); }
+  @media (min-width: 768px) { .featured { grid-template-columns: 1.2fr 1fr; } }
+  .featured .pic { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#3a4a5c,#6b7d6a 70%,#9bab8f); min-height: 220px; }
+  .featured .body { padding: var(--space-8); display: flex; flex-direction: column; justify-content: center; }
+  .featured .cat { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+  .featured h2 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); font-weight: var(--weight-regular); margin: var(--space-3) 0; }
+  .featured p { color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); }
+  .featured .meta { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-4); }
+
+  .layout { display: grid; gap: var(--space-10); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0,1fr) 300px; align-items: start; } }
+
+  .filters { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-6); }
+  .filters button { min-height: var(--space-8); padding: var(--space-1) var(--space-4); border-radius: var(--radius-pill); border: 1px solid var(--colour-border); background: var(--colour-surface-base); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); }
+  .filters button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); border-color: var(--colour-brand-primary); }
+
+  .cards { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; } }
+  .acard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; text-decoration: none; color: inherit; transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+  .acard:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  @media (prefers-reduced-motion: reduce) { .acard:hover { transform: none; border-color: var(--colour-text-muted); } }
+  .acard .pic { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .acard .b { padding: var(--space-5); } .acard .cat { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+  .acard h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin: var(--space-2) 0; } .acard .meta { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+
+  .pager { display: flex; justify-content: center; gap: var(--space-1); margin-top: var(--space-8); }
+  .pager a { min-width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; border-radius: var(--radius-md); font-size: var(--text-body-sm); color: var(--colour-text-secondary); text-decoration: none; }
+  .pager a[aria-current="page"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+
+  .side { display: flex; flex-direction: column; gap: var(--space-6); position: sticky; top: calc(var(--size-button-md) + var(--space-12)); }
+  .sidecard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); }
+  .sidecard h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-4); }
+  .sidecard .pop { display: flex; gap: var(--space-3); padding: var(--space-2) 0; border-bottom: 1px solid var(--colour-divider); text-decoration: none; color: inherit; font-size: var(--text-body-sm); } .sidecard .pop:last-child { border-bottom: none; }
+  .sidecard .pop .n { font-family: var(--font-display); font-size: var(--text-heading-sm); color: var(--colour-border); flex: 0 0 auto; }
+  .newsletter { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .newsletter p { font-size: var(--text-body-sm); opacity: 0.85; margin-bottom: var(--space-4); }
+  .newsletter input { width: 100%; height: var(--size-input-md); border: none; border-radius: var(--radius-md); padding-inline: var(--space-4); margin-bottom: var(--space-3); }
+  .newsletter button { width: 100%; height: var(--size-button-md); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); }
+  .newsletter small { display: block; opacity: 0.7; font-size: var(--text-caption); margin-top: var(--space-3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Knowledge hub</h1>
+    <span class="brief">EPIC-C design brief — article index (featured + category filter + sidebar)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>featured article · category filter chips · paginated card grid · sidebar (popular + newsletter)</dd></div>
+      <div><dt>Designer interpretation</dt><dd>Q2 → article index has a sidebar; article surface (separate) is constrained reading width</dd></div>
+      <div><dt>Compliance</dt><dd>newsletter signup carries consent line</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="#" aria-current="page">Guides</a><a href="contact.html">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Knowledge hub</p><h1>Guides for buyers, sellers &amp; renters</h1></div>
+
+    <a class="featured" href="#" style="text-decoration:none;color:inherit">
+      <div class="pic"></div>
+      <div class="body">
+        <span class="cat">Selling</span>
+        <h2>How to get your home ready for viewings</h2>
+        <p>Small changes that make a real difference — from kerb appeal to that all-important first impression at the front door.</p>
+        <p class="meta">8 min read · Updated May 2026</p>
+      </div>
+    </a>
+
+    <div class="layout">
+      <div>
+        <div class="filters" role="group" aria-label="Filter by category">
+          <button aria-pressed="true">All</button><button aria-pressed="false">Buying</button><button aria-pressed="false">Selling</button><button aria-pressed="false">Renting</button><button aria-pressed="false">Landlords</button><button aria-pressed="false">Local area</button>
+        </div>
+        <div class="cards">
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Buying</span><h3>A first-time buyer's timeline</h3><p class="meta">6 min read · May 2026</p></div></a>
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Renting</span><h3>Your deposit: what the rules say</h3><p class="meta">5 min read · Apr 2026</p></div></a>
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Landlords</span><h3>Staying compliant in 2026</h3><p class="meta">9 min read · Apr 2026</p></div></a>
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Selling</span><h3>Pricing right from day one</h3><p class="meta">7 min read · Mar 2026</p></div></a>
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Local area</span><h3>Best neighbourhoods for families</h3><p class="meta">10 min read · Mar 2026</p></div></a>
+          <a class="acard" href="#"><div class="pic"></div><div class="b"><span class="cat">Buying</span><h3>Understanding tenure &amp; leasehold</h3><p class="meta">8 min read · Feb 2026</p></div></a>
+        </div>
+        <nav class="pager" aria-label="Article pages"><a href="#" aria-current="page">1</a><a href="#">2</a><a href="#">3</a><a href="#" aria-label="Next">›</a></nav>
+      </div>
+
+      <aside class="side">
+        <div class="sidecard">
+          <h3>Most read</h3>
+          <a class="pop" href="#"><span class="n">01</span><span>How to get your home ready for viewings</span></a>
+          <a class="pop" href="#"><span class="n">02</span><span>A first-time buyer's timeline</span></a>
+          <a class="pop" href="#"><span class="n">03</span><span>Your deposit: what the rules say</span></a>
+          <a class="pop" href="#"><span class="n">04</span><span>Pricing right from day one</span></a>
+        </div>
+        <div class="sidecard newsletter">
+          <h3 style="color:var(--colour-text-on-dark)">Market updates</h3>
+          <p>Occasional, useful emails on the local market. No spam.</p>
+          <label for="nl" style="position:absolute;left:-9999px">Email address</label>
+          <input id="nl" type="email" placeholder="you@example.co.uk">
+          <button type="button">Subscribe</button>
+          <small>By subscribing you agree to our privacy policy. Unsubscribe anytime.</small>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .calbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .calbar .nav { display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .calbar .nav button { width: var(--size-button-md); height: var(--size-button-md); display: grid; place-items: center; color: var(--colour-text-secondary); }
+  .calbar .nav button:hover { background: var(--colour-surface-raised); }
+  .calbar .nav button svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .calbar .today { display:inline-flex; align-items:center; height: var(--size-button-md); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .calbar h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .calbar .viewtoggle { margin-left: auto; display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .calbar .viewtoggle button { height: var(--size-button-md); padding-inline: var(--space-4); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); }
+  .calbar .viewtoggle button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+
+  .week { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; background: var(--colour-surface-base); }
+  .weekhead { display: grid; grid-template-columns: 56px repeat(5, 1fr); border-bottom: 1px solid var(--colour-divider); }
+  .weekhead .dh { padding: var(--space-3); text-align: center; border-left: 1px solid var(--colour-divider); }
+  .weekhead .dh:first-child { border-left: none; }
+  .weekhead .dh small { display: block; font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .weekhead .dh strong { font-family: var(--font-display); font-size: var(--text-heading-sm); }
+  .weekhead .dh.today strong { color: var(--colour-brand-primary); }
+  .grid { display: grid; grid-template-columns: 56px repeat(5, 1fr); position: relative; }
+  .timecol { display: flex; flex-direction: column; }
+  .timecol .h { height: 56px; font-size: var(--text-caption); color: var(--colour-text-muted); text-align: right; padding: 2px var(--space-2); }
+  .daycol { border-left: 1px solid var(--colour-divider); position: relative; }
+  .daycol .slot { height: 56px; border-bottom: 1px solid var(--colour-divider); }
+  .ev { position: absolute; left: 4px; right: 4px; border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); font-size: var(--text-caption); overflow: hidden; border-left: 3px solid; }
+  .ev strong { display: block; font-size: var(--text-body-sm); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  .ev.viewing { background: rgba(31,41,55,0.08); border-color: var(--colour-brand-primary); }
+  .ev.valuation { background: rgba(201,162,75,0.18); border-color: var(--colour-brand-accent); }
+  .ev.repair { background: rgba(245,158,11,0.16); border-color: var(--colour-priority-urgent); }
+  .scrollx2 { overflow-x: auto; }
+  @media (max-width: 768px) { .weekhead, .grid { grid-template-columns: 48px repeat(5, minmax(120px,1fr)); min-width: 640px; } }
+</style>
+</head>
+<body data-active="calendar" data-crumb="Calendar">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Calendar</h1>
+    <span class="brief">EPIC-H design brief — viewings, valuations &amp; repair visits (H.7)</span>
+    <dl class="annotations">
+      <div><dt>Default</dt><dd>week view ≥ 1024px; day view on mobile (design-requirements §2)</dd></div>
+      <div><dt>Events</dt><dd>viewing · valuation · repair visit — colour-coded with a left accent</dd></div>
+      <div><dt>Nav</dt><dd>prev / today / next · day / week / month toggle</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Calendar</h1></div><a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New event</a></div>
+
+    <div class="calbar">
+      <div class="nav"><button aria-label="Previous week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg></button><button aria-label="Next week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button></div>
+      <button class="today">Today</button>
+      <h2>8 – 12 June 2026</h2>
+      <div class="viewtoggle" role="group" aria-label="Calendar view"><button>Day</button><button aria-pressed="true">Week</button><button>Month</button></div>
+    </div>
+
+    <div class="week"><div class="scrollx2">
+      <div class="weekhead">
+        <div class="dh"></div>
+        <div class="dh"><small>Mon</small><strong>8</strong></div>
+        <div class="dh today"><small>Tue</small><strong>9</strong></div>
+        <div class="dh"><small>Wed</small><strong>10</strong></div>
+        <div class="dh"><small>Thu</small><strong>11</strong></div>
+        <div class="dh"><small>Fri</small><strong>12</strong></div>
+      </div>
+      <div class="grid">
+        <div class="timecol">
+          <div class="h">9 am</div><div class="h">10 am</div><div class="h">11 am</div><div class="h">12 pm</div><div class="h">1 pm</div><div class="h">2 pm</div><div class="h">3 pm</div>
+        </div>
+        <div class="daycol">
+          <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="ev viewing" style="top:56px;height:52px"><strong>Viewing · Palatine Rd</strong>D. O'Hara</div>
+        </div>
+        <div class="daycol">
+          <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="ev viewing" style="top:0;height:52px"><strong>Viewing · Acomb St</strong>A. Rahman</div>
+          <div class="ev valuation" style="top:280px;height:52px"><strong>Valuation · Clyde Rd</strong>M. Whitfield</div>
+        </div>
+        <div class="daycol">
+          <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="ev repair" style="top:112px;height:80px"><strong>Repair · 14 Cromwell</strong>Boiler · contractor</div>
+        </div>
+        <div class="daycol">
+          <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="ev viewing" style="top:336px;height:52px"><strong>Viewing · Brooklawn</strong>S. Lin</div>
+        </div>
+        <div class="daycol">
+          <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+          <div class="ev viewing" style="top:56px;height:52px"><strong>Viewing · The Sidings</strong>T. Beckett</div>
+        </div>
+      </div>
+    </div></div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

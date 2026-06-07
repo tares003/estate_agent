@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Billing — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .cols { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .cols { grid-template-columns: minmax(0,1fr) 320px; align-items: start; } }
+  .plan-card { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .plan-card .ph { padding: var(--space-6); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .plan-card .ph .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent); }
+  .plan-card .ph .name { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-1) 0; }
+  .plan-card .ph .price { font-size: var(--text-body-md); opacity: 0.85; }
+  .plan-card .body { padding: var(--space-5) var(--space-6); }
+  .feat { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2) 0; font-size: var(--text-body-sm); } .feat svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-success); flex: 0 0 auto; }
+
+  /* usage meters */
+  .usage { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); }
+  .usage h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-1); } .usage .sub { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-bottom: var(--space-5); }
+  .meter { margin-bottom: var(--space-5); } .meter:last-child { margin-bottom: 0; }
+  .meter .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); font-size: var(--text-body-sm); } .meter .top strong { font-weight: var(--weight-semibold); } .meter .top .lim { color: var(--colour-text-muted); }
+  .bar { height: var(--space-2); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); overflow: hidden; } .bar > i { display: block; height: 100%; border-radius: var(--radius-pill); } .bar > i.ok { background: var(--colour-success); } .bar > i.warn { background: var(--colour-warning); } .bar > i.near { background: var(--colour-danger); }
+
+  /* invoices */
+  .invoices { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .invoices .ch { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); font-family: var(--font-body); }
+  .invoices .ch h2 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+  table.t .amt { font-weight: var(--weight-semibold); }
+  .paid { display: inline-flex; padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); background: rgba(16,185,129,0.14); color: #0b6b4f; }
+  .pm { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); margin-bottom: var(--space-4); }
+  .pm .card-ic { width: var(--space-12); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); display: grid; place-items: center; font-size: var(--text-caption); font-weight: var(--weight-bold); flex: 0 0 auto; }
+  .pm .meta { flex: 1; font-size: var(--text-body-sm); } .pm .meta small { color: var(--colour-text-muted); display: block; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Billing">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Tenant billing</h1>
+    <span class="brief">EPIC-S design brief — agency billing &amp; usage (Phase B · B8)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>current plan · per-period usage meters (listings, media, bandwidth, outbound email) · invoices · payment method</dd></div>
+      <div><dt>Usage</dt><dd>meters warn as they approach plan limits (amber → red)</dd></div>
+      <div><dt>Trust</dt><dd>prices shown with VAT note; no surprise overage — limits are explicit</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Billing &amp; usage</h1><p>Professional plan · billed monthly · next invoice 1 July 2026</p></div><a class="btn secondary" href="#">Change plan</a></div>
+
+    <div class="cols">
+      <div>
+        <div class="usage">
+          <h2>This period's usage</h2>
+          <p class="sub">1–30 June 2026 · resets on the 1st</p>
+          <div class="meter"><div class="top"><strong>Active listings</strong><span class="lim">312 / 500</span></div><div class="bar"><i class="ok" style="width:62%"></i></div></div>
+          <div class="meter"><div class="top"><strong>Media storage</strong><span class="lim">34 GB / 50 GB</span></div><div class="bar"><i class="warn" style="width:68%"></i></div></div>
+          <div class="meter"><div class="top"><strong>Bandwidth (egress)</strong><span class="lim">820 GB / 1 TB</span></div><div class="bar"><i class="near" style="width:80%"></i></div></div>
+          <div class="meter"><div class="top"><strong>Outbound email</strong><span class="lim">6,240 / 25,000</span></div><div class="bar"><i class="ok" style="width:25%"></i></div></div>
+        </div>
+
+        <div class="invoices">
+          <div class="ch"><h2>Invoices</h2></div>
+          <div class="scrollx"><table class="t">
+            <thead><tr><th>Date</th><th>Invoice</th><th>Plan</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>1 Jun 2026</td><td class="ref">INV-2026-0061</td><td>Professional</td><td class="amt">£899.00</td><td><span class="paid">Paid</span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+              <tr><td>1 May 2026</td><td class="ref">INV-2026-0052</td><td>Professional</td><td class="amt">£899.00</td><td><span class="paid">Paid</span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+              <tr><td>1 Apr 2026</td><td class="ref">INV-2026-0043</td><td>Professional</td><td class="amt">£899.00</td><td><span class="paid">Paid</span></td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <p style="font-size:var(--text-body-sm);color:var(--colour-text-muted);margin-top:var(--space-4)">All prices exclude VAT, charged at the prevailing UK rate. Approaching a limit? We'll email you before any overage — nothing is charged without warning.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+        <div class="plan-card">
+          <div class="ph"><span class="k">Current plan</span><div class="name">Professional</div><div class="price">£899 / month + VAT</div></div>
+          <div class="body">
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Up to 500 listings</div>
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>3 branches</div>
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Custom domain + SSL</div>
+            <div class="feat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Enforced 2FA &amp; audit log</div>
+          </div>
+        </div>
+        <div>
+          <h2 style="font-size:var(--text-heading-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-3)">Payment method</h2>
+          <div class="pm"><span class="card-ic">VISA</span><div class="meta"><strong>•••• 4242</strong><small>Expires 09 / 28</small></div><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none;font-weight:var(--weight-semibold);font-size:var(--text-body-sm)">Update</a></div>
+        </div>
+      </div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

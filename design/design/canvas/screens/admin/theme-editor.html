@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theme editor — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .editor { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .editor { grid-template-columns: 340px minmax(0,1fr); align-items: start; } }
+  .controls { display: flex; flex-direction: column; gap: var(--space-6); }
+  .grp { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .grp .gh { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); } .grp .gh h2 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  .grp .gb { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  /* colour picker row */
+  .colorrow { display: flex; align-items: center; gap: var(--space-3); }
+  .swatch { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-md); border: 1px solid var(--colour-border); flex: 0 0 auto; }
+  .colorrow .lbl { flex: 1; } .colorrow .lbl strong { display: block; font-size: var(--text-body-sm); } .colorrow .lbl small { color: var(--colour-text-muted); font-size: var(--text-caption); font-family: var(--font-mono); }
+  /* tier-gated section */
+  .gated { position: relative; }
+  .gated .gb { filter: saturate(0.4); opacity: 0.6; pointer-events: none; }
+  .lockpill { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-3); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); color: var(--colour-text-muted); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); border: 1px solid var(--colour-border); } .lockpill svg { width: 12px; height: 12px; }
+  .gated .upsell-strip { padding: var(--space-3) var(--space-5); background: var(--colour-surface-raised); border-top: 1px solid var(--colour-divider); font-size: var(--text-body-sm); color: var(--colour-text-secondary); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .gated .upsell-strip a { color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); margin-left: auto; }
+  /* font select */
+  .fontsel { position: relative; } .fontsel select { width: 100%; height: var(--size-input-md); appearance: none; padding-inline: var(--space-4) var(--space-10); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); } .fontsel svg { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); pointer-events: none; }
+
+  /* preview */
+  .preview { position: sticky; top: var(--space-6); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .preview .ph { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--colour-divider); background: var(--colour-surface-raised); } .preview .ph h3 { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); } .preview .ph .vt { display: inline-flex; gap: var(--space-1); } .preview .ph .vt button { width: 32px; height: 28px; display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); } .preview .ph .vt button[aria-pressed="true"] { background: var(--colour-surface-sunken); color: var(--colour-text-primary); } .preview .ph .vt svg { width: 16px; height: 16px; }
+  /* the previewed mini tenant site uses LOCAL --p-* vars so it's isolated from canvas tokens */
+  .site { --p-primary:#1f4d3a; --p-accent:#c9a24b; --p-font: Georgia, serif; }
+  .site .top { background: var(--p-primary); color: #fff; padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; }
+  .site .top .brand { font-family: var(--p-font); font-weight: var(--weight-bold); }
+  .site .top .cta { background: var(--p-accent); color: #1a1a1a; padding: var(--space-2) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .site .hero { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); display: flex; align-items: flex-end; padding: var(--space-5); }
+  .site .hero h2 { font-family: var(--p-font); color: #1a1a1a; font-size: var(--text-heading-md); }
+  .site .body2 { padding: var(--space-5); }
+  .site .pcard { border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; max-width: 240px; }
+  .site .pcard .img { aspect-ratio: var(--ratio-card); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .site .pcard .b { padding: var(--space-3); } .site .pcard .price { font-family: var(--p-font); font-weight: var(--weight-bold); } .site .pcard .save { color: var(--p-accent); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Branding &amp; theme">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Branding &amp; theme editor</h1>
+    <span class="brief">EPIC-M / EPIC-H H.11 — tenant theme editor (tier-aware customisation depth)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>controls (left) + live tenant-site preview (right, desktop/mobile)</dd></div>
+      <div><dt>Tier-gated (PRODUCT.md §5e)</dt><dd>Starter sees brand-primary + accent only; the full token set is locked behind a PackLockPill/upsell — shown here on a Starter plan</dd></div>
+      <div><dt>Logo</dt><dd>upload zone with header / mobile / favicon / OG previews (EPIC-M)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content" style="padding-bottom:0">
+    <div class="page-h"><div><h1>Branding &amp; theme</h1><p>Starter plan · brand colours &amp; logo. Upgrade for the full token set.</p></div><span class="ubadge grey">Starter customisation</span></div>
+
+    <div class="editor">
+      <div class="controls">
+        <div class="grp">
+          <div class="gh"><h2>Brand colours</h2></div>
+          <div class="gb">
+            <div class="colorrow"><span class="swatch" style="background:#1f4d3a"></span><span class="lbl"><strong>Primary</strong><small>#1F4D3A</small></span><button class="btn secondary sm">Change</button></div>
+            <div class="colorrow"><span class="swatch" style="background:#c9a24b"></span><span class="lbl"><strong>Accent</strong><small>#C9A24B</small></span><button class="btn secondary sm">Change</button></div>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="gh"><h2>Logo</h2></div>
+          <div class="gb">
+            <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
+              <div style="text-align:center"><div style="width:64px;height:64px;border-radius:var(--radius-md);background:var(--colour-brand-primary);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:var(--weight-bold)">EA</div><small style="font-size:var(--text-caption);color:var(--colour-text-muted)">Header</small></div>
+              <div style="text-align:center"><div style="width:40px;height:40px;border-radius:var(--radius-sm);background:var(--colour-brand-primary);color:#fff;display:grid;place-items:center;font-weight:var(--weight-bold);margin-inline:auto">EA</div><small style="font-size:var(--text-caption);color:var(--colour-text-muted)">Favicon</small></div>
+              <div style="text-align:center"><div style="width:96px;height:54px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#1f4d3a,#2d6a50);color:#fff;display:grid;place-items:center;font-size:var(--text-caption)">OG image</div><small style="font-size:var(--text-caption);color:var(--colour-text-muted)">Social</small></div>
+            </div>
+            <button class="btn secondary" style="justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Upload a logo</button>
+          </div>
+        </div>
+
+        <!-- tier-gated: full token set -->
+        <div class="grp gated">
+          <div class="gh"><h2>Typography &amp; full token set</h2><span class="lockpill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Professional</span></div>
+          <div class="gb">
+            <div class="fontsel"><select disabled><option>Display font — Fraunces</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            <div class="colorrow"><span class="swatch" style="background:#f8f7f4"></span><span class="lbl"><strong>Surfaces, borders, radii…</strong><small>full design-token control</small></span></div>
+          </div>
+          <div class="upsell-strip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Fonts, surfaces, radii &amp; the full token set are on Professional &amp; Enterprise.<a href="../marketing/marketing-pricing.html">Upgrade</a></div>
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="ph"><h3>Live preview</h3><div class="vt" role="group" aria-label="Preview width"><button aria-label="Mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="2"/></svg></button><button aria-pressed="true" aria-label="Desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/></svg></button></div></div>
+        <div class="site">
+          <div class="top"><span class="brand">Estate Agent</span><span class="cta">Get a free valuation</span></div>
+          <div class="hero"><h2>Find your next home</h2></div>
+          <div class="body2">
+            <div class="pcard"><div class="img"></div><div class="b"><div class="price">£525,000</div><div style="font-size:var(--text-body-sm);color:var(--colour-text-secondary)">Palatine Road, Didsbury</div><div class="save">♥ Save</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actionbar"><button class="btn secondary">Preview on my site</button><span class="spacer"></span><button class="btn secondary">Discard</button><button class="btn primary">Save theme</button></div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

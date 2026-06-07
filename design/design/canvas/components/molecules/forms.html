@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form molecules — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .panel { background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 620px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+
+  /* dropzone */
+  .dropzone { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); border: 2px dashed var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-raised); transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard); }
+  .dropzone.is-dragover { border-color: var(--colour-brand-accent); background: var(--colour-surface-base); }
+  .dropzone svg { width: var(--size-icon-xl); height: var(--size-icon-xl); color: var(--colour-text-muted); }
+  .dropzone .hint { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .files { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+  .filerow { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); }
+  .filerow .thumb { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-sm); background: var(--colour-surface-sunken); flex: 0 0 auto; }
+  .filerow .meta { flex: 1; font-size: var(--text-body-sm); }
+  .filerow .meta small { display: block; color: var(--colour-text-muted); }
+  .bar { height: var(--space-1); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); overflow: hidden; margin-top: var(--space-2); }
+  .bar > i { display: block; height: 100%; width: 64%; background: var(--colour-brand-primary); }
+
+  /* anti-spam */
+  .antispam { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); max-width: 360px; }
+  .antispam .check { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-sm); border: 1px solid var(--colour-border); display: grid; place-items: center; color: var(--colour-success); }
+  .antispam .check svg { width: 16px; height: 16px; }
+  .antispam small { display: block; color: var(--colour-text-muted); font-size: var(--text-caption); }
+
+  /* gdpr consent row */
+  .consent { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); background: var(--colour-surface-raised); border-radius: var(--radius-md); }
+  .consent input { margin-top: 3px; width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); flex: 0 0 auto; }
+  .consent label { font-size: var(--text-body-sm); }
+  .consent a { color: var(--colour-brand-accent-hover); }
+  .req { color: var(--colour-text-muted); }
+
+  /* review summary */
+  .review { display: grid; gap: var(--space-3); }
+  .review .line { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--colour-divider); }
+  .review .line dt { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .review .line dd { font-weight: var(--weight-medium); text-align: right; }
+  .review .line .edit { font-size: var(--text-body-sm); color: var(--colour-brand-accent-hover); }
+
+  .ministep { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .ministep i { flex: 1; height: var(--space-1); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); }
+  .ministep i.on { background: var(--colour-brand-primary); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Form molecules</h1>
+    <span class="brief">EPIC-L + EPIC-N — FileDropzone · AntiSpamChallenge · MultiStepForm · FormReviewSummary · GDPR consent row</span>
+    <dl class="annotations">
+      <div><dt>Molecules</dt><dd>FileDropzone · AntiSpamChallenge · MultiStepForm · FormReviewSummary · GDPRConsentRow</dd></div>
+      <div><dt>Compliance</dt><dd>every personal-data form carries a consent line + privacy link + anti-spam (PRODUCT.md §6, §8)</dd></div>
+      <div><dt>States</dt><dd>idle · dragover · uploading · verified · multi-step progress</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>File dropzone</h2>
+      <p class="lede">Used for property media, EPC and floorplan uploads and SAR exports. Drag-and-drop with a keyboard-reachable "choose files" button (drag is never the only path).</p>
+      <div class="panel">
+        <div class="dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <div><strong>Drag photos here</strong></div>
+          <button class="btn secondary" type="button">Choose files</button>
+          <p class="hint">JPG, PNG or WebP · up to 500 KB each · max 1920 px on the long edge</p>
+        </div>
+        <div class="files">
+          <div class="filerow"><span class="thumb"></span><span class="meta">front-elevation.jpg <small>1.2 MB · uploading…</small><span class="bar"><i></i></span></span></div>
+          <div class="filerow"><span class="thumb"></span><span class="meta">kitchen.webp <small>412 KB · done</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--colour-success)" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Anti-spam challenge</h2>
+      <p class="lede">Required on every public form (PRODUCT.md §6 rule 2), with server-side verification. Shown verified; the visual is a placeholder for the chosen challenge provider.</p>
+      <div class="demo-tray">
+        <div class="antispam">
+          <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <div><strong style="font-size:var(--text-body-sm)">You're human — verified</strong><small>Protected by [anti-spam provider] · server-side checked</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>GDPR consent row</h2>
+      <p class="lede">Sits immediately above submit on every personal-data form. Required checkbox + privacy link (opens new tab). Marketing opt-in is a separate, always-unticked checkbox.</p>
+      <div class="panel" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <div class="consent">
+          <input type="checkbox" id="c1" aria-required="true">
+          <label for="c1">I agree to the <a href="#" target="_blank" rel="noopener">privacy policy<span aria-hidden="true"> ↗</span></a> and consent to being contacted about my enquiry. <span class="req">(required)</span></label>
+        </div>
+        <div class="consent" style="background:transparent;padding-inline:var(--space-4)">
+          <input type="checkbox" id="c2">
+          <label for="c2">Email me occasional property updates and market news. <span class="req">(optional)</span></label>
+        </div>
+        <button class="btn primary" style="align-self:flex-start">Send enquiry</button>
+      </div>
+      <div class="a11y-note"><strong>Accessibility / compliance:</strong> consent checkbox is <code>aria-required="true"</code>; privacy link opens in a new tab with <code>rel="noopener"</code>; marketing opt-in is distinct and unticked by default. The form cannot submit without consent.</div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Multi-step form &amp; review summary</h2>
+      <p class="lede">Long forms (Book a viewing, Report a repair) split into steps with a progress indicator and a final review screen where any step can be edited before submit.</p>
+      <div class="panel">
+        <div class="ministep" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+        <p class="t-caption" style="margin-bottom:var(--space-2)">Step 3 of 4 · Review</p>
+        <h3 style="font-family:var(--font-display);font-size:var(--text-heading-md);margin-bottom:var(--space-4)">Check your details</h3>
+        <dl class="review">
+          <div class="line"><dt>Property</dt><dd>Palatine Road, Didsbury, M20 <a class="edit" href="#">Edit</a></dd></div>
+          <div class="line"><dt>Preferred date</dt><dd>Sat 13 Jun · 10:00 am <a class="edit" href="#">Edit</a></dd></div>
+          <div class="line"><dt>Your name</dt><dd>Jordan Avery <a class="edit" href="#">Edit</a></dd></div>
+          <div class="line"><dt>Contact</dt><dd>jordan.avery@example.co.uk <a class="edit" href="#">Edit</a></dd></div>
+        </dl>
+        <div style="display:flex;gap:var(--space-3);margin-top:var(--space-6);flex-wrap:wrap">
+          <button class="btn secondary">Back</button>
+          <button class="btn primary">Confirm viewing request</button>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> dropzone dashed <b>--colour-border</b> → <b>--colour-brand-accent</b> on dragover · progress fill <b>--colour-brand-primary</b> · consent bg <b>--colour-surface-raised</b> · review divider <b>--colour-divider</b> · radius <b>--radius-md/lg</b>.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

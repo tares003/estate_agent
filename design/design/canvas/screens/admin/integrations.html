@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrations — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .grid { display: grid; gap: var(--space-4); grid-template-columns: 1fr; } @media (min-width: 640px) { .grid { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1280px) { .grid { grid-template-columns: repeat(3,1fr); } }
+  .intg { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .intg .top { display: flex; align-items: center; gap: var(--space-3); }
+  .intg .ic { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-md); display: grid; place-items: center; flex: 0 0 auto; color: #fff; font-weight: var(--weight-bold); font-size: var(--text-body-sm); }
+  .intg h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); } .intg .cat { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .intg p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); flex: 1; }
+  .intg .foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .conn { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); }
+  .conn.on { color: #0b6b4f; } .conn.on .d { width: 8px; height: 8px; border-radius: 50%; background: var(--colour-success); }
+  .conn.off { color: var(--colour-text-muted); }
+  .grouphead { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); margin: var(--space-8) 0 var(--space-3); }
+  .grouphead:first-of-type { margin-top: 0; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Integrations">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Integrations</h1>
+    <span class="brief">EPIC-H design brief — settings · integrations directory</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>grouped cards (portals · communications · finance) — connect / configure / connected state</dd></div>
+      <div><dt>Naming</dt><dd>third-party products shown as placeholders in [brackets] per blocker policy</dd></div>
+      <div><dt>States</dt><dd>connected (green dot) · not connected (Connect CTA)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Integrations</h1><p>Connect the tools your agency already uses</p></div></div>
+
+    <p class="grouphead">Property portals</p>
+    <div class="grid">
+      <div class="intg"><div class="top"><span class="ic" style="background:#0b3d2e">RM</span><div><h3>[Rightmove]</h3><span class="cat">Portal feed</span></div></div><p>Push your listings to the portal and pull leads back into the CRM.</p><div class="foot"><span class="conn on"><span class="d"></span>Connected</span><button class="btn secondary sm">Configure</button></div></div>
+      <div class="intg"><div class="top"><span class="ic" style="background:#5a2d82">Z</span><div><h3>[Zoopla]</h3><span class="cat">Portal feed</span></div></div><p>Two-way sync of listings and enquiries.</p><div class="foot"><span class="conn on"><span class="d"></span>Connected</span><button class="btn secondary sm">Configure</button></div></div>
+      <div class="intg"><div class="top"><span class="ic" style="background:#1f2937">OTM</span><div><h3>[OnTheMarket]</h3><span class="cat">Portal feed</span></div></div><p>Add OnTheMarket to your portal distribution.</p><div class="foot"><span class="conn off">Not connected</span><button class="btn primary sm">Connect</button></div></div>
+    </div>
+
+    <p class="grouphead">Communications</p>
+    <div class="grid">
+      <div class="intg"><div class="top"><span class="ic" style="background:#1a73e8">G</span><div><h3>[Google Calendar]</h3><span class="cat">Calendar sync</span></div></div><p>Sync viewings and valuations to agents' calendars both ways.</p><div class="foot"><span class="conn on"><span class="d"></span>Connected</span><button class="btn secondary sm">Configure</button></div></div>
+      <div class="intg"><div class="top"><span class="ic" style="background:#25d366">WA</span><div><h3>[WhatsApp Business]</h3><span class="cat">Messaging</span></div></div><p>Route WhatsApp enquiries into the lead queue. <span class="ubadge grey">On roadmap</span></p><div class="foot"><span class="conn off">Coming soon</span><button class="btn secondary sm" disabled style="opacity:0.5">Connect</button></div></div>
+      <div class="intg"><div class="top"><span class="ic" style="background:#ea4335">M</span><div><h3>[Mailchimp]</h3><span class="cat">Email marketing</span></div></div><p>Sync contacts (with consent) to your newsletter audience.</p><div class="foot"><span class="conn off">Not connected</span><button class="btn primary sm">Connect</button></div></div>
+    </div>
+
+    <p class="grouphead">Finance</p>
+    <div class="grid">
+      <div class="intg"><div class="top"><span class="ic" style="background:#635bff">S</span><div><h3>[Stripe]</h3><span class="cat">Payments</span></div></div><p>Collect holding deposits and rent online.</p><div class="foot"><span class="conn on"><span class="d"></span>Connected</span><button class="btn secondary sm">Configure</button></div></div>
+      <div class="intg"><div class="top"><span class="ic" style="background:#13b5ea">X</span><div><h3>[Xero]</h3><span class="cat">Accounting</span></div></div><p>Export landlord statements and invoices to your ledger.</p><div class="foot"><span class="conn off">Not connected</span><button class="btn primary sm">Connect</button></div></div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

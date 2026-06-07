@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .settings { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .settings { grid-template-columns: 220px minmax(0,1fr); align-items: start; } }
+  .setnav { display: flex; gap: var(--space-1); overflow-x: auto; }
+  @media (min-width: 1024px) { .setnav { flex-direction: column; position: sticky; top: var(--space-6); } }
+  .setnav a { display: flex; align-items: center; min-height: var(--size-touch-target-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--colour-text-secondary); text-decoration: none; font-size: var(--text-body-sm); font-weight: var(--weight-medium); white-space: nowrap; }
+  .setnav a:hover { background: var(--colour-surface-raised); }
+  .setnav a[aria-current] { background: var(--colour-surface-sunken); color: var(--colour-text-primary); font-weight: var(--weight-semibold); }
+  .group { margin-bottom: var(--space-6); }
+  .group .gh { padding: var(--space-2) 0 var(--space-4); }
+  .group .gh h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .group .gh p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .row:last-child { border-bottom: none; }
+  .row .lbl strong { display: block; font-size: var(--text-body-md); } .row .lbl small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .sw { position: relative; width: 44px; height: 26px; flex: 0 0 auto; }
+  .sw input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .sw .track { display: block; width: 44px; height: 26px; border-radius: var(--radius-pill); background: var(--colour-surface-sunken); border: 1px solid var(--colour-border); }
+  .sw .track::after { content:""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: var(--radius-circle); background: var(--colour-surface-base); box-shadow: var(--shadow-xs); transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
+  .sw input:checked + .track { background: var(--colour-brand-primary); border-color: var(--colour-brand-primary); }
+  .sw input:checked + .track::after { transform: translateX(18px); }
+  .sw input:focus-visible + .track { box-shadow: var(--shadow-focus); }
+  .grid2 { display: grid; gap: var(--space-5); grid-template-columns: 1fr; } @media (min-width: 640px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Settings</h1>
+    <span class="brief">EPIC-H design brief — settings hierarchy (H.19)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>left settings-nav · grouped setting cards · sticky save bar</dd></div>
+      <div><dt>Shown</dt><dd>General + Security &amp; compliance groups</dd></div>
+      <div><dt>Compliance</dt><dd>2FA enforcement, audit retention, cookie categories surfaced (tier-aware)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content" style="padding-bottom:0">
+
+    <div class="page-h"><div><h1>Settings</h1><p>Professional plan · Didsbury &amp; 2 branches</p></div></div>
+
+    <div class="settings">
+      <nav class="setnav" aria-label="Settings sections">
+        <a href="#" aria-current="page">General</a>
+        <a href="#">Branches</a>
+        <a href="#">Branding &amp; theme</a>
+        <a href="#">Notifications</a>
+        <a href="#">Security &amp; compliance</a>
+        <a href="#">Email &amp; SMS</a>
+        <a href="#">Integrations</a>
+        <a href="#">Billing &amp; usage</a>
+      </nav>
+
+      <div>
+        <div class="group">
+          <div class="gh"><h2>General</h2><p>The basics shown across the public site and admin.</p></div>
+          <div class="card">
+            <div style="padding:var(--space-5)" class="grid2">
+              <div class="field"><label for="agname">Agency name</label><input id="agname" class="control" type="text" value="Estate Agent Ltd"></div>
+              <div class="field"><label for="tel">Main phone</label><input id="tel" class="control" type="tel" value="0161 000 0000"></div>
+              <div class="field"><label for="reg">Company registration</label><input id="reg" class="control" type="text" value="00000000"></div>
+              <div class="field"><label>Default currency</label><div class="selectwrap"><select class="control"><option>GBP (£)</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="gh"><h2>Security &amp; compliance</h2><p>Some controls are fixed by your plan or by regulation.</p></div>
+          <div class="card">
+            <div class="row"><div class="lbl"><strong>Enforce two-factor for all staff</strong><small>Mandatory on Professional &amp; Enterprise plans</small></div><label class="sw"><input type="checkbox" checked disabled aria-label="Enforce 2FA"><span class="track"></span></label></div>
+            <div class="row"><div class="lbl"><strong>Audit log retention</strong><small>36 months on your plan</small></div><span class="ubadge grey">36 months</span></div>
+            <div class="row"><div class="lbl"><strong>New-device sign-in alerts</strong><small>Email staff when a new device signs in</small></div><label class="sw"><input type="checkbox" checked aria-label="Device alerts"><span class="track"></span></label></div>
+            <div class="row"><div class="lbl"><strong>Cookie consent categories</strong><small>Necessary · Analytics · Marketing · Preferences</small></div><a class="btn secondary sm" href="../../components/security/cookie-banner.html">Configure</a></div>
+            <div class="row"><div class="lbl"><strong>Data retention &amp; erasure</strong><small>Run a Subject Access Request or erasure</small></div><a class="btn secondary sm" href="#">Open tools</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actionbar"><span class="spacer"></span><button class="btn secondary">Discard</button><button class="btn primary">Save changes</button></div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

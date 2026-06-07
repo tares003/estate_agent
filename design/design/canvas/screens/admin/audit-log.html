@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit log — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .filters { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-5); }
+  .filters .selectwrap { max-width: 200px; flex: 1; min-width: 150px; }
+  .actcell { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .actcell .verb { padding: 2px var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-caption); font-weight: var(--weight-semibold); letter-spacing: var(--text-caption-ls); text-transform: uppercase; }
+  .verb.create { background: rgba(16,185,129,0.14); color: #0b6b4f; }
+  .verb.update { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); }
+  .verb.delete { background: rgba(239,68,68,0.12); color: var(--colour-priority-emergency); }
+  .verb.signin { background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+  .expand-row td { background: var(--colour-surface-raised); }
+  .diff { font-family: var(--font-mono); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); overflow-x: auto; white-space: pre; }
+  .diff .add { color: #7ee2b8; } .diff .rem { color: #f4a8a2; } .diff .key { color: var(--colour-brand-accent); }
+  .metaline { display: flex; gap: var(--space-6); flex-wrap: wrap; margin-top: var(--space-3); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .metaline b { color: var(--colour-text-primary); font-weight: var(--weight-medium); }
+  .caret { display: inline-grid; place-items: center; width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
+  tr[aria-expanded="true"] .caret { transform: rotate(90deg); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Audit log">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Audit log viewer</h1>
+    <span class="brief">EPIC-N design brief — reverse-chronological audit log with diff expansion (H.20)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>sticky filters · reverse-chron table · row expands to a syntax-highlighted JSON diff · export</dd></div>
+      <div><dt>Captures</dt><dd>actor · action · entity · structured diff · IP · user-agent (PRODUCT.md §6 rule 3)</dd></div>
+      <div><dt>Shown</dt><dd>one row expanded to its diff</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Audit log</h1><p>Every state-changing action · retained 36 months on your plan</p></div><div style="display:flex;gap:var(--space-3)"><button class="minibtn">Export CSV</button><button class="minibtn">Export JSON</button></div></div>
+
+    <div class="filters">
+      <div class="selectwrap"><input class="control" type="search" placeholder="Search actor or entity" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="left:auto;right:var(--space-3)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></div>
+      <div class="selectwrap"><select class="control" aria-label="Action"><option>All actions</option><option>Create</option><option>Update</option><option>Delete</option><option>Sign in</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="selectwrap"><select class="control" aria-label="Entity"><option>All entities</option><option>Property</option><option>Enquiry</option><option>User</option><option>Repair</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+      <div class="selectwrap"><select class="control" aria-label="Date range"><option>Last 7 days</option><option>Last 30 days</option><option>Last 12 months</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </div>
+
+    <div class="tablewrap">
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr><th></th><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>IP</th></tr></thead>
+          <tbody>
+            <tr><td><span class="caret"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span></td><td>Today 09:14</td><td class="who"><strong>Priya Shah</strong><small>Branch manager</small></td><td><span class="actcell"><span class="verb update">Update</span></span></td><td>Property · Palatine Road</td><td class="ref">82.14.3.9</td></tr>
+            <tr aria-expanded="true"><td><span class="caret"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span></td><td>Today 09:02</td><td class="who"><strong>Jess Mercer</strong><small>Super admin</small></td><td><span class="actcell"><span class="verb update">Update</span></span></td><td>Property · Palatine Road</td><td class="ref">82.14.3.9</td></tr>
+            <tr class="expand-row"><td colspan="6">
+              <div class="diff"><span class="key">"market_status"</span>: <span class="rem">"available"</span> → <span class="add">"under_offer"</span>
+<span class="key">"price"</span>: <span class="rem">525000</span> → <span class="add">525000</span>
+<span class="key">"updated_by"</span>: <span class="add">"user_jess_mercer"</span></div>
+              <div class="metaline"><span>Entity ID: <b>EA-2026-00417</b></span><span>User-agent: <b>Chrome 126 · macOS</b></span><span>Session: <b>sess_9f2a…</b></span></div>
+            </td></tr>
+            <tr><td><span class="caret"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span></td><td>Today 08:47</td><td class="who"><strong>Tom Beckett</strong><small>Sales agent</small></td><td><span class="actcell"><span class="verb create">Create</span></span></td><td>Enquiry · Daniel O'Hara</td><td class="ref">90.2.118.4</td></tr>
+            <tr><td><span class="caret"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span></td><td>Today 08:30</td><td class="who"><strong>Jess Mercer</strong><small>Super admin</small></td><td><span class="actcell"><span class="verb signin">Sign in</span></span></td><td>User · self</td><td class="ref">82.14.3.9</td></tr>
+            <tr><td><span class="caret"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></span></td><td>Yesterday 17:22</td><td class="who"><strong>Ravi Chandra</strong><small>Content editor</small></td><td><span class="actcell"><span class="verb delete">Delete</span></span></td><td>Page · Old offers banner</td><td class="ref">82.14.3.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tabletop" style="border-top:1px solid var(--colour-divider);border-bottom:none"><span class="res">Showing 5 of 4,182 entries</span><div class="right"><button class="minibtn">Previous</button><button class="minibtn">Next</button></div></div>
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

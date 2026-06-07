@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area guide — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display: none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .hero { position: relative; aspect-ratio: var(--ratio-hero); max-height: 420px; background: linear-gradient(135deg,#43564a,#6b7d6a 60%,#9bab8f); display: flex; align-items: flex-end; }
+  .hero::after { content:""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,26,26,0) 40%, rgba(26,26,26,0.7)); }
+  .hero .inner { position: relative; z-index: 1; padding: var(--space-10) var(--space-6); color: var(--colour-text-inverse); max-width: var(--size-container-2xl); margin-inline: auto; width: 100%; }
+  .hero .eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent); font-weight: var(--weight-semibold); }
+  .hero h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); font-weight: var(--weight-regular); margin-top: var(--space-2); }
+  .hero p { opacity: 0.9; max-width: 50ch; margin-top: var(--space-2); }
+
+  .wrap { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-16) var(--space-6); }
+  .layout { display: grid; gap: var(--space-12); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0,1fr) 300px; align-items: start; } }
+  .section { margin-bottom: var(--space-12); }
+  .section h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-bottom: var(--space-4); }
+  .section p { color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); max-width: 64ch; }
+  .facts { display: grid; gap: var(--space-4); grid-template-columns: repeat(2,1fr); margin-top: var(--space-6); }
+  @media (min-width: 640px) { .facts { grid-template-columns: repeat(4,1fr); } }
+  .factcard { border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding: var(--space-4); }
+  .factcard .v { font-family: var(--font-display); font-size: var(--text-heading-lg); } .factcard .l { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .nearby { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .nearby { grid-template-columns: 1fr 1fr; } }
+  .nearby h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+  .nearby li { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-body-sm); padding: var(--space-2) 0; border-bottom: 1px solid var(--colour-divider); }
+  .nearby li small { color: var(--colour-text-muted); }
+  .rail { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-4); scroll-snap-type: x proximity; }
+  .rcard { flex: 0 0 260px; scroll-snap-align: start; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; text-decoration: none; color: inherit; }
+  .rcard .ph { aspect-ratio: var(--ratio-card); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .rcard .b { padding: var(--space-3) var(--space-4); } .rcard .price { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); } .rcard .a { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  /* sidebar */
+  .side { position: sticky; top: calc(var(--size-button-md) + var(--space-12)); display: flex; flex-direction: column; gap: var(--space-5); }
+  .sellcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .sellcard h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); margin-bottom: var(--space-2); }
+  .sellcard p { font-size: var(--text-body-sm); opacity: 0.85; margin-bottom: var(--space-4); }
+  .sellcard a { display: inline-flex; width: 100%; justify-content: center; align-items: center; height: var(--size-button-md); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; }
+  .map { aspect-ratio: 1/1; border-radius: var(--radius-lg); background: linear-gradient(135deg,#dfe5e3,#eef0ec); border: 1px solid var(--colour-border); position: relative; }
+  .map .pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-100%); color: var(--colour-brand-primary); } .map .pin svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Area guide</h1>
+    <span class="brief">EPIC-C design brief — area / location guide detail</span>
+    <dl class="annotations">
+      <div><dt>Structure</dt><dd>hero + strapline → about → at-a-glance facts → transport &amp; schools → properties in this area → "selling here?" CTA</dd></div>
+      <div><dt>Components</dt><dd>HeroSection · PropertyCarousel · ContactInfoBlock · CTAStrip</dd></div>
+      <div><dt>Map</dt><dd>provides a textual fallback (a11y)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="#">New homes</a><a href="#" aria-current="page">Area guides</a><a href="contact.html">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="hero"><div class="inner"><p class="eyebrow">Area guide · Manchester</p><h1>Living in Didsbury</h1><p>Leafy, village-feel and well-connected — one of South Manchester's most loved neighbourhoods.</p></div></section>
+
+  <div class="wrap"><div class="layout">
+    <div>
+      <div class="section">
+        <h2>About the area</h2>
+        <p>Didsbury blends a genuine village atmosphere with easy access to the city. Independent cafés, characterful pubs and green spaces along the Mersey sit alongside Edwardian and Victorian homes. It's a long-standing favourite with families and professionals for its schools, its high street and its quick Metrolink hop into town.</p>
+        <div class="facts">
+          <div class="factcard"><div class="v">£498k</div><div class="l">avg. sale price</div></div>
+          <div class="factcard"><div class="v">£1,350</div><div class="l">avg. rent PCM</div></div>
+          <div class="factcard"><div class="v">28</div><div class="l">avg. days to sell</div></div>
+          <div class="factcard"><div class="v">3</div><div class="l">Metrolink stops</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Getting around &amp; schools</h2>
+        <div class="nearby">
+          <div><h3>Transport</h3><ul><li>East Didsbury (Metrolink) <small>tram to city ~25 min</small></li><li>Didsbury Village (Metrolink) <small>~22 min</small></li><li>East Didsbury rail <small>direct to Piccadilly</small></li></ul></div>
+          <div><h3>Schools</h3><ul><li>Beaver Road Primary <small>Outstanding</small></li><li>Didsbury CofE Primary <small>Good</small></li><li>Parrs Wood High <small>Good</small></li></ul></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Properties in Didsbury</h2>
+        <div class="rail">
+          <a class="rcard" href="property-detail.html"><div class="ph"></div><div class="b"><div class="price">£525,000</div><div class="a">Palatine Road · 4 bed</div></div></a>
+          <a class="rcard" href="property-detail.html"><div class="ph"></div><div class="b"><div class="price">£465,000</div><div class="a">Brooklawn Drive · 4 bed</div></div></a>
+          <a class="rcard" href="property-detail.html"><div class="ph"></div><div class="b"><div class="price">£725,000</div><div class="a">Parrs Wood Road · 5 bed</div></div></a>
+          <a class="rcard" href="property-detail.html"><div class="ph"></div><div class="b"><div class="price">£399,995</div><div class="a">Cavendish Road · 3 bed</div></div></a>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="map" role="img" aria-label="Map of Didsbury, Manchester M20"><span class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg></span></div>
+      <div class="sellcard"><h3>Thinking of selling here?</h3><p>We know Didsbury inside out. Get a free, no-obligation valuation — indicative only.</p><a href="sales-landing.html">Book a valuation</a></div>
+    </aside>
+  </div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

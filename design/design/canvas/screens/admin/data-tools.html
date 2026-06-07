@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data tools — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .twoup { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 1280px) { .twoup { grid-template-columns: 1fr 1fr; align-items: start; } }
+  .toolcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .toolcard.danger { border-color: rgba(239,68,68,0.4); }
+  .toolcard .th { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); }
+  .toolcard.danger .th { background: rgba(239,68,68,0.05); }
+  .toolcard .th h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .toolcard .th p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+  .tb { padding: var(--space-6); }
+  .wizsteps { display: flex; gap: var(--space-2); margin-bottom: var(--space-6); }
+  .wizsteps i { flex: 1; height: var(--space-1); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); }
+  .wizsteps i.on { background: var(--colour-brand-primary); }
+  .stepcap { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-text-muted); margin-bottom: var(--space-3); }
+  .scopeitem { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); margin-bottom: var(--space-2); }
+  .scopeitem input { width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); }
+  .scopeitem .ct { margin-left: auto; color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .foundbox { padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--colour-surface-raised); margin-bottom: var(--space-5); }
+  .foundbox strong { font-family: var(--font-display); font-size: var(--text-heading-md); }
+  .danger-confirm { display: flex; flex-direction: column; gap: var(--space-4); }
+  .danger-confirm .step { padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); }
+  .danger-confirm .step .n { display: inline-flex; align-items: center; justify-content: center; width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); margin-right: var(--space-2); }
+  .danger-confirm label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); display: block; margin-bottom: var(--space-2); }
+  .warnnote { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-left: 3px solid var(--colour-danger); background: rgba(239,68,68,0.06); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: #8f2018; margin-bottom: var(--space-5); }
+  .warnnote svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-danger); flex: 0 0 auto; }
+  .kept { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-3); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .kept li { display: flex; gap: var(--space-2); } .kept svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-success); flex: 0 0 auto; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Data tools">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>GDPR data tools</h1>
+    <span class="brief">EPIC-N design brief — Subject Access Request export + erasure tool (admin)</span>
+    <dl class="annotations">
+      <div><dt>SAR</dt><dd>4 steps: subject email → scope → run → deliver via signed URL; audit-logged on completion</dd></div>
+      <div><dt>Erasure</dt><dd>preview affected rows → two-step type-to-confirm; anonymises (keeps audit entries)</dd></div>
+      <div><dt>Compliance</dt><dd>both write an audit-log entry (PRODUCT.md §6 rule 3 &amp; 6)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Data tools</h1><p>Subject Access Requests &amp; right-to-erasure · UK GDPR / DPA 2018</p></div></div>
+
+    <div class="twoup">
+
+      <!-- SAR -->
+      <div class="toolcard">
+        <div class="th"><h2>Subject Access Request</h2><p>Export everything held about a data subject.</p></div>
+        <div class="tb">
+          <div class="wizsteps" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+          <p class="stepcap">Step 2 of 4 · Choose scope</p>
+          <div class="field" style="margin-bottom:var(--space-5)"><label for="se">Data subject email</label><input id="se" class="control" type="email" value="daniel.ohara@example.co.uk" readonly></div>
+          <p class="stepcap">Include records from</p>
+          <label class="scopeitem"><input type="checkbox" checked> Enquiries &amp; messages <span class="ct">4 records</span></label>
+          <label class="scopeitem"><input type="checkbox" checked> Viewings &amp; valuations <span class="ct">2 records</span></label>
+          <label class="scopeitem"><input type="checkbox" checked> Repairs raised <span class="ct">1 record</span></label>
+          <label class="scopeitem"><input type="checkbox" checked> Contact &amp; consent record <span class="ct">1 record</span></label>
+          <label class="scopeitem"><input type="checkbox"> Audit-log entries (actor only) <span class="ct">12 records</span></label>
+          <div style="display:flex;gap:var(--space-3);margin-top:var(--space-6)"><button class="btn secondary">Back</button><span style="flex:1"></span><button class="btn primary">Run export</button></div>
+        </div>
+      </div>
+
+      <!-- Erasure -->
+      <div class="toolcard danger">
+        <div class="th"><h2>Erase a data subject</h2><p>Permanently anonymise personal data. This can't be undone.</p></div>
+        <div class="tb">
+          <div class="foundbox"><span style="font-size:var(--text-body-sm);color:var(--colour-text-muted)">Records found for daniel.ohara@example.co.uk</span><br><strong>8 records across 4 areas</strong></div>
+          <div class="warnnote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div>Personal fields will be irreversibly anonymised. Transactional and legal records are retained but stripped of identifying data.</div></div>
+          <div class="danger-confirm">
+            <div class="step"><label for="d1"><span class="n">1</span>Type the email to confirm</label><input id="d1" class="control" type="text" placeholder="daniel.ohara@example.co.uk"></div>
+            <div class="step"><label for="d2"><span class="n">2</span>Type DELETE to confirm</label><input id="d2" class="control" type="text" placeholder="DELETE"></div>
+          </div>
+          <ul class="kept"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Audit-log entries kept but anonymised (legal basis)</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Completed-transaction records retained per retention policy</li></ul>
+          <button class="btn danger" style="width:100%;margin-top:var(--space-5)" disabled style="opacity:0.5">Anonymise this data subject</button>
+        </div>
+      </div>
+
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

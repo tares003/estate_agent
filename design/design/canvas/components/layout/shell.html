@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout & shell — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .demo-frame { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+
+  /* ---- Header (desktop) ---- */
+  .site-header { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); }
+  @media (min-width: 768px) { .nav { display: flex; } .hamburger { display: none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); position: relative; }
+  .nav a:hover { color: var(--colour-brand-accent); }
+  .nav a[aria-current]::after { content: ""; position: absolute; left: var(--space-3); right: var(--space-3); bottom: 0; height: 2px; background: var(--colour-brand-accent); }
+  .header-actions { display: flex; align-items: center; gap: var(--space-3); }
+  .tel { display: none; align-items: center; gap: var(--space-2); color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-sm); }
+  @media (min-width: 1024px) { .tel { display: flex; } }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); border-radius: var(--radius-sm); }
+  .hamburger { display: grid; }
+  .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  /* ---- Mobile menu (open) ---- */
+  .mobilemenu { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); padding: var(--space-4) var(--space-6) var(--space-8); }
+  .mobilemenu a { display: flex; align-items: center; min-height: var(--size-touch-target-min); color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-lg); border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .mobilemenu .cta { width: 100%; justify-content: center; height: var(--size-button-lg); margin-top: var(--space-5); font-size: var(--text-body-md); }
+
+  /* ---- Footer ---- */
+  .site-footer { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); padding: var(--space-16) var(--space-6) var(--space-8); }
+  .foot-grid { display: grid; gap: var(--space-10); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .foot-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .foot-grid { grid-template-columns: 1.5fr repeat(3, 1fr); } }
+  .foot-grid h4 { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent); margin-bottom: var(--space-4); font-family: var(--font-body); font-weight: var(--weight-semibold); }
+  .foot-grid a { display: block; color: var(--colour-text-on-dark); opacity: 0.85; text-decoration: none; padding: var(--space-1) 0; font-size: var(--text-body-sm); }
+  .foot-grid a:hover { opacity: 1; color: var(--colour-brand-accent); }
+  .foot-grid p { opacity: 0.8; font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); }
+  .legal { margin-top: var(--space-12); padding-top: var(--space-6); border-top: 1px solid rgba(255,255,255,0.12); display: flex; flex-wrap: wrap; gap: var(--space-4); justify-content: space-between; font-size: var(--text-caption); opacity: 0.7; }
+
+  /* ---- Sticky valuation CTA ---- */
+  .stickycta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+  .stickycta strong { font-family: var(--font-display); font-size: var(--text-heading-sm); }
+  .stickycta small { display: block; font-weight: var(--weight-regular); font-size: var(--text-body-sm); opacity: 0.8; }
+  .stickycta .go { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); text-decoration: none; }
+
+  /* ---- Reviews badge ---- */
+  .reviews { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); }
+  .reviews .stars { color: var(--colour-brand-accent); letter-spacing: 2px; font-size: var(--text-body-lg); }
+  .reviews .score { font-weight: var(--weight-semibold); }
+  .reviews small { display: block; color: var(--colour-text-muted); font-size: var(--text-caption); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Layout &amp; shell</h1>
+    <span class="brief">EPIC-L design brief — Header · MobileMenu · Footer · StickyValuationCTA · ReviewsBadge</span>
+    <dl class="annotations">
+      <div><dt>Shell</dt><dd>Header · MobileMenu · Footer · StickyValuationCTA · ReviewsBadge</dd></div>
+      <div><dt>Responsive</dt><dd>nav collapses to logo + tel + hamburger below 768 px (design-requirements §2)</dd></div>
+      <div><dt>Trust</dt><dd>reviews badge shows source + date range (PRODUCT.md §8)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Header</h2>
+      <p class="lede">Sticky utility at the top edge, unmissable conversion CTA in accent. Below <code>--breakpoint-md</code> the nav collapses to logo + phone + hamburger. The "Get a free valuation" CTA stays reachable at every width.</p>
+      <div class="demo-frame">
+        <div class="site-header">
+          <div class="row">
+            <a class="brand" href="#"><span class="mark">EA</span>Estate Agent</a>
+            <nav class="nav" aria-label="Primary">
+              <a href="#" aria-current="page">For sale</a>
+              <a href="#">To rent</a>
+              <a href="#">New homes</a>
+              <a href="#">Area guides</a>
+              <a href="#">Branches</a>
+              <a href="#">Contact</a>
+            </nav>
+            <div class="header-actions">
+              <a class="tel" href="tel:01610000000"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg>0161 000 0000</a>
+              <a class="cta" href="#">Get a free valuation</a>
+              <button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Mobile menu (open)</h2>
+      <p class="lede">Full-width drawer triggered by the hamburger. Large 44 px+ tap rows, accent CTA pinned. Slide-in over <code>--motion-duration-base</code>.</p>
+      <div class="demo-frame" style="max-width:420px">
+        <div class="site-header"><div class="row"><a class="brand" href="#"><span class="mark">EA</span>Estate Agent</a><button class="iconbtn" aria-label="Close menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>
+        <nav class="mobilemenu" aria-label="Mobile">
+          <a href="#">For sale</a><a href="#">To rent</a><a href="#">New homes</a><a href="#">Area guides</a><a href="#">Branches</a><a href="#">Contact</a>
+          <a class="cta" href="#">Get a free valuation</a>
+        </nav>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Sticky valuation CTA &amp; reviews badge</h2>
+      <p class="lede">The valuation prompt rides along the page; the reviews badge declares its source and date range per the trust-marker rules.</p>
+      <div class="demo-tray col">
+        <div class="stickycta">
+          <div><strong>Thinking of selling or letting?</strong><small>Free, no-obligation valuation — indicative only.</small></div>
+          <a class="go" href="#">Book a valuation</a>
+        </div>
+        <div class="reviews" aria-label="Customer rating 4.9 out of 5 from 318 Google reviews">
+          <span class="stars" aria-hidden="true">★★★★★</span>
+          <div><span class="score">4.9 / 5</span><small>318 Google reviews · Jan 2024 – May 2026</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Footer</h2>
+      <p class="lede">Editorial dark footer with branch links, legal, and the regulatory / compliance row (Property Ombudsman, registration number).</p>
+      <div class="demo-frame">
+        <footer class="site-footer">
+          <div class="foot-grid">
+            <div>
+              <a class="brand" href="#" style="margin-bottom:var(--space-4)"><span class="mark">EA</span>Estate Agent</a>
+              <p>Sales, lettings and new homes across Greater Manchester. Established 1998. Member of the Property Ombudsman.</p>
+            </div>
+            <div><h4>Buy &amp; rent</h4><a href="#">Properties for sale</a><a href="#">Properties to rent</a><a href="#">New homes</a><a href="#">Sold prices</a></div>
+            <div><h4>Sellers &amp; landlords</h4><a href="#">Free valuation</a><a href="#">Why choose us</a><a href="#">Landlord fees</a><a href="#">Report a repair</a></div>
+            <div><h4>Company</h4><a href="#">Our branches</a><a href="#">Meet the team</a><a href="#">Area guides</a><a href="#">Contact</a></div>
+          </div>
+          <div class="legal">
+            <span>© 1998–2026 Estate Agent Ltd · Registered in England &amp; Wales no. 00000000</span>
+            <span style="display:flex;gap:var(--space-4)"><a href="#" style="opacity:0.85;text-decoration:none;color:inherit">Privacy</a><a href="#" style="opacity:0.85;text-decoration:none;color:inherit">Cookies</a><a href="#" style="opacity:0.85;text-decoration:none;color:inherit">Complaints</a></span>
+          </div>
+        </footer>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> header/footer bg <b>--colour-brand-primary</b> · CTA <b>--colour-brand-accent</b> on <b>--colour-brand-accent-on</b> · current-nav underline <b>--colour-brand-accent</b> · sticky CTA <b>--shadow-md</b>, <b>--radius-lg</b> · tap rows ≥ <b>--size-touch-target-min</b> · z <b>--z-sticky</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> primary nav in a labelled <code>&lt;nav&gt;</code> with <code>aria-current="page"</code>; hamburger and close are labelled 44 px buttons; reviews badge has a full text <code>aria-label</code> (stars are decorative). No hover-only nav — all links work on tap.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

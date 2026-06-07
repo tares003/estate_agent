@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repair inbox — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .app { display: flex; min-height: 760px; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  html.embed .app { border: none; border-radius: 0; min-height: 100vh; }
+
+  .sidebar { width: 240px; flex: 0 0 240px; background: var(--colour-surface-sunken); border-right: 1px solid var(--colour-border); display: flex; flex-direction: column; }
+  @media (max-width: 1024px) { .sidebar { width: 64px; flex-basis: 64px; } .sidebar .lbl, .sidebar .sect { display: none; } .sidebar .brand span.name { display: none; } }
+  @media (max-width: 768px) { .sidebar { display: none; } }
+  .sidebar .brand { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); height: 56px; }
+  .sidebar .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-weight: var(--weight-bold); font-family: var(--font-display); flex: 0 0 auto; }
+  .sidebar .brand span.name { font-family: var(--font-display); font-size: var(--text-heading-sm); }
+  .sidebar nav { padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
+  .sidebar a { display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-touch-target-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--colour-text-secondary); text-decoration: none; font-size: var(--text-body-sm); font-weight: var(--weight-medium); }
+  .sidebar a svg { width: var(--size-icon-md); height: var(--size-icon-md); flex: 0 0 auto; }
+  .sidebar a:hover { background: var(--colour-surface-raised); color: var(--colour-text-primary); }
+  .sidebar a[aria-current] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .sidebar a .pip { margin-left: auto; background: var(--colour-priority-emergency); color: var(--colour-brand-primary-on); font-size: var(--text-caption); font-weight: var(--weight-semibold); border-radius: var(--radius-pill); padding: 0 var(--space-2); min-width: 20px; text-align: center; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { height: 56px; display: flex; align-items: center; gap: var(--space-4); padding-inline: var(--space-6); border-bottom: 1px solid var(--colour-border); }
+  .topbar .crumbs { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .topbar .crumbs b { color: var(--colour-text-primary); font-weight: var(--weight-semibold); }
+  .topbar .avatar { margin-left: auto; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .topbar .ham { display: grid; width: var(--size-touch-target-min); height: var(--size-touch-target-min); place-items: center; color: var(--colour-text-secondary); } @media (min-width: 768px) { .topbar .ham { display: none; } }
+  .topbar .ham svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .content { padding: var(--space-6); overflow: auto; flex: 1; }
+  .page-h { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .page-h h1 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+
+  /* urgency filter pills */
+  .ufilters { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-5); }
+  .uf { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--space-10); padding-inline: var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--colour-border); background: var(--colour-surface-base); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); cursor: pointer; }
+  .uf .c { font-size: var(--text-caption); padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+  .uf.active { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); border-color: var(--colour-brand-primary); }
+  .uf.active .c { background: rgba(255,255,255,0.2); color: var(--colour-brand-primary-on); }
+  .uf .swatch { width: 8px; height: 8px; border-radius: var(--radius-circle); }
+  .uf .swatch.e { background: var(--colour-priority-emergency); } .uf .swatch.u { background: var(--colour-priority-urgent); } .uf .swatch.s { background: var(--colour-priority-standard); } .uf .swatch.l { background: var(--colour-priority-low); }
+
+  /* table */
+  .tablewrap { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; background: var(--colour-surface-base); }
+  .tabletop { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .tabletop .res { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .tabletop .right { margin-left: auto; display: flex; gap: var(--space-2); }
+  .minibtn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--space-10); padding-inline: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .minibtn svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  table.t { width: 100%; }
+  table.t th { text-align: left; padding: var(--space-3) var(--space-4); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); border-bottom: 1px solid var(--colour-divider); white-space: nowrap; }
+  table.t th.sortable { cursor: pointer; } table.t th .arr { color: var(--colour-text-primary); }
+  table.t td { padding: var(--space-3) var(--space-4); font-size: var(--text-body-sm); border-bottom: 1px solid var(--colour-divider); white-space: nowrap; }
+  table.t tbody tr { cursor: pointer; }
+  table.t tbody tr:hover td { background: var(--colour-surface-raised); }
+  table.t tbody tr:last-child td { border-bottom: none; }
+  table.t .ref { font-family: var(--font-mono); color: var(--colour-text-secondary); }
+  table.t .who strong { display: block; } table.t .who small { color: var(--colour-text-muted); }
+  tr.overdue td:first-child { box-shadow: inset 3px 0 0 var(--colour-danger); }
+
+  .ubadge { display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); font-weight: var(--weight-semibold); letter-spacing: var(--text-caption-ls); text-transform: uppercase; }
+  .ubadge.e { background: rgba(220,38,38,0.12); color: var(--colour-priority-emergency); }
+  .ubadge.u { background: rgba(245,158,11,0.16); color: #8a5a00; }
+  .ubadge.s { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); }
+  .ubadge.l { background: var(--colour-surface-sunken); color: var(--colour-text-muted); }
+  .status { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .status .d { width: 8px; height: 8px; border-radius: var(--radius-circle); }
+  .status.new .d { background: var(--colour-success); }
+  .status.triage .d { background: var(--colour-info); }
+  .status.progress .d { background: var(--colour-warning); }
+  .status.done .d { background: var(--colour-text-muted); }
+  .sla { font-weight: var(--weight-semibold); }
+  .sla.ok { color: var(--colour-success); } .sla.warn { color: #8a5a00; } .sla.breach { color: var(--colour-danger); }
+  .assignee { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .assignee .av { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); }
+  .assignee.none { color: var(--colour-text-muted); font-style: italic; }
+
+  .scrollx { overflow-x: auto; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Admin repair inbox</h1>
+    <span class="brief">EPIC-G design brief — admin repair triage (Phase B · H.8)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>urgency filter pills with counts · sortable table · SLA badges · overdue rows get a red left accent</dd></div>
+      <div><dt>Responsive</dt><dd>table scrolls horizontally in its container; converts to stacked cards below 768px</dd></div>
+      <div><dt>Components</dt><dd>AdminTable · StatusBadge (urgency + status) · Drawer (slide-over triage)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app">
+
+    <aside class="sidebar" aria-label="Admin navigation">
+      <div class="brand"><span class="mark">EA</span><span class="name">Admin</span></div>
+      <nav>
+        <a href="dashboard-overview.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span class="lbl">Dashboard</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg><span class="lbl">Properties</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg><span class="lbl">Enquiries</span><span class="pip">12</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="lbl">Calendar</span></a>
+        <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg><span class="lbl">Repairs</span><span class="pip">3</span></a>
+        <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/></svg><span class="lbl">Contacts</span></a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="ham" aria-label="Open navigation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <nav class="crumbs" aria-label="Breadcrumb"><span>Admin</span><span>›</span><b>Repairs</b></nav>
+        <span class="avatar" aria-label="Your account">JM</span>
+      </header>
+
+      <div class="content">
+        <div class="page-h"><h1>Repair inbox</h1></div>
+
+        <div class="ufilters" role="group" aria-label="Filter by urgency">
+          <button class="uf active">All <span class="c">11</span></button>
+          <button class="uf"><span class="swatch e"></span>Emergency <span class="c">1</span></button>
+          <button class="uf"><span class="swatch u"></span>Urgent <span class="c">3</span></button>
+          <button class="uf"><span class="swatch s"></span>Standard <span class="c">5</span></button>
+          <button class="uf"><span class="swatch l"></span>Non-urgent <span class="c">2</span></button>
+        </div>
+
+        <div class="tablewrap">
+          <div class="tabletop">
+            <span class="res">Showing 11 of 11 open repairs</span>
+            <div class="right">
+              <button class="minibtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Columns</button>
+              <button class="minibtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>Comfortable</button>
+            </div>
+          </div>
+          <div class="scrollx">
+            <table class="t">
+              <thead><tr>
+                <th>Ref</th><th>Tenant</th><th>Address</th><th>Category</th><th>Urgency</th><th>Status</th><th>Assignee</th><th class="sortable">Age <span class="arr">↓</span></th><th>SLA</th>
+              </tr></thead>
+              <tbody>
+                <tr class="overdue">
+                  <td class="ref">RP-1188</td><td class="who"><strong>Maria Costa</strong></td><td>3 Birch Avenue, M19</td><td>Plumbing</td><td><span class="ubadge e">Emergency</span></td><td><span class="status triage"><span class="d"></span>Triage</span></td><td><span class="assignee none">Unassigned</span></td><td>6h</td><td><span class="sla breach">Breached</span></td>
+                </tr>
+                <tr>
+                  <td class="ref">RP-1192</td><td class="who"><strong>Daniel O'Hara</strong></td><td>14 Cromwell Grove, M19</td><td>Heating</td><td><span class="ubadge u">Urgent</span></td><td><span class="status new"><span class="d"></span>New</span></td><td><span class="assignee none">Unassigned</span></td><td>2h</td><td><span class="sla warn">4h left</span></td>
+                </tr>
+                <tr>
+                  <td class="ref">RP-1185</td><td class="who"><strong>Aisha Rahman</strong></td><td>22 Elm Grove, M14</td><td>Electrical</td><td><span class="ubadge u">Urgent</span></td><td><span class="status progress"><span class="d"></span>In progress</span></td><td><span class="assignee"><span class="av">TB</span>Tom B.</span></td><td>1d</td><td><span class="sla ok">On track</span></td>
+                </tr>
+                <tr>
+                  <td class="ref">RP-1180</td><td class="who"><strong>James Reid</strong></td><td>7 Clyde Road, M20</td><td>Appliances</td><td><span class="ubadge s">Standard</span></td><td><span class="status progress"><span class="d"></span>Scheduled</span></td><td><span class="assignee"><span class="av">PS</span>Priya S.</span></td><td>2d</td><td><span class="sla ok">On track</span></td>
+                </tr>
+                <tr>
+                  <td class="ref">RP-1176</td><td class="who"><strong>Nina Patel</strong></td><td>5 Oak Street, M19</td><td>Structural</td><td><span class="ubadge s">Standard</span></td><td><span class="status triage"><span class="d"></span>Triage</span></td><td><span class="assignee none">Unassigned</span></td><td>2d</td><td><span class="sla warn">1d left</span></td>
+                </tr>
+                <tr>
+                  <td class="ref">RP-1170</td><td class="who"><strong>Greg Lawson</strong></td><td>18 Pine Close, M20</td><td>Other</td><td><span class="ubadge l">Non-urgent</span></td><td><span class="status progress"><span class="d"></span>In progress</span></td><td><span class="assignee"><span class="av">TB</span>Tom B.</span></td><td>5d</td><td><span class="sla ok">On track</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

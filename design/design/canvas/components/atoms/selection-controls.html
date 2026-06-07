@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selection controls — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .opt { display: flex; gap: var(--space-3); align-items: flex-start; min-height: var(--size-touch-target-min); cursor: pointer; }
+  .opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .opt .box, .opt .dot {
+    flex: 0 0 auto; width: var(--space-5); height: var(--space-5); margin-top: 2px;
+    border: 1px solid var(--colour-border); background: var(--colour-surface-base);
+    display: grid; place-items: center; color: var(--colour-brand-primary-on);
+    transition: background var(--motion-duration-fast) var(--motion-ease-standard), border-color var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+  .opt .box { border-radius: var(--radius-sm); }
+  .opt .dot { border-radius: var(--radius-circle); }
+  .opt .box svg { width: 14px; height: 14px; opacity: 0; }
+  .opt .dot::after { content: ""; width: var(--space-2); height: var(--space-2); border-radius: var(--radius-circle); background: var(--colour-brand-primary-on); transform: scale(0); transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
+  .opt input:hover + .box, .opt input:hover + .dot { border-color: var(--colour-text-muted); }
+  .opt input:focus-visible + .box, .opt input:focus-visible + .dot { box-shadow: var(--shadow-focus); border-color: var(--colour-brand-accent); }
+  .opt input:checked + .box { background: var(--colour-brand-primary); border-color: var(--colour-brand-primary); }
+  .opt input:checked + .box svg { opacity: 1; }
+  .opt input:checked + .dot { border-color: var(--colour-brand-primary); }
+  .opt input:checked + .dot::after { transform: scale(1); background: var(--colour-brand-primary); }
+  .opt input:disabled + .box, .opt input:disabled + .dot { background: var(--colour-surface-sunken); border-color: var(--colour-border); }
+  .opt input:disabled ~ .lbl { color: var(--colour-text-muted); }
+  .opt .lbl { font-size: var(--text-body-md); }
+  .opt .lbl small { display: block; color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+
+  /* switch */
+  .switch { display: inline-flex; gap: var(--space-3); align-items: center; min-height: var(--size-touch-target-min); cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch .track { width: 44px; height: 26px; border-radius: var(--radius-pill); background: var(--colour-surface-sunken); border: 1px solid var(--colour-border); position: relative; transition: background var(--motion-duration-fast) var(--motion-ease-standard); }
+  .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: var(--radius-circle); background: var(--colour-surface-base); box-shadow: var(--shadow-xs); transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
+  .switch input:checked + .track { background: var(--colour-brand-primary); border-color: var(--colour-brand-primary); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+  .switch input:focus-visible + .track { box-shadow: var(--shadow-focus); }
+  .switch input:disabled + .track { opacity: 0.5; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Selection controls</h1>
+    <span class="brief">EPIC-L design brief — Atoms · Checkbox · Radio · Switch</span>
+    <dl class="annotations">
+      <div><dt>Controls</dt><dd>Checkbox · Radio · Switch</dd></div>
+      <div><dt>States</dt><dd>unchecked · checked · focus · disabled · indeterminate</dd></div>
+      <div><dt>Rules</dt><dd>real inputs under visual layer; 44 px hit area</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+    <section class="demo-section">
+      <h2>Checkbox</h2>
+      <p class="lede">Whole row is the hit target (≥ 44 px). The visual box sits over a real <code>&lt;input type="checkbox"&gt;</code>.</p>
+      <div class="demo-tray col">
+        <label class="opt"><input type="checkbox"><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Email me when similar properties are added</span></label>
+        <label class="opt"><input type="checkbox" checked><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">I agree to the privacy policy <small>Required — links to /privacy in a new tab</small></span></label>
+        <label class="opt"><input type="checkbox" disabled><span class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span class="lbl">Marketing emails (unavailable until consent given)</span></label>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Radio</h2>
+      <p class="lede">Single choice from a set. Grouped under one <code>name</code> in a <code>role="radiogroup"</code> fieldset.</p>
+      <fieldset style="border:none">
+        <legend style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-3)">I'm looking to</legend>
+        <div class="demo-tray col">
+          <label class="opt"><input type="radio" name="intent" checked><span class="dot"></span><span class="lbl">Buy a property</span></label>
+          <label class="opt"><input type="radio" name="intent"><span class="dot"></span><span class="lbl">Rent a property</span></label>
+          <label class="opt"><input type="radio" name="intent"><span class="dot"></span><span class="lbl">Sell or let my property</span></label>
+          <label class="opt"><input type="radio" name="intent" disabled><span class="dot"></span><span class="lbl">Commercial (coming soon)</span></label>
+        </div>
+      </fieldset>
+    </section>
+
+    <section class="demo-section">
+      <h2>Switch</h2>
+      <p class="lede">Immediate on/off for settings — e.g. enforcing 2FA, toggling a listing live. Uses a real checkbox underneath with <code>role="switch"</code>.</p>
+      <div class="demo-tray col">
+        <label class="switch"><input type="checkbox" role="switch" checked><span class="track"></span><span>Two-factor authentication enforced</span></label>
+        <label class="switch"><input type="checkbox" role="switch"><span class="track"></span><span>Show property on the public site</span></label>
+        <label class="switch"><input type="checkbox" role="switch" disabled checked><span class="track"></span><span>Audit logging (always on, can't disable)</span></label>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> control fill <b>--colour-brand-primary</b> · radius <b>--radius-sm</b> (checkbox) / <b>--radius-circle</b> (radio, switch knob) · focus <b>--shadow-focus</b> · transition <b>--motion-duration-fast --motion-ease-standard</b> · disabled <b>--colour-surface-sunken</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> all three are real inputs visually hidden but focusable; the label wraps the control so the whole row toggles and the hit area is ≥ 44 px. Focus ring uses <code>--colour-focus-ring</code>. Switch carries <code>role="switch"</code>; radio groups use a <code>&lt;fieldset&gt;</code> + <code>&lt;legend&gt;</code>.</div>
+    </section>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

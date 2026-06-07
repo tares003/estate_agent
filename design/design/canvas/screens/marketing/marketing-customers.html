@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — customer story — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* customer story hero */
+  .cshero { background: var(--mkt-bg); color: var(--mkt-on-dark); position: relative; overflow: hidden; }
+  .cshero::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 70% at 80% 10%, rgba(34,211,238,0.18), transparent 60%); }
+  .cshero .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .cshero .logo { display: inline-grid; place-items: center; height: var(--space-10); padding-inline: var(--space-5); border: 1px solid var(--mkt-border-dark); border-radius: var(--radius-md); font-weight: var(--weight-bold); letter-spacing: -0.02em; margin-bottom: var(--space-5); }
+  .cshero h1 { font-size: var(--text-display-md); max-width: 20ch; } @media (min-width: 1024px) { .cshero h1 { font-size: var(--text-display-lg); } }
+  .cshero .summary { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 50ch; margin-top: var(--space-4); }
+
+  .csbody { display: grid; gap: var(--space-12); grid-template-columns: 1fr; } @media (min-width: 1024px) { .csbody { grid-template-columns: minmax(0,1fr) 300px; align-items: start; } }
+  .prose > p { font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); color: var(--mkt-ink); margin-bottom: var(--space-6); }
+  .prose h2 { font-size: var(--text-heading-lg); font-weight: var(--weight-bold); letter-spacing: -0.01em; margin: var(--space-8) 0 var(--space-3); }
+  .pull { border-left: 3px solid var(--mkt-primary); padding: var(--space-3) 0 var(--space-3) var(--space-6); margin: var(--space-8) 0; font-size: var(--text-heading-md); font-weight: var(--weight-semibold); letter-spacing: -0.01em; color: var(--mkt-ink); }
+  .pull cite { display: block; font-size: var(--text-body-sm); font-weight: var(--weight-regular); color: var(--mkt-ink-2); font-style: normal; margin-top: var(--space-3); }
+
+  .csside { position: sticky; top: 90px; display: flex; flex-direction: column; gap: var(--space-5); }
+  .scard { border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); padding: var(--space-5); }
+  .scard h3 { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-ink-2); font-weight: var(--weight-bold); margin-bottom: var(--space-3); }
+  .scard .kv { display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-body-sm); padding: var(--space-2) 0; border-bottom: 1px solid var(--mkt-border); } .scard .kv:last-child { border-bottom: none; } .scard .kv dt { color: var(--mkt-ink-2); } .scard .kv dd { font-weight: var(--weight-semibold); text-align: right; }
+  .metrics { display: flex; flex-direction: column; gap: var(--space-4); }
+  .metric .v { font-weight: var(--weight-bold); font-size: var(--text-display-sm); letter-spacing: -0.02em; color: var(--mkt-primary); } .metric .l { font-size: var(--text-body-sm); color: var(--mkt-ink-2); }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — customer story</h1>
+    <span class="brief">EPIC-AE design brief — /customers/[slug] (CustomerStoryHero + Article)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>logo + impact hero · quote pull-out · rich-text article · sidebar (details + metric callouts) · CTA</dd></div>
+      <div><dt>Components</dt><dd>CustomerStoryHero · CustomerStoryArticle · metric callouts</dd></div>
+      <div><dt>Empty-state note</dt><dd>at early launch the index shows "Coming soon — want to be one of our first?" (§ state variations)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="#" aria-current="page">Customers</a><a href="marketing-trust.html">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="cshero">
+    <div class="mkt-inner">
+      <span class="logo">Northern Homes</span>
+      <p class="mkt-eyebrow">Customer story</p>
+      <h1 class="display">How Northern Homes cut response time by 60%.</h1>
+      <p class="summary">A nine-branch agency moved off a patchwork of tools onto one modular platform — and never looked back.</p>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner csbody">
+      <article class="prose">
+        <p>Northern Homes had grown to nine branches across the North West, but its systems hadn't kept up — a website from one vendor, a CRM from another, and lettings run largely on spreadsheets. Leads slipped through the gaps, and no one had a single view of the pipeline.</p>
+        <h2>The switch</h2>
+        <p>They started on the Professional tier for the website, listings and CRM, then switched on the Lettings and Feedback packs as they migrated each branch. Because pricing is modular, they only paid for what they'd actually moved across — no big-bang migration, no double-running costs.</p>
+        <div class="pull">"For the first time we can see every lead, every branch, in one place — and the team actually trusts it."<cite>— Operations Director, Northern Homes</cite></div>
+        <h2>The result</h2>
+        <p>Within a quarter, average enquiry response time fell by 60%, and the Feedback pack lifted their review volume fivefold. Assignment rules meant valuations reached the right branch manager instantly, and the tenant portal cut inbound repair calls dramatically.</p>
+        <p>They're now rolling out the Insights pack to forecast pipeline across all nine branches from a single dashboard.</p>
+      </article>
+      <aside class="csside">
+        <div class="scard"><h3>About</h3>
+          <dl><div class="kv"><dt>Branches</dt><dd>9</dd></div><div class="kv"><dt>Vertical</dt><dd>Sales &amp; lettings</dd></div><div class="kv"><dt>Packs in use</dt><dd>Core, Lettings, Feedback</dd></div><div class="kv"><dt>With us since</dt><dd>2024</dd></div></dl>
+        </div>
+        <div class="scard"><h3>Impact</h3>
+          <div class="metrics">
+            <div class="metric"><div class="v">−60%</div><div class="l">enquiry response time</div></div>
+            <div class="metric"><div class="v">5×</div><div class="l">more reviews collected</div></div>
+            <div class="metric"><div class="v">9</div><div class="l">branches on one platform</div></div>
+          </div>
+        </div>
+        <a class="mkt-btn primary" href="marketing-pricing.html" style="width:100%">See pricing</a>
+      </aside>
+    </div>
+  </section>
+
+  <section class="mkt-section mkt-dark" style="text-align:center">
+    <div class="mkt-inner"><p class="mkt-eyebrow">More stories</p><h2 class="display" style="font-size:var(--text-display-sm);margin:var(--space-2) auto var(--space-6);max-width:22ch">Read how other agencies made the switch.</h2><div style="display:flex;gap:var(--space-3);justify-content:center;flex-wrap:wrap"><a class="mkt-btn ghost-d lg" href="#">Read more customer stories</a><a class="mkt-btn primary lg" href="marketing-pricing.html">See pricing</a></div></div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branches — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .bgrid { display: grid; gap: var(--space-5); grid-template-columns: 1fr; } @media (min-width: 768px) { .bgrid { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1280px) { .bgrid { grid-template-columns: repeat(3,1fr); } }
+  .bcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .bcard .pic { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#3a4a5c,#6b7d6a 70%,#9bab8f); position: relative; }
+  .bcard .pic .main { position: absolute; top: var(--space-3); left: var(--space-3); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent-on); background: var(--colour-brand-accent); padding: 2px var(--space-2); border-radius: var(--radius-pill); }
+  .bcard .b { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+  .bcard h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+  .bcard .line { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .bcard .line svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); flex: 0 0 auto; margin-top: 2px; }
+  .bcard .stats { display: flex; gap: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--colour-divider); }
+  .bcard .stats .s strong { display: block; font-family: var(--font-display); font-size: var(--text-heading-sm); } .bcard .stats .s small { font-size: var(--text-caption); color: var(--colour-text-muted); text-transform: uppercase; letter-spacing: var(--text-caption-ls); font-weight: var(--weight-semibold); }
+  .bcard .foot { display: flex; gap: var(--space-2); }
+  .addcard { border: 1px dashed var(--colour-border); border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-12); color: var(--colour-text-muted); text-align: center; min-height: 220px; }
+  .addcard svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .plannote { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-4) var(--space-5); border-left: 3px solid var(--colour-brand-accent); background: var(--colour-surface-raised); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-6); }
+  .plannote svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-brand-accent-hover); flex: 0 0 auto; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Branches">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Branches</h1>
+    <span class="brief">EPIC-H design brief — settings · branches (multi-branch management)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>branch cards (photo, address, hours, headcount/listings) + add-branch · main-branch marker</dd></div>
+      <div><dt>Tier</dt><dd>multi-branch is a Professional+ capability; plan limit surfaced when reached</dd></div>
+      <div><dt>Reuse</dt><dd>shares the public BranchCard visual; this is the admin management view</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Branches</h1><p>3 of 3 branches used on your plan</p></div><a class="btn secondary" href="../marketing/marketing-pricing.html">Add branches to plan</a></div>
+
+    <div class="bgrid">
+      <div class="bcard">
+        <div class="pic"><span class="main">Main branch</span></div>
+        <div class="b">
+          <h3>Didsbury</h3>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>742 Wilmslow Road, M20 2DW</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 9–4</div>
+          <div class="stats"><div class="s"><strong>6</strong><small>Staff</small></div><div class="s"><strong>198</strong><small>Listings</small></div></div>
+          <div class="foot"><button class="btn secondary sm">Edit</button><button class="btn secondary sm">Hours</button></div>
+        </div>
+      </div>
+      <div class="bcard">
+        <div class="pic" style="background:linear-gradient(135deg,#2f4858,#4a6b78 70%,#7d9aa3)"></div>
+        <div class="b">
+          <h3>City &amp; Castlefield</h3>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>18 Liverpool Road, M15 4PT</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 10–4</div>
+          <div class="stats"><div class="s"><strong>4</strong><small>Staff</small></div><div class="s"><strong>72</strong><small>Listings</small></div></div>
+          <div class="foot"><button class="btn secondary sm">Edit</button><button class="btn secondary sm">Hours</button></div>
+        </div>
+      </div>
+      <div class="bcard">
+        <div class="pic" style="background:linear-gradient(135deg,#43564a,#6b7d6a 70%,#9bab8f)"></div>
+        <div class="b">
+          <h3>Chorlton</h3>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>54 Beech Road, M21 9EG</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 9–4</div>
+          <div class="stats"><div class="s"><strong>4</strong><small>Staff</small></div><div class="s"><strong>42</strong><small>Listings</small></div></div>
+          <div class="foot"><button class="btn secondary sm">Edit</button><button class="btn secondary sm">Hours</button></div>
+        </div>
+      </div>
+      <div class="addcard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg><div><strong style="color:var(--colour-text-primary)">Add a branch</strong><br><span style="font-size:var(--text-body-sm)">You've used all 3 on your plan</span></div></div>
+    </div>
+
+    <div class="plannote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div>Your Professional plan includes 3 branches. Need more? <a href="../marketing/marketing-pricing.html" style="color:var(--colour-brand-accent-hover);font-weight:var(--weight-semibold)">Add the Multi-branch pack</a> for unlimited branches.</div></div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

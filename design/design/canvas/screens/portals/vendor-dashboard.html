@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendor portal — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="portal-shell.css">
+<script src="../../canvas.js"></script>
+<style>
+  .progress { display: flex; gap: 0; margin: var(--space-2) 0; }
+  .progress .st { flex: 1; position: relative; padding-top: var(--space-8); }
+  .progress .st .n { position: absolute; top: 0; left: 0; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); background: var(--colour-surface-sunken); color: var(--colour-text-muted); z-index: 1; }
+  .progress .st::before { content:""; position: absolute; top: calc(var(--space-8)/2); left: var(--space-8); right: 0; height: 2px; background: var(--colour-border); } .progress .st:last-child::before { display: none; }
+  .progress .st.done .n { background: var(--colour-success); color: var(--colour-brand-primary-on); } .progress .st.done::before { background: var(--colour-success); }
+  .progress .st.current .n { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .progress .st .l { font-size: var(--text-body-sm); color: var(--colour-text-muted); padding-right: var(--space-2); } .progress .st.done .l, .progress .st.current .l { color: var(--colour-text-primary); }
+  .offer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); } .offer:last-child { border-bottom: none; }
+  .offer .amt { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Vendor portal — dashboard</h1>
+    <span class="brief">EPIC-Y design brief — vendor's view of their sale</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>property hero · sale-progress tracker · KPI tiles (viewings, offers, feedback) · offers list · marketing stats · activity</dd></div>
+      <div><dt>Focus</dt><dd>transparency on viewings, offers and buyer feedback through to completion</dd></div>
+      <div><dt>Trust</dt><dd>offer figures shown with status; price guidance qualified</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="portal">
+    <header class="ptop">
+      <div class="row">
+        <a class="brand" href="#"><span class="mark">EA</span>Estate Agent<span class="tag">Vendor</span></a>
+        <nav class="pnav" aria-label="Vendor portal"><a href="#" aria-current="page">Overview</a><a href="#">Viewings</a><a href="#">Offers</a><a href="#">Feedback</a><a href="#">Marketing</a><a href="#">Documents</a></nav>
+        <div class="who"><span class="av">MW</span><span>Mark Whitfield</span></div>
+      </div>
+    </header>
+
+    <div class="pwrap">
+      <div class="phero">
+        <div><h1>7 Clyde Road, M20</h1><p class="meta">For sale · guide price £560,000 · listed 18 days ago · Didsbury branch</p></div>
+        <div class="stat"><div class="v"><span class="pill warn" style="font-size:var(--text-caption)">Under offer</span></div><div class="l" style="margin-top:var(--space-2)">current status</div></div>
+      </div>
+
+      <div class="pcard" style="margin-bottom:var(--space-6)">
+        <div class="ch"><h2>Your sale progress</h2></div>
+        <div style="padding:var(--space-5) var(--space-6)">
+          <ol class="progress" aria-label="Sale progress">
+            <li class="st done"><span class="n" aria-hidden="true">✓</span><span class="l">Listed</span></li>
+            <li class="st done"><span class="n" aria-hidden="true">✓</span><span class="l">Viewings</span></li>
+            <li class="st current"><span class="n">3</span><span class="l" aria-current="step">Offer agreed</span></li>
+            <li class="st"><span class="n">4</span><span class="l">Conveyancing</span></li>
+            <li class="st"><span class="n">5</span><span class="l">Exchange</span></li>
+            <li class="st"><span class="n">6</span><span class="l">Completion</span></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="ptiles">
+        <div class="ptile"><div class="k">Viewings</div><div class="v">14</div><div class="d"><span class="pill ok">3 this week</span></div></div>
+        <div class="ptile"><div class="k">Offers received</div><div class="v">3</div><div class="d"><span class="pill warn">1 accepted</span></div></div>
+        <div class="ptile"><div class="k">Listing views</div><div class="v">3,418</div><div class="d">across portals</div></div>
+      </div>
+
+      <div class="pcols">
+        <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+          <div class="pcard">
+            <div class="ch"><h2>Offers</h2><a href="#">All offers</a></div>
+            <div class="offer"><div><strong>Offer accepted</strong><br><span style="color:var(--colour-text-muted)">Cash buyer · no chain · 28 May</span></div><div style="text-align:right"><div class="amt">£552,000</div><span class="pill ok">Accepted</span></div></div>
+            <div class="offer"><div><strong>Second offer</strong><br><span style="color:var(--colour-text-muted)">Mortgage · 26 May</span></div><div style="text-align:right"><div class="amt">£545,000</div><span class="pill grey">Declined</span></div></div>
+            <div class="offer"><div><strong>First offer</strong><br><span style="color:var(--colour-text-muted)">Mortgage · in a chain · 22 May</span></div><div style="text-align:right"><div class="amt">£530,000</div><span class="pill grey">Declined</span></div></div>
+          </div>
+          <div class="pcard">
+            <div class="ch"><h2>Recent viewing feedback</h2><a href="#">All feedback</a></div>
+            <div class="feed">
+              <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span><div><p>"Loved the kitchen and garden — making an offer."</p><small>28 May · led to accepted offer</small></div></div>
+              <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l2 2"/><circle cx="12" cy="12" r="9"/></svg></span><div><p>"Lovely home, slightly over budget."</p><small>24 May</small></div></div>
+              <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span><div><p>"Prefer a quieter road."</p><small>21 May</small></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="ch"><h2>Your agent</h2></div>
+          <div style="padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-4)">
+            <div style="display:flex;gap:var(--space-3);align-items:center"><span style="width:var(--space-12);height:var(--space-12);border-radius:var(--radius-circle);background:var(--colour-surface-sunken);display:grid;place-items:center;font-family:var(--font-display);color:var(--colour-text-secondary)">PS</span><div><strong>Priya Shah</strong><br><span style="color:var(--colour-text-muted);font-size:var(--text-body-sm)">Senior sales agent</span></div></div>
+            <a class="btn primary" href="#" style="justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.5z"/></svg>Message Priya</a>
+            <a class="btn secondary" href="#" style="justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg>0161 000 0001</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My account — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* logged-in mode of the public site: public header stays */
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover { color: var(--colour-brand-accent); }
+  .acctchip { display: flex; align-items: center; gap: var(--space-2); color: var(--colour-text-on-dark); font-size: var(--text-body-sm); }
+  .acctchip .av { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); background: rgba(255,255,255,0.16); display: grid; place-items: center; font-weight: var(--weight-semibold); }
+
+  /* unverified-email banner — inline above content (Q3 answered) */
+  .verifybar { background: var(--colour-warning); color: var(--colour-text-primary); }
+  .verifybar .inner { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-3) var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; font-size: var(--text-body-sm); }
+  .verifybar svg { width: var(--size-icon-md); height: var(--size-icon-md); flex: 0 0 auto; }
+  .verifybar a { color: var(--colour-text-primary); font-weight: var(--weight-semibold); margin-left: auto; }
+
+  .wrap { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-8) var(--space-6) var(--space-16); }
+  .acct-h { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6); }
+  .acct-h h1 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); }
+  .acct-h p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+
+  /* pill nav (sidebar collapses to horizontal pills under md per brief) */
+  .pillnav { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-2); margin-bottom: var(--space-8); border-bottom: 1px solid var(--colour-border); }
+  .pillnav button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-touch-target-min); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); white-space: nowrap; }
+  .pillnav button svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .pillnav button[aria-current] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .pillnav button .c { font-size: var(--text-caption); padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+  .pillnav button[aria-current] .c { background: rgba(255,255,255,0.2); color: var(--colour-brand-primary-on); }
+
+  .view { display: none; } .view.active { display: block; }
+
+  /* dashboard cards */
+  .cards3 { display: grid; gap: var(--space-5); grid-template-columns: 1fr; margin-bottom: var(--space-10); }
+  @media (min-width: 768px) { .cards3 { grid-template-columns: repeat(3,1fr); } }
+  .scard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); background: var(--colour-surface-base); }
+  .scard .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .scard .v { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-2) 0; }
+  .scard .d { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .scard a { display: inline-block; margin-top: var(--space-3); color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); }
+
+  .sect-h { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin: var(--space-4) 0 var(--space-5); }
+  .sect-h h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+  .sortwrap { position: relative; } .sortwrap select { appearance: none; height: var(--size-button-md); padding-inline: var(--space-4) var(--space-10); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); font-size: var(--text-body-sm); }
+  .sortwrap svg { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); pointer-events: none; }
+
+  /* property cards (saved) */
+  .pgrid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .pgrid { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1024px) { .pgrid { grid-template-columns: repeat(3,1fr); } } @media (min-width: 1440px) { .pgrid { grid-template-columns: repeat(4,1fr); } }
+  .pcard { display: flex; flex-direction: column; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; text-decoration: none; color: inherit; }
+  .pcard .media { position: relative; aspect-ratio: var(--ratio-card); background: linear-gradient(180deg, rgba(31,41,55,0.05), rgba(31,41,55,0.18)), linear-gradient(135deg,#d9d3c6,#efede6 55%,#cfd6d0); }
+  .pcard .heart { position: absolute; top: var(--space-3); right: var(--space-3); width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; border-radius: var(--radius-circle); background: var(--colour-surface-base); color: var(--colour-brand-accent); box-shadow: var(--shadow-sm); }
+  .pcard .heart svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .pcard .badge { position: absolute; top: var(--space-3); left: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); background: var(--colour-status-available); }
+  .pcard .body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
+  .pcard .qual { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .pcard .price { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .pcard .addr { font-size: var(--text-body-md); font-weight: var(--weight-semibold); } .pcard .street { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .pcard .saved { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); margin-top: var(--space-2); }
+
+  /* saved search rows */
+  .srow { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-4); display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center; }
+  .srow .main { flex: 1; min-width: 200px; } .srow h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-2); }
+  .srow .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .srow .chip { display: inline-flex; align-items: center; padding: 2px var(--space-3); border-radius: var(--radius-pill); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .srow .ctrls { display: flex; align-items: center; gap: var(--space-3); }
+  .freq { position: relative; } .freq select { appearance: none; height: var(--size-button-md); padding-inline: var(--space-4) var(--space-10); border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-raised); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .freq svg { position: absolute; right: var(--space-3); top: 50%; transform: translateY(-50%); width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); pointer-events: none; }
+  .srow .run { color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); }
+  .srow .del { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-md); } .srow .del:hover { color: var(--colour-danger); background: var(--colour-surface-raised); } .srow .del svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* viewing rows */
+  .vrow { display: flex; gap: var(--space-4); align-items: center; padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); margin-bottom: var(--space-3); flex-wrap: wrap; }
+  .vrow .thumb { width: 88px; height: 66px; border-radius: var(--radius-md); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); flex: 0 0 auto; }
+  .vrow .info { flex: 1; min-width: 180px; } .vrow .info strong { display: block; } .vrow .info small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .vrow .when { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .vstatus { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); }
+  .vstatus.confirmed { background: rgba(16,185,129,0.14); color: #0b6b4f; } .vstatus.requested { background: rgba(245,158,11,0.16); color: #8a5a00; } .vstatus.done { background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+  .vrow .acts { display: flex; gap: var(--space-2); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-sm); padding-inline: var(--space-4); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  details.earlier { margin-top: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  details.earlier summary { padding: var(--space-4) var(--space-5); cursor: pointer; font-weight: var(--weight-semibold); font-size: var(--text-body-sm); list-style: none; display: flex; justify-content: space-between; } details.earlier summary::-webkit-details-marker { display: none; }
+  details.earlier .inner { padding: 0 var(--space-5) var(--space-4); }
+
+  /* empty state */
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-16) var(--space-6); border: 1px dashed var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-raised); }
+  .empty .emblem { width: var(--space-16); height: var(--space-16); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-muted); } .empty .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .empty h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); } .empty p { color: var(--colour-text-secondary); max-width: 42ch; }
+  .empty .btn { height: var(--size-button-md); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>My account</h1>
+    <span class="brief">EPIC-T design brief — customer account (logged-in mode of the public site)</span>
+    <dl class="annotations">
+      <div><dt>Views</dt><dd>Dashboard · Saved properties · Saved searches · Viewings — switch with the pill nav (interactive)</dd></div>
+      <div><dt>States</dt><dd>unverified-email banner (Q3 → inline above content); empty saved-searches shown</dd></div>
+      <div><dt>Reuse</dt><dd>SavedPropertyCard reuses PropertyCard; heart filled = --colour-brand-accent</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="knowledge-hub.html">Guides</a><a href="contact.html">Contact</a></nav>
+      <span class="acctchip"><span class="av">JA</span>Jordan</span>
+    </div>
+  </header>
+
+  <div class="verifybar" role="status">
+    <div class="inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span><strong>Verify your email to get property alerts.</strong> We sent a link to jordan.avery@example.co.uk.</span><a href="email-verify.html">Resend link</a></div>
+  </div>
+
+  <div class="wrap">
+    <div class="acct-h"><div><h1>Hello, Jordan</h1><p>Member since March 2026</p></div></div>
+
+    <nav class="pillnav" role="tablist" aria-label="Account sections">
+      <button role="tab" aria-current="page" data-view="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+      <button role="tab" data-view="saved"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>Saved <span class="c">6</span></button>
+      <button role="tab" data-view="searches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>Searches <span class="c">2</span></button>
+      <button role="tab" data-view="viewings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Viewings <span class="c">3</span></button>
+      <button role="tab" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.6h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1z"/></svg>Settings</button>
+    </nav>
+
+    <!-- DASHBOARD -->
+    <section class="view active" data-view="dash" role="tabpanel" aria-label="Dashboard">
+      <div class="cards3">
+        <div class="scard"><div class="k">Saved properties</div><div class="v">6</div><div class="d">2 had a price change this week</div><a href="#" data-goto="saved">View all →</a></div>
+        <div class="scard"><div class="k">Saved searches</div><div class="v">2</div><div class="d">Alerts: 1 daily · 1 weekly</div><a href="#" data-goto="searches">Manage searches →</a></div>
+        <div class="scard"><div class="k">Viewings</div><div class="v">3</div><div class="d">Next: Sat 13 Jun, 10:00am</div><a href="#" data-goto="viewings">See viewings →</a></div>
+      </div>
+      <div class="sect-h"><h2>Latest matches</h2><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none;font-weight:var(--weight-semibold);font-size:var(--text-body-sm)">From your saved searches</a></div>
+      <div class="pgrid">
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Offers over</p><p class="price">£340,000</p><p class="addr">Semi-detached · 3 bed</p><p class="street">Mauldeth Road, Burnage, M19</p><p class="saved">New match · today</p></div></a>
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Asking price</p><p class="price">£289,950</p><p class="addr">Mid-terrace · 2 bed</p><p class="street">Cromwell Grove, Levenshulme</p><p class="saved">New match · today</p></div></a>
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Guide price</p><p class="price">£399,995</p><p class="addr">Victorian terrace · 3 bed</p><p class="street">Acomb Street, Rusholme, M14</p><p class="saved">New match · yesterday</p></div></a>
+      </div>
+    </section>
+
+    <!-- SAVED -->
+    <section class="view" data-view="saved" role="tabpanel" aria-label="Saved properties">
+      <div class="sect-h"><h2>Saved properties</h2><div class="sortwrap"><label for="sort" style="position:absolute;left:-9999px">Sort</label><select id="sort"><option>Date saved (newest)</option><option>Price: low to high</option><option>Price: high to low</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+      <div class="pgrid">
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Remove from saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Offers in region of</p><p class="price">£525,000</p><p class="addr">Edwardian semi · 4 bed</p><p class="street">Palatine Road, Didsbury, M20</p><p class="saved">Saved 3 days ago</p></div></a>
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge" style="background:var(--colour-status-under-offer);color:var(--colour-brand-accent-on)">Under offer</span><button class="heart" aria-label="Remove from saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Guide price</p><p class="price">£399,995</p><p class="addr">Victorian terrace · 3 bed</p><p class="street">Acomb Street, Rusholme, M14</p><p class="saved">Saved 5 days ago</p></div></a>
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Remove from saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Offers over</p><p class="price">£465,000</p><p class="addr">Detached · 4 bed</p><p class="street">Brooklawn Drive, West Didsbury</p><p class="saved">Saved 1 week ago</p></div></a>
+        <a class="pcard" href="property-detail.html"><div class="media"><span class="badge">For sale</span><button class="heart" aria-label="Remove from saved" type="button"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></button></div><div class="body"><p class="qual">Asking price</p><p class="price">£289,950</p><p class="addr">Mid-terrace · 2 bed</p><p class="street">Cromwell Grove, Levenshulme</p><p class="saved">Saved 1 week ago</p></div></a>
+      </div>
+    </section>
+
+    <!-- SEARCHES (empty state shown) -->
+    <section class="view" data-view="searches" role="tabpanel" aria-label="Saved searches">
+      <div class="sect-h"><h2>Saved searches</h2></div>
+      <div class="srow">
+        <div class="main"><h3>Didsbury · 2+ beds · up to £600k</h3><div class="chips"><span class="chip">For sale</span><span class="chip">Didsbury</span><span class="chip">2+ beds</span><span class="chip">≤ £600k</span></div></div>
+        <div class="ctrls"><div class="freq"><label for="f1" style="position:absolute;left:-9999px">Alert frequency</label><select id="f1"><option>Daily alerts</option><option>Instant</option><option>Weekly</option><option>Off</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div><a class="run" href="properties-catalogue.html">Run now</a><button class="del" aria-label="Delete search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div>
+      </div>
+      <div class="srow">
+        <div class="main"><h3>Levenshulme &amp; Burnage · 3 bed · garden</h3><div class="chips"><span class="chip">For sale</span><span class="chip">Levenshulme</span><span class="chip">3 beds</span><span class="chip">Garden</span></div></div>
+        <div class="ctrls"><div class="freq"><label for="f2" style="position:absolute;left:-9999px">Alert frequency</label><select id="f2"><option>Weekly alerts</option><option>Instant</option><option>Daily</option><option>Off</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div><a class="run" href="properties-catalogue.html">Run now</a><button class="del" aria-label="Delete search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div>
+      </div>
+    </section>
+
+    <!-- VIEWINGS -->
+    <section class="view" data-view="viewings" role="tabpanel" aria-label="Viewings">
+      <div class="sect-h"><h2>Your viewings</h2></div>
+      <div class="vrow">
+        <span class="thumb"></span>
+        <div class="info"><strong>Palatine Road, Didsbury, M20</strong><small>with Priya Shah · Didsbury branch</small></div>
+        <div class="when">Sat 13 Jun · 10:00am</div>
+        <span class="vstatus confirmed"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>Confirmed</span>
+        <div class="acts"><button class="btn secondary">Reschedule</button><button class="btn secondary">Cancel</button></div>
+      </div>
+      <div class="vrow">
+        <span class="thumb"></span>
+        <div class="info"><strong>Acomb Street, Rusholme, M14</strong><small>with Tom Beckett · Didsbury branch</small></div>
+        <div class="when">Tue 16 Jun · 2:00pm</div>
+        <span class="vstatus requested">Requested</span>
+        <div class="acts"><button class="btn secondary">Reschedule</button><button class="btn secondary">Cancel</button></div>
+      </div>
+      <details class="earlier">
+        <summary><span>Earlier viewings (1)</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="inner">
+          <div class="vrow" style="margin-bottom:0">
+            <span class="thumb"></span>
+            <div class="info"><strong>Brooklawn Drive, West Didsbury</strong><small>with Priya Shah</small></div>
+            <div class="when">Sat 6 Jun · 11:00am</div>
+            <span class="vstatus done">Completed</span>
+            <div class="acts"><button class="btn primary">Leave feedback</button></div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- SETTINGS (light — links to full settings + de-emphasised delete) -->
+    <section class="view" data-view="settings" role="tabpanel" aria-label="Settings">
+      <div class="sect-h"><h2>Profile &amp; settings</h2></div>
+      <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-5)">
+        <div style="border:1px solid var(--colour-border);border-radius:var(--radius-lg);padding:var(--space-6)">
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <div><label for="nm" style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);display:block;margin-bottom:var(--space-2)">Full name</label><input id="nm" value="Jordan Avery" style="width:100%;height:var(--size-input-md);padding-inline:var(--space-4);border:1px solid var(--colour-border);border-radius:var(--radius-md)"></div>
+            <div><label for="em" style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);display:block;margin-bottom:var(--space-2)">Email</label><input id="em" value="jordan.avery@example.co.uk" style="width:100%;height:var(--size-input-md);padding-inline:var(--space-4);border:1px solid var(--colour-border);border-radius:var(--radius-md)"></div>
+            <button class="btn primary" style="height:var(--size-button-md);align-self:flex-start">Save changes</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--colour-border);border-radius:var(--radius-lg);padding:var(--space-6)">
+          <h3 style="font-size:var(--text-heading-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-3)">Notifications</h3>
+          <label style="display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-target-min)"><input type="checkbox" checked style="width:var(--space-5);height:var(--space-5);accent-color:var(--colour-brand-primary)">Property alert emails</label>
+          <label style="display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-target-min)"><input type="checkbox" checked style="width:var(--space-5);height:var(--space-5);accent-color:var(--colour-brand-primary)">Viewing reminders</label>
+          <label style="display:flex;align-items:center;gap:var(--space-3);min-height:var(--size-touch-target-min)"><input type="checkbox" style="width:var(--space-5);height:var(--space-5);accent-color:var(--colour-brand-primary)">Occasional market news</label>
+        </div>
+        <p style="font-size:var(--text-body-sm);color:var(--colour-text-muted)">Need to leave? You can <a href="#" style="color:var(--colour-danger);text-decoration:underline;text-underline-offset:3px">delete your account</a>. We'll explain what's anonymised and what's kept first.</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+
+<script>
+(function(){
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.pillnav [role=tab]'));
+  var views = {}; document.querySelectorAll('.view').forEach(function(v){ views[v.getAttribute('data-view')] = v; });
+  function show(name){
+    Object.keys(views).forEach(function(k){ views[k].classList.toggle('active', k === name); });
+    tabs.forEach(function(t){ var on = t.getAttribute('data-view') === name; if (on) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current'); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ show(t.getAttribute('data-view')); }); });
+  document.querySelectorAll('[data-goto]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); show(a.getAttribute('data-goto')); window.scrollTo({top:0,behavior:'smooth'}); }); });
+})();
+</script>
+</body>
+</html>

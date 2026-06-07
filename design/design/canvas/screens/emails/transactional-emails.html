@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email templates — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* Canvas chrome only — the email markup itself uses inline styles (email clients
+     strip <link> + CSS variables, so token VALUES are mirrored inline below). */
+  .why { padding: var(--space-5) var(--space-6); border-left: 3px solid var(--colour-brand-accent); background: var(--colour-surface-raised); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); margin-bottom: var(--space-10); }
+  .why strong { color: var(--colour-text-primary); }
+  .clients { display: grid; gap: var(--space-8); grid-template-columns: 1fr; }
+  @media (min-width: 1100px) { .clients { grid-template-columns: 360px 1fr; align-items: start; } }
+  .clientcol { display: flex; flex-direction: column; gap: var(--space-3); }
+  .clientcol .cap { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-text-muted); }
+  .device { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; background: var(--colour-surface-sunken); }
+  .device .bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--colour-surface-base); border-bottom: 1px solid var(--colour-border); }
+  .device .bar .dots { display: flex; gap: 6px; } .device .bar .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--colour-surface-sunken); }
+  .device .bar .from { font-size: var(--text-caption); color: var(--colour-text-muted); }
+  .mailframe { background: #edeae3; padding: var(--space-5); }
+  .mailframe.mobile { padding: var(--space-3); }
+  .demo-section { margin-bottom: var(--space-16); }
+  .demo-section > h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); padding-bottom: var(--space-3); border-bottom: 1px solid var(--colour-border); margin-bottom: var(--space-2); }
+  .demo-section > .meta { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-bottom: var(--space-6); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Transactional email templates</h1>
+    <span class="brief">EPIC-D / EPIC-AC — brand-consistent transactional emails (Phase B)</span>
+    <dl class="annotations">
+      <div><dt>Templates</dt><dd>enquiry acknowledgement · viewing confirmation · repair status update · feedback request</dd></div>
+      <div><dt>Build</dt><dd>table-based, inline styles, 600px body — email clients strip &lt;link&gt; &amp; CSS variables, so token VALUES are mirrored inline</dd></div>
+      <div><dt>Responsive (RULE ZERO)</dt><dd>each shown at a ~375px mobile client and a ~600px desktop client side by side</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+    <div class="why">
+      <strong>Why these look different from the rest of the canvas.</strong> Email clients (Outlook, Gmail, Apple Mail) strip
+      <code>&lt;link&gt;</code> stylesheets and don't support CSS custom properties, flexbox or grid reliably. So these templates are
+      built the email-safe way: <strong>table layout, a 600px body, and inline styles</strong>. The values are the same tokens as the
+      rest of the system (brand <code>#1F2937</code>, accent <code>#C9A24B</code>, surfaces, Fraunces/Inter web fonts with serif/sans
+      fallbacks) — just inlined. Each template is shown at a phone-width and a desktop-width client per RULE ZERO.
+    </div>
+
+    <!-- ENQUIRY ACK -->
+    <section class="demo-section">
+      <h2>Enquiry acknowledgement</h2>
+      <p class="meta">Sent the moment a website enquiry is received. Sets the "within one working day" expectation.</p>
+      <div class="clients">
+        <div class="clientcol">
+          <span class="cap">Mobile client · 375px</span>
+          <div class="device">
+            <div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent &lt;hello@…&gt;</span></div>
+            <div class="mailframe mobile">
+              <!--[ email body ]-->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                <tr><td style="background:#1F2937;padding:20px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:32px;height:32px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:18px">Estate Agent</td></tr></table></td></tr>
+                <tr><td style="padding:28px 24px 0"><h1 style="margin:0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:24px;line-height:1.2;color:#1A1A1A">Thanks — we've got your enquiry</h1></td></tr>
+                <tr><td style="padding:12px 24px 0;font-size:15px;line-height:1.6;color:#4B5563">Hi Daniel,<br><br>We've received your enquiry about <strong style="color:#1A1A1A">Palatine Road, Didsbury</strong> and passed it to the Didsbury branch. Someone will be in touch within one working day.</td></tr>
+                <tr><td style="padding:20px 24px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F7F4;border-radius:8px"><tr><td style="padding:16px 18px;font-size:14px;color:#4B5563"><span style="color:#6B7280">Your enquiry</span><br><strong style="color:#1A1A1A;font-size:15px">Book a viewing · Palatine Road, M20</strong><br><span style="color:#6B7280">Reference VW-2026-0418</span></td></tr></table></td></tr>
+                <tr><td style="padding:24px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:13px 22px;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px">View the property</a></td></tr></table></td></tr>
+                <tr><td style="padding:20px 24px 28px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280">Estate Agent Ltd · 742 Wilmslow Road, Didsbury, M20 2DW<br>Member of the Property Ombudsman · <a href="#" style="color:#B0892F">Privacy</a></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="clientcol">
+          <span class="cap">Desktop client · 600px</span>
+          <div class="device">
+            <div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent &lt;hello@estateagent.co.uk&gt; · Thanks — we've got your enquiry</span></div>
+            <div class="mailframe">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                <tr><td style="background:#1F2937;padding:24px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:36px;height:36px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:20px">Estate Agent</td></tr></table></td></tr>
+                <tr><td style="padding:36px 32px 0"><h1 style="margin:0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:32px;line-height:1.15;color:#1A1A1A">Thanks — we've got your enquiry</h1></td></tr>
+                <tr><td style="padding:16px 32px 0;font-size:16px;line-height:1.65;color:#4B5563">Hi Daniel,<br><br>We've received your enquiry about <strong style="color:#1A1A1A">Palatine Road, Didsbury</strong> and passed it to the Didsbury branch. Someone will be in touch within one working day. There's nothing you need to do for now.</td></tr>
+                <tr><td style="padding:24px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F7F4;border-radius:8px"><tr><td style="padding:18px 20px;font-size:14px;color:#4B5563"><span style="color:#6B7280">Your enquiry</span><br><strong style="color:#1A1A1A;font-size:16px">Book a viewing · Palatine Road, M20</strong><br><span style="color:#6B7280">Reference VW-2026-0418</span></td></tr></table></td></tr>
+                <tr><td style="padding:28px 32px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:14px 26px;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px">View the property</a></td></tr></table></td></tr>
+                <tr><td style="padding:24px 32px 32px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280">Estate Agent Ltd · 742 Wilmslow Road, Didsbury, Manchester M20 2DW<br>Member of the Property Ombudsman · <a href="#" style="color:#B0892F">Privacy policy</a> · <a href="#" style="color:#B0892F">Unsubscribe</a></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEWING CONFIRMATION -->
+    <section class="demo-section">
+      <h2>Viewing confirmation</h2>
+      <p class="meta">Sent when a viewing time is confirmed. Leads with the when/where; calendar + reschedule actions.</p>
+      <div class="clients">
+        <div class="clientcol">
+          <span class="cap">Mobile client · 375px</span>
+          <div class="device">
+            <div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent</span></div>
+            <div class="mailframe mobile">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                <tr><td style="background:#1F2937;padding:20px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:32px;height:32px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:18px">Estate Agent</td></tr></table></td></tr>
+                <tr><td style="padding:28px 24px 0"><span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#0b6b4f">Viewing confirmed</span><h1 style="margin:6px 0 0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:24px;line-height:1.2">Saturday 13 June, 10:00am</h1></td></tr>
+                <tr><td style="padding:16px 24px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F7F4;border-radius:8px"><tr><td style="padding:16px 18px;font-size:14px;color:#4B5563"><strong style="color:#1A1A1A;font-size:15px">Palatine Road, Didsbury, M20</strong><br>4 bed semi · £525,000<br><br>Meet your agent <strong style="color:#1A1A1A">Priya Shah</strong> at the property.</td></tr></table></td></tr>
+                <tr><td style="padding:22px 24px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:12px 20px;color:#fff;text-decoration:none;font-weight:600;font-size:14px">Add to calendar</a></td><td style="width:8px"></td><td style="border:1px solid #E5E2DA;border-radius:8px"><a href="#" style="display:inline-block;padding:12px 20px;color:#1F2937;text-decoration:none;font-weight:600;font-size:14px">Reschedule</a></td></tr></table></td></tr>
+                <tr><td style="padding:20px 24px 28px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280">Need to cancel? Just reply to this email.<br>Estate Agent Ltd · Didsbury</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="clientcol">
+          <span class="cap">Desktop client · 600px</span>
+          <div class="device">
+            <div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent · Your viewing is confirmed — Sat 13 Jun</span></div>
+            <div class="mailframe">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                <tr><td style="background:#1F2937;padding:24px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:36px;height:36px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:20px">Estate Agent</td></tr></table></td></tr>
+                <tr><td style="padding:36px 32px 0"><span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#0b6b4f">Viewing confirmed</span><h1 style="margin:8px 0 0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:32px;line-height:1.15">Saturday 13 June, 10:00am</h1></td></tr>
+                <tr><td style="padding:20px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F7F4;border-radius:8px"><tr><td style="padding:20px;font-size:15px;color:#4B5563"><strong style="color:#1A1A1A;font-size:17px">Palatine Road, Didsbury, M20</strong><br>4 bedroom semi-detached · £525,000<br><br>Meet your agent <strong style="color:#1A1A1A">Priya Shah</strong> at the property. She'll have the keys and can answer any questions.</td></tr></table></td></tr>
+                <tr><td style="padding:28px 32px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:14px 24px;color:#fff;text-decoration:none;font-weight:600;font-size:15px">Add to calendar</a></td><td style="width:10px"></td><td style="border:1px solid #E5E2DA;border-radius:8px"><a href="#" style="display:inline-block;padding:14px 24px;color:#1F2937;text-decoration:none;font-weight:600;font-size:15px">Reschedule</a></td></tr></table></td></tr>
+                <tr><td style="padding:24px 32px 32px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280">Need to cancel? Just reply to this email and we'll sort it.<br>Estate Agent Ltd · 742 Wilmslow Road, Didsbury, M20 2DW</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPAIR STATUS + FEEDBACK (compact, desktop only widths shown side by side) -->
+    <section class="demo-section">
+      <h2>Repair status update &amp; feedback request</h2>
+      <p class="meta">Left: a repair moving to "contractor scheduled". Right: a post-completion feedback request (EPIC-AC) with a star prompt.</p>
+      <div class="clients" style="grid-template-columns:1fr;gap:var(--space-8)">
+        <div style="display:grid;gap:var(--space-8);grid-template-columns:1fr">
+          <div class="clientcol">
+            <span class="cap">Repair status update · 600px</span>
+            <div class="device"><div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent · Update on your repair RP-2026-1192</span></div>
+              <div class="mailframe">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                  <tr><td style="background:#1F2937;padding:22px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:34px;height:34px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:19px">Estate Agent</td></tr></table></td></tr>
+                  <tr><td style="padding:32px 32px 0"><h1 style="margin:0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:28px;line-height:1.2">A contractor's been booked</h1></td></tr>
+                  <tr><td style="padding:14px 32px 0;font-size:15px;line-height:1.65;color:#4B5563">Hi Daniel, good news — your repair <strong style="color:#1A1A1A">RP-2026-1192</strong> (boiler — no hot water) has moved forward.</td></tr>
+                  <tr><td style="padding:20px 32px 0">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding:6px 0;font-size:14px;color:#0b6b4f">● Reported &nbsp;<span style="color:#6B7280">— 2 days ago</span></td></tr>
+                      <tr><td style="padding:6px 0;font-size:14px;color:#0b6b4f">● Triaged &amp; assigned &nbsp;<span style="color:#6B7280">— yesterday</span></td></tr>
+                      <tr><td style="padding:6px 0;font-size:14px;color:#1A1A1A;font-weight:600">● Contractor scheduled &nbsp;<span style="color:#6B7280;font-weight:400">— Thu 11 Jun, am</span></td></tr>
+                      <tr><td style="padding:6px 0;font-size:14px;color:#9CA3AF">○ Completed</td></tr>
+                    </table>
+                  </td></tr>
+                  <tr><td style="padding:24px 32px 8px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:13px 24px;color:#fff;text-decoration:none;font-weight:600;font-size:15px">Track this repair</a></td></tr></table></td></tr>
+                  <tr><td style="padding:22px 32px 30px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280">The contractor will agree an exact time with you directly.<br>Estate Agent Ltd · Lettings</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="clientcol">
+            <span class="cap">Feedback request · 600px</span>
+            <div class="device"><div class="bar"><span class="dots"><span></span><span></span><span></span></span><span class="from">Estate Agent · How did we do?</span></div>
+              <div class="mailframe">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;font-family:'Inter',Helvetica,Arial,sans-serif;color:#1A1A1A">
+                  <tr><td style="background:#1F2937;padding:22px 32px"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="width:34px;height:34px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:12px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:19px">Estate Agent</td></tr></table></td></tr>
+                  <tr><td style="padding:32px 32px 0;text-align:center"><h1 style="margin:0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:28px;line-height:1.2">How did we do?</h1></td></tr>
+                  <tr><td style="padding:14px 32px 0;font-size:15px;line-height:1.65;color:#4B5563;text-align:center">Hi Daniel, thanks for choosing us for your repair. Your feedback helps us improve and helps others choose with confidence.</td></tr>
+                  <tr><td style="padding:24px 32px 0;text-align:center"><span style="font-size:34px;letter-spacing:8px;color:#C9A24B">★★★★★</span></td></tr>
+                  <tr><td style="padding:24px 32px 8px;text-align:center"><table role="presentation" cellpadding="0" cellspacing="0" align="center"><tr><td style="background:#1F2937;border-radius:8px"><a href="#" style="display:inline-block;padding:14px 28px;color:#fff;text-decoration:none;font-weight:600;font-size:15px">Leave your feedback</a></td></tr></table></td></tr>
+                  <tr><td style="padding:22px 32px 30px;border-top:1px solid #E5E7EB;font-size:12px;line-height:1.6;color:#6B7280;text-align:center">This feedback link is valid for 14 days. Prefer not to? <a href="#" style="color:#B0892F">No thanks</a>.<br>Estate Agent Ltd</td></tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="why" style="margin-top:var(--space-10);border-left-color:var(--colour-info)">
+        <strong>Accessibility &amp; deliverability notes.</strong> Every template has a real text subject + preheader, uses a single-column
+        table that linearises cleanly on narrow clients, keeps body text ≥ 14px, hits AA contrast on every colour pair, and gives the
+        star row a text fallback. Buttons are bulletproof (padded table cell + anchor) so they render in Outlook. The feedback link
+        states its expiry; the repair email never promises a date the contractor hasn't agreed.
+      </div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacts — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .role { display: inline-flex; padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+  .role.buyer { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); }
+  .role.vendor { background: rgba(16,185,129,0.14); color: #0b6b4f; }
+  .role.tenant { background: rgba(201,162,75,0.18); color: var(--colour-brand-accent-hover); }
+  .role.landlord { background: rgba(31,41,55,0.1); color: var(--colour-brand-primary); }
+  .nameav { display: flex; align-items: center; gap: var(--space-3); }
+  .nameav .av { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .gconsent svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-success); }
+</style>
+</head>
+<body data-active="contacts" data-crumb="Contacts">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Contacts</h1>
+    <span class="brief">EPIC-H design brief — people directory (buyers, vendors, tenants, landlords) (H.9)</span>
+    <dl class="annotations">
+      <div><dt>Naming</dt><dd>roles use PRODUCT.md canonical nouns — Buyer · Vendor · Tenant · Landlord (never "customer")</dd></div>
+      <div><dt>Layout</dt><dd>role filter chips · searchable table · GDPR consent + retention columns</dd></div>
+      <div><dt>Compliance</dt><dd>consent state and retention surfaced per contact (PRODUCT.md §6)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Contacts</h1><p>2,841 people across all roles</p></div><a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add a contact</a></div>
+
+    <div class="tabstrip" role="tablist" aria-label="Contact roles">
+      <button role="tab" aria-selected="true">All <span class="c">2,841</span></button>
+      <button role="tab" aria-selected="false">Buyers <span class="c">1,302</span></button>
+      <button role="tab" aria-selected="false">Vendors <span class="c">486</span></button>
+      <button role="tab" aria-selected="false">Tenants <span class="c">744</span></button>
+      <button role="tab" aria-selected="false">Landlords <span class="c">309</span></button>
+    </div>
+
+    <div class="tablewrap">
+      <div class="tabletop">
+        <div class="selectwrap" style="max-width:280px"><input class="control" type="search" placeholder="Search by name, email or phone" aria-label="Search contacts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="left:auto;right:var(--space-3)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></div>
+        <div class="right"><button class="minibtn">Export</button></div>
+      </div>
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Last activity</th><th>Consent</th><th>Retention</th></tr></thead>
+          <tbody>
+            <tr><td><div class="nameav"><span class="av">DO</span><span class="who"><strong>Daniel O'Hara</strong><small>Added 2 hours ago</small></span></div></td><td><span class="role buyer">Buyer</span></td><td>daniel.ohara@example.co.uk</td><td>07700 900123</td><td>Enquiry · 2h ago</td><td><span class="gconsent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span></td><td>Until 2032</td></tr>
+            <tr><td><div class="nameav"><span class="av">MW</span><span class="who"><strong>Mark Whitfield</strong><small>Valuation lead</small></span></div></td><td><span class="role vendor">Vendor</span></td><td>m.whitfield@example.co.uk</td><td>07700 900456</td><td>Valuation · 1d ago</td><td><span class="gconsent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span></td><td>Until 2032</td></tr>
+            <tr><td><div class="nameav"><span class="av">DO</span><span class="who"><strong>Daniel O'Hara</strong><small>14 Cromwell Grove</small></span></div></td><td><span class="role tenant">Tenant</span></td><td>daniel.ohara@example.co.uk</td><td>07700 900123</td><td>Repair · 2h ago</td><td><span class="gconsent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span></td><td>Tenancy + 7y</td></tr>
+            <tr><td><div class="nameav"><span class="av">RG</span><span class="who"><strong>Rebecca Grant</strong><small>3 properties let</small></span></div></td><td><span class="role landlord">Landlord</span></td><td>r.grant@example.co.uk</td><td>07700 900789</td><td>Statement · 3d ago</td><td><span class="gconsent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span></td><td>Contract + 7y</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

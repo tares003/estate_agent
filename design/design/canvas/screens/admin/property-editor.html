@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Property editor — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .editor { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .editor { grid-template-columns: 220px minmax(0,1fr); align-items: start; } }
+  /* left tab rail */
+  .tabrail { display: flex; gap: var(--space-1); overflow-x: auto; }
+  @media (min-width: 1024px) { .tabrail { flex-direction: column; position: sticky; top: var(--space-6); } }
+  .tabrail a { display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-touch-target-min); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--colour-text-secondary); text-decoration: none; font-size: var(--text-body-sm); font-weight: var(--weight-medium); white-space: nowrap; }
+  .tabrail a:hover { background: var(--colour-surface-raised); }
+  .tabrail a[aria-current] { background: var(--colour-surface-sunken); color: var(--colour-text-primary); font-weight: var(--weight-semibold); }
+  .tabrail .dot { width: 8px; height: 8px; border-radius: var(--radius-circle); flex: 0 0 auto; margin-left: auto; }
+  .tabrail .dot.done { background: var(--colour-success); } .tabrail .dot.todo { background: var(--colour-border); } .tabrail .dot.warn { background: var(--colour-warning); }
+
+  .formcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); }
+  .formcard .fh { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); }
+  .formcard .fh h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .formcard .fh p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+  .formbody { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-8); }
+  .group { display: flex; flex-direction: column; gap: var(--space-5); }
+  .group > h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  .grid2 { display: grid; gap: var(--space-5); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+  .affix { display: flex; align-items: stretch; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .affix .pre { display: flex; align-items: center; padding-inline: var(--space-4); background: var(--colour-surface-raised); color: var(--colour-text-secondary); border-right: 1px solid var(--colour-border); }
+  .affix .control { border: none; }
+  .affix .control:focus-visible { box-shadow: none; }
+
+  /* publish checklist */
+  .checklist { display: flex; flex-direction: column; gap: var(--space-2); }
+  .checkrow { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); }
+  .checkrow .ic { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); display: grid; place-items: center; flex: 0 0 auto; }
+  .checkrow .ic svg { width: 16px; height: 16px; }
+  .checkrow.pass .ic { background: rgba(16,185,129,0.14); color: var(--colour-success); }
+  .checkrow.fail .ic { background: rgba(239,68,68,0.12); color: var(--colour-danger); }
+  .checkrow.fail { border-color: rgba(239,68,68,0.4); }
+  .checkrow .fix { margin-left: auto; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+</style>
+</head>
+<body data-active="properties" data-crumb="Properties · Edit">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Property editor</h1>
+    <span class="brief">EPIC-F design brief — 9-tab property editor with completion dots + publish pre-flight (H.5)</span>
+    <dl class="annotations">
+      <div><dt>Tabs</dt><dd>Basics · Pricing · Specification · Location · Descriptions · Media · Agent · SEO · Publish — each with a completion dot</dd></div>
+      <div><dt>Shown</dt><dd>Basics tab (default) + the Publish pre-flight checklist</dd></div>
+      <div><dt>Sticky</dt><dd>bottom bar: Save draft · Preview · Publish</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content" style="padding-bottom:0">
+
+    <div class="page-h">
+      <div><h1>Palatine Road, Didsbury</h1><p>Draft · last saved 2 minutes ago · EA-2026-00417</p></div>
+      <span class="ubadge amber">Draft — 2 checks to fix before publishing</span>
+    </div>
+
+    <div class="editor">
+      <nav class="tabrail" aria-label="Property sections">
+        <a href="#" aria-current="page">Basics <span class="dot done"></span></a>
+        <a href="#">Pricing <span class="dot done"></span></a>
+        <a href="#">Specification <span class="dot done"></span></a>
+        <a href="#">Location <span class="dot done"></span></a>
+        <a href="#">Descriptions <span class="dot warn"></span></a>
+        <a href="#">Media <span class="dot done"></span></a>
+        <a href="#">Agent <span class="dot done"></span></a>
+        <a href="#">SEO <span class="dot todo"></span></a>
+        <a href="#">Publish <span class="dot warn"></span></a>
+      </nav>
+
+      <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+        <div class="formcard">
+          <div class="fh"><h2>Basics</h2><p>The essentials shown across search, cards and the detail page.</p></div>
+          <div class="formbody">
+            <div class="group">
+              <div class="grid2">
+                <div class="field"><label for="title">Listing title <span class="req">(required)</span></label><input id="title" class="control" type="text" value="Four-bedroom Edwardian semi-detached house"></div>
+                <div class="field"><label for="ref">Reference</label><input id="ref" class="control" type="text" value="EA-2026-00417" disabled></div>
+              </div>
+              <div class="grid2">
+                <div class="field"><label for="ltype">Listing type</label><div class="selectwrap"><select id="ltype" class="control"><option>Residential sale</option><option>Residential letting</option><option>New home</option><option>Commercial</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+                <div class="field"><label for="ptype">Property type</label><div class="selectwrap"><select id="ptype" class="control"><option>Semi-detached</option><option>Detached</option><option>Terraced</option><option>Flat / apartment</option><option>Bungalow</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+              </div>
+            </div>
+            <div class="group">
+              <h3>Key counts</h3>
+              <div class="grid2">
+                <div class="field"><label for="beds">Bedrooms</label><div class="affix" style="max-width:160px"><input id="beds" class="control" inputmode="numeric" value="4"><span class="pre" style="border-right:none;border-left:1px solid var(--colour-border)">beds</span></div></div>
+                <div class="field"><label for="baths">Bathrooms</label><div class="affix" style="max-width:160px"><input id="baths" class="control" inputmode="numeric" value="2"><span class="pre" style="border-right:none;border-left:1px solid var(--colour-border)">baths</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="formcard">
+          <div class="fh"><h2>Publish pre-flight</h2><p>Everything that must be in place before this property can go live. Red items block publishing.</p></div>
+          <div class="formbody">
+            <div class="checklist">
+              <div class="checkrow pass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Title, type and price set</div>
+              <div class="checkrow pass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>At least 3 photos uploaded (18 added)</div>
+              <div class="checkrow pass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>EPC rating recorded (C)</div>
+              <div class="checkrow pass"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>Council tax band &amp; tenure set (Material Information)</div>
+              <div class="checkrow fail"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span>Long description is under 150 characters <a class="fix" href="#">Fix</a></div>
+              <div class="checkrow fail"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></span>SEO meta title &amp; description not set <a class="fix" href="#">Fix</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actionbar">
+      <button class="btn secondary">Preview as published</button>
+      <span class="spacer"></span>
+      <button class="btn secondary">Save draft</button>
+      <button class="btn primary" disabled style="opacity:0.5;cursor:not-allowed">Publish</button>
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

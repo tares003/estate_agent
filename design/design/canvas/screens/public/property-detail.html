@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Property detail — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display: none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); }
+  .nav a:hover { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); }
+  .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .wrap { max-width: var(--size-container-2xl); margin-inline: auto; padding: var(--space-6); }
+  .crumbs { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; font-size: var(--text-body-sm); color: var(--colour-text-muted); margin-bottom: var(--space-5); }
+  .crumbs a { color: var(--colour-text-secondary); text-decoration: none; } .crumbs a:hover { color: var(--colour-brand-accent-hover); }
+  .crumbs svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+
+  /* gallery hero */
+  .gallery { display: grid; gap: var(--space-2); grid-template-columns: 1fr; margin-bottom: var(--space-6); }
+  @media (min-width: 768px) { .gallery { grid-template-columns: 2fr 1fr; grid-auto-rows: 180px; } }
+  .gallery .ph { position: relative; border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(135deg,#cfd6d0,#e3ded4 60%,#b9bfc4); min-height: 220px; }
+  @media (min-width: 768px) {
+    .gallery .ph.main { grid-row: span 2; grid-column: 1; min-height: 0; }
+    .gallery .ph.s1 { grid-column: 2; } .gallery .ph.s2 { grid-column: 2; }
+  }
+  .gallery .ph .roof { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(31,41,55,0.25); }
+  .gallery .ph .roof svg { width: 48px; height: 48px; }
+  .gallery .viewall { position: absolute; right: var(--space-4); bottom: var(--space-4); display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-4); border-radius: var(--radius-md); background: rgba(26,26,26,0.72); color: var(--colour-text-inverse); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .gallery .viewall svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* layout grid: main + sticky booking sidebar */
+  .layout { display: grid; gap: var(--space-10); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .layout { grid-template-columns: minmax(0,1fr) 360px; align-items: start; } }
+
+  /* header block */
+  .phead .badge { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); background: var(--colour-status-available); }
+  .phead h1 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); margin: var(--space-3) 0 var(--space-1); }
+  .phead .street { color: var(--colour-text-secondary); font-size: var(--text-body-lg); }
+  .phead .priceline { display: flex; align-items: baseline; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap; }
+  .phead .qual { color: var(--colour-text-muted); font-size: var(--text-body-md); }
+  .phead .price { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); }
+
+  /* facts strip */
+  .facts { display: flex; flex-wrap: wrap; gap: var(--space-6); padding: var(--space-5) 0; margin: var(--space-6) 0; border-block: 1px solid var(--colour-divider); }
+  .facts .f { display: flex; align-items: center; gap: var(--space-2); }
+  .facts .f svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-text-muted); }
+  .facts .f b { font-weight: var(--weight-semibold); } .facts .f small { color: var(--colour-text-muted); font-size: var(--text-body-sm); display: block; }
+
+  .section { margin-bottom: var(--space-10); }
+  .section h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-bottom: var(--space-4); }
+  .section p { color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); max-width: 68ch; }
+  .readmore { color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); text-decoration: underline; text-underline-offset: 3px; margin-top: var(--space-2); display: inline-block; }
+
+  .feature-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .feature-chips span { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  /* action row (desktop inline) */
+  .actions { display: none; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-6); }
+  @media (min-width: 1024px) { .actions { display: flex; } }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-lg); padding-inline: var(--space-6); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .btn svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* details table */
+  .dtable { width: 100%; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .dtable tr { border-bottom: 1px solid var(--colour-divider); } .dtable tr:last-child { border-bottom: none; }
+  .dtable th { text-align: left; padding: var(--space-3) var(--space-4); color: var(--colour-text-muted); font-weight: var(--weight-regular); font-size: var(--text-body-sm); width: 45%; }
+  .dtable td { padding: var(--space-3) var(--space-4); font-weight: var(--weight-medium); font-size: var(--text-body-sm); }
+
+  /* material info note */
+  .matinfo { padding: var(--space-4) var(--space-5); border-left: 3px solid var(--colour-info); background: var(--colour-surface-raised); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-4); }
+
+  /* docs tiles */
+  .docs { display: grid; gap: var(--space-4); grid-template-columns: repeat(2,1fr); }
+  @media (min-width: 640px) { .docs { grid-template-columns: repeat(3,1fr); } }
+  .doc { border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; text-decoration: none; color: inherit; }
+  .doc .thumb { aspect-ratio: var(--ratio-floorplan); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-muted); }
+  .doc.coming .thumb { background: repeating-linear-gradient(45deg, var(--colour-surface-sunken), var(--colour-surface-sunken) 10px, var(--colour-surface-raised) 10px, var(--colour-surface-raised) 20px); }
+  .doc .thumb svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .doc .lbl { padding: var(--space-3) var(--space-4); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .doc .lbl small { display: block; color: var(--colour-text-muted); font-weight: var(--weight-regular); }
+
+  /* map + nearby */
+  .map { aspect-ratio: var(--ratio-hero); border-radius: var(--radius-md); background: linear-gradient(135deg,#dfe5e3,#eef0ec); position: relative; border: 1px solid var(--colour-border); }
+  .map .pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-100%); color: var(--colour-brand-primary); }
+  .map .pin svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .nearby { display: grid; gap: var(--space-6); grid-template-columns: 1fr; margin-top: var(--space-6); }
+  @media (min-width: 640px) { .nearby { grid-template-columns: 1fr 1fr; } }
+  .nearby h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+  .nearby ul { display: flex; flex-direction: column; gap: var(--space-2); }
+  .nearby li { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-body-sm); padding: var(--space-2) 0; border-bottom: 1px solid var(--colour-divider); }
+  .nearby li small { color: var(--colour-text-muted); }
+
+  /* sidebar */
+  .sidebar { position: sticky; top: calc(var(--size-button-md) + var(--space-12)); display: flex; flex-direction: column; gap: var(--space-5); }
+  .booking { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); background: var(--colour-surface-base); box-shadow: var(--shadow-sm); }
+  .booking h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-2); }
+  .booking p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-bottom: var(--space-4); }
+  .booking .btn { width: 100%; margin-bottom: var(--space-3); }
+  .agentcard { display: flex; gap: var(--space-3); align-items: center; padding-top: var(--space-4); margin-top: var(--space-2); border-top: 1px solid var(--colour-divider); }
+  .agentcard .av { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; font-family: var(--font-display); color: var(--colour-text-secondary); }
+  .agentcard .who strong { display: block; } .agentcard .who small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .valblock { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-6); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .valblock h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); margin-bottom: var(--space-2); }
+  .valblock p { font-size: var(--text-body-sm); opacity: 0.85; margin-bottom: var(--space-4); }
+  .valblock .cta2 { display: inline-flex; width: 100%; justify-content: center; align-items: center; height: var(--size-button-md); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; }
+
+  /* related */
+  .rail { display: flex; gap: var(--space-4); overflow-x: auto; padding-bottom: var(--space-4); scroll-snap-type: x proximity; }
+  .rail .rcard { flex: 0 0 260px; scroll-snap-align: start; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; text-decoration: none; color: inherit; }
+  .rail .rcard .ph { aspect-ratio: var(--ratio-card); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); }
+  .rail .rcard .b { padding: var(--space-3) var(--space-4); }
+  .rail .rcard .price { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); }
+  .rail .rcard .a { font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  /* mobile sticky action bar */
+  .mobilebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-sticky); display: flex; gap: var(--space-2); padding: var(--space-3); background: var(--colour-surface-base); border-top: 1px solid var(--colour-border); box-shadow: var(--shadow-md); }
+  @media (min-width: 1024px) { .mobilebar { display: none; } }
+  .mobilebar a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+  .mobilebar .call { background: var(--colour-surface-base); border: 1px solid var(--colour-border); color: var(--colour-brand-primary); flex: 0 0 var(--size-touch-target-min); }
+  .mobilebar .book { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .mobilebar .savem { background: var(--colour-surface-base); border: 1px solid var(--colour-border); color: var(--colour-brand-primary); flex: 0 0 var(--size-touch-target-min); }
+  .mobilebar svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  main { padding-bottom: var(--space-20); }
+  @media (min-width: 1024px) { main { padding-bottom: 0; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Property detail</h1>
+    <span class="brief">EPIC-F design brief — full property surface anatomy (Phase B · public property surfaces)</span>
+    <dl class="annotations">
+      <div><dt>Anatomy</dt><dd>gallery hero · header · facts · description · features · map · nearby · details table · documents · related · booking sidebar · valuation block · agent card</dd></div>
+      <div><dt>Responsive</dt><dd>2-col (main + sticky booking) ≥ 1024px; single column + sticky bottom action bar below</dd></div>
+      <div><dt>Trust</dt><dd>price qualifier adjacent · Material Information surfaced · valuation indicative-only</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <header class="site-header">
+    <div class="row">
+      <a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="#">New homes</a><a href="#">Area guides</a><a href="#">Branches</a><a href="#">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="portal-homepage.html">Home</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      <a href="properties-catalogue.html">For sale</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      <a href="properties-catalogue.html">Didsbury</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      <span aria-current="page" style="color:var(--colour-text-primary);font-weight:var(--weight-semibold)">Palatine Road</span>
+    </nav>
+
+    <div class="gallery">
+      <div class="ph main"><div class="roof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg></div><a class="viewall" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m6 19 5-4 4 3 3-2"/></svg>View all 18 photos</a></div>
+      <div class="ph s1"><div class="roof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div></div>
+      <div class="ph s2"><div class="roof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/></svg></div></div>
+    </div>
+
+    <div class="layout">
+      <div class="mainContent">
+
+        <div class="phead">
+          <span class="badge" aria-label="Status: for sale">For sale</span>
+          <h1>Four-bedroom Edwardian semi-detached house</h1>
+          <p class="street">Palatine Road, Didsbury, Manchester M20</p>
+          <div class="priceline"><span class="qual">Offers in region of</span><span class="price">£525,000</span></div>
+        </div>
+
+        <div class="facts">
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-5h18v5"/><path d="M5 13V8h14v5"/></svg><span><b>4</b><small>bedrooms</small></span></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3z"/><path d="M7 12V6a2 2 0 0 1 4 0"/></svg><span><b>2</b><small>bathrooms</small></span></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg><span><b>Semi</b><small>detached</small></span></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16M9 4v16"/></svg><span><b>1,540</b><small>sq ft</small></span></div>
+          <div class="f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>Freehold</b><small>tenure</small></span></div>
+        </div>
+
+        <div class="section">
+          <p>A handsome and beautifully maintained Edwardian semi on one of Didsbury's most sought-after roads, moments from the village, the Metrolink and excellent schools. Generous period proportions throughout, with a stunning open-plan kitchen-diner opening onto a south-facing garden.</p>
+          <div class="feature-chips" style="margin-top:var(--space-4)">
+            <span>South-facing garden</span><span>Off-street parking</span><span>Period features</span><span>Open-plan kitchen</span><span>Close to Metrolink</span><span>Catchment for outstanding schools</span><span>Chain-free</span>
+          </div>
+          <a class="readmore" href="#" aria-expanded="false">Read full description</a>
+        </div>
+
+        <div class="actions">
+          <a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Book a viewing</a>
+          <a class="btn secondary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.5z"/></svg>Contact agent</a>
+          <a class="btn secondary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>Save</a>
+        </div>
+
+        <div class="section" style="margin-top:var(--space-12)">
+          <h2>Location</h2>
+          <div class="map" role="img" aria-label="Map of Palatine Road, Didsbury, M20"><span class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg></span></div>
+          <div class="nearby">
+            <div><h3>Train &amp; tram nearby</h3><ul><li>East Didsbury (Metrolink) <small>0.4 mi</small></li><li>Didsbury Village (Metrolink) <small>0.6 mi</small></li><li>East Didsbury rail <small>0.5 mi</small></li></ul></div>
+            <div><h3>Schools nearby</h3><ul><li>Beaver Road Primary <small>Outstanding · 0.3 mi</small></li><li>Didsbury CofE Primary <small>Good · 0.5 mi</small></li><li>Parrs Wood High <small>Good · 0.7 mi</small></li></ul></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Property details</h2>
+          <table class="dtable">
+            <tr><th>Property type</th><td>Semi-detached house</td></tr>
+            <tr><th>Tenure</th><td>Freehold</td></tr>
+            <tr><th>Council tax band</th><td>Band E (Manchester City Council)</td></tr>
+            <tr><th>EPC rating</th><td>C (72)</td></tr>
+            <tr><th>Year built</th><td>c. 1908</td></tr>
+            <tr><th>Parking</th><td>Off-street, driveway for 2 cars</td></tr>
+          </table>
+          <p class="matinfo"><strong>Material Information.</strong> EPC, council tax band and tenure are shown above (Parts A &amp; B). Full Material Information (Part C — restrictions, rights, flood risk) is available on request and in the downloadable brochure, per Property Ombudsman guidance.</p>
+        </div>
+
+        <div class="section">
+          <h2>Floorplan, EPC &amp; tour</h2>
+          <div class="docs">
+            <a class="doc" href="#"><div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 9v12M15 3v6"/></svg></div><div class="lbl">Floorplan<small>1,540 sq ft</small></div></a>
+            <a class="doc coming"><div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v16H4z"/><path d="M4 14l4-4 4 4 4-4 4 4"/></svg></div><div class="lbl">EPC certificate<small>Coming soon</small></div></a>
+            <a class="doc" href="#"><div class="thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="m10 9 5 3-5 3z"/></svg></div><div class="lbl">Virtual tour<small>360° walkthrough</small></div></a>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Similar properties nearby</h2>
+          <div class="rail">
+            <a class="rcard" href="#"><div class="ph"></div><div class="b"><div class="price">£499,950</div><div class="a">Cavendish Road, M20 · 4 bed</div></div></a>
+            <a class="rcard" href="#"><div class="ph"></div><div class="b"><div class="price">£560,000</div><div class="a">Clyde Road, M20 · 4 bed</div></div></a>
+            <a class="rcard" href="#"><div class="ph"></div><div class="b"><div class="price">£475,000</div><div class="a">Elm Grove, M20 · 3 bed</div></div></a>
+            <a class="rcard" href="#"><div class="ph"></div><div class="b"><div class="price">£610,000</div><div class="a">Wilmslow Road, M20 · 5 bed</div></div></a>
+          </div>
+        </div>
+
+      </div>
+
+      <aside class="sidebar" aria-label="Enquire about this property">
+        <div class="booking">
+          <h3>Arrange a viewing</h3>
+          <p>The Didsbury branch usually replies within one working day.</p>
+          <a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Book a viewing</a>
+          <a class="btn secondary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.5z"/></svg>Contact agent</a>
+          <div class="agentcard">
+            <span class="av" aria-hidden="true">PS</span>
+            <div class="who"><strong>Priya Shah</strong><small>Senior sales agent · Didsbury</small></div>
+          </div>
+        </div>
+        <div class="valblock">
+          <h3>Own a place like this?</h3>
+          <p>Find out what it's worth. Free and no-obligation — indicative only.</p>
+          <a class="cta2" href="#">Get a free valuation</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <nav class="mobilebar" aria-label="Property actions">
+    <a class="call" href="tel:01610000000" aria-label="Call the branch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg></a>
+    <a class="book" href="#">Book a viewing</a>
+    <a class="savem" href="#" aria-label="Save property"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></a>
+  </nav>
+
+</main>
+<section data-rv></section>
+</body>
+</html>

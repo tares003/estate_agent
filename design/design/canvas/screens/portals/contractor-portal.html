@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contractor portal — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="portal-shell.css">
+<script src="../../canvas.js"></script>
+<style>
+  .jobcard { background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-4); }
+  .jobcard.urgent { border-left: 3px solid var(--colour-priority-emergency); }
+  .jobcard .jh { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); padding: var(--space-5); }
+  .jobcard .jh h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); } .jobcard .jh .ref { font-family: var(--font-mono); font-size: var(--text-caption); color: var(--colour-text-muted); }
+  .jobcard .meta { display: flex; flex-wrap: wrap; gap: var(--space-4); padding: 0 var(--space-5) var(--space-5); color: var(--colour-text-secondary); font-size: var(--text-body-sm); }
+  .jobcard .meta span { display: inline-flex; align-items: center; gap: var(--space-2); } .jobcard .meta svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); }
+  .jobcard .acts { display: flex; gap: var(--space-2); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--colour-divider); background: var(--colour-surface-raised); flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Contractor portal</h1>
+    <span class="brief">EPIC-G design brief — contractor's job board for assigned repairs</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>simple job board — assigned jobs with property, issue, urgency, access notes + accept / schedule / complete actions</dd></div>
+      <div><dt>Focus</dt><dd>mobile-first (contractors are on site); large tap targets; minimal chrome</dd></div>
+      <div><dt>States</dt><dd>new (accept), scheduled, complete-with-photos</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="portal">
+    <header class="ptop"><div class="row"><a class="brand" href="#" onclick="return false"><span class="mark">EA</span>Estate Agent<span class="tag">Contractor</span></a><div class="who"><span class="av">RB</span><span>R. Boyd Plumbing</span></div></div></header>
+    <div class="pwrap">
+      <div class="phero"><div><h1>Your jobs</h1><p class="meta">2 to schedule · 1 in progress</p></div><div class="stat"><div class="v">3</div><div class="l">open jobs</div></div></div>
+
+      <div class="ptiles">
+        <div class="ptile"><div class="k">New</div><div class="v">1</div><div class="d"><span class="pill danger">1 emergency</span></div></div>
+        <div class="ptile"><div class="k">Scheduled</div><div class="v">1</div><div class="d">Thu 11 Jun</div></div>
+        <div class="ptile"><div class="k">Completed (30d)</div><div class="v">14</div><div class="d"><span class="pill ok">All signed off</span></div></div>
+      </div>
+
+      <h2 style="font-family:var(--font-display);font-size:var(--text-heading-md);font-weight:var(--weight-semibold);margin:var(--space-2) 0 var(--space-4)">To action</h2>
+
+      <div class="jobcard urgent">
+        <div class="jh"><div><h3>Boiler — no hot water</h3><span class="ref">RP-2026-1188 · assigned 1h ago</span></div><span class="pill danger">Emergency</span></div>
+        <div class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>3 Birch Avenue, M19</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/></svg>Maria Costa · 07700 900222</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>Access: any time, key safe 4821</span></div>
+        <div class="acts"><a class="btn primary" href="#">Accept job</a><a class="btn secondary" href="#">View details</a><a class="btn secondary" href="tel:07700900222">Call tenant</a></div>
+      </div>
+
+      <div class="jobcard">
+        <div class="jh"><div><h3>Leaking kitchen tap</h3><span class="ref">RP-2026-1185 · scheduled Thu 11 Jun, am</span></div><span class="pill warn">Scheduled</span></div>
+        <div class="meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>22 Elm Grove, M14</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/></svg>Aisha Rahman</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>Access: dog in house, ring side door</span></div>
+        <div class="acts"><a class="btn primary" href="#">Mark complete</a><a class="btn secondary" href="#">Reschedule</a></div>
+      </div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

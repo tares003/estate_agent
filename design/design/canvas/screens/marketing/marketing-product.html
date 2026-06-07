@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — product — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(55% 60% at 50% 0%, rgba(79,70,229,0.32), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto; max-width: 16ch; } @media (min-width: 1024px) { .phead h1 { font-size: var(--text-display-lg); } }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 52ch; margin-inline: auto; }
+  .bigshot { max-width: 920px; margin: var(--space-10) auto 0; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--mkt-border-dark); box-shadow: var(--shadow-lg); }
+  .bigshot .bar { display: flex; gap: 6px; padding: var(--space-3) var(--space-4); background: rgba(255,255,255,0.06); } .bigshot .bar span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+  .bigshot .body { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#e9ebf6,#f6f7fb); display: grid; place-items: center; color: var(--mkt-ink-2); } .bigshot .body svg { width: 72px; height: 72px; opacity: 0.35; }
+
+  /* journey steps */
+  .steps { display: grid; gap: var(--space-6); grid-template-columns: 1fr; counter-reset: s; } @media (min-width: 768px) { .steps { grid-template-columns: repeat(3,1fr); } }
+  .step { padding: var(--space-6); border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); position: relative; }
+  .step::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: var(--space-10); height: var(--space-10); border-radius: var(--radius-md); background: var(--mkt-grad); color: #fff; font-weight: var(--weight-bold); margin-bottom: var(--space-4); }
+  .step h3 { font-weight: var(--weight-bold); font-size: var(--text-heading-sm); margin-bottom: var(--space-2); } .step p { color: var(--mkt-ink-2); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); }
+
+  /* capability grid */
+  .caps { display: grid; gap: var(--space-5); grid-template-columns: 1fr; } @media (min-width: 640px) { .caps { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1024px) { .caps { grid-template-columns: repeat(3,1fr); } }
+  .cap { padding: var(--space-5); border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); }
+  .cap .ic { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-md); background: rgba(34,211,238,0.14); color: #0e7490; display: grid; place-items: center; margin-bottom: var(--space-3); } .cap .ic svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .cap h3 { font-weight: var(--weight-semibold); font-size: var(--text-body-md); margin-bottom: var(--space-1); } .cap p { color: var(--mkt-ink-2); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); }
+
+  .secthead { text-align: center; max-width: 42ch; margin: 0 auto var(--space-12); } .secthead h2 { font-size: var(--text-display-sm); margin: var(--space-2) 0; } .secthead p { color: var(--mkt-ink-2); }
+  .finalcta { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; } .finalcta h2 { font-size: var(--text-display-md); max-width: 18ch; margin: var(--space-2) auto var(--space-6); } .finalcta .ctas { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — product</h1>
+    <span class="brief">EPIC-AE design brief — /product overview</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>hero + full product shot · "how it works" 3-step journey · capability grid · final CTA</dd></div>
+      <div><dt>Identity</dt><dd>operator-editorial (.mkt) — consistent with the rest of the marketing site</dd></div>
+      <div><dt>Links</dt><dd>deep-links to features &amp; pricing</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#" aria-current="page">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="marketing-trust.html">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Product</p>
+      <h1 class="display">One platform, the whole agency.</h1>
+      <p>From the first valuation to completion — and every tenancy, repair and review in between. Here's how it fits together.</p>
+      <div class="bigshot"><div class="bar"><span></span><span></span><span></span></div><div class="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div></div>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="secthead"><p class="mkt-eyebrow">How it works</p><h2 class="display">Up and running in three steps.</h2></div>
+      <div class="steps">
+        <div class="step"><h3>Pick your packs</h3><p>Start with Core, add Lettings, New Homes or Feedback. Your plan, your pace — change it any time.</p></div>
+        <div class="step"><h3>Bring your brand</h3><p>Your domain, your colours, your logo. The site and emails carry your identity, not ours.</p></div>
+        <div class="step"><h3>Go live</h3><p>Import your listings, route your leads, and switch on the public site — usually within a week.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section" style="background:var(--mkt-raised)">
+    <div class="mkt-inner">
+      <div class="secthead"><p class="mkt-eyebrow">What's inside</p><h2 class="display">Built for how agencies actually work.</h2></div>
+      <div class="caps">
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg></span><h3>Listings &amp; website</h3><p>One property card everywhere, a CMS page builder, and SEO tooling built in.</p></div>
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span><h3>CRM &amp; leads</h3><p>Capture, route and chase every enquiry with assignment rules and SLA warnings.</p></div>
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg></span><h3>Lettings &amp; repairs</h3><p>Tenancies, rent, landlord statements and a tenant portal that cuts the calls.</p></div>
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m12 3 2.6 6.3 6.4.5-4.9 4.2 1.5 6.5L12 17l-5.6 3.5 1.5-6.5L3 9.8l6.4-.5z"/></svg></span><h3>Reviews &amp; reputation</h3><p>Automated review requests, moderation and an agent league table.</p></div>
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></span><h3>Insights</h3><p>Cross-branch reporting and pipeline forecasting from one dashboard.</p></div>
+        <div class="cap"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><h3>Security &amp; compliance</h3><p>2FA, audit logging, GDPR consent and Material Information as standard.</p></div>
+      </div>
+      <div style="text-align:center;margin-top:var(--space-10)"><a class="mkt-btn primary lg" href="marketing-features.html">Explore every feature</a></div>
+    </div>
+  </section>
+
+  <section class="mkt-section finalcta">
+    <div class="mkt-inner"><p class="mkt-eyebrow">Ready when you are</p><h2 class="display">See it on your own properties.</h2><div class="ctas"><a class="mkt-btn primary lg" href="marketing-pricing.html">See pricing</a><a class="mkt-btn ghost-d lg" href="#">Book a demo</a></div></div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="marketing-status.html">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

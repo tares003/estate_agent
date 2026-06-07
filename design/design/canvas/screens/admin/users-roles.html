@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users & roles — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .nameav { display: flex; align-items: center; gap: var(--space-3); }
+  .nameav .av { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .twofa svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .twofa.on { color: var(--colour-success); } .twofa.off { color: var(--colour-text-muted); }
+  .matrix-wrap { margin-top: var(--space-8); }
+  table.m { width: 100%; border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  table.m th, table.m td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); text-align: center; }
+  table.m th { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); background: var(--colour-surface-raised); }
+  table.m th:first-child, table.m td:first-child { text-align: left; }
+  table.m td:first-child { font-weight: var(--weight-medium); }
+  table.m tr:last-child td { border-bottom: none; }
+  .yes { color: var(--colour-success); } .yes svg { width: 18px; height: 18px; }
+  .no { color: var(--colour-border); } .no svg { width: 18px; height: 18px; }
+  .own { font-size: var(--text-caption); color: var(--colour-text-muted); }
+  .h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
+  .lede { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-bottom: var(--space-4); }
+</style>
+</head>
+<body data-active="users" data-crumb="Users &amp; roles">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Users &amp; roles</h1>
+    <span class="brief">EPIC-H design brief — staff users + role permission matrix (H.17)</span>
+    <dl class="annotations">
+      <div><dt>Users</dt><dd>table with role, branch, 2FA status, last active</dd></div>
+      <div><dt>Roles</dt><dd>permission matrix — Super admin · Branch manager · Sales agent · Lettings agent · Content editor</dd></div>
+      <div><dt>Naming</dt><dd>roles match PRODUCT.md §1 primary user types</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Users &amp; roles</h1><p>14 staff · 5 roles</p></div><a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Invite a user</a></div>
+
+    <div class="tablewrap">
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr><th>Name</th><th>Role</th><th>Branch</th><th>2FA</th><th>Last active</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><div class="nameav"><span class="av">JM</span><span class="who"><strong>Jess Mercer</strong><small>jess@estateagent.co.uk</small></span></div></td><td>Super admin</td><td>All branches</td><td><span class="twofa on" title="2FA enabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></td><td>Just now</td><td><span class="ubadge green">Active</span></td></tr>
+            <tr><td><div class="nameav"><span class="av">PS</span><span class="who"><strong>Priya Shah</strong><small>priya@estateagent.co.uk</small></span></div></td><td>Branch manager</td><td>Didsbury</td><td><span class="twofa on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></td><td>10 min ago</td><td><span class="ubadge green">Active</span></td></tr>
+            <tr><td><div class="nameav"><span class="av">TB</span><span class="who"><strong>Tom Beckett</strong><small>tom@estateagent.co.uk</small></span></div></td><td>Sales agent</td><td>Didsbury</td><td><span class="twofa on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></td><td>1 hour ago</td><td><span class="ubadge green">Active</span></td></tr>
+            <tr><td><div class="nameav"><span class="av">MO</span><span class="who"><strong>Mariam Okafor</strong><small>mariam@estateagent.co.uk</small></span></div></td><td>Lettings agent</td><td>City</td><td><span class="twofa on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></td><td>Yesterday</td><td><span class="ubadge green">Active</span></td></tr>
+            <tr><td><div class="nameav"><span class="av">RC</span><span class="who"><strong>Ravi Chandra</strong><small>ravi@estateagent.co.uk</small></span></div></td><td>Content editor</td><td>All branches</td><td><span class="twofa off" title="2FA pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></td><td>3 days ago</td><td><span class="ubadge amber">2FA pending</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <h2 class="h2">Role permissions</h2>
+      <p class="lede">"Own" means the user can act only on records assigned to them.</p>
+      <div class="scrollx">
+        <table class="m">
+          <thead><tr><th>Capability</th><th>Super admin</th><th>Branch manager</th><th>Sales agent</th><th>Lettings agent</th><th>Content editor</th></tr></thead>
+          <tbody>
+            <tr><td>Manage properties</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td><span class="own">Own</span></td><td><span class="own">Own</span></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><td>Handle enquiries</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><td>Edit CMS pages</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+            <tr><td>Manage users &amp; roles</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><td>View audit log</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

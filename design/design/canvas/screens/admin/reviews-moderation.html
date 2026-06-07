@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reviews moderation — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .modlayout { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .modlayout { grid-template-columns: minmax(0,1fr) 400px; align-items: start; } }
+  .qcard { border: 1px solid var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-base); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-3); cursor: pointer; }
+  .qcard.sel { border-color: var(--colour-brand-primary); box-shadow: inset 0 0 0 1px var(--colour-brand-primary); }
+  .qcard .top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+  .qcard .who { font-weight: var(--weight-semibold); font-size: var(--text-body-sm); } .qcard .who small { display: block; color: var(--colour-text-muted); font-weight: var(--weight-regular); }
+  .stars { color: var(--colour-brand-accent); letter-spacing: 2px; font-size: var(--text-body-md); } .stars .off { color: var(--colour-border); }
+  .qcard p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); }
+  .qstate { display: inline-flex; padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); }
+  .qstate.pending { background: rgba(245,158,11,0.16); color: #8a5a00; } .qstate.flagged { background: rgba(239,68,68,0.12); color: var(--colour-priority-emergency); }
+
+  .detail { position: sticky; top: var(--space-6); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .detail .dh { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); }
+  .detail .dh .who { font-weight: var(--weight-semibold); } .detail .dh small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .detail .db { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+  .detail blockquote { font-family: var(--font-display); font-size: var(--text-heading-sm); line-height: var(--text-heading-md-lh); color: var(--colour-text-primary); }
+  .kv { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-body-sm); padding: var(--space-2) 0; border-bottom: 1px solid var(--colour-divider); } .kv dt { color: var(--colour-text-muted); } .kv dd { font-weight: var(--weight-medium); }
+  .flagnote { display: flex; gap: var(--space-3); padding: var(--space-4); border-radius: var(--radius-md); background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.3); font-size: var(--text-body-sm); color: #8f2018; } .flagnote svg { width: var(--size-icon-md); height: var(--size-icon-md); flex: 0 0 auto; }
+  .modacts { display: flex; flex-direction: column; gap: var(--space-3); }
+  .replybox { border-top: 1px solid var(--colour-divider); padding-top: var(--space-4); }
+  .replybox textarea { width: 100%; min-height: 80px; border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-body-sm); resize: vertical; }
+</style>
+</head>
+<body data-active="settings" data-crumb="Reviews · Moderation">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Reviews moderation</h1>
+    <span class="brief">EPIC-AC design brief — feedback moderation queue + detail</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>queue (left) of submitted reviews + a detail/action panel (right): approve · reply · flag · reject</dd></div>
+      <div><dt>Primary action</dt><dd>"Acknowledge and reply" (per the brief)</dd></div>
+      <div><dt>States</dt><dd>pending · flagged (auto-detected language) shown</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Reviews moderation</h1><p>8 pending · 1 flagged for review</p></div></div>
+
+    <div class="tabstrip" role="tablist" aria-label="Moderation views">
+      <button role="tab" aria-selected="true">Pending <span class="c">8</span></button>
+      <button role="tab" aria-selected="false">Flagged <span class="c">1</span></button>
+      <button role="tab" aria-selected="false">Published <span class="c">312</span></button>
+      <button role="tab" aria-selected="false">Rejected</button>
+    </div>
+
+    <div class="modlayout">
+      <div>
+        <div class="qcard sel">
+          <div class="top"><div class="who">Sophie Lewis <small>Sale · Palatine Road · 2 days ago</small></div><span class="qstate pending">Pending</span></div>
+          <div class="stars" aria-label="5 out of 5">★★★★★</div>
+          <p>"The team that actually answered the phone. Priya kept us updated the whole way through and we sold in under three weeks."</p>
+        </div>
+        <div class="qcard">
+          <div class="top"><div class="who">Anonymous <small>Lettings · 3 days ago</small></div><span class="qstate flagged">Flagged</span></div>
+          <div class="stars" aria-label="1 out of 5">★<span class="off">★★★★</span></div>
+          <p>"Absolutely useless, total [redacted]…" <span style="color:var(--colour-danger)">— auto-flagged: language</span></p>
+        </div>
+        <div class="qcard">
+          <div class="top"><div class="who">James &amp; Nina <small>Sale · Withington · 4 days ago</small></div><span class="qstate pending">Pending</span></div>
+          <div class="stars" aria-label="5 out of 5">★★★★★</div>
+          <p>"Sold in 18 days at the asking price. Couldn't fault them."</p>
+        </div>
+        <div class="qcard">
+          <div class="top"><div class="who">Mark Whitfield <small>Valuation · 5 days ago</small></div><span class="qstate pending">Pending</span></div>
+          <div class="stars" aria-label="4 out of 5">★★★★<span class="off">★</span></div>
+          <p>"Honest from the first valuation onward. Would use again."</p>
+        </div>
+      </div>
+
+      <div class="detail">
+        <div class="dh"><div class="who">Sophie Lewis</div><small>Verified customer · sale completed 4 Jun 2026</small></div>
+        <div class="db">
+          <div class="stars" style="font-size:var(--text-heading-md)" aria-label="5 out of 5">★★★★★</div>
+          <blockquote>"The team that actually answered the phone. Priya kept us updated the whole way through and we sold in under three weeks."</blockquote>
+          <dl>
+            <div class="kv"><dt>Property</dt><dd>Palatine Road, Didsbury</dd></div>
+            <div class="kv"><dt>Agent</dt><dd>Priya Shah</dd></div>
+            <div class="kv"><dt>Source</dt><dd>Post-completion email</dd></div>
+            <div class="kv"><dt>Consent to publish</dt><dd>Given</dd></div>
+          </dl>
+          <div class="replybox">
+            <label for="reply" style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);display:block;margin-bottom:var(--space-2)">Public reply (optional)</label>
+            <textarea id="reply" placeholder="Thanks so much, Sophie — it was a pleasure…"></textarea>
+          </div>
+          <div class="modacts">
+            <button class="btn primary" style="justify-content:center">Acknowledge and reply</button>
+            <div style="display:flex;gap:var(--space-2)"><button class="btn secondary" style="flex:1;justify-content:center">Approve only</button><button class="btn secondary" style="flex:1;justify-content:center">Reject</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

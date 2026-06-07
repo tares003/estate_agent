@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pages — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .builder { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .builder { grid-template-columns: 240px minmax(0,1fr) 260px; align-items: start; } }
+  .col { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); }
+  .col .ch { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); }
+
+  /* section list */
+  .seclist { padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+  .secitem { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); cursor: grab; background: var(--colour-surface-base); }
+  .secitem.active { border-color: var(--colour-brand-primary); box-shadow: inset 0 0 0 1px var(--colour-brand-primary); }
+  .secitem .grip { color: var(--colour-text-muted); } .secitem .grip svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .secitem .nm strong { display: block; } .secitem .nm small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+  .secitem .eye { margin-left: auto; color: var(--colour-text-muted); } .secitem .eye svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .addsec { margin: var(--space-1) var(--space-3) var(--space-3); }
+
+  /* preview canvas */
+  .preview { background: var(--colour-surface-raised); border-radius: var(--radius-lg); border: 1px solid var(--colour-border); overflow: hidden; }
+  .preview .ptop { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--colour-border); background: var(--colour-surface-base); }
+  .preview .ptop .dots { display: flex; gap: 6px; } .preview .ptop .dots span { width: 10px; height: 10px; border-radius: var(--radius-circle); background: var(--colour-surface-sunken); }
+  .preview .ptop .url { flex: 1; text-align: center; font-size: var(--text-caption); color: var(--colour-text-muted); font-family: var(--font-mono); }
+  .preview .ptop .vt { display: inline-flex; gap: var(--space-1); }
+  .preview .ptop .vt button { width: 32px; height: 28px; display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); }
+  .preview .ptop .vt button[aria-pressed="true"] { background: var(--colour-surface-sunken); color: var(--colour-text-primary); }
+  .preview .ptop .vt svg { width: 16px; height: 16px; }
+  .canvas-block { padding: var(--space-5); }
+  .pb { border: 2px dashed transparent; border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-3); position: relative; }
+  .pb.sel { border-color: var(--colour-brand-accent); background: var(--colour-surface-base); }
+  .pb .tagname { position: absolute; top: -10px; left: var(--space-3); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-size: var(--text-caption); font-weight: var(--weight-semibold); letter-spacing: var(--text-caption-ls); text-transform: uppercase; padding: 1px var(--space-2); border-radius: var(--radius-sm); }
+  .pb-hero { background: linear-gradient(135deg,#2d3a4d,#3a4a5c); color: var(--colour-text-on-dark); border-radius: var(--radius-md); padding: var(--space-8) var(--space-6); text-align: center; }
+  .pb-hero h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); } .pb-hero p { opacity: 0.85; font-size: var(--text-body-sm); margin-top: var(--space-2); }
+  .pb-pillars { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--space-3); }
+  .pb-pillars .p { background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding: var(--space-4); text-align: center; font-size: var(--text-body-sm); }
+  .pb-stats { display: flex; justify-content: space-around; text-align: center; }
+  .pb-stats .s strong { font-family: var(--font-display); font-size: var(--text-heading-lg); display: block; } .pb-stats .s small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+
+  /* settings panel */
+  .setbody { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
+  .swatches { display: flex; gap: var(--space-2); } .swatches span { width: 28px; height: 28px; border-radius: var(--radius-circle); border: 1px solid var(--colour-border); }
+</style>
+</head>
+<body data-active="pages" data-crumb="Pages · Builder">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Pages — CMS builder</h1>
+    <span class="brief">EPIC-D design brief — page builder: section list · live preview · section settings (H.10)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>left: ordered (drag) section list · centre: live preview with selectable blocks · right: selected-section settings</dd></div>
+      <div><dt>Sections</dt><dd>hero · pillars · stats counter · testimonials · property carousel · CTA strip · FAQ (the EPIC-C catalogue)</dd></div>
+      <div><dt>Save</dt><dd>draft / publish + version history</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h"><div><h1>Sales landing page</h1><p>Draft · 3 unpublished changes</p></div><div style="display:flex;gap:var(--space-3)"><a class="btn secondary" href="#">Version history</a><a class="btn secondary" href="#">Save draft</a><a class="btn primary" href="#">Publish</a></div></div>
+
+    <div class="builder">
+
+      <div class="col">
+        <div class="ch">Sections</div>
+        <div class="seclist">
+          <div class="secitem"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="nm"><strong>Hero with search</strong><small>Hero</small></span><span class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+          <div class="secitem active"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="nm"><strong>Three pillars</strong><small>Pillar block</small></span><span class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+          <div class="secitem"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="nm"><strong>Stats counter</strong><small>Animated stats</small></span><span class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+          <div class="secitem"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="nm"><strong>Latest properties</strong><small>Carousel</small></span><span class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span></div>
+        </div>
+        <button class="btn secondary addsec" style="width:calc(100% - var(--space-6))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add section</button>
+      </div>
+
+      <div class="preview">
+        <div class="ptop"><span class="dots"><span></span><span></span><span></span></span><span class="url">/sales</span><span class="vt" role="group" aria-label="Preview width"><button aria-label="Mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="3" width="10" height="18" rx="2"/></svg></button><button aria-pressed="true" aria-label="Desktop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/></svg></button></span></div>
+        <div class="canvas-block">
+          <div class="pb"><span class="tagname">Hero</span><div class="pb-hero"><h2>Selling in Didsbury?</h2><p>Free valuations from a team that knows the area</p></div></div>
+          <div class="pb sel"><span class="tagname">Three pillars</span><div class="pb-pillars"><div class="p">Local experts</div><div class="p">Honest advice</div><div class="p">No tie-in</div></div></div>
+          <div class="pb"><span class="tagname">Stats</span><div class="pb-stats"><div class="s"><strong>1,200+</strong><small>homes sold</small></div><div class="s"><strong>4.9★</strong><small>318 reviews</small></div><div class="s"><strong>28</strong><small>days to sell</small></div></div></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="ch">Three pillars — settings</div>
+        <div class="setbody">
+          <div class="field"><label for="head">Heading</label><input id="head" class="control" type="text" value="Why sell with us"></div>
+          <div class="field"><label>Columns</label><div class="selectwrap"><select class="control"><option>3 columns</option><option>4 columns</option><option>2 columns</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div></div>
+          <div class="field"><label>Background</label><div class="swatches"><span style="background:var(--colour-surface-base)"></span><span style="background:var(--colour-surface-raised)"></span><span style="background:var(--colour-brand-primary)"></span></div></div>
+          <button class="btn secondary sm" style="justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Delete section</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

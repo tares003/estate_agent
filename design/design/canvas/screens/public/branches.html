@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Branches — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display:none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .wrap { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-16) var(--space-6); }
+  .head { margin-bottom: var(--space-10); }
+  .head .eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+  .head h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); font-weight: var(--weight-regular); margin-top: var(--space-2); }
+  .head p { color: var(--colour-text-secondary); font-size: var(--text-body-lg); margin-top: var(--space-3); max-width: 56ch; }
+
+  /* branch cards */
+  .branches { display: grid; gap: var(--space-6); grid-template-columns: 1fr; margin-bottom: var(--space-20); }
+  @media (min-width: 768px) { .branches { grid-template-columns: repeat(3,1fr); } }
+  .bcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+  .bcard .pic { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#3a4a5c,#6b7d6a 70%,#9bab8f); position: relative; }
+  .bcard .pic .pin { position: absolute; left: var(--space-4); bottom: var(--space-4); display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: rgba(26,26,26,0.66); color: var(--colour-text-inverse); font-size: var(--text-caption); font-weight: var(--weight-semibold); }
+  .bcard .pic .pin svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+  .bcard .b { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); flex: 1; }
+  .bcard h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .bcard .line { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .bcard .line svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); flex: 0 0 auto; margin-top: 2px; }
+  .bcard .line a { color: var(--colour-brand-accent-hover); text-decoration: none; font-weight: var(--weight-medium); }
+  .bcard .foot { margin-top: auto; padding-top: var(--space-3); display: flex; gap: var(--space-2); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-4); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); flex: 1; }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+
+  /* team */
+  .teamhead { margin-bottom: var(--space-8); } .teamhead .eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); } .teamhead h2 { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-regular); margin-top: var(--space-2); }
+  .team { display: grid; gap: var(--space-6); grid-template-columns: repeat(2,1fr); }
+  @media (min-width: 640px) { .team { grid-template-columns: repeat(3,1fr); } } @media (min-width: 1024px) { .team { grid-template-columns: repeat(4,1fr); } }
+  .member { text-align: center; }
+  .member .av { aspect-ratio: var(--ratio-avatar); border-radius: var(--radius-xl); background: linear-gradient(135deg,#cfd6d0,#e3ded4); display: grid; place-items: center; font-family: var(--font-display); font-size: var(--text-display-sm); color: var(--colour-text-secondary); margin-bottom: var(--space-3); }
+  .member strong { display: block; font-size: var(--text-body-md); } .member small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+
+  .site-footer { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); padding: var(--space-12) var(--space-6); margin-top: var(--space-20); }
+  .site-footer .inner { display: flex; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; align-items: center; max-width: var(--size-container-xl); margin-inline: auto; }
+  .site-footer a.brand { color: var(--colour-text-on-dark); } .site-footer .legal { font-size: var(--text-caption); opacity: 0.7; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Branches &amp; team</h1>
+    <span class="brief">EPIC-C design brief — branches page (BranchCard grid) + team grid</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>intro · branch cards (photo, address, hours, phone/email, map + contact actions) · team grid</dd></div>
+      <div><dt>Components</dt><dd>BranchCard · TeamGrid · AgentCard</dd></div>
+      <div><dt>Imagery</dt><dd>placeholders for office &amp; team photos (real assets to be supplied)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="#" aria-current="page">Branches</a><a href="contact.html">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="head"><p class="eyebrow">Our branches</p><h1>Find your local team</h1><p>Three branches across South Manchester, each staffed by people who actually live and work in the area.</p></div>
+
+    <div class="branches">
+      <div class="bcard">
+        <div class="pic"><span class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>M20</span></div>
+        <div class="b">
+          <h2>Didsbury</h2>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>742 Wilmslow Road, Didsbury, M20 2DW</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 9–4</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg><a href="tel:01610000001">0161 000 0001</a></div>
+          <div class="foot"><a class="btn secondary" href="#">Directions</a><a class="btn primary" href="contact.html">Contact</a></div>
+        </div>
+      </div>
+      <div class="bcard">
+        <div class="pic" style="background:linear-gradient(135deg,#2f4858,#4a6b78 70%,#7d9aa3)"><span class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>M15</span></div>
+        <div class="b">
+          <h2>City &amp; Castlefield</h2>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>18 Liverpool Road, Castlefield, M15 4PT</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 10–4</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg><a href="tel:01610000005">0161 000 0005</a></div>
+          <div class="foot"><a class="btn secondary" href="#">Directions</a><a class="btn primary" href="contact.html">Contact</a></div>
+        </div>
+      </div>
+      <div class="bcard">
+        <div class="pic" style="background:linear-gradient(135deg,#43564a,#6b7d6a 70%,#9bab8f)"><span class="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>M21</span></div>
+        <div class="b">
+          <h2>Chorlton</h2>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>54 Beech Road, Chorlton, M21 9EG</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Mon–Fri 9–6 · Sat 9–4</div>
+          <div class="line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg><a href="tel:01610000006">0161 000 0006</a></div>
+          <div class="foot"><a class="btn secondary" href="#">Directions</a><a class="btn primary" href="contact.html">Contact</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="teamhead"><p class="eyebrow">Meet the team</p><h2>The people behind the sign boards</h2></div>
+    <div class="team">
+      <div class="member"><div class="av" aria-hidden="true">JM</div><strong>Jess Mercer</strong><small>Director</small></div>
+      <div class="member"><div class="av" aria-hidden="true">PS</div><strong>Priya Shah</strong><small>Senior sales · Didsbury</small></div>
+      <div class="member"><div class="av" aria-hidden="true">TB</div><strong>Tom Beckett</strong><small>Sales · Didsbury</small></div>
+      <div class="member"><div class="av" aria-hidden="true">MO</div><strong>Mariam Okafor</strong><small>Lettings · City</small></div>
+      <div class="member"><div class="av" aria-hidden="true">RC</div><strong>Ravi Chandra</strong><small>Marketing</small></div>
+      <div class="member"><div class="av" aria-hidden="true">SL</div><strong>Sofia Lewis</strong><small>Lettings · Chorlton</small></div>
+      <div class="member"><div class="av" aria-hidden="true">DN</div><strong>Daniel Nkemu</strong><small>New homes</small></div>
+      <div class="member"><div class="av" aria-hidden="true">HK</div><strong>Hana Kowalski</strong><small>Property manager</small></div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="inner"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a><span class="legal">© 1998–2026 Estate Agent Ltd · Member of the Property Ombudsman</span></div>
+  </footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

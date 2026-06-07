@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map search — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .searchbar2 { background: var(--colour-surface-raised); border-bottom: 1px solid var(--colour-border); }
+  .searchbar2 .inner { max-width: var(--size-container-2xl); margin-inline: auto; padding: var(--space-4) var(--space-6); display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; }
+  .searchfield { flex: 1; min-width: 200px; display: flex; align-items: center; gap: var(--space-2); height: var(--size-input-md); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); padding-inline: var(--space-4); }
+  .searchfield input { border: none; flex: 1; font-size: var(--text-body-md); } .searchfield input:focus-visible { outline: none; } .searchfield svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); }
+  .viewtoggle { display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .viewtoggle a { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-input-md); padding-inline: var(--space-4); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); text-decoration: none; }
+  .viewtoggle a[aria-current] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .viewtoggle svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  /* split: list + map */
+  .split { display: grid; grid-template-columns: 1fr; height: calc(100vh - 113px); min-height: 600px; }
+  @media (min-width: 1024px) { .split { grid-template-columns: 420px 1fr; } }
+  html.embed .split { height: 600px; }
+  .listcol { overflow-y: auto; border-right: 1px solid var(--colour-border); }
+  @media (max-width: 1024px) { .listcol { display: none; } } /* map-first on mobile; toggle returns to list */
+  .listcol .lh { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); color: var(--colour-text-muted); position: sticky; top: 0; background: var(--colour-surface-base); }
+  .mini { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); text-decoration: none; color: inherit; cursor: pointer; }
+  .mini:hover, .mini.active { background: var(--colour-surface-raised); }
+  .mini .ph { width: 96px; height: 72px; border-radius: var(--radius-md); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); flex: 0 0 auto; position: relative; }
+  .mini .ph .b { position: absolute; top: var(--space-1); left: var(--space-1); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); background: var(--colour-status-available); padding: 1px var(--space-1); border-radius: var(--radius-sm); }
+  .mini .info .price { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); } .mini .info .addr { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); margin-top: 2px; } .mini .info .meta { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: 2px; }
+
+  .mapcol { position: relative; background:
+    radial-gradient(60% 60% at 30% 30%, rgba(107,125,106,0.25), transparent 60%),
+    radial-gradient(50% 50% at 75% 65%, rgba(58,74,92,0.18), transparent 60%),
+    linear-gradient(135deg,#e7ece8,#eef0ec); }
+  .mappin { position: absolute; transform: translate(-50%,-100%); display: inline-flex; align-items: center; height: var(--size-button-sm); padding-inline: var(--space-3); border-radius: var(--radius-pill); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); box-shadow: var(--shadow-md); cursor: pointer; white-space: nowrap; }
+  .mappin::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 10px; height: 10px; background: var(--colour-brand-primary); transform: translateX(-50%) rotate(45deg); }
+  .mappin.active { background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); } .mappin.active::after { background: var(--colour-brand-accent); }
+  .mapctl { position: absolute; right: var(--space-4); top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
+  .mapctl button { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); color: var(--colour-text-primary); font-size: var(--text-heading-sm); }
+  .draw { position: absolute; left: var(--space-4); top: var(--space-4); display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-4); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .draw svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Map search</h1>
+    <span class="brief">EPIC-F design brief — catalogue map view (split list + map)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>scrollable result list (left) synced with price-pin map (right); hover/tap highlights both</dd></div>
+      <div><dt>Responsive</dt><dd>map-first on mobile with a toggle back to list (no side-by-side below 1024px)</dd></div>
+      <div><dt>Pins</dt><dd>show price; active pin uses --colour-brand-accent; map is a styled placeholder for the real tile provider</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html" aria-current="page">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="contact.html">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <div class="searchbar2"><div class="inner">
+    <div class="searchfield"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><label for="q" style="position:absolute;left:-9999px">Search</label><input id="q" type="search" value="Didsbury, M20"></div>
+    <div class="viewtoggle" role="group" aria-label="View mode"><a href="properties-catalogue.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>List</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 4 6 2 6-2v14l-6 2-6-2-6 2V6z"/><path d="M9 4v14M15 6v14"/></svg>Map</a></div>
+  </div></div>
+
+  <div class="split">
+    <div class="listcol">
+      <div class="lh">48 properties in this area</div>
+      <a class="mini active" href="property-detail.html"><span class="ph"><span class="b">For sale</span></span><span class="info"><span class="price">£525,000</span><span class="addr">Palatine Road, M20</span><span class="meta">4 bed semi · 2 bath</span></span></a>
+      <a class="mini" href="property-detail.html"><span class="ph"><span class="b">For sale</span></span><span class="info"><span class="price">£399,995</span><span class="addr">Acomb Street, M14</span><span class="meta">3 bed terrace</span></span></a>
+      <a class="mini" href="property-detail.html"><span class="ph"><span class="b">For sale</span></span><span class="info"><span class="price">£465,000</span><span class="addr">Brooklawn Drive, M20</span><span class="meta">4 bed detached</span></span></a>
+      <a class="mini" href="property-detail.html"><span class="ph"><span class="b">For sale</span></span><span class="info"><span class="price">£289,950</span><span class="addr">Cromwell Grove, M19</span><span class="meta">2 bed terrace</span></span></a>
+      <a class="mini" href="property-detail.html"><span class="ph"><span class="b">For sale</span></span><span class="info"><span class="price">£725,000</span><span class="addr">Parrs Wood Road, M20</span><span class="meta">5 bed detached</span></span></a>
+    </div>
+    <div class="mapcol" role="application" aria-label="Map of properties in Didsbury — use the list to the left for a text alternative">
+      <button class="draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-10 5 6 3-4 4 8z"/></svg>Draw to search</button>
+      <span class="mappin active" style="left:32%;top:38%">£525k</span>
+      <span class="mappin" style="left:58%;top:30%">£400k</span>
+      <span class="mappin" style="left:46%;top:56%">£465k</span>
+      <span class="mappin" style="left:70%;top:64%">£290k</span>
+      <span class="mappin" style="left:24%;top:68%">£725k</span>
+      <div class="mapctl"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button></div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

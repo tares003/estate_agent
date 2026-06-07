@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auth edge states — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="auth-shell.css">
+<script src="../../canvas.js"></script>
+<style>
+  .pairs { display: grid; gap: var(--space-8); grid-template-columns: 1fr; padding: var(--space-12) var(--space-6); max-width: var(--size-container-lg); margin-inline: auto; }
+  @media (min-width: 1024px) { .pairs { grid-template-columns: 1fr 1fr; } }
+  .panelcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-8); background: var(--colour-surface-base); }
+  .stagelbl { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent-hover); margin-bottom: var(--space-4); }
+  .panelcard h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .locked-banner { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: rgba(245,158,11,0.12); color: var(--colour-text-primary); border: 1px solid rgba(245,158,11,0.4); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); margin: var(--space-4) 0; }
+  .locked-banner svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-warning); flex: 0 0 auto; }
+  .expired { text-align: center; }
+  .expired .emblem { width: var(--space-16); height: var(--space-16); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); color: var(--colour-text-muted); display: grid; place-items: center; margin: var(--space-2) auto var(--space-5); } .expired .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .expired p { color: var(--colour-text-secondary); max-width: 40ch; margin: var(--space-2) auto var(--space-6); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Auth edge states</h1>
+    <span class="brief">EPIC-T / EPIC-N — account-locked &amp; reset-token-expired states</span>
+    <dl class="annotations">
+      <div><dt>Account locked</dt><dd>after repeated failed sign-ins — clear "try again in 30 minutes" + forgot-password CTA</dd></div>
+      <div><dt>Token expired</dt><dd>reset link past its window — "request a new link" with no dead end</dd></div>
+      <div><dt>Tone</dt><dd>calm, non-accusatory; never reveals whether the account exists</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="pairs">
+    <div class="panelcard">
+      <p class="stagelbl">Account temporarily locked</p>
+      <h2>Sign in</h2>
+      <div class="locked-banner" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <div><strong>Account temporarily locked.</strong> For your security we've paused sign-in after several failed attempts. Please try again in <strong>30 minutes</strong>, or reset your password now.</div>
+      </div>
+      <div class="field"><label for="e">Email address</label><input id="e" class="control" type="email" value="jordan.avery@example.co.uk" disabled></div>
+      <div class="field"><label for="p">Password</label><input id="p" class="control" type="password" disabled></div>
+      <button class="btn primary" type="button" disabled style="opacity:0.5;cursor:not-allowed">Sign in</button>
+      <p class="alt-link"><a href="password-reset.html">Reset your password</a></p>
+    </div>
+
+    <div class="panelcard">
+      <p class="stagelbl">Reset link expired</p>
+      <div class="expired">
+        <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+        <h2>This reset link has expired</h2>
+        <p>For your security, password-reset links are only valid for 60 minutes. Request a fresh one and we'll email it straight over.</p>
+        <a class="btn primary" href="password-reset.html" style="max-width:280px;margin-inline:auto">Request a new link</a>
+        <p class="alt-link" style="margin-top:var(--space-5)"><a href="sign-in.html">Back to sign in</a></p>
+      </div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

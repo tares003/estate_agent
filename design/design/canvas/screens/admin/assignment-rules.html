@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assignment rules — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .rules { max-width: 820px; }
+  .rule { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); margin-bottom: var(--space-4); overflow: hidden; }
+  .rule .rh { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .rule .rh .grip { color: var(--colour-text-muted); cursor: grab; } .rule .rh .grip svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .rule .rh .order { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-size: var(--text-caption); font-weight: var(--weight-semibold); flex: 0 0 auto; }
+  .rule .rh h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); flex: 1; }
+  .rule .rh .sw { position: relative; width: 44px; height: 26px; flex: 0 0 auto; } .rule .rh .sw input { position: absolute; opacity: 0; } .rule .rh .sw .track { display: block; width: 44px; height: 26px; border-radius: var(--radius-pill); background: var(--colour-surface-sunken); border: 1px solid var(--colour-border); } .rule .rh .sw .track::after { content:""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: var(--radius-circle); background: var(--colour-surface-base); box-shadow: var(--shadow-xs); transition: transform var(--motion-duration-fast) var(--motion-ease-standard); } .rule .rh .sw input:checked + .track { background: var(--colour-success); border-color: var(--colour-success); } .rule .rh .sw input:checked + .track::after { transform: translateX(18px); }
+  .rule .rb { padding: var(--space-5); }
+  .clause { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; font-size: var(--text-body-sm); }
+  .clause .kw { color: var(--colour-text-muted); font-weight: var(--weight-semibold); text-transform: uppercase; font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); }
+  .tok { display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border-radius: var(--radius-md); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-weight: var(--weight-medium); }
+  .tok.acc { background: rgba(201,162,75,0.16); border-color: rgba(201,162,75,0.4); color: var(--colour-brand-accent-hover); }
+  .then { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px dashed var(--colour-border); }
+</style>
+</head>
+<body data-active="enquiries" data-crumb="Enquiries · Assignment rules">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Assignment-rules editor</h1>
+    <span class="brief">EPIC-I design brief — lead auto-assignment rules (Phase B)</span>
+    <dl class="annotations">
+      <div><dt>Pattern</dt><dd>ordered, drag-sortable rule list · each rule: WHEN conditions → THEN assign to · enable toggle</dd></div>
+      <div><dt>Logic</dt><dd>rules evaluate top-to-bottom; first match wins; a fallback "catch-all" sits last</dd></div>
+      <div><dt>Readable</dt><dd>conditions rendered as plain-English tokens, not raw query syntax</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Assignment rules</h1><p>How new enquiries are routed · evaluated top to bottom, first match wins</p></div><a class="btn primary" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add a rule</a></div>
+
+    <div class="rules">
+      <div class="rule">
+        <div class="rh"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="order">1</span><h3>Valuation leads → branch manager</h3><label class="sw"><input type="checkbox" checked aria-label="Enable rule"><span class="track"></span></label></div>
+        <div class="rb">
+          <div class="clause"><span class="kw">When</span><span class="tok">Enquiry type</span><span>is</span><span class="tok acc">Valuation</span></div>
+          <div class="clause then"><span class="kw">Assign to</span><span class="tok">Branch manager</span><span>of the</span><span class="tok">nearest branch</span></div>
+        </div>
+      </div>
+      <div class="rule">
+        <div class="rh"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="order">2</span><h3>Lettings enquiries → lettings team</h3><label class="sw"><input type="checkbox" checked aria-label="Enable rule"><span class="track"></span></label></div>
+        <div class="rb">
+          <div class="clause"><span class="kw">When</span><span class="tok">Property</span><span>is</span><span class="tok acc">To rent</span><span class="kw" style="margin-left:var(--space-2)">and</span><span class="tok">Branch</span><span>is</span><span class="tok acc">City</span></div>
+          <div class="clause then"><span class="kw">Assign to</span><span class="tok">Lettings team</span><span>·</span><span class="tok">round-robin</span></div>
+        </div>
+      </div>
+      <div class="rule">
+        <div class="rh"><span class="grip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg></span><span class="order">3</span><h3>Out of hours → duty inbox</h3><label class="sw"><input type="checkbox" aria-label="Enable rule"><span class="track"></span></label></div>
+        <div class="rb">
+          <div class="clause"><span class="kw">When</span><span class="tok">Received</span><span>is</span><span class="tok acc">Outside business hours</span></div>
+          <div class="clause then"><span class="kw">Assign to</span><span class="tok">Duty inbox</span><span>and</span><span class="tok">auto-acknowledge</span></div>
+        </div>
+      </div>
+      <div class="rule" style="border-style:dashed">
+        <div class="rh"><span class="order" style="background:var(--colour-text-muted)">∗</span><h3>Everything else → next available agent</h3><span style="font-size:var(--text-caption);letter-spacing:var(--text-caption-ls);text-transform:uppercase;font-weight:var(--weight-semibold);color:var(--colour-text-muted)">Fallback</span></div>
+        <div class="rb"><div class="clause"><span class="kw">Assign to</span><span class="tok">Next available agent</span><span>at the</span><span class="tok">enquiry's branch</span></div></div>
+      </div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

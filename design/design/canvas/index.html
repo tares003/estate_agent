@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design canvas — Estate Agent Platform</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  .hero { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); padding: var(--space-20) 0 var(--space-16); }
+  .hero .eyebrow { color: var(--colour-brand-accent); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); }
+  .hero h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); margin: var(--space-3) 0 var(--space-4); max-width: 18ch; }
+  @media (min-width: 1024px) { .hero h1 { font-size: var(--text-display-lg); line-height: var(--text-display-lg-lh); } }
+  .hero p { max-width: 60ch; color: var(--colour-text-on-dark); opacity: 0.85; font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); }
+  .hero .meta { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-8); }
+  .hero .chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-pill); font-size: var(--text-body-sm); }
+  .hero .chip b { color: var(--colour-brand-accent); }
+
+  main { padding-block: var(--space-16); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: var(--space-5); padding: var(--space-5) var(--space-6); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); margin-bottom: var(--space-16); }
+  .legend .item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  .rb { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); white-space: nowrap; }
+  .rb .d { width: var(--space-2); height: var(--space-2); border-radius: var(--radius-circle); background: currentColor; }
+  .rb.ok { color: #0b6b4f; background: rgba(16,185,129,0.14); }
+  .rb.partial { color: #8a5a00; background: rgba(245,158,11,0.16); }
+  .rb.missing { color: #8f2018; background: rgba(239,68,68,0.12); }
+  .rb.planned { color: var(--colour-text-muted); background: var(--colour-surface-sunken); }
+
+  section.group { margin-bottom: var(--space-16); }
+  section.group > .ghead { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding-bottom: var(--space-4); border-bottom: 2px solid var(--colour-brand-primary); margin-bottom: var(--space-6); }
+  section.group > .ghead h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+  section.group > .ghead .sub { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+
+  .cards { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1440px) { .cards { grid-template-columns: repeat(4, 1fr); } }
+
+  a.entry { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); text-decoration: none; color: inherit; transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+  a.entry:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  a.entry:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+  @media (prefers-reduced-motion: reduce) { a.entry:hover { transform: none; border-color: var(--colour-text-muted); } }
+  a.entry .top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+  a.entry h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  a.entry p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); line-height: var(--text-body-sm-lh); }
+  a.entry .tick { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-caption); color: var(--colour-text-muted); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); margin-top: auto; padding-top: var(--space-2); }
+  a.entry .tick input { accent-color: var(--colour-brand-primary); width: var(--space-4); height: var(--space-4); }
+
+  .file-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-5); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-md); text-decoration: none; color: inherit; }
+  .file-card:hover { border-color: var(--colour-text-muted); }
+  .file-card code { font-family: var(--font-mono); font-size: var(--text-body-sm); }
+  .file-card span { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .foundation { display: grid; gap: var(--space-3); grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .foundation { grid-template-columns: repeat(3, 1fr); } }
+
+  .note-block { padding: var(--space-5) var(--space-6); border-left: 3px solid var(--colour-brand-accent); background: var(--colour-surface-raised); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-secondary); line-height: var(--text-body-lg-lh); }
+  .note-block a { color: var(--colour-brand-accent-hover); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#contents">Skip to contents</a>
+
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">Estate Agent Platform · Design canvas</p>
+    <h1>The visual source of truth for the platform</h1>
+    <p>Every token, primitive, organism and state pattern, built token-driven and responsive-first. This canvas is what the implementation team's component tests assert against. Phase&nbsp;A — Foundation.</p>
+    <div class="meta">
+      <span class="chip"><b>Phase A</b> · Foundation</span>
+      <span class="chip">Tokens from <b>DESIGN.md</b> + <b>motion-spec.md</b></span>
+      <span class="chip">7 breakpoints · <b>320 → 2560 px</b></span>
+      <span class="chip">WCAG <b>2.2 AA</b></span>
+    </div>
+  </div>
+</header>
+
+<main id="contents">
+  <div class="container">
+
+    <div class="legend" aria-label="Responsive status legend">
+      <span class="item"><span class="rb ok"><span class="d"></span>✓ all breakpoints</span> verified 320 → 2560 px</span>
+      <span class="item"><span class="rb partial"><span class="d"></span>⚠ partial</span> some breakpoints need work</span>
+      <span class="item"><span class="rb missing"><span class="d"></span>✗ missing</span> not yet verified</span>
+      <span class="item"><span class="rb planned"><span class="d"></span>planned</span> Phase B scope</span>
+    </div>
+
+    <!-- Foundation -->
+    <section class="group">
+      <div class="ghead"><h2>Foundation</h2><span class="sub">A2 · A3 — the token layer every artefact references</span></div>
+      <div class="foundation">
+        <a class="file-card" href="tokens.css"><code>tokens.css</code><span>every DESIGN.md + motion-spec token</span></a>
+        <a class="file-card" href="base.css"><code>base.css</code><span>reset · type · focus · reduced-motion · embed</span></a>
+        <a class="file-card" href="canvas.js"><code>canvas.js</code><span>embed mode + responsive-verification harness</span></a>
+      </div>
+    </section>
+
+    <!-- Atoms -->
+    <section class="group">
+      <div class="ghead"><h2>Atoms</h2><span class="sub">EPIC-L · the smallest building blocks</span></div>
+      <div class="cards">
+        <a class="entry" href="components/atoms/button.html"><div class="top"><h3>Button</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>5 variants × 3 sizes × all states (default → loading).</p><span class="tick"><input type="checkbox" aria-label="Sign off Button"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/atoms/form-fields.html"><div class="top"><h3>Form fields</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Text · email · phone · number · textarea · select · combobox · date · time-slot · price range.</p><span class="tick"><input type="checkbox" aria-label="Sign off Form fields"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/atoms/selection-controls.html"><div class="top"><h3>Selection controls</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Checkbox · radio · switch, with real inputs and 44 px hit areas.</p><span class="tick"><input type="checkbox" aria-label="Sign off Selection controls"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/atoms/data-display.html"><div class="top"><h3>Data display</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Status &amp; priority badge · pill · tag · avatar · icon scale · skeleton · caption.</p><span class="tick"><input type="checkbox" aria-label="Sign off Data display"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Molecules -->
+    <section class="group">
+      <div class="ghead"><h2>Molecules</h2><span class="sub">EPIC-L · composed components</span></div>
+      <div class="cards">
+        <a class="entry" href="components/molecules/card.html"><div class="top"><h3>Card</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>The generic surface container — header · body · footer · media · stat.</p><span class="tick"><input type="checkbox" aria-label="Sign off Card"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/molecules/overlays.html"><div class="top"><h3>Overlays</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Modal · drawer · dropdown · popover, with focus-trap annotations.</p><span class="tick"><input type="checkbox" aria-label="Sign off Overlays"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/molecules/feedback.html"><div class="top"><h3>Feedback</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Toast · tooltip · form error / success summaries · empty state.</p><span class="tick"><input type="checkbox" aria-label="Sign off Feedback"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/molecules/navigation.html"><div class="top"><h3>Navigation</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Breadcrumbs · tabs · accordion · pagination · stepper.</p><span class="tick"><input type="checkbox" aria-label="Sign off Navigation"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/molecules/forms.html"><div class="top"><h3>Form patterns</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>File dropzone · anti-spam · GDPR consent row · multi-step · review summary.</p><span class="tick"><input type="checkbox" aria-label="Sign off Form patterns"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Layout / shell -->
+    <section class="group">
+      <div class="ghead"><h2>Layout &amp; shell</h2><span class="sub">EPIC-L · the page frame</span></div>
+      <div class="cards">
+        <a class="entry" href="components/layout/shell.html"><div class="top"><h3>Shell</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Header · mobile menu · footer · sticky valuation CTA · reviews badge.</p><span class="tick"><input type="checkbox" aria-label="Sign off Shell"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Organisms -->
+    <section class="group">
+      <div class="ghead"><h2>Organisms</h2><span class="sub">EPIC-F · the universal property card</span></div>
+      <div class="cards">
+        <a class="entry" href="components/organisms/property-card.html"><div class="top"><h3>Property card</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>One card, every market status — for sale · to rent · under offer · sold STC · sold · let agreed · let · withdrawn · new home, plus no-photos &amp; hidden-address.</p><span class="tick"><input type="checkbox" aria-label="Sign off Property card"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Security / GDPR -->
+    <section class="group">
+      <div class="ghead"><h2>Security &amp; GDPR</h2><span class="sub">EPIC-N · compliance surfaces</span></div>
+      <div class="cards">
+        <a class="entry" href="components/security/cookie-banner.html"><div class="top"><h3>Cookie banner</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Bottom banner + granular customise panel (necessary forced on).</p><span class="tick"><input type="checkbox" aria-label="Sign off Cookie banner"> Reviewer sign-off</span></a>
+        <a class="entry" href="components/security/two-factor-enrolment.html"><div class="top"><h3>Two-factor enrolment</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Four-step flow: introduce · QR + manual key · verify code · backup codes.</p><span class="tick"><input type="checkbox" aria-label="Sign off Two-factor enrolment"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- States -->
+    <section class="group">
+      <div class="ghead"><h2>State patterns</h2><span class="sub">design-requirements §7 · inherited by every data-fetching surface</span></div>
+      <div class="cards">
+        <a class="entry" href="states/empty-state-patterns.html"><div class="top"><h3>Empty</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>No results / nothing yet — always with a next action.</p><span class="tick"><input type="checkbox" aria-label="Sign off Empty"> Reviewer sign-off</span></a>
+        <a class="entry" href="states/loading-skeleton-patterns.html"><div class="top"><h3>Loading</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Skeleton · spinner · progress · inline, mirroring real layout.</p><span class="tick"><input type="checkbox" aria-label="Sign off Loading"> Reviewer sign-off</span></a>
+        <a class="entry" href="states/error-state-patterns.html"><div class="top"><h3>Error</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Field · form · section · full-page (404 / 500), calm and recoverable.</p><span class="tick"><input type="checkbox" aria-label="Sign off Error"> Reviewer sign-off</span></a>
+        <a class="entry" href="states/success-state-patterns.html"><div class="top"><h3>Success</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>Inline · toast · confirmation pages, no commercial-action confetti.</p><span class="tick"><input type="checkbox" aria-label="Sign off Success"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B — in progress -->
+    <section class="group">
+      <div class="ghead"><h2>Phase B — public surfaces</h2><span class="sub">EPIC-C · EPIC-F</span></div>
+      <div class="cards">
+        <a class="entry" href="screens/public/portal-homepage.html"><div class="top"><h3>Portal homepage</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · the decision splash — bento entry tiles + hero search.</p><span class="tick"><input type="checkbox" aria-label="Sign off Portal homepage"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/sales-landing.html"><div class="top"><h3>Sales landing</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · vertical landing — hero, pillars, animated stats, conversion strip, testimonials, FAQ.</p><span class="tick"><input type="checkbox" aria-label="Sign off Sales landing"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/properties-catalogue.html"><div class="top"><h3>Property catalogue</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-F · search results grid, filter chips, sort, pagination.</p><span class="tick"><input type="checkbox" aria-label="Sign off Property catalogue"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/property-detail.html"><div class="top"><h3>Property detail</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-F · full anatomy — gallery, facts, map, docs, booking sidebar, sticky mobile bar.</p><span class="tick"><input type="checkbox" aria-label="Sign off Property detail"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/area-guide.html"><div class="top"><h3>Area guide</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · location guide — hero, about, transport &amp; schools, properties rail, sell-here CTA.</p><span class="tick"><input type="checkbox" aria-label="Sign off Area guide"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/contact.html"><div class="top"><h3>Contact</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · per-department contacts, hours, GDPR + anti-spam form, map.</p><span class="tick"><input type="checkbox" aria-label="Sign off Contact"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/map-search.html"><div class="top"><h3>Map search</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-F · split list + price-pin map, list/map toggle, draw-to-search.</p><span class="tick"><input type="checkbox" aria-label="Sign off Map search"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/legal.html"><div class="top"><h3>Legal page</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · legal template (privacy) — sticky TOC + constrained prose.</p><span class="tick"><input type="checkbox" aria-label="Sign off Legal page"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/knowledge-hub.html"><div class="top"><h3>Knowledge hub</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · article index — featured, category filter, paginated cards, sidebar.</p><span class="tick"><input type="checkbox" aria-label="Sign off Knowledge hub"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/article.html"><div class="top"><h3>Article</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · reading surface — cover, byline, constrained prose, reading progress, inline CTA, related.</p><span class="tick"><input type="checkbox" aria-label="Sign off Article"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/branches.html"><div class="top"><h3>Branches &amp; team</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-C · branch cards (address, hours, contact) + team grid.</p><span class="tick"><input type="checkbox" aria-label="Sign off Branches"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/public/suspended.html"><div class="top"><h3>Suspended page</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-S · calm public holding page when an agency is suspended.</p><span class="tick"><input type="checkbox" aria-label="Sign off Suspended page"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B — admin -->
+    <section class="group">
+      <div class="ghead"><h2>Phase B — admin</h2><span class="sub">EPIC-H · EPIC-F · EPIC-I · EPIC-G · EPIC-D — every sidebar destination</span></div>
+      <div class="cards">
+        <a class="entry" href="screens/admin/dashboard-overview.html"><div class="top"><h3>Dashboard</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · shell, KPI cards, enquiries table, today's viewings, activity feed.</p><span class="tick"><input type="checkbox" aria-label="Sign off Dashboard"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/property-list.html"><div class="top"><h3>Properties</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-F · list with saved views, filter chips, multi-select bulk actions.</p><span class="tick"><input type="checkbox" aria-label="Sign off Properties"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/property-editor.html"><div class="top"><h3>Property editor</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-F · 9-tab editor with completion dots + publish pre-flight checklist.</p><span class="tick"><input type="checkbox" aria-label="Sign off Property editor"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/enquiries-queue.html"><div class="top"><h3>Enquiries</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-I · CRM queue + lead-detail slide-over with composer + GDPR rail.</p><span class="tick"><input type="checkbox" aria-label="Sign off Enquiries"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/calendar.html"><div class="top"><h3>Calendar</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · week view, colour-coded viewings / valuations / repairs.</p><span class="tick"><input type="checkbox" aria-label="Sign off Calendar"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/repair-inbox.html"><div class="top"><h3>Repairs</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-G · urgency filter pills, SLA badges, overdue accent.</p><span class="tick"><input type="checkbox" aria-label="Sign off Repairs"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/contacts.html"><div class="top"><h3>Contacts</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · buyers / vendors / tenants / landlords with consent + retention.</p><span class="tick"><input type="checkbox" aria-label="Sign off Contacts"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/page-builder.html"><div class="top"><h3>Pages</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-D · CMS builder — section list, live preview, section settings.</p><span class="tick"><input type="checkbox" aria-label="Sign off Pages"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/settings.html"><div class="top"><h3>Settings</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · settings hierarchy — general + security &amp; compliance.</p><span class="tick"><input type="checkbox" aria-label="Sign off Settings"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/users-roles.html"><div class="top"><h3>Users &amp; roles</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · staff users + role permission matrix.</p><span class="tick"><input type="checkbox" aria-label="Sign off Users and roles"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/data-tools.html"><div class="top"><h3>Data tools (GDPR)</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · SAR export wizard + two-step erasure tool, audit-logged.</p><span class="tick"><input type="checkbox" aria-label="Sign off Data tools"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/audit-log.html"><div class="top"><h3>Audit log</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · reverse-chron table, row → JSON diff, actor / IP / user-agent, export.</p><span class="tick"><input type="checkbox" aria-label="Sign off Audit log"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/seo-editor.html"><div class="top"><h3>SEO editor</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-O · per-page meta + live Google SERP &amp; social-card preview, char counters.</p><span class="tick"><input type="checkbox" aria-label="Sign off SEO editor"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/redirects.html"><div class="top"><h3>Redirects</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-O · redirect-rules table — 301/302/410, hit counts, loop detection.</p><span class="tick"><input type="checkbox" aria-label="Sign off Redirects"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/custom-domain.html"><div class="top"><h3>Custom domain</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-S · DNS-record wizard with verification polling + auto-SSL.</p><span class="tick"><input type="checkbox" aria-label="Sign off Custom domain"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/billing.html"><div class="top"><h3>Billing &amp; usage</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-S · plan, usage meters (listings/storage/bandwidth/email), invoices.</p><span class="tick"><input type="checkbox" aria-label="Sign off Billing"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/assignment-rules.html"><div class="top"><h3>Assignment rules</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-I · ordered lead-routing rules (when → assign to) with enable toggles.</p><span class="tick"><input type="checkbox" aria-label="Sign off Assignment rules"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/template-editor.html"><div class="top"><h3>Template editor</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · email/SMS editor — merge fields + live preview.</p><span class="tick"><input type="checkbox" aria-label="Sign off Template editor"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/notification-rules.html"><div class="top"><h3>Notification rules</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · events × channels matrix with forced-compliance cells.</p><span class="tick"><input type="checkbox" aria-label="Sign off Notification rules"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/reviews-moderation.html"><div class="top"><h3>Reviews moderation</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AC · feedback queue + detail — approve / reply / flag / reject.</p><span class="tick"><input type="checkbox" aria-label="Sign off Reviews moderation"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B — owner portals -->
+    <section class="group">
+      <div class="ghead"><h2>Phase B — owner portals &amp; operator</h2><span class="sub">EPIC-AA · EPIC-Z · EPIC-Y · EPIC-AB</span></div>
+      <div class="cards">
+        <a class="entry" href="screens/portals/tenant-dashboard.html"><div class="top"><h3>Tenant portal</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AA · tenancy dashboard — rent status, repairs, deposit, documents.</p><span class="tick"><input type="checkbox" aria-label="Sign off Tenant portal"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/portals/landlord-dashboard.html"><div class="top"><h3>Landlord portal</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-Z · portfolio overview — rent, compliance expiry, statements.</p><span class="tick"><input type="checkbox" aria-label="Sign off Landlord portal"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/portals/vendor-dashboard.html"><div class="top"><h3>Vendor portal</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-Y · sale tracker — viewings, offers, feedback through to completion.</p><span class="tick"><input type="checkbox" aria-label="Sign off Vendor portal"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/portals/contractor-portal.html"><div class="top"><h3>Contractor portal</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-G · mobile-first job board — accept, schedule, complete repairs.</p><span class="tick"><input type="checkbox" aria-label="Sign off Contractor portal"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/portals/end-of-tenancy.html"><div class="top"><h3>End-of-tenancy</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AA · interactive 6-step move-out wizard — notice, checklist, meters, photos, keys.</p><span class="tick"><input type="checkbox" aria-label="Sign off End of tenancy"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/operator/platform-overview.html"><div class="top"><h3>Platform operator</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AB · cross-tenant — agency directory, health, danger zone w/ graceful degradation.</p><span class="tick"><input type="checkbox" aria-label="Sign off Platform operator"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/emails/transactional-emails.html"><div class="top"><h3>Email templates</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-D / EPIC-AC · enquiry ack, viewing confirmation, repair update, feedback request — mobile + desktop client widths.</p><span class="tick"><input type="checkbox" aria-label="Sign off Email templates"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B — account & flows -->
+    <section class="group">
+      <div class="ghead"><h2>Phase B — account &amp; flows</h2><span class="sub">EPIC-N · EPIC-G</span></div>
+      <div class="cards">
+        <a class="entry" href="screens/customer-account/sign-in.html"><div class="top"><h3>Sign in</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · split brand + form, password reveal, staff 2FA note.</p><span class="tick"><input type="checkbox" aria-label="Sign off Sign in"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/customer-account/register.html"><div class="top"><h3>Create account</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · register with password strength meter + GDPR consent.</p><span class="tick"><input type="checkbox" aria-label="Sign off Register"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/customer-account/password-reset.html"><div class="top"><h3>Password reset</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · request → check email → set new password (no enumeration).</p><span class="tick"><input type="checkbox" aria-label="Sign off Password reset"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/customer-account/email-verify.html"><div class="top"><h3>Email verify</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-N · pending + verified states.</p><span class="tick"><input type="checkbox" aria-label="Sign off Email verify"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/customer-account/account-dashboard.html"><div class="top"><h3>My account</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-T · interactive dashboard — saved properties, searches, viewings, settings, unverified-email banner.</p><span class="tick"><input type="checkbox" aria-label="Sign off My account"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/customer-account/auth-edge-states.html"><div class="top"><h3>Auth edge states</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-T / EPIC-N · account-locked + reset-token-expired states.</p><span class="tick"><input type="checkbox" aria-label="Sign off Auth edge states"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/repairs/report-a-repair.html"><div class="top"><h3>Report a repair</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-G · interactive 6-step tenant wizard with live stepper + emergency notice.</p><span class="tick"><input type="checkbox" aria-label="Sign off Report a repair"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Modular product + platform marketing (EPIC-L pack-state, EPIC-AE) -->
+    <section class="group">
+      <div class="ghead"><h2>Modular product &amp; platform marketing</h2><span class="sub">EPIC-L pack-state · EPIC-AE operator site</span></div>
+      <div class="cards">
+        <a class="entry" href="components/modular/pack-state.html"><div class="top"><h3>Pack-state components</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-L · PackLockPill · UpsellEmptyState · TrialCountdownPill · PackEnableModal + §2a patterns.</p><span class="tick"><input type="checkbox" aria-label="Sign off Pack-state components"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-home.html"><div class="top"><h3>Marketing home</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · operator-editorial identity — hero, product shot, value props, pricing teaser.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing home"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-pricing.html"><div class="top"><h3>Marketing pricing</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · pack catalogue, interactive cost calculator, tier comparison.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing pricing"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-features.html"><div class="top"><h3>Marketing features</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · features-by-pack sections + DemoRequestModal.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing features"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-trust.html"><div class="top"><h3>Marketing trust</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · 3-pillar security/compliance/ops + live sub-processor list.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing trust"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-roadmap.html"><div class="top"><h3>Marketing roadmap</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · Shipped/In-progress/Planned/Backlog lanes with interactive upvotes.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing roadmap"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-compare.html"><div class="top"><h3>Marketing comparison</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · capability comparison table + dated legal disclosure.</p><span class="tick"><input type="checkbox" aria-label="Sign off Marketing comparison"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-customers.html"><div class="top"><h3>Customer story</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · story hero, pull-quote, article, metric callouts.</p><span class="tick"><input type="checkbox" aria-label="Sign off Customer story"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-product.html"><div class="top"><h3>Product overview</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · hero + product shot, 3-step journey, capability grid.</p><span class="tick"><input type="checkbox" aria-label="Sign off Product overview"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/marketing/marketing-status.html"><div class="top"><h3>Status page</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-AE · component health + 90-day uptime + incident history (built in-house).</p><span class="tick"><input type="checkbox" aria-label="Sign off Status page"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B — admin additions (EPIC-H V1 remainder) -->
+    <section class="group">
+      <div class="ghead"><h2>Admin — H.21–H.28 additions</h2><span class="sub">EPIC-H V1 remainder</span></div>
+      <div class="cards">
+        <a class="entry" href="screens/admin/command-palette.html"><div class="top"><h3>Command palette</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · ⌘K palette — grouped actions/nav/recent, full keyboard + aria-activedescendant.</p><span class="tick"><input type="checkbox" aria-label="Sign off Command palette"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/reports.html"><div class="top"><h3>Reports</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · KPI row, listings/sales bar chart, lead-source donut, agent table (pack-gated).</p><span class="tick"><input type="checkbox" aria-label="Sign off Reports"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/scheduled-tasks.html"><div class="top"><h3>Scheduled tasks</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · job console — schedule, last/next run, running/failed states, run-now/retry.</p><span class="tick"><input type="checkbox" aria-label="Sign off Scheduled tasks"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/search-admin.html"><div class="top"><h3>Search admin</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · synonym manager, zero-result queries, index health.</p><span class="tick"><input type="checkbox" aria-label="Sign off Search admin"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/theme-editor.html"><div class="top"><h3>Theme editor</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-M · tier-aware branding/theme with live tenant-site preview + locked full token set.</p><span class="tick"><input type="checkbox" aria-label="Sign off Theme editor"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/integrations.html"><div class="top"><h3>Integrations</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · portals / comms / finance integration cards, connect states.</p><span class="tick"><input type="checkbox" aria-label="Sign off Integrations"> Reviewer sign-off</span></a>
+        <a class="entry" href="screens/admin/branches-settings.html"><div class="top"><h3>Branches (settings)</h3><span class="rb ok"><span class="d"></span>✓</span></div><p>EPIC-H · multi-branch management, plan limit, add-branch upsell.</p><span class="tick"><input type="checkbox" aria-label="Sign off Branches settings"> Reviewer sign-off</span></a>
+      </div>
+    </section>
+
+    <!-- Phase B preview -->
+    <section class="group">
+      <div class="ghead"><h2>Coverage</h2><span class="sub">every epic in the v1 brief set now has a representative surface in the canvas</span></div>
+      <div class="note-block" style="margin-top:0">
+        <strong>Phase B is broadly complete.</strong> The canvas now spans every audience end-to-end — public marketing &amp; property,
+        the full admin suite, customer accounts &amp; auth, the tenant repair and move-out journeys, GDPR tooling, all three owner
+        portals, the cross-tenant platform-operator tier, and brand-consistent transactional emails. Remaining work is incremental
+        depth (additional sub-screens and per-epic edge states) layered onto these established patterns — tracked in
+        <a href="../../audit/design-prompt-log.md">audit/design-prompt-log.md</a>.
+      </div>
+    </section>
+
+    <div class="note-block">
+      <strong>Foundation notes.</strong> Token values are transcribed 1:1 from <code>DESIGN.md</code> and <code>motion-spec.md</code>.
+      Five discovery gaps were found and logged in <a href="../../audit/design-discovery-gaps.md">audit/design-discovery-gaps.md</a>
+      (shadow values, new-home status colour, the 2560 px breakpoint, motion-summary mismatch, leading/tracking tokens) —
+      each resolved with the closest defensible existing token, none invented silently. Dark mode is deferred per the
+      Sprint 01 acceptance criteria; the seam is left in <code>base.css</code>. Phase A is ready for a second pair of design eyes.
+    </div>
+
+  </div>
+</main>
+</body>
+</html>

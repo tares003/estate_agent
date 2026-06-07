@@ -1,0 +1,62 @@
+/* ============================================================================
+   marketing-theme.css — EPIC-AE operator-editorial theme preset.
+   Scoped to .mkt — a SEPARATE identity from the warm-editorial tenant product,
+   because this site sells TO estate agencies (it must not look like one).
+   Designer interpretation (gaps log #6): operator brand is not finalised, so
+   this is a defensible saturated-indigo placeholder mapped onto the SAME token
+   SHAPES (radius, space, motion, type scale) — swap wholesale when brand lands.
+   Loaded after tokens.css + base.css; overrides only within .mkt.
+   ========================================================================== */
+.mkt {
+  /* operator palette — saturated, software-product */
+  --mkt-bg: #0b1020;            /* near-black indigo canvas */
+  --mkt-surface: #ffffff;
+  --mkt-raised: #f4f5fb;
+  --mkt-ink: #11142a;
+  --mkt-ink-2: #515877;
+  --mkt-on-dark: #eef0fb;
+  --mkt-on-dark-dim: rgba(238,240,251,0.72);
+  --mkt-primary: #4f46e5;       /* electric indigo */
+  --mkt-primary-hover: #4338ca;
+  --mkt-accent: #22d3ee;        /* cyan pop */
+  --mkt-border: #e3e5f0;
+  --mkt-border-dark: rgba(255,255,255,0.12);
+  --mkt-grad: linear-gradient(135deg,#4f46e5,#7c3aed 55%,#22d3ee);
+
+  font-family: var(--font-body);
+  color: var(--mkt-ink);
+  background: var(--mkt-surface);
+}
+/* geometric display: tighter, more "product" than the serif tenant identity */
+.mkt .display { font-family: "Inter", system-ui, sans-serif; font-weight: var(--weight-bold); letter-spacing: -0.03em; line-height: 1.04; }
+
+/* shared marketing header */
+.mkt-header { position: sticky; top: 0; z-index: var(--z-sticky); background: rgba(11,16,32,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--mkt-border-dark); }
+.mkt-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-xl); margin-inline: auto; }
+.mkt-brand { display: flex; align-items: center; gap: var(--space-3); color: var(--mkt-on-dark); text-decoration: none; font-weight: var(--weight-bold); font-size: var(--text-heading-sm); letter-spacing: -0.02em; }
+.mkt-brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-md); background: var(--mkt-grad); display: grid; place-items: center; color: #fff; font-weight: var(--weight-bold); }
+.mkt-nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .mkt-nav { display: flex; } .mkt-header .ham { display: none !important; } }
+.mkt-nav a { color: var(--mkt-on-dark-dim); text-decoration: none; font-size: var(--text-body-sm); font-weight: var(--weight-medium); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); } .mkt-nav a:hover, .mkt-nav a[aria-current] { color: var(--mkt-on-dark); }
+.mkt-header .actions { display: flex; align-items: center; gap: var(--space-3); }
+.mkt-header .ham { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--mkt-on-dark); } .mkt-header .ham svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+/* buttons (re-skinned EPIC-L primitive) */
+.mkt-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); text-decoration: none; white-space: nowrap; transition: background var(--motion-duration-fast) var(--motion-ease-standard), transform var(--motion-duration-fast) var(--motion-ease-standard); }
+.mkt-btn.primary { background: var(--mkt-primary); color: #fff; } .mkt-btn.primary:hover { background: var(--mkt-primary-hover); }
+.mkt-btn.ghost-d { background: transparent; color: var(--mkt-on-dark); border: 1px solid var(--mkt-border-dark); } .mkt-btn.ghost-d:hover { background: rgba(255,255,255,0.08); }
+.mkt-btn.lg { height: var(--size-button-lg); padding-inline: var(--space-6); font-size: var(--text-body-md); }
+.mkt-btn svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+.mkt-section { padding: var(--space-20) var(--space-6); } @media (max-width: 768px) { .mkt-section { padding: var(--space-12) var(--space-6); } }
+.mkt-inner { max-width: var(--size-container-xl); margin-inline: auto; }
+.mkt-eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-bold); color: var(--mkt-primary); }
+.mkt-dark { background: var(--mkt-bg); color: var(--mkt-on-dark); }
+.mkt-dark .mkt-eyebrow { color: var(--mkt-accent); }
+
+/* footer */
+.mkt-footer { background: var(--mkt-bg); color: var(--mkt-on-dark); padding: var(--space-16) var(--space-6) var(--space-8); }
+.mkt-footer .inner { max-width: var(--size-container-xl); margin-inline: auto; display: grid; gap: var(--space-10); grid-template-columns: 1fr; }
+@media (min-width: 768px) { .mkt-footer .inner { grid-template-columns: 1.5fr repeat(3,1fr); } }
+.mkt-footer h4 { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-accent); margin-bottom: var(--space-4); font-weight: var(--weight-bold); }
+.mkt-footer a { display: block; color: var(--mkt-on-dark-dim); text-decoration: none; padding: var(--space-1) 0; font-size: var(--text-body-sm); } .mkt-footer a:hover { color: var(--mkt-on-dark); }
+.mkt-footer .legal { grid-column: 1 / -1; margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--mkt-border-dark); font-size: var(--text-caption); color: var(--mkt-on-dark-dim); }

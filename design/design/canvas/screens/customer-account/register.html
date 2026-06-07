@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create an account — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="auth-shell.css">
+<script src="../../canvas.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Create an account</h1>
+    <span class="brief">EPIC-N design brief — register (Phase B · customer account)</span>
+    <dl class="annotations">
+      <div><dt>Captures</dt><dd>personal data → GDPR consent line + privacy link required; marketing opt-in separate &amp; unticked</dd></div>
+      <div><dt>Password</dt><dd>strength meter; reveal toggle</dd></div>
+      <div><dt>Voice</dt><dd>plain, welcoming, no puffery</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="auth">
+    <div class="brandside">
+      <div class="brand"><span class="mark">EA</span>Estate Agent</div>
+      <div><blockquote>Save your search once. We'll do the looking.</blockquote><p class="who"><span class="stars" aria-hidden="true">★★★★★</span> &nbsp;Trusted by buyers across Greater Manchester</p></div>
+      <p class="foot">Saved searches · instant alerts · your shortlist on every device</p>
+    </div>
+    <div class="formside">
+      <form class="formcard">
+        <div class="mobilebrand"><span class="mark">EA</span>Estate Agent</div>
+        <h1>Create your account</h1>
+        <p class="sub">Save properties, set up alerts and pick up where you left off.</p>
+
+        <div class="field"><label for="name">Full name <span class="req">(required)</span></label><input id="name" class="control" type="text" autocomplete="name" placeholder="Jordan Avery"></div>
+        <div class="field"><label for="email">Email address <span class="req">(required)</span></label><input id="email" class="control" type="email" autocomplete="email" placeholder="you@example.co.uk"></div>
+        <div class="field">
+          <label for="pw">Create a password</label>
+          <div class="pwwrap"><input id="pw" class="control" type="password" autocomplete="new-password" value="winterhouse" aria-describedby="pwm"><button type="button" class="reveal" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+          <div class="meter" id="pwm" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="mid"></i><i></i></div>
+          <span class="hint">Use at least 10 characters with a mix of letters and numbers.</span>
+        </div>
+
+        <div class="consent"><input type="checkbox" id="c1" aria-required="true"><label for="c1">I agree to the <a href="#" target="_blank" rel="noopener">privacy policy ↗</a> and terms. <span class="req">(required)</span></label></div>
+        <div class="consent"><input type="checkbox" id="c2"><label for="c2">Email me property alerts and occasional market news. <span class="req">(optional)</span></label></div>
+
+        <button class="btn primary" type="submit">Create account</button>
+        <p class="alt-link">Already have an account? <a href="sign-in.html">Sign in</a></p>
+        <p class="secure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>We never share your details with third parties for marketing</p>
+      </form>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

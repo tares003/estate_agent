@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enquiries — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .lead-stage { position: relative; }
+  /* slide-over */
+  .scrim { position: fixed; inset: 0; background: rgba(26,26,26,0.4); z-index: var(--z-overlay-mid); }
+  html.embed .scrim { position: absolute; }
+  .slideover { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); background: var(--colour-surface-base); box-shadow: var(--shadow-lg); z-index: var(--z-overlay-mid); display: flex; flex-direction: column; }
+  html.embed .slideover { position: absolute; }
+  @media (max-width: 640px) { .slideover { width: 100%; } }
+  .so-head { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); }
+  .so-head .top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+  .so-head h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .so-head .contact { color: var(--colour-text-secondary); font-size: var(--text-body-sm); margin-top: var(--space-1); display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  .so-head .x { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); }
+  .so-head .x svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .so-meta { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-4); }
+  .so-body { padding: var(--space-6); overflow: auto; flex: 1; display: flex; flex-direction: column; gap: var(--space-6); }
+  .so-block h3 { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+  .miniprop { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); }
+  .miniprop .thumb { width: 48px; height: 40px; border-radius: var(--radius-sm); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); flex: 0 0 auto; }
+  .miniprop strong { display: block; font-size: var(--text-body-sm); } .miniprop small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+  .tl { display: flex; flex-direction: column; gap: var(--space-4); }
+  .tl .ev { display: flex; gap: var(--space-3); }
+  .tl .ev .dot { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .tl .ev .dot svg { width: 14px; height: 14px; }
+  .tl .ev p { font-size: var(--text-body-sm); } .tl .ev small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+  .gdpr { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-body-sm); color: var(--colour-success); }
+  .gdpr svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .composer { border-top: 1px solid var(--colour-divider); padding: var(--space-4) var(--space-6); }
+  .composer .seg { display: inline-flex; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .composer .seg button { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); }
+  .composer .seg button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .composer .row2 { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+</style>
+</head>
+<body data-active="enquiries" data-crumb="Enquiries">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Enquiries — CRM queue + lead detail</h1>
+    <span class="brief">EPIC-I design brief — lead queue with slide-over triage (Phase B · I)</span>
+    <dl class="annotations">
+      <div><dt>Queue</dt><dd>tab strip (All / Mine / Unassigned / Overdue / Closed) · age colour-coded · priority chips</dd></div>
+      <div><dt>Slide-over</dt><dd>480px · header, activity timeline, composer, property + source + GDPR consent rail</dd></div>
+      <div><dt>A11y</dt><dd>slide-over focus-trapped; Esc closes and restores focus to the row</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content lead-stage">
+
+    <div class="page-h"><div><h1>Enquiries</h1><p>47 open · 6 near SLA</p></div><a class="btn secondary" href="#">Assignment rules</a></div>
+
+    <div class="tabstrip" role="tablist" aria-label="Lead views">
+      <button role="tab" aria-selected="true">All <span class="c">47</span></button>
+      <button role="tab" aria-selected="false">Mine <span class="c">8</span></button>
+      <button role="tab" aria-selected="false">Unassigned <span class="c">12</span></button>
+      <button role="tab" aria-selected="false">Overdue follow-up <span class="c">6</span></button>
+      <button role="tab" aria-selected="false">Closed</button>
+    </div>
+
+    <div class="tablewrap">
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr><th>Status</th><th>Priority</th><th>Type</th><th>Name</th><th>Property</th><th>Source</th><th>Assigned</th><th class="sortable">Age <span class="arr">↓</span></th><th>Follow-up</th></tr></thead>
+          <tbody>
+            <tr><td><span class="status new"><span class="d"></span>New</span></td><td><span class="ubadge u">Urgent</span></td><td>Book a viewing</td><td class="who"><strong>Daniel O'Hara</strong></td><td>Palatine Road, M20</td><td>Website</td><td><span class="assignee none">Unassigned</span></td><td><span class="age green">2h</span></td><td>Today</td></tr>
+            <tr><td><span class="status new"><span class="d"></span>New</span></td><td><span class="ubadge s">Standard</span></td><td>Contact agent</td><td class="who"><strong>Aisha Rahman</strong></td><td>Acomb Street, M14</td><td>Rightmove</td><td><span class="assignee none">Unassigned</span></td><td><span class="age green">4h</span></td><td>Tomorrow</td></tr>
+            <tr><td><span class="status triage"><span class="d"></span>Assigned</span></td><td><span class="ubadge u">Urgent</span></td><td>Valuation</td><td class="who"><strong>Mark Whitfield</strong></td><td>Free valuation</td><td>Phone</td><td><span class="assignee"><span class="av">JM</span>Jess</span></td><td><span class="age amber">1d</span></td><td><span class="age red">Overdue</span></td></tr>
+            <tr><td><span class="status progress"><span class="d"></span>In progress</span></td><td><span class="ubadge s">Standard</span></td><td>Book a viewing</td><td class="who"><strong>Sophie Lin</strong></td><td>Brooklawn Drive, M20</td><td>Website</td><td><span class="assignee"><span class="av">PS</span>Priya</span></td><td><span class="age amber">1d</span></td><td>Fri</td></tr>
+            <tr><td><span class="status progress"><span class="d"></span>In progress</span></td><td><span class="ubadge l">Low</span></td><td>New homes</td><td class="who"><strong>Tom Beckett</strong></td><td>The Sidings, M20</td><td>Portal</td><td><span class="assignee"><span class="av">TB</span>Tom</span></td><td><span class="age red">3d</span></td><td>Next week</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- slide-over (shown open) -->
+    <div class="scrim" aria-hidden="true"></div>
+    <aside class="slideover" role="dialog" aria-modal="true" aria-labelledby="so-name">
+      <div class="so-head">
+        <div class="top">
+          <div>
+            <h2 id="so-name">Daniel O'Hara</h2>
+            <div class="contact"><span>daniel.ohara@example.co.uk</span><span>07700 900123</span></div>
+          </div>
+          <button class="x" aria-label="Close panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="so-meta">
+          <span class="status new"><span class="d"></span>New</span>
+          <span class="ubadge u">Urgent</span>
+          <span class="ubadge grey">Book a viewing</span>
+        </div>
+        <div class="row2" style="display:flex;gap:var(--space-2);margin-top:var(--space-4)">
+          <button class="btn primary sm">Assign to me</button>
+          <button class="btn secondary sm">Change status</button>
+        </div>
+      </div>
+      <div class="so-body">
+        <div class="so-block">
+          <h3>Enquiry about</h3>
+          <div class="miniprop"><span class="thumb"></span><div><strong>Palatine Road, Didsbury</strong><small>£525,000 · 4 bed semi · for sale</small></div></div>
+        </div>
+        <div class="so-block">
+          <h3>Source &amp; consent</h3>
+          <p style="font-size:var(--text-body-sm);color:var(--colour-text-secondary);margin-bottom:var(--space-2)">Website contact form · 2 hours ago</p>
+          <p class="gdpr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>GDPR consent given · marketing opt-in: no</p>
+        </div>
+        <div class="so-block">
+          <h3>Activity</h3>
+          <div class="tl">
+            <div class="ev"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span><div><p>Enquiry received via website</p><small>2 hours ago</small></div></div>
+            <div class="ev"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.5z"/></svg></span><div><p>Auto-acknowledgement email sent</p><small>2 hours ago</small></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="composer" role="region" aria-label="Reply">
+        <div class="seg" role="group" aria-label="Reply type"><button aria-pressed="true">Email</button><button aria-pressed="false">SMS</button><button aria-pressed="false">Note</button><button aria-pressed="false">Call log</button></div>
+        <textarea class="control" placeholder="Write a reply to Daniel…" style="min-height:72px"></textarea>
+        <div class="row2"><button class="btn secondary sm">Insert template</button><span style="flex:1"></span><button class="btn primary sm">Send reply</button></div>
+      </div>
+    </aside>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

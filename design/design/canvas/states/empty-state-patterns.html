@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Empty state patterns — Estate Agent canvas</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../base.css">
+<script src="../canvas.js"></script>
+<style>
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); border: 1px dashed var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-raised); }
+  .empty .emblem { width: var(--space-16); height: var(--space-16); display: grid; place-items: center; border-radius: var(--radius-circle); background: var(--colour-surface-sunken); color: var(--colour-text-muted); }
+  .empty .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .empty h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .empty p { color: var(--colour-text-secondary); max-width: 44ch; }
+  .empty .acts { display: flex; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); text-decoration: none; }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .grid { display: grid; gap: var(--space-8); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../index.html">← Canvas index</a>
+    <h1>Empty state patterns</h1>
+    <span class="brief">design-requirements.md §7 — the reference every data-fetching surface inherits</span>
+    <dl class="annotations">
+      <div><dt>Principle</dt><dd>never a dead end — always an emblem, a plain explanation, and a next action</dd></div>
+      <div><dt>Contexts</dt><dd>search results · saved properties · admin list · enquiry queue</dd></div>
+      <div><dt>Voice</dt><dd>calm, helpful, plain English (PRODUCT.md §7)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+    <section class="demo-section">
+      <h2>Empty states across surfaces</h2>
+      <p class="lede">An empty state is the difference between "broken" and "nothing here yet". Each gives a reason and a way forward.</p>
+      <div class="grid">
+
+        <div class="empty">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></span>
+          <h3>No properties match those filters</h3>
+          <p>Try widening your price range or removing a filter. We'll email you when something new comes up.</p>
+          <div class="acts"><a class="btn primary" href="#">Clear filters</a><a class="btn secondary" href="#">Save this search</a></div>
+        </div>
+
+        <div class="empty">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></span>
+          <h3>You haven't saved any properties yet</h3>
+          <p>Tap the heart on any property to keep it here and compare your shortlist.</p>
+          <div class="acts"><a class="btn primary" href="#">Browse properties for sale</a></div>
+        </div>
+
+        <div class="empty">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v16"/></svg></span>
+          <h3>No properties added yet</h3>
+          <p>Add your first listing to start building the catalogue. You can save it as a draft and publish when you're ready.</p>
+          <div class="acts"><a class="btn primary" href="#">Add a property</a><a class="btn secondary" href="#">Import from a file</a></div>
+        </div>
+
+        <div class="empty">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span>
+          <h3>Your enquiry queue is clear</h3>
+          <p>Every enquiry has been picked up. New ones will appear here and notify the assigned agent.</p>
+          <div class="acts"><a class="btn secondary" href="#">View resolved enquiries</a></div>
+        </div>
+
+      </div>
+      <div class="token-ref"><b>Tokens:</b> container dashed <b>--colour-border</b> on <b>--colour-surface-raised</b>, <b>--radius-lg</b> · emblem <b>--colour-surface-sunken</b>, <b>--radius-circle</b> · heading <b>--text-heading-md</b> / <b>--font-display</b> · primary action <b>--colour-brand-primary</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> emblems are decorative (<code>aria-hidden</code> implicit on inline SVG without label); the heading carries the meaning. The primary action is always a real focusable control, never hidden behind hover.</div>
+    </section>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

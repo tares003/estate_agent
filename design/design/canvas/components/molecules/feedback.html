@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feedback molecules — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .ico { width: var(--size-icon-lg); height: var(--size-icon-lg); flex: 0 0 auto; }
+
+  /* toast */
+  .toast { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 420px; padding: var(--space-4); border-radius: var(--radius-md); background: var(--colour-surface-base); box-shadow: var(--shadow-md); border: 1px solid var(--colour-border); }
+  .toast .bar { width: 4px; align-self: stretch; border-radius: var(--radius-pill); flex: 0 0 auto; }
+  .toast.success .bar { background: var(--colour-success); } .toast.success .ico { color: var(--colour-success); }
+  .toast.info .bar { background: var(--colour-info); } .toast.info .ico { color: var(--colour-info); }
+  .toast.warning .bar { background: var(--colour-warning); } .toast.warning .ico { color: var(--colour-warning); }
+  .toast.danger .bar { background: var(--colour-danger); } .toast.danger .ico { color: var(--colour-danger); }
+  .toast .content { flex: 1; }
+  .toast .content strong { display: block; font-size: var(--text-body-md); }
+  .toast .content p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-1); }
+  .toast .close { width: var(--space-8); height: var(--space-8); display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); }
+  .toast .close:hover { background: var(--colour-surface-raised); }
+
+  /* tooltip */
+  .ttwrap { position: relative; display: inline-block; }
+  .tip { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); }
+  .bubble { display: inline-block; background: var(--colour-brand-primary); color: var(--colour-text-on-dark); font-size: var(--text-body-sm); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); position: relative; }
+  .bubble::after { content: ""; position: absolute; left: var(--space-5); bottom: -5px; width: 10px; height: 10px; background: var(--colour-brand-primary); transform: rotate(45deg); }
+
+  /* form error / success banners */
+  .formmsg { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); border-radius: var(--radius-md); max-width: 560px; font-size: var(--text-body-sm); }
+  .formmsg.error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35); color: #8f2018; }
+  .formmsg.error .ico { color: var(--colour-danger); }
+  .formmsg.success { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.35); color: #0b6b4f; }
+  .formmsg.success .ico { color: var(--colour-success); }
+  .formmsg strong { display: block; font-size: var(--text-body-md); margin-bottom: var(--space-1); }
+  .formmsg ul { margin-top: var(--space-2); display: flex; flex-direction: column; gap: var(--space-1); }
+  .formmsg li { list-style: disc; margin-left: var(--space-5); }
+
+  /* empty state */
+  .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); border: 1px dashed var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-raised); max-width: 560px; }
+  .empty .emblem { width: var(--space-16); height: var(--space-16); display: grid; place-items: center; border-radius: var(--radius-circle); background: var(--colour-surface-sunken); color: var(--colour-text-muted); }
+  .empty .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .empty h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .empty p { color: var(--colour-text-secondary); max-width: 42ch; }
+  .empty .act { margin-top: var(--space-2); display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Feedback molecules</h1>
+    <span class="brief">EPIC-L design brief — Molecules · Toast · Tooltip · FormError · FormSuccess · EmptyState</span>
+    <dl class="annotations">
+      <div><dt>Molecules</dt><dd>Toast · Tooltip · FormError · FormSuccess · EmptyState</dd></div>
+      <div><dt>States</dt><dd>success · info · warning · danger · empty</dd></div>
+      <div><dt>Rules</dt><dd>live regions announce; no bounce on serious surfaces</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Toast</h2>
+      <p class="lede">Transient confirmation, top-right. In from <code>translateY(8px)</code> + fade over <code>--motion-duration-base</code> with a slight overshoot (<code>--motion-ease-emphasis</code>); auto-dismiss after 5 s. No confetti on commercial actions (motion-spec §7).</p>
+      <div class="demo-tray col">
+        <div class="toast success" role="status">
+          <span class="bar"></span>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <div class="content"><strong>Viewing requested</strong><p>We've sent your request to the Didsbury branch. They'll confirm a time within one working day.</p></div>
+          <button class="close" aria-label="Dismiss"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="toast info" role="status">
+          <span class="bar"></span>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <div class="content"><strong>Saved to your shortlist</strong><p>Sign in to keep your shortlist across devices.</p></div>
+          <button class="close" aria-label="Dismiss"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="toast danger" role="alert">
+          <span class="bar"></span>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>
+          <div class="content"><strong>Couldn't send your enquiry</strong><p>Something went wrong our end. Please try again — your message wasn't lost.</p></div>
+          <button class="close" aria-label="Dismiss"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Tooltip</h2>
+      <p class="lede">Brief supplementary text on focus or hover — but never the only way to reach information (no hover-only). On touch it appears on tap.</p>
+      <div class="demo-tray" style="align-items:center;gap:var(--space-8)">
+        <div class="tip" style="flex-direction:column;align-items:flex-start;gap:var(--space-2)">
+          <span class="bubble" role="tooltip">Indicative only — not a formal survey.</span>
+          <span style="display:inline-flex;align-items:center;gap:var(--space-2);color:var(--colour-text-secondary)">Estimated value
+            <svg class="ico" style="width:var(--size-icon-md);height:var(--size-icon-md)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Form error and success summaries</h2>
+      <p class="lede">Top-of-form summaries. The error summary is a focus target announced via <code>role="alert"</code> and links to each invalid field. Calm language, never blame.</p>
+      <div class="demo-tray col">
+        <div class="formmsg error" role="alert">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>
+          <div><strong>There are 2 things to check</strong>
+            <ul><li><a href="#">Enter a complete email address</a></li><li><a href="#">Tick the box to agree to the privacy policy</a></li></ul>
+          </div>
+        </div>
+        <div class="formmsg success" role="status">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><strong>Thanks — your valuation request is in</strong>A member of the team will be in touch within one working day. We've emailed you a copy for your records.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Empty state</h2>
+      <p class="lede">Shown when a data-fetching surface has no results. Always offers a next action — never a dead end.</p>
+      <div class="demo-tray">
+        <div class="empty">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg></span>
+          <h3>No properties match those filters</h3>
+          <p>Try widening your price range or removing a filter. We'll email you when something new comes up.</p>
+          <a class="act" href="#">Clear filters</a>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> toast <b>--shadow-md</b>, radius <b>--radius-md</b>, accent bars <b>--colour-success/info/warning/danger</b> · tooltip bg <b>--colour-brand-primary</b> · empty state dashed <b>--colour-border</b> on <b>--colour-surface-raised</b> · in-motion <b>--motion-duration-base --motion-ease-emphasis</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> success/info toasts use <code>role="status"</code> (polite); error toasts use <code>role="alert"</code> (assertive). Close is a labelled 32 px button. Tooltips are reachable on focus and tap, never hover-only. The form-error summary receives focus on submit and links to each field.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — pricing — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(79,70,229,0.3), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto var(--space-3); max-width: 18ch; }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 52ch; margin-inline: auto; }
+
+  /* tier toggle */
+  .tiertoggle { display: inline-flex; gap: var(--space-1); margin-top: var(--space-8); background: rgba(255,255,255,0.08); padding: var(--space-1); border-radius: var(--radius-pill); }
+  .tiertoggle button { padding: var(--space-2) var(--space-5); border-radius: var(--radius-pill); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--mkt-on-dark-dim); }
+  .tiertoggle button[aria-pressed="true"] { background: var(--mkt-surface); color: var(--mkt-ink); }
+
+  /* pack catalogue */
+  .catalogue { display: grid; gap: var(--space-5); grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .catalogue { grid-template-columns: repeat(2,1fr); } }
+  @media (min-width: 1024px) { .catalogue { grid-template-columns: repeat(3,1fr); } }
+  .pack { border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); padding: var(--space-6); background: var(--mkt-surface); display: flex; flex-direction: column; gap: var(--space-3); transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+  .pack:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); } @media (prefers-reduced-motion: reduce) { .pack:hover { transform: none; } }
+  .pack .top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+  .pack h3 { font-weight: var(--weight-bold); font-size: var(--text-heading-sm); letter-spacing: -0.01em; }
+  .pack .inc { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-bold); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: rgba(79,70,229,0.1); color: var(--mkt-primary); }
+  .pack .beta { background: rgba(34,211,238,0.16); color: #0e7490; }
+  .pack p { color: var(--mkt-ink-2); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); flex: 1; }
+  .pack .price { font-weight: var(--weight-bold); font-size: var(--text-heading-md); letter-spacing: -0.02em; } .pack .price small { font-size: var(--text-body-sm); font-weight: var(--weight-regular); color: var(--mkt-ink-2); }
+  .pack .add { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); height: var(--size-button-md); border-radius: var(--radius-md); border: 1px solid var(--mkt-border); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); color: var(--mkt-primary); cursor: pointer; background: var(--mkt-surface); }
+  .pack .add svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .pack.on { border-color: var(--mkt-primary); box-shadow: inset 0 0 0 1px var(--mkt-primary); }
+  .pack.on .add { background: var(--mkt-primary); color: #fff; border-color: var(--mkt-primary); }
+  .pack.core .add { opacity: 0.6; cursor: default; }
+
+  /* calculator */
+  .calc { background: var(--mkt-raised); }
+  .calc .mkt-inner { display: grid; gap: var(--space-8); grid-template-columns: 1fr; } @media (min-width: 1024px) { .calc .mkt-inner { grid-template-columns: 1fr 360px; align-items: start; } }
+  .calc h2 { font-size: var(--text-display-sm); margin-bottom: var(--space-2); } .calc .sub { color: var(--mkt-ink-2); margin-bottom: var(--space-6); }
+  .calcbox { position: sticky; top: 90px; background: var(--mkt-bg); color: var(--mkt-on-dark); border-radius: var(--radius-lg); padding: var(--space-6); }
+  .calcbox .line { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; font-size: var(--text-body-sm); color: var(--mkt-on-dark-dim); border-bottom: 1px solid var(--mkt-border-dark); }
+  .calcbox .total { display: flex; justify-content: space-between; align-items: baseline; margin-top: var(--space-4); }
+  .calcbox .total .v { font-size: var(--text-display-sm); font-weight: var(--weight-bold); letter-spacing: -0.02em; transition: opacity var(--motion-duration-base) var(--motion-ease-standard); }
+  .calcbox .total .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-accent); font-weight: var(--weight-bold); }
+  .calcbox .vat { font-size: var(--text-caption); color: var(--mkt-on-dark-dim); margin-top: var(--space-2); }
+  .calcbox .mkt-btn { width: 100%; margin-top: var(--space-5); }
+
+  /* tier comparison */
+  .compare-wrap { overflow-x: auto; }
+  table.compare { width: 100%; border-collapse: collapse; min-width: 560px; }
+  table.compare th, table.compare td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--mkt-border); text-align: center; font-size: var(--text-body-sm); }
+  table.compare thead th { font-weight: var(--weight-bold); font-size: var(--text-body-md); position: sticky; top: 0; background: var(--mkt-surface); }
+  table.compare thead th .price { display: block; font-size: var(--text-body-sm); font-weight: var(--weight-regular); color: var(--mkt-ink-2); margin-top: 2px; }
+  table.compare th.feat { text-align: left; font-weight: var(--weight-medium); color: var(--mkt-ink); position: sticky; left: 0; background: var(--mkt-surface); }
+  table.compare .yes { color: var(--mkt-primary); } .yes svg { width: 18px; height: 18px; }
+  table.compare .no { color: var(--mkt-border); } .no svg { width: 16px; height: 16px; }
+  table.compare .featured { background: rgba(79,70,229,0.04); }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — pricing</h1>
+    <span class="brief">EPIC-AE design brief — the most commercially critical surface</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>tier toggle · pack catalogue grid · interactive cumulative-cost calculator · tier comparison table</dd></div>
+      <div><dt>Interactive</dt><dd>click packs to add/remove → live monthly total (aria-live); tier toggle switches included packs</dd></div>
+      <div><dt>Responsive</dt><dd>catalogue 3→2→1; comparison table horizontal-scroll w/ sticky first column (mobile pivot)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row">
+      <a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="#">Features</a><a href="#" aria-current="page">Pricing</a><a href="#">Customers</a><a href="#">Trust</a><a href="#">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Pricing</p>
+      <h1 class="display">Pay for the packs you actually use.</h1>
+      <p>Pick a tier for the essentials, then switch packs on and off as you grow. Clear monthly prices, no lock-in.</p>
+      <div class="tiertoggle" role="group" aria-label="Choose a tier">
+        <button aria-pressed="false">Starter</button>
+        <button aria-pressed="true">Professional</button>
+        <button aria-pressed="false">Enterprise</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="props-head" style="text-align:center;max-width:44ch;margin:0 auto var(--space-10)"><h2 class="display" style="font-size:var(--text-display-sm)">Build your plan</h2><p style="color:var(--mkt-ink-2)">Core is always included. Add any pack below — your monthly total updates as you go.</p></div>
+      <div class="catalogue">
+        <div class="pack core on"><div class="top"><h3>Core</h3><span class="inc">Always on</span></div><p>Website, property listings, enquiries, calendar, contacts, admin, compliance.</p><div class="price">Included</div><button class="add" aria-label="Core is always included" data-price="0" data-core>Included</button></div>
+        <div class="pack on" data-name="Lettings"><div class="top"><h3>Lettings</h3><span class="inc">In Professional</span></div><p>Tenancies, rent tracking, landlord statements, repairs and the tenant portal.</p><div class="price">£99 <small>/ mo</small></div><button class="add" data-price="99"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Added</button></div>
+        <div class="pack" data-name="New Homes"><div class="top"><h3>New Homes</h3></div><p>Development &amp; plot management, Help to Buy, new-build attribute groups.</p><div class="price">£79 <small>/ mo</small></div><button class="add" data-price="79"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to plan</button></div>
+        <div class="pack" data-name="Feedback &amp; reviews"><div class="top"><h3>Feedback &amp; reviews</h3></div><p>Automated review requests, moderation queue, reviews badge and agent league table.</p><div class="price">£49 <small>/ mo</small></div><button class="add" data-price="49"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to plan</button></div>
+        <div class="pack" data-name="Automation"><div class="top"><h3>Automation</h3></div><p>Rule-based lead routing, follow-up sequences and scheduled tasks.</p><div class="price">£59 <small>/ mo</small></div><button class="add" data-price="59"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to plan</button></div>
+        <div class="pack" data-name="Insights"><div class="top"><h3>Insights</h3><span class="inc beta">Beta</span></div><p>Cross-branch reporting, pipeline forecasting and market benchmarks. <span title="Early access — pricing may change">Pricing may change.</span></p><div class="price">£39 <small>/ mo</small></div><button class="add" data-price="39"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to plan</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section calc">
+    <div class="mkt-inner">
+      <div>
+        <p class="mkt-eyebrow">Your estimate</p>
+        <h2 class="display">What you'll pay</h2>
+        <p class="sub">Professional tier includes Core + Lettings. Add the packs above and watch this update.</p>
+        <div class="compare-wrap" style="margin-top:var(--space-6)">
+          <table class="compare" aria-label="Tier comparison">
+            <thead><tr><th class="feat">Capability</th><th>Starter<span class="price">£149/mo</span></th><th class="featured">Professional<span class="price">£349/mo</span></th><th>Enterprise<span class="price">Custom</span></th></tr></thead>
+            <tbody>
+              <tr><th class="feat">Core (site, listings, leads)</th><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="featured yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+              <tr><th class="feat">Lettings</th><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="featured yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+              <tr><th class="feat">Multi-branch</th><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="featured yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+              <tr><th class="feat">Automation &amp; Insights</th><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="featured" style="color:var(--mkt-ink-2);font-size:var(--text-caption)">Add-on</td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+              <tr><th class="feat">Dedicated support &amp; SSO</th><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="featured no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="calcbox">
+        <div class="line"><span>Professional tier</span><span>£349</span></div>
+        <div class="line" id="addons"><span>Add-ons (1)</span><span>£0</span></div>
+        <div class="total"><span class="k">Est. monthly</span><span class="v" id="total" aria-live="polite">£349</span></div>
+        <p class="vat">+ VAT · billed monthly · cancel any pack anytime</p>
+        <a class="mkt-btn primary lg" href="#">Start with Professional</a>
+        <a class="mkt-btn ghost-d" href="#" style="margin-top:var(--space-2)">Book a demo to discuss Enterprise</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer">
+    <div class="inner">
+      <div><a class="mkt-brand" href="marketing-home.html" style="margin-bottom:var(--space-4)"><span class="mark">EA</span>Estate Agent Platform</a><p style="color:var(--mkt-on-dark-dim);font-size:var(--text-body-sm);max-width:36ch">The modular platform for UK estate agencies.</p></div>
+      <div><h4>Product</h4><a href="#">Features</a><a href="#">Pricing</a><a href="#">Roadmap</a></div>
+      <div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div>
+      <div><h4>Trust</h4><a href="#">Security</a><a href="#">Status</a><a href="#">Legal</a></div>
+      <div class="legal">© 2026 Estate Agent Platform Ltd · Prices shown exclude VAT.</div>
+    </div>
+  </footer>
+</main>
+<section data-rv></section>
+
+<script>
+(function(){
+  var base = 349; // Professional tier
+  var btns = [].slice.call(document.querySelectorAll('.pack .add:not([data-core])'));
+  function recalc(){
+    var addon = 0, count = 0;
+    btns.forEach(function(b){ if (b.closest('.pack').classList.contains('on')) { addon += +b.getAttribute('data-price'); count++; } });
+    document.getElementById('addons').innerHTML = '<span>Add-ons ('+count+')</span><span>£'+addon+'</span>';
+    var t = document.getElementById('total');
+    t.style.opacity = '0';
+    setTimeout(function(){ t.textContent = '£' + (base + addon); t.style.opacity = '1'; }, 120);
+  }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var pack = b.closest('.pack');
+      var on = pack.classList.toggle('on');
+      b.innerHTML = on
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Added'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add to plan';
+      recalc();
+    });
+  });
+  recalc();
+})();
+</script>
+</body>
+</html>

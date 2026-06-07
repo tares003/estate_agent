@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .auth { display: grid; grid-template-columns: 1fr; min-height: 720px; border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  html.embed .auth { border: none; border-radius: 0; min-height: 100vh; }
+  @media (min-width: 1024px) { .auth { grid-template-columns: 1.1fr 1fr; } }
+
+  /* brand panel */
+  .brandside { display: none; position: relative; background: linear-gradient(135deg,#1f2937,#2d3a4d 55%,#3a4a5c); color: var(--colour-text-on-dark); padding: var(--space-12); flex-direction: column; justify-content: space-between; }
+  @media (min-width: 1024px) { .brandside { display: flex; } }
+  .brandside .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); }
+  .brandside .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .brandside blockquote { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); max-width: 18ch; }
+  .brandside .who { color: var(--colour-brand-accent); font-size: var(--text-body-sm); margin-top: var(--space-4); }
+  .brandside .stars { color: var(--colour-brand-accent); letter-spacing: 2px; }
+
+  /* form panel */
+  .formside { display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-6); background: var(--colour-surface-base); }
+  .formcard { width: 100%; max-width: 400px; }
+  .formcard .mobilebrand { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); font-family: var(--font-display); font-size: var(--text-heading-md); }
+  @media (min-width: 1024px) { .formcard .mobilebrand { display: none; } }
+  .formcard .mobilebrand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .formcard h1 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); }
+  .formcard .sub { color: var(--colour-text-secondary); margin-top: var(--space-2); margin-bottom: var(--space-8); }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .field label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .field .control { height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+  .field .control:hover { border-color: var(--colour-text-muted); }
+  .field .control:focus-visible { outline: none; border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+  .pwwrap { position: relative; display: flex; }
+  .pwwrap .control { flex: 1; padding-right: var(--space-12); }
+  .pwwrap .reveal { position: absolute; right: var(--space-1); top: 50%; transform: translateY(-50%); width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); }
+  .pwwrap .reveal svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .labelrow { display: flex; align-items: center; justify-content: space-between; }
+  .labelrow a { font-size: var(--text-body-sm); color: var(--colour-brand-accent-hover); text-decoration: none; }
+  .labelrow a:hover { text-decoration: underline; }
+
+  .remember { display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-touch-target-min); margin-bottom: var(--space-5); }
+  .remember input { width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); }
+  .remember label { font-size: var(--text-body-sm); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; height: var(--size-button-lg); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+
+  .divider { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-6) 0; color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--colour-divider); }
+  .alt { display: flex; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; height: var(--size-button-md); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); background: var(--colour-surface-base); }
+  .reg { text-align: center; margin-top: var(--space-6); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .reg a { color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); text-decoration: none; }
+  .reg a:hover { text-decoration: underline; }
+  .secure { display: flex; align-items: center; gap: var(--space-2); justify-content: center; margin-top: var(--space-8); color: var(--colour-text-muted); font-size: var(--text-caption); }
+  .secure svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Sign in</h1>
+    <span class="brief">EPIC-N design brief — sign-in (Phase B · customer account + staff)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>split brand panel + form ≥ 1024px; single column with slim brand header below</dd></div>
+      <div><dt>Voice</dt><dd>"Sign in" (never "log in"); plain, calm copy (PRODUCT.md §7)</dd></div>
+      <div><dt>Next</dt><dd>staff with 2FA continue to the enrolment / verify flow</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="auth">
+
+    <div class="brandside">
+      <div class="brand"><span class="mark">EA</span>Estate Agent</div>
+      <div>
+        <blockquote>The team that actually answered the phone.</blockquote>
+        <p class="who"><span class="stars" aria-hidden="true">★★★★★</span> &nbsp;Sophie L. · sold in Didsbury, 2026</p>
+      </div>
+      <p style="opacity:0.7;font-size:var(--text-body-sm)">Sales · lettings · new homes across Greater Manchester</p>
+    </div>
+
+    <div class="formside">
+      <form class="formcard">
+        <div class="mobilebrand"><span class="mark">EA</span>Estate Agent</div>
+        <h1>Sign in</h1>
+        <p class="sub">Welcome back. Sign in to manage your saved properties and searches.</p>
+
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" class="control" type="email" autocomplete="email" inputmode="email" placeholder="you@example.co.uk">
+        </div>
+
+        <div class="field">
+          <div class="labelrow"><label for="pw">Password</label><a href="#">Forgot password?</a></div>
+          <div class="pwwrap">
+            <input id="pw" class="control" type="password" autocomplete="current-password" placeholder="Your password">
+            <button type="button" class="reveal" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+
+        <div class="remember">
+          <input type="checkbox" id="remember">
+          <label for="remember">Keep me signed in on this device</label>
+        </div>
+
+        <button class="btn primary" type="submit">Sign in</button>
+
+        <div class="divider">or</div>
+        <button class="alt" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10h-10z"/></svg>Continue with Google</button>
+
+        <p class="reg">New here? <a href="#">Create an account</a></p>
+
+        <p class="secure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Staff sign-in is protected by two-factor authentication</p>
+      </form>
+    </div>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

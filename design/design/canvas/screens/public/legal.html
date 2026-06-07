@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display:none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover { color: var(--colour-brand-accent); }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  .wrap { max-width: var(--size-container-xl); margin-inline: auto; padding: var(--space-16) var(--space-6); display: grid; gap: var(--space-12); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .wrap { grid-template-columns: 240px minmax(0,1fr); align-items: start; } }
+  .toc { position: sticky; top: calc(var(--size-button-md) + var(--space-12)); }
+  .toc .lbl { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+  .toc a { display: block; padding: var(--space-2) 0; font-size: var(--text-body-sm); color: var(--colour-text-secondary); text-decoration: none; } .toc a:hover, .toc a.active { color: var(--colour-brand-accent-hover); }
+  @media (max-width: 1024px) { .toc { position: static; } }
+
+  .doc .head { margin-bottom: var(--space-8); }
+  .doc .eyebrow { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); }
+  .doc h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); font-weight: var(--weight-regular); margin-top: var(--space-2); }
+  .doc .updated { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-3); }
+  .doc h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin: var(--space-10) 0 var(--space-3); scroll-margin-top: 80px; }
+  .doc p, .doc li { font-size: var(--text-body-md); line-height: var(--text-body-lg-lh); color: var(--colour-text-secondary); max-width: 68ch; }
+  .doc p { margin-bottom: var(--space-4); } .doc ul { margin: 0 0 var(--space-4) var(--space-5); } .doc li { list-style: disc; margin-bottom: var(--space-2); }
+  .doc a { color: var(--colour-brand-accent-hover); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Legal page (privacy)</h1>
+    <span class="brief">EPIC-C design brief — legal content template (privacy / terms / cookies / complaints)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>sticky table of contents + constrained legal prose (~68ch); one template for all legal pages</dd></div>
+      <div><dt>Readable</dt><dd>plain section headings, generous spacing, AA body contrast</dd></div>
+      <div><dt>Content</dt><dd>placeholder structure — real legal copy supplied by the agency's solicitor</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="contact.html">Contact</a></nav>
+      <button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="toc" aria-label="On this page">
+      <p class="lbl">On this page</p>
+      <a href="#who" class="active">Who we are</a>
+      <a href="#collect">What we collect</a>
+      <a href="#use">How we use it</a>
+      <a href="#legal">Legal basis</a>
+      <a href="#share">Who we share with</a>
+      <a href="#rights">Your rights</a>
+      <a href="#contact">Contact &amp; complaints</a>
+    </nav>
+    <article class="doc">
+      <div class="head">
+        <p class="eyebrow">Legal</p>
+        <h1>Privacy policy</h1>
+        <p class="updated">Last updated 14 May 2026 · [Agency to confirm with their solicitor]</p>
+      </div>
+      <h2 id="who">Who we are</h2>
+      <p>Estate Agent Ltd ("we", "us") is the data controller for the personal information you provide through this website and our branches. We're registered in England &amp; Wales (no. 00000000) and a member of the Property Ombudsman.</p>
+      <h2 id="collect">What we collect</h2>
+      <p>Depending on how you use our services, we may collect:</p>
+      <ul><li>Contact details — name, email, phone, address.</li><li>Enquiry details — the properties and services you're interested in.</li><li>Transaction records — viewings, offers, tenancies and repairs.</li><li>Technical data — how you use the site (with your cookie consent).</li></ul>
+      <h2 id="use">How we use it</h2>
+      <p>We use your information to respond to enquiries, arrange viewings and valuations, manage tenancies and repairs, meet our legal obligations, and — only with your consent — to send you property alerts and market news.</p>
+      <h2 id="legal">Legal basis</h2>
+      <p>We process your data on the basis of contract (to provide the services you ask for), legal obligation (for example anti-money-laundering checks), legitimate interests (running our business responsibly), and consent (for marketing, which you can withdraw at any time).</p>
+      <h2 id="share">Who we share with</h2>
+      <p>We share data only where necessary — for example with contractors assigned to a repair, deposit-protection schemes, or referencing providers — and always under appropriate agreements. We never sell your data.</p>
+      <h2 id="rights">Your rights</h2>
+      <p>You have the right to access, correct, or erase your personal data, to object to or restrict its processing, and to data portability. To exercise any of these, contact us using the details below. You also have the right to complain to the ICO.</p>
+      <h2 id="contact">Contact &amp; complaints</h2>
+      <p>Email <a href="#">privacy@estateagent.co.uk</a> or write to our Didsbury branch. If you're unhappy with how we've handled your data, you can contact the Information Commissioner's Office at <a href="#">ico.org.uk</a>.</p>
+    </article>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

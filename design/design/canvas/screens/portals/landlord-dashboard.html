@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landlord portal — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="portal-shell.css">
+<script src="../../canvas.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Landlord portal — dashboard</h1>
+    <span class="brief">EPIC-Z design brief — landlord overview across a let portfolio</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>portfolio hero · compliance banner · KPI tiles · properties table · statements · activity</dd></div>
+      <div><dt>Compliance</dt><dd>gas / EICR / EPC expiry surfaced with status pills (warn when near expiry)</dd></div>
+      <div><dt>Trust</dt><dd>rent figures show frequency; "for guidance only" on projected income</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="portal">
+    <header class="ptop">
+      <div class="row">
+        <a class="brand" href="#"><span class="mark">EA</span>Estate Agent<span class="tag">Landlord</span></a>
+        <nav class="pnav" aria-label="Landlord portal"><a href="#" aria-current="page">Overview</a><a href="#">Properties</a><a href="#">Statements</a><a href="#">Compliance</a><a href="#">Maintenance</a><a href="#">Documents</a></nav>
+        <div class="who"><span class="av">RG</span><span>Rebecca Grant</span></div>
+      </div>
+    </header>
+
+    <div class="pwrap">
+      <div class="phero">
+        <div><h1>Your portfolio</h1><p class="meta">3 properties let · all occupied · managed by the Didsbury branch</p></div>
+        <div class="stat"><div class="v">£4,750 <span style="font-size:var(--text-body-sm);font-weight:var(--weight-regular);color:var(--colour-text-secondary)">PCM</span></div><div class="l">gross rent</div></div>
+      </div>
+
+      <div class="pbanner warn" role="status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>
+        <div><strong>1 compliance item needs attention</strong> — gas safety at 22 Elm Grove expires in 28 days.</div>
+        <a class="btn primary act" href="#">Arrange</a>
+      </div>
+
+      <div class="ptiles">
+        <div class="ptile"><div class="k">Rent collected (YTD)</div><div class="v">£42.8k</div><div class="d"><span class="pill ok">98% on time</span></div></div>
+        <div class="ptile"><div class="k">Open maintenance</div><div class="v">2</div><div class="d"><span class="pill grey">1 awaiting quote</span></div></div>
+        <div class="ptile"><div class="k">Compliance</div><div class="v">11/12</div><div class="d"><span class="pill warn">1 expiring soon</span></div></div>
+      </div>
+
+      <div class="pcols">
+        <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+          <div class="pcard">
+            <div class="ch"><h2>Your properties</h2><a href="#">Manage</a></div>
+            <table class="pt">
+              <thead><tr><th>Property</th><th>Tenant</th><th>Rent</th><th>Status</th><th>Compliance</th></tr></thead>
+              <tbody>
+                <tr><td>14 Cromwell Grove, M19</td><td>D. O'Hara</td><td>£1,100 PCM</td><td><span class="pill ok">Let</span></td><td><span class="pill ok">Up to date</span></td></tr>
+                <tr><td>22 Elm Grove, M14</td><td>A. Rahman</td><td>£1,450 PCM</td><td><span class="pill ok">Let</span></td><td><span class="pill warn">Gas due 28d</span></td></tr>
+                <tr><td>7 Clyde Road, M20</td><td>J. Reid</td><td>£2,200 PCM</td><td><span class="pill ok">Let</span></td><td><span class="pill ok">Up to date</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pcard">
+            <div class="ch"><h2>Recent statements</h2><a href="#">All statements</a></div>
+            <table class="pt">
+              <thead><tr><th>Period</th><th>Rent in</th><th>Fees</th><th>Paid out</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>May 2026</td><td>£4,750</td><td>−£475</td><td>£4,275</td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+                <tr><td>April 2026</td><td>£4,750</td><td>−£475</td><td>£4,275</td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+                <tr><td>March 2026</td><td>£4,750</td><td>−£475</td><td>£4,275</td><td><a href="#" style="color:var(--colour-brand-accent-hover);text-decoration:none">PDF</a></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="pcard">
+          <div class="ch"><h2>Activity</h2></div>
+          <div class="feed">
+            <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><div><p>May statement paid out — <strong>£4,275</strong></p><small>5 May</small></div></div>
+            <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 7l-1.5-2h-9v14h17V7z"/></svg></span><div><p>Maintenance logged at <strong>Elm Grove</strong></p><small>1 week ago</small></div></div>
+            <div class="item"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg></span><div><p>Gas safety reminder — <strong>Elm Grove</strong></p><small>2 weeks ago</small></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

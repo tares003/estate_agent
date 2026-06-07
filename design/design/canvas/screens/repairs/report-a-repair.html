@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report a repair — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-6); max-width: var(--size-container-lg); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .site-header .acct { font-size: var(--text-body-sm); color: var(--colour-text-on-dark); opacity: 0.85; }
+
+  .wrap { max-width: var(--size-container-md); margin-inline: auto; padding: var(--space-8) var(--space-6) var(--space-16); }
+  .pagetitle { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); margin-bottom: var(--space-2); }
+  .pagelede { color: var(--colour-text-secondary); margin-bottom: var(--space-6); }
+
+  /* emergency notice */
+  .emergency { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4) var(--space-5); border-left: 3px solid var(--colour-danger); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-left-width: 3px; border-radius: var(--radius-md); margin-bottom: var(--space-6); }
+  .emergency svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-danger); flex: 0 0 auto; }
+  .emergency strong { display: block; }
+  .emergency p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-1); }
+  .emergency a { color: var(--colour-danger); font-weight: var(--weight-semibold); white-space: nowrap; }
+
+  /* stepper */
+  .stepper { display: flex; gap: 0; margin-bottom: var(--space-8); overflow-x: auto; }
+  .step { flex: 1; min-width: 96px; display: flex; flex-direction: column; gap: var(--space-2); position: relative; padding-top: var(--space-8); }
+  .step .num { position: absolute; top: 0; left: 0; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); background: var(--colour-surface-sunken); color: var(--colour-text-muted); z-index: 1; }
+  .step::before { content: ""; position: absolute; top: calc(var(--space-8)/2); left: var(--space-8); right: 0; height: 2px; background: var(--colour-border); }
+  .step:last-child::before { display: none; }
+  .step.done .num { background: var(--colour-success); color: var(--colour-brand-primary-on); }
+  .step.done::before { background: var(--colour-success); }
+  .step.current .num { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .step .lbl { font-size: var(--text-body-sm); font-weight: var(--weight-medium); padding-right: var(--space-2); color: var(--colour-text-muted); }
+  .step.current .lbl, .step.done .lbl { color: var(--colour-text-primary); }
+
+  /* panel */
+  .panel { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); padding: var(--space-6); }
+  .panel h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
+  .panel .desc { color: var(--colour-text-secondary); font-size: var(--text-body-sm); margin-bottom: var(--space-6); }
+  .stepview { display: none; }
+  .stepview.active { display: block; }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .field label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .control { width: 100%; height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+  textarea.control { height: auto; min-height: 120px; padding-block: var(--space-3); resize: vertical; }
+  .control:focus-visible { outline: none; border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+
+  /* property choice cards */
+  .choices { display: grid; gap: var(--space-3); }
+  .choice { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); cursor: pointer; position: relative; min-height: var(--size-touch-target-min); }
+  .choice input { position: absolute; opacity: 0; }
+  .choice .ic { width: var(--space-10); height: var(--space-10); border-radius: var(--radius-md); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .choice .ic svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .choice strong { display: block; font-size: var(--text-body-md); } .choice small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .choice input:checked ~ .ck { color: var(--colour-brand-primary); }
+  .choice:has(input:checked) { border-color: var(--colour-brand-primary); box-shadow: inset 0 0 0 1px var(--colour-brand-primary); }
+  .choice input:focus-visible ~ .ck, .choice:focus-within { box-shadow: var(--shadow-focus); }
+  .choice .ck { margin-left: auto; color: var(--colour-border); } .choice .ck svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  /* category grid */
+  .catgrid { display: grid; gap: var(--space-3); grid-template-columns: repeat(2,1fr); }
+  @media (min-width: 640px) { .catgrid { grid-template-columns: repeat(3,1fr); } }
+  .cat { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; padding: var(--space-5) var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); cursor: pointer; position: relative; min-height: 96px; justify-content: center; }
+  .cat input { position: absolute; opacity: 0; }
+  .cat svg { width: var(--size-icon-xl); height: var(--size-icon-xl); color: var(--colour-text-secondary); }
+  .cat span { font-size: var(--text-body-sm); font-weight: var(--weight-medium); }
+  .cat:has(input:checked) { border-color: var(--colour-brand-primary); box-shadow: inset 0 0 0 1px var(--colour-brand-primary); background: var(--colour-surface-raised); }
+  .cat:focus-within { box-shadow: var(--shadow-focus); }
+
+  /* urgency */
+  .urgency { display: grid; gap: var(--space-3); grid-template-columns: 1fr; margin-top: var(--space-2); }
+  @media (min-width: 640px) { .urgency { grid-template-columns: repeat(2,1fr); } }
+  .urg { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); cursor: pointer; position: relative; }
+  .urg input { position: absolute; opacity: 0; }
+  .urg .badge { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); padding: 2px var(--space-2); border-radius: var(--radius-pill); flex: 0 0 auto; }
+  .urg.e .badge { background: rgba(220,38,38,0.12); color: var(--colour-priority-emergency); }
+  .urg.u .badge { background: rgba(245,158,11,0.16); color: #8a5a00; }
+  .urg.s .badge { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); }
+  .urg.l .badge { background: var(--colour-surface-sunken); color: var(--colour-text-muted); }
+  .urg small { display: block; color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: 2px; }
+  .urg:has(input:checked) { border-color: var(--colour-brand-primary); box-shadow: inset 0 0 0 1px var(--colour-brand-primary); }
+  .urg:focus-within { box-shadow: var(--shadow-focus); }
+
+  /* time slot cards */
+  .slots { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--space-3); }
+  @media (min-width: 640px) { .slots { grid-template-columns: repeat(3,1fr); } }
+  .slot { position: relative; }
+  .slot input { position: absolute; opacity: 0; }
+  .slot span { display: flex; align-items: center; justify-content: center; min-height: var(--size-touch-target-min); padding: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); }
+  .slot:has(input:checked) span { border-color: var(--colour-brand-primary); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+  .slot:focus-within span { box-shadow: var(--shadow-focus); }
+
+  /* dropzone */
+  .dropzone { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-10) var(--space-6); border: 2px dashed var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-raised); }
+  .dropzone svg { width: var(--size-icon-xl); height: var(--size-icon-xl); color: var(--colour-text-muted); }
+  .dropzone .hint { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+
+  /* review */
+  .review .line { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); }
+  .review .line dt { color: var(--colour-text-muted); } .review .line dd { font-weight: var(--weight-medium); text-align: right; }
+  .review .line .edit { color: var(--colour-brand-accent-hover); margin-left: var(--space-2); }
+  .consent { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); background: var(--colour-surface-raised); border-radius: var(--radius-md); margin-top: var(--space-5); }
+  .consent input { margin-top: 3px; width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); flex: 0 0 auto; }
+  .consent label { font-size: var(--text-body-sm); } .consent a { color: var(--colour-brand-accent-hover); }
+
+  /* nav */
+  .navrow { display: flex; gap: var(--space-3); justify-content: space-between; margin-top: var(--space-6); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .btn[hidden] { display: none; }
+
+  /* success */
+  .success { text-align: center; padding: var(--space-10) var(--space-6); }
+  .success .emblem { width: var(--space-16); height: var(--space-16); border-radius: var(--radius-circle); background: rgba(16,185,129,0.12); color: var(--colour-success); display: grid; place-items: center; margin: 0 auto var(--space-4); }
+  .success .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .success h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+  .success .ref { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-4) 0; }
+  .timeline { text-align: left; max-width: 360px; margin: var(--space-6) auto 0; display: flex; flex-direction: column; gap: var(--space-4); }
+  .timeline .t { display: flex; gap: var(--space-3); }
+  .timeline .t .dot { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-secondary); flex: 0 0 auto; font-size: var(--text-caption); }
+  .timeline .t.now .dot { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .timeline .t strong { display: block; font-size: var(--text-body-sm); } .timeline .t small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Report a repair</h1>
+    <span class="brief">EPIC-G design brief — tenant six-step repair wizard (Phase B · interactive)</span>
+    <dl class="annotations">
+      <div><dt>Flow</dt><dd>Property → Issue → Details → Access → Photos → Review → success</dd></div>
+      <div><dt>Interactive</dt><dd>click the stepper or Back / Continue to move; the stepper marks done / current</dd></div>
+      <div><dt>Designer interpretation</dt><dd>Q4 → emergency notice is serious but plainly worded, not alarmist</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="#"><span class="mark">EA</span>Estate Agent</a><span class="acct">Signed in as Daniel O'Hara · 14 Cromwell Grove</span></div>
+  </header>
+
+  <div class="wrap">
+    <h1 class="pagetitle">Report a repair</h1>
+    <p class="pagelede">Tell us what's wrong and we'll get it sorted. It takes about two minutes.</p>
+
+    <div class="emergency" role="alert">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <div><strong>Is this an emergency?</strong><p>For gas leaks, flooding, no heat in winter, or anything that puts safety at risk, call us now on <a href="tel:08000000000">0800 000 0000</a> — don't wait for this form.</p></div>
+    </div>
+
+    <ol class="stepper" id="stepper" aria-label="Repair report progress">
+      <li class="step current" data-step="1"><span class="num">1</span><span class="lbl">Property</span></li>
+      <li class="step" data-step="2"><span class="num">2</span><span class="lbl">Issue</span></li>
+      <li class="step" data-step="3"><span class="num">3</span><span class="lbl">Details</span></li>
+      <li class="step" data-step="4"><span class="num">4</span><span class="lbl">Access</span></li>
+      <li class="step" data-step="5"><span class="num">5</span><span class="lbl">Photos</span></li>
+      <li class="step" data-step="6"><span class="num">6</span><span class="lbl">Review</span></li>
+    </ol>
+
+    <div class="panel">
+
+      <!-- Step 1: Property -->
+      <section class="stepview active" data-view="1" aria-label="Step 1: Property">
+        <h2>Which property?</h2>
+        <p class="desc">Confirm the property the repair relates to.</p>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="prop" checked><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg></span><span><strong>14 Cromwell Grove</strong><small>Levenshulme, Manchester M19</small></span><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span></label>
+        </div>
+      </section>
+
+      <!-- Step 2: Issue -->
+      <section class="stepview" data-view="2" aria-label="Step 2: Issue">
+        <h2>What's the issue?</h2>
+        <p class="desc">Pick the closest category, then how urgent it is.</p>
+        <div class="catgrid">
+          <label class="cat"><input type="radio" name="cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v6a4 4 0 0 0 8 0V3"/><path d="M12 13v8"/></svg><span>Plumbing</span></label>
+          <label class="cat"><input type="radio" name="cat" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-4 4-8 4-8z"/></svg><span>Heating</span></label>
+          <label class="cat"><input type="radio" name="cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>Electrical</span></label>
+          <label class="cat"><input type="radio" name="cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h.01M8 11h.01"/></svg><span>Appliances</span></label>
+          <label class="cat"><input type="radio" name="cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg><span>Structural</span></label>
+          <label class="cat"><input type="radio" name="cat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span>Other</span></label>
+        </div>
+        <div class="field" style="margin-top:var(--space-6);margin-bottom:0">
+          <label>How urgent is it?</label>
+          <div class="urgency">
+            <label class="urg e"><input type="radio" name="urg"><span class="badge">Emergency</span><span><strong style="font-size:var(--text-body-sm)">Safety risk now</strong><small>We'll call you back fast</small></span></label>
+            <label class="urg u"><input type="radio" name="urg" checked><span class="badge">Urgent</span><span><strong style="font-size:var(--text-body-sm)">Needs sorting soon</strong><small>e.g. no hot water</small></span></label>
+            <label class="urg s"><input type="radio" name="urg"><span class="badge">Standard</span><span><strong style="font-size:var(--text-body-sm)">Not urgent</strong><small>Within a few days</small></span></label>
+            <label class="urg l"><input type="radio" name="urg"><span class="badge">Low</span><span><strong style="font-size:var(--text-body-sm)">Minor</strong><small>Whenever convenient</small></span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 3: Details -->
+      <section class="stepview" data-view="3" aria-label="Step 3: Details">
+        <h2>Tell us more</h2>
+        <p class="desc">The more detail you give, the faster we can help.</p>
+        <div class="field"><label for="desc">Describe the problem</label><textarea id="desc" class="control" placeholder="e.g. The boiler isn't firing up — no hot water or heating since this morning. Pressure gauge reads zero.">The boiler isn't firing up — no hot water or heating since this morning.</textarea></div>
+        <div class="field" style="margin-bottom:0"><label for="when">When did you first notice it?</label><input id="when" class="control" type="date" style="max-width:240px"></div>
+      </section>
+
+      <!-- Step 4: Access -->
+      <section class="stepview" data-view="4" aria-label="Step 4: Access">
+        <h2>Arranging access</h2>
+        <p class="desc">When suits you for a contractor to visit?</p>
+        <div class="field"><label>Preferred times</label>
+          <div class="slots" role="group" aria-label="Preferred times">
+            <label class="slot"><input type="radio" name="slot" checked><span>Weekday morning</span></label>
+            <label class="slot"><input type="radio" name="slot"><span>Weekday afternoon</span></label>
+            <label class="slot"><input type="radio" name="slot"><span>Weekend</span></label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0"><label for="notes">Anything the contractor should know?</label><input id="notes" class="control" type="text" placeholder="e.g. Dog in the house, please ring the side door"></div>
+      </section>
+
+      <!-- Step 5: Photos -->
+      <section class="stepview" data-view="5" aria-label="Step 5: Photos">
+        <h2>Add photos</h2>
+        <p class="desc">Optional, but photos really help us diagnose the problem.</p>
+        <div class="dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <div><strong>Drag photos here</strong></div>
+          <button class="btn secondary" type="button">Choose photos</button>
+          <p class="hint">JPG or PNG · up to 500 KB each</p>
+        </div>
+      </section>
+
+      <!-- Step 6: Review -->
+      <section class="stepview" data-view="6" aria-label="Step 6: Review">
+        <h2>Check and submit</h2>
+        <p class="desc">Have a quick look before you send it.</p>
+        <dl class="review">
+          <div class="line"><dt>Property</dt><dd>14 Cromwell Grove, M19 <a class="edit" href="#" data-goto="1">Edit</a></dd></div>
+          <div class="line"><dt>Category</dt><dd>Heating <a class="edit" href="#" data-goto="2">Edit</a></dd></div>
+          <div class="line"><dt>Urgency</dt><dd>Urgent <a class="edit" href="#" data-goto="2">Edit</a></dd></div>
+          <div class="line"><dt>Description</dt><dd>Boiler not firing — no hot water <a class="edit" href="#" data-goto="3">Edit</a></dd></div>
+          <div class="line"><dt>Access</dt><dd>Weekday morning · dog in house <a class="edit" href="#" data-goto="4">Edit</a></dd></div>
+          <div class="line"><dt>Photos</dt><dd>2 added <a class="edit" href="#" data-goto="5">Edit</a></dd></div>
+        </dl>
+        <div class="consent">
+          <input type="checkbox" id="consent" aria-required="true">
+          <label for="consent">I agree to the <a href="#" target="_blank" rel="noopener">privacy policy ↗</a> and to my details being shared with the contractor assigned to this repair. <span style="color:var(--colour-text-muted)">(required)</span></label>
+        </div>
+      </section>
+
+      <!-- Success -->
+      <section class="stepview" data-view="7" aria-label="Submitted">
+        <div class="success">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <h2>Repair reported</h2>
+          <p style="color:var(--colour-text-secondary)">Thanks, Daniel. We've logged your repair and the management team has been notified.</p>
+          <div class="ref">RP-2026-1192</div>
+          <div class="timeline">
+            <div class="t now"><span class="dot">✓</span><div><strong>Reported</strong><small>Just now · you'll get an email confirmation</small></div></div>
+            <div class="t"><span class="dot">2</span><div><strong>Triaged</strong><small>We review and assign a contractor</small></div></div>
+            <div class="t"><span class="dot">3</span><div><strong>Scheduled</strong><small>The contractor agrees a time with you</small></div></div>
+            <div class="t"><span class="dot">4</span><div><strong>Completed</strong><small>Work done and confirmed</small></div></div>
+          </div>
+          <a class="btn primary" href="#" style="margin-top:var(--space-8)">Track this repair</a>
+        </div>
+      </section>
+
+      <div class="navrow" id="navrow">
+        <button class="btn secondary" id="backBtn" type="button" hidden>Back</button>
+        <span></span>
+        <button class="btn primary" id="nextBtn" type="button">Continue</button>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<section data-rv></section>
+
+<script>
+(function(){
+  var total = 6;
+  var current = 1;
+  var steps = Array.prototype.slice.call(document.querySelectorAll('#stepper .step'));
+  var views = {};
+  document.querySelectorAll('.stepview').forEach(function(v){ views[v.getAttribute('data-view')] = v; });
+  var backBtn = document.getElementById('backBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var navrow = document.getElementById('navrow');
+
+  function render(){
+    // views
+    Object.keys(views).forEach(function(k){ views[k].classList.toggle('active', +k === current); });
+    // stepper
+    steps.forEach(function(s){
+      var n = +s.getAttribute('data-step');
+      s.classList.toggle('done', n < current);
+      s.classList.toggle('current', n === current);
+      var lbl = s.querySelector('.lbl');
+      if (n === current) { lbl.setAttribute('aria-current','step'); } else { lbl.removeAttribute('aria-current'); }
+    });
+    if (current > total) { navrow.style.display = 'none'; return; }
+    navrow.style.display = 'flex';
+    backBtn.hidden = current === 1;
+    nextBtn.textContent = current === total ? 'Submit repair' : 'Continue';
+  }
+  function go(n){ current = Math.max(1, Math.min(total + 1, n)); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+  nextBtn.addEventListener('click', function(){ go(current + 1); });
+  backBtn.addEventListener('click', function(){ go(current - 1); });
+  steps.forEach(function(s){ s.addEventListener('click', function(){ var n = +s.getAttribute('data-step'); if (n <= current) go(n); }); });
+  document.querySelectorAll('[data-goto]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); go(+a.getAttribute('data-goto')); }); });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — comparison — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(79,70,229,0.3), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto; max-width: 18ch; }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 50ch; margin-inline: auto; }
+
+  .cmp-wrap { overflow-x: auto; border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); background: var(--mkt-surface); }
+  table.cmp { width: 100%; border-collapse: collapse; min-width: 600px; }
+  table.cmp th, table.cmp td { padding: var(--space-4); border-bottom: 1px solid var(--mkt-border); text-align: center; font-size: var(--text-body-sm); }
+  table.cmp thead th { position: sticky; top: 0; background: var(--mkt-surface); font-size: var(--text-body-md); font-weight: var(--weight-bold); }
+  table.cmp thead th.us { background: rgba(79,70,229,0.06); color: var(--mkt-primary); border-top-left-radius: var(--radius-md); border-top-right-radius: var(--radius-md); }
+  table.cmp th.cap { text-align: left; font-weight: var(--weight-medium); color: var(--mkt-ink); position: sticky; left: 0; background: var(--mkt-surface); }
+  table.cmp td.us { background: rgba(79,70,229,0.04); }
+  .yes { color: var(--mkt-primary); } .yes svg { width: 20px; height: 20px; }
+  .no { color: var(--mkt-border); } .no svg { width: 18px; height: 18px; }
+  .part { font-size: var(--text-caption); color: var(--mkt-ink-2); font-weight: var(--weight-semibold); }
+  .disclosure { margin-top: var(--space-6); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--mkt-raised); border: 1px solid var(--mkt-border); font-size: var(--text-body-sm); color: var(--mkt-ink-2); line-height: var(--text-body-lg-lh); }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — comparison</h1>
+    <span class="brief">EPIC-AE design brief — /compare/[competitor] (ComparisonCapabilityTable)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>capability rows × (us + competitors) columns; ✓ / ✗ / partial cells; "us" column emphasised</dd></div>
+      <div><dt>Legal</dt><dd>dated disclosure footer — "accurate as of [date], from public info, email us re inaccuracy"</dd></div>
+      <div><dt>Responsive</dt><dd>horizontal-scroll with sticky first column (same pattern as pricing compare)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="marketing-trust.html">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner"><p class="mkt-eyebrow">Comparison</p><h1 class="display">Estate Agent Platform vs [Competitor]</h1><p>An honest, public-information comparison. Spotted something out of date? Tell us and we'll fix it.</p></div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="cmp-wrap">
+        <table class="cmp" aria-label="Capability comparison">
+          <thead><tr><th class="cap">Capability</th><th class="us">Estate Agent Platform</th><th>[Competitor A]</th><th>[Competitor B]</th></tr></thead>
+          <tbody>
+            <tr><th class="cap">Modular, pay-per-pack pricing</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><th class="cap">Website + CMS included</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="part">Add-on</td></tr>
+            <tr><th class="cap">Tenant &amp; landlord portals</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><th class="cap">Enforced 2FA + audit log</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="part">Partial</td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+            <tr><th class="cap">No long-term contract</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="part">12 months</td></tr>
+            <tr><th class="cap">Public roadmap + upvotes</th><td class="us yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td><td class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="disclosure">Comparison data accurate as of <strong>1 June 2026</strong>. Sourced from publicly available information and competitor websites. Competitor names are placeholders in this canvas. If you spot an inaccuracy, email <a href="#" style="color:var(--mkt-primary)">hello@estateagent.app</a> and we'll correct it.</p>
+      <div style="text-align:center;margin-top:var(--space-10)"><a class="mkt-btn primary lg" href="marketing-pricing.html">See our pricing</a></div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Button — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* ---- Button component (atom) ----------------------------------------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--space-2); position: relative;
+    font-family: var(--font-body); font-weight: var(--weight-semibold);
+    font-size: var(--text-body-md); line-height: 1; white-space: nowrap;
+    border-radius: var(--radius-md); border: 1px solid transparent;
+    padding-inline: var(--space-5); height: var(--size-button-md);
+    min-width: var(--size-touch-target-min);
+    cursor: pointer; text-decoration: none;
+    transition: background-color var(--motion-duration-fast) var(--motion-ease-standard),
+                border-color var(--motion-duration-fast) var(--motion-ease-standard),
+                box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+                color var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+  .btn:active { transform: translateY(0.5px); } /* instant press per motion-spec */
+
+  /* sizes */
+  .btn.sm { height: var(--size-button-sm); font-size: var(--text-body-sm); padding-inline: var(--space-4); }
+  .btn.lg { height: var(--size-button-lg); font-size: var(--text-body-lg); padding-inline: var(--space-6); }
+
+  /* primary */
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.primary:hover { background: var(--colour-brand-primary-hover); }
+  /* secondary (outline) */
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border-color: var(--colour-border); }
+  .btn.secondary:hover { background: var(--colour-surface-raised); border-color: var(--colour-text-muted); }
+  /* ghost */
+  .btn.ghost { background: transparent; color: var(--colour-brand-primary); }
+  .btn.ghost:hover { background: var(--colour-surface-raised); }
+  /* destructive */
+  .btn.destructive { background: var(--colour-danger); color: var(--colour-brand-primary-on); }
+  .btn.destructive:hover { background: #c8362f; }
+  /* link */
+  .btn.link { background: transparent; color: var(--colour-brand-primary); padding-inline: var(--space-1); height: auto; text-underline-offset: 3px; }
+  .btn.link:hover { color: var(--colour-brand-accent-hover); text-decoration: underline; text-decoration-color: var(--colour-brand-accent); }
+
+  /* forced visual states for the canvas matrix */
+  .is-hover.primary { background: var(--colour-brand-primary-hover); }
+  .is-hover.secondary { background: var(--colour-surface-raised); border-color: var(--colour-text-muted); }
+  .is-hover.ghost { background: var(--colour-surface-raised); }
+  .is-hover.destructive { background: #c8362f; }
+  .is-focus { box-shadow: var(--shadow-focus); }
+  .is-active { transform: translateY(0.5px); filter: brightness(0.96); }
+
+  /* disabled */
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+  /* loading */
+  .btn.loading { color: transparent; pointer-events: none; }
+  .btn.loading .spinner {
+    position: absolute; inset: 0; margin: auto; width: var(--size-icon-md); height: var(--size-icon-md);
+    border: 2px solid currentColor; border-top-color: transparent; border-radius: var(--radius-circle);
+    color: var(--colour-brand-primary-on);
+    animation: btn-spin 600ms var(--motion-ease-linear) infinite;
+  }
+  .btn.secondary.loading .spinner, .btn.ghost.loading .spinner, .btn.link.loading .spinner { color: var(--colour-brand-primary); }
+  @keyframes btn-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .btn.loading .spinner { animation: none; border-top-color: currentColor; opacity: 0.6; }
+  }
+
+  .ico { width: 1em; height: 1em; flex: 0 0 auto; }
+
+  .matrix { display: grid; grid-template-columns: max-content; gap: var(--space-4) var(--space-6); align-items: center; }
+  @media (min-width: 640px) { .matrix { grid-template-columns: 120px repeat(6, max-content); } }
+  .matrix .rowlab, .matrix .collab {
+    font-size: var(--text-caption); letter-spacing: var(--text-caption-ls);
+    text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-text-muted);
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Button</h1>
+    <span class="brief">EPIC-L design brief — Atoms · Button</span>
+    <dl class="annotations">
+      <div><dt>Variants</dt><dd>primary · secondary · ghost · destructive · link &nbsp;×&nbsp; sm · md · lg</dd></div>
+      <div><dt>States</dt><dd>default · hover · focus-visible · active · disabled · loading</dd></div>
+      <div><dt>Breakpoints</dt><dd>320 → 2560 px (verification at foot of page)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <!-- Variants × sizes -->
+    <section class="demo-section">
+      <h2>Variants and sizes</h2>
+      <p class="lede">Five variants at three heights. Default height is <code>--size-button-md</code> (44 px), which also meets the touch-target minimum. Sentence case throughout per PRODUCT.md §7.</p>
+
+      <div class="demo-block">
+        <h3>Primary, secondary, ghost</h3>
+        <div class="demo-tray">
+          <div class="cell"><span class="cap">Primary</span>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center">
+              <button class="btn primary sm">Book a viewing</button>
+              <button class="btn primary">Book a viewing</button>
+              <button class="btn primary lg">Book a viewing</button>
+            </div>
+          </div>
+        </div>
+        <div class="demo-tray" style="margin-top:var(--space-4)">
+          <div class="cell"><span class="cap">Secondary</span>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center">
+              <button class="btn secondary sm">Save property</button>
+              <button class="btn secondary">Save property</button>
+              <button class="btn secondary lg">Save property</button>
+            </div>
+          </div>
+        </div>
+        <div class="demo-tray" style="margin-top:var(--space-4)">
+          <div class="cell"><span class="cap">Ghost</span>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center">
+              <button class="btn ghost sm">Cancel</button>
+              <button class="btn ghost">Cancel</button>
+              <button class="btn ghost lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-block">
+        <h3>Destructive and link</h3>
+        <div class="demo-tray">
+          <div class="cell"><span class="cap">Destructive</span>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center">
+              <button class="btn destructive sm">Delete property</button>
+              <button class="btn destructive">Delete property</button>
+              <button class="btn destructive lg">Delete property</button>
+            </div>
+          </div>
+          <div class="cell"><span class="cap">Link</span>
+            <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center">
+              <button class="btn link sm">Read more</button>
+              <button class="btn link">Read more</button>
+              <button class="btn link lg">Read more</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-block">
+        <h3>With leading icon</h3>
+        <p class="note">Icons sit in a flex row with <code>gap: --space-2</code>. The icon scales with the label (1em).</p>
+        <div class="demo-tray tight">
+          <button class="btn primary">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg>
+            Get a free valuation
+          </button>
+          <button class="btn secondary">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16v12H5.2L4 17.5z"/></svg>
+            Contact agent
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- State matrix -->
+    <section class="demo-section">
+      <h2>Every state</h2>
+      <p class="lede">Default, hover, focus-visible, active, disabled and loading — shown statically so a reviewer can compare side by side. The live buttons above respond to real interaction; these are forced states.</p>
+
+      <div class="demo-block">
+        <h3>Primary across states</h3>
+        <div class="demo-tray">
+          <div class="cell"><span class="cap">Default</span><button class="btn primary">Save changes</button></div>
+          <div class="cell"><span class="cap">Hover</span><button class="btn primary is-hover">Save changes</button></div>
+          <div class="cell"><span class="cap">Focus-visible</span><button class="btn primary is-focus">Save changes</button></div>
+          <div class="cell"><span class="cap">Active</span><button class="btn primary is-active">Save changes</button></div>
+          <div class="cell"><span class="cap">Disabled</span><button class="btn primary" disabled>Save changes</button></div>
+          <div class="cell"><span class="cap">Loading</span><button class="btn primary loading" aria-busy="true">Save changes<span class="spinner"></span></button></div>
+        </div>
+      </div>
+
+      <div class="demo-block">
+        <h3>Secondary across states</h3>
+        <div class="demo-tray">
+          <div class="cell"><span class="cap">Default</span><button class="btn secondary">Save property</button></div>
+          <div class="cell"><span class="cap">Hover</span><button class="btn secondary is-hover">Save property</button></div>
+          <div class="cell"><span class="cap">Focus-visible</span><button class="btn secondary is-focus">Save property</button></div>
+          <div class="cell"><span class="cap">Active</span><button class="btn secondary is-active">Save property</button></div>
+          <div class="cell"><span class="cap">Disabled</span><button class="btn secondary" disabled>Save property</button></div>
+          <div class="cell"><span class="cap">Loading</span><button class="btn secondary loading" aria-busy="true">Save property<span class="spinner"></span></button></div>
+        </div>
+      </div>
+
+      <div class="token-ref">
+        <b>Tokens:</b> height <b>--size-button-{sm|md|lg}</b> · radius <b>--radius-md</b> · padding <b>--space-4/5/6</b> ·
+        fill <b>--colour-brand-primary</b> / <b>--colour-danger</b> · hover <b>--colour-brand-primary-hover</b> ·
+        transition <b>--motion-duration-fast --motion-ease-standard</b> · focus <b>--shadow-focus</b> (<b>--colour-focus-ring</b>).
+      </div>
+      <div class="a11y-note">
+        <strong>Accessibility:</strong> every variant is a real <code>&lt;button&gt;</code>, keyboard-focusable with a visible
+        ring (<code>--colour-focus-ring</code>). Loading buttons set <code>aria-busy="true"</code> and are non-interactive.
+        Disabled buttons use <code>disabled</code> (not pointer-events alone). Hit area is ≥ 44 px in both dimensions on touch.
+        No hover-only affordance — every state is reachable by keyboard and touch.
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<section data-rv></section>
+</body>
+</html>

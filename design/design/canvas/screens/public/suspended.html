@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site unavailable — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .holding { min-height: 720px; display: grid; place-items: center; padding: var(--space-12) var(--space-6);
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(201,162,75,0.12), transparent 60%),
+      linear-gradient(135deg,#1f2937,#2d3a4d 60%,#1a222e); }
+  html.embed .holding { min-height: 100vh; }
+  .box { max-width: 460px; text-align: center; color: var(--colour-text-on-dark); }
+  .mark { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); font-family: var(--font-display); font-size: var(--text-heading-md); margin: 0 auto var(--space-6); }
+  .box h1 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); }
+  .box p { color: var(--colour-text-on-dark); opacity: 0.82; font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); margin-top: var(--space-4); }
+  .box .contact { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid rgba(255,255,255,0.14); }
+  .box .contact .lbl { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent); }
+  .box .contact a { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--colour-text-on-dark); text-decoration: none; font-weight: var(--weight-semibold); font-size: var(--text-body-lg); margin-top: var(--space-2); }
+  .box .contact a svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-brand-accent); }
+  .box .note { margin-top: var(--space-8); font-size: var(--text-body-sm); opacity: 0.6; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Suspended holding page</h1>
+    <span class="brief">EPIC-S design brief — tenant-suspended public holding page (Phase B · B8)</span>
+    <dl class="annotations">
+      <div><dt>Shown when</dt><dd>an agency's account is suspended — replaces their entire public site with a calm holding page</dd></div>
+      <div><dt>Tone</dt><dd>neutral, non-alarming — doesn't expose billing/account reasons to the public</dd></div>
+      <div><dt>Always</dt><dd>offers a phone route so genuine customers aren't stranded</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="holding">
+    <div class="box">
+      <div class="mark" aria-hidden="true">EA</div>
+      <h1>This site is temporarily unavailable</h1>
+      <p>We're sorry — this estate agent's website is offline for the moment. Please check back soon.</p>
+      <div class="contact">
+        <p class="lbl">In the meantime</p>
+        <a href="tel:01610000000"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h4l2 5-3 2a12 12 0 0 0 6 6l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2z"/></svg>0161 000 0000</a>
+      </div>
+      <p class="note">Powered by Estate Agent platform</p>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

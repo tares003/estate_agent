@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form fields — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .field { display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
+  .field > label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-primary); }
+  .field .req { color: var(--colour-text-muted); font-weight: var(--weight-regular); }
+  .field .hint { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+  .control {
+    width: 100%; height: var(--size-input-md); padding-inline: var(--space-4);
+    font-size: var(--text-body-md); color: var(--colour-text-primary);
+    background: var(--colour-surface-base);
+    border: 1px solid var(--colour-border); border-radius: var(--radius-md);
+    transition: border-color var(--motion-duration-fast) var(--motion-ease-standard),
+                box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+  textarea.control { height: auto; min-height: calc(var(--size-input-md) * 2); padding-block: var(--space-3); resize: vertical; line-height: var(--text-body-md-lh); }
+  .control::placeholder { color: var(--colour-text-muted); }
+  .control:hover { border-color: var(--colour-text-muted); }
+  .control:focus-visible, .control.is-focus { outline: none; border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+  .control:disabled, .control.is-disabled { background: var(--colour-surface-sunken); color: var(--colour-text-muted); cursor: not-allowed; }
+  .control.is-error { border-color: var(--colour-danger); }
+  .control.is-error:focus-visible { box-shadow: 0 0 0 3px rgba(239,68,68,0.35); }
+  .control.is-success { border-color: var(--colour-success); }
+  .err { display: flex; gap: var(--space-2); align-items: center; font-size: var(--text-body-sm); color: var(--colour-danger); }
+  .ok { display: flex; gap: var(--space-2); align-items: center; font-size: var(--text-body-sm); color: var(--colour-success); }
+  .ico { width: var(--size-icon-md); height: var(--size-icon-md); flex: 0 0 auto; }
+
+  /* affixed input (phone prefix, number stepper) */
+  .affix { display: flex; align-items: stretch; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .affix:focus-within { border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+  .affix .pre { display: flex; align-items: center; padding-inline: var(--space-4); background: var(--colour-surface-raised); color: var(--colour-text-secondary); font-size: var(--text-body-md); border-right: 1px solid var(--colour-border); }
+  .affix .control { border: none; box-shadow: none; }
+  .affix .control:focus-visible { box-shadow: none; }
+  .stepper { display: flex; }
+  .stepper button { width: var(--size-touch-target-min); background: var(--colour-surface-raised); color: var(--colour-text-primary); font-size: var(--text-heading-sm); border-left: 1px solid var(--colour-border); }
+  .stepper button:hover { background: var(--colour-surface-sunken); }
+
+  /* select chevron */
+  .selectwrap { position: relative; max-width: 420px; }
+  .selectwrap svg { position: absolute; right: var(--space-4); top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--colour-text-muted); }
+  select.control { appearance: none; padding-right: var(--space-12); }
+
+  /* time-slot selector — real radios under visual cards */
+  .slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); max-width: 460px; }
+  @media (min-width: 640px) { .slots { grid-template-columns: repeat(3, 1fr); } }
+  .slot { position: relative; }
+  .slot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .slot span { display: flex; align-items: center; justify-content: center; min-height: var(--size-touch-target-min); padding: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); background: var(--colour-surface-base); transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard); }
+  .slot input:hover + span { border-color: var(--colour-text-muted); }
+  .slot input:focus-visible + span { box-shadow: var(--shadow-focus); border-color: var(--colour-brand-accent); }
+  .slot input:checked + span { border-color: var(--colour-brand-primary); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+  .slot input:disabled + span { background: var(--colour-surface-sunken); color: var(--colour-text-muted); cursor: not-allowed; text-decoration: line-through; }
+
+  /* price range slider */
+  .range { max-width: 460px; }
+  .range .vals { display: flex; justify-content: space-between; font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-bottom: var(--space-2); }
+  .range .track { position: relative; height: var(--space-1); background: var(--colour-surface-sunken); border-radius: var(--radius-pill); }
+  .range .fill { position: absolute; height: 100%; left: 25%; right: 30%; background: var(--colour-brand-primary); border-radius: var(--radius-pill); }
+  .range .knob { position: absolute; top: 50%; width: var(--space-5); height: var(--space-5); border-radius: var(--radius-circle); background: var(--colour-surface-base); border: 2px solid var(--colour-brand-primary); transform: translate(-50%,-50%); box-shadow: var(--shadow-sm); }
+  .range .knob.a { left: 25%; } .range .knob.b { left: 70%; }
+  .range input[type=range] { width: 100%; margin-top: var(--space-4); accent-color: var(--colour-brand-primary); height: var(--size-touch-target-min); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Form fields</h1>
+    <span class="brief">EPIC-L design brief — Atoms · text, email, phone, number, textarea, select, combobox, date, time-slot, price range</span>
+    <dl class="annotations">
+      <div><dt>Inputs</dt><dd>TextField · EmailField · PhoneField · NumberField · TextArea · Select · Combobox · DatePicker · TimeSlotSelector · PriceRangeSlider</dd></div>
+      <div><dt>States</dt><dd>default · hover · focus · filled · disabled · error · success</dd></div>
+      <div><dt>Rules</dt><dd>every field has a real &lt;label for&gt;; errors via aria-describedby</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Text-style fields</h2>
+      <p class="lede">All share one control style: 48 px tall (<code>--size-input-md</code>), <code>--radius-md</code>, accent focus ring. Labels are real <code>&lt;label for&gt;</code> elements — never placeholder-only (a11y rule 6).</p>
+
+      <div class="demo-tray col">
+        <div class="field">
+          <label for="f-name">Full name <span class="req">(required)</span></label>
+          <input id="f-name" class="control" type="text" placeholder="e.g. Jordan Avery" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="f-email">Email address</label>
+          <input id="f-email" class="control" type="email" placeholder="you@example.co.uk" autocomplete="email" inputmode="email">
+          <span class="hint">We'll only use this to reply to your enquiry.</span>
+        </div>
+        <div class="field">
+          <label for="f-phone">Phone number</label>
+          <div class="affix">
+            <span class="pre">+44</span>
+            <input id="f-phone" class="control" type="tel" placeholder="7700 900000" autocomplete="tel-national" inputmode="tel">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-beds">Minimum bedrooms</label>
+          <div class="affix" style="max-width:200px">
+            <input id="f-beds" class="control" type="text" inputmode="numeric" value="2" aria-label="Minimum bedrooms">
+            <div class="stepper"><button type="button" aria-label="Decrease">−</button><button type="button" aria-label="Increase">+</button></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-msg">Message to the agent</label>
+          <textarea id="f-msg" class="control" placeholder="Tell us what you're looking for…"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Select and combobox</h2>
+      <p class="lede">Native <code>&lt;select&gt;</code> for short fixed lists; combobox (filterable) for long lists such as branch or area.</p>
+      <div class="demo-tray col">
+        <div class="field">
+          <label for="f-type">Property type</label>
+          <div class="selectwrap">
+            <select id="f-type" class="control">
+              <option>Any type</option><option>Detached</option><option>Semi-detached</option><option>Terraced</option><option>Flat / apartment</option><option>Bungalow</option>
+            </select>
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-area">Area or postcode</label>
+          <div class="selectwrap">
+            <input id="f-area" class="control" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" placeholder="Start typing — e.g. Didsbury, M20" value="Didsbury">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+          </div>
+          <span class="hint">Combobox: type to filter, arrow keys to choose, Enter to select.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Date and time-slot</h2>
+      <p class="lede">Used by Book a viewing. The time-slot selector is a <strong>real radio group</strong> beneath the visual cards (a11y rule 11).</p>
+      <div class="demo-tray col">
+        <div class="field">
+          <label for="f-date">Preferred date</label>
+          <input id="f-date" class="control" type="date" style="max-width:240px">
+        </div>
+        <fieldset style="border:none;max-width:480px">
+          <legend style="font-size:var(--text-body-sm);font-weight:var(--weight-semibold);margin-bottom:var(--space-3)">Preferred time</legend>
+          <div class="slots" role="radiogroup" aria-label="Preferred viewing time">
+            <label class="slot"><input type="radio" name="slot" value="9"><span>9:00 am</span></label>
+            <label class="slot"><input type="radio" name="slot" value="10" checked><span>10:00 am</span></label>
+            <label class="slot"><input type="radio" name="slot" value="11"><span>11:00 am</span></label>
+            <label class="slot"><input type="radio" name="slot" value="14"><span>2:00 pm</span></label>
+            <label class="slot"><input type="radio" name="slot" value="15" disabled><span>3:00 pm</span></label>
+            <label class="slot"><input type="radio" name="slot" value="16"><span>4:00 pm</span></label>
+          </div>
+        </fieldset>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Price range slider</h2>
+      <p class="lede">Two-handle range for budget filtering. A keyboard user gets two real <code>&lt;input type="range"&gt;</code> controls underneath.</p>
+      <div class="demo-tray">
+        <div class="range" role="group" aria-label="Price range">
+          <div class="vals"><span>£250,000</span><span>£600,000</span></div>
+          <div class="track"><div class="fill"></div><span class="knob a"></span><span class="knob b"></span></div>
+          <input type="range" min="0" max="1000000" step="25000" value="250000" aria-label="Minimum price">
+          <input type="range" min="0" max="1000000" step="25000" value="600000" aria-label="Maximum price">
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Validation states</h2>
+      <p class="lede">Error and success states. Errors are programmatically associated via <code>aria-describedby</code> and announced through a polite live region (a11y rule 7).</p>
+      <div class="demo-tray col">
+        <div class="field">
+          <label for="f-err">Email address <span class="req">(required)</span></label>
+          <input id="f-err" class="control is-error" type="email" value="jordan@" aria-invalid="true" aria-describedby="f-err-msg">
+          <span class="err" id="f-err-msg" role="alert"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>Enter a complete email address, like name@example.co.uk.</span>
+        </div>
+        <div class="field">
+          <label for="f-ok">Email address</label>
+          <input id="f-ok" class="control is-success" type="email" value="jordan.avery@example.co.uk" aria-describedby="f-ok-msg">
+          <span class="ok" id="f-ok-msg"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Looks good.</span>
+        </div>
+        <div class="field">
+          <label for="f-dis">Reference number</label>
+          <input id="f-dis" class="control is-disabled" type="text" value="EA-2026-00417" disabled>
+          <span class="hint">Assigned automatically — can't be edited.</span>
+        </div>
+      </div>
+
+      <div class="token-ref">
+        <b>Tokens:</b> height <b>--size-input-md</b> · radius <b>--radius-md</b> · border <b>--colour-border</b> ·
+        focus <b>--colour-brand-accent</b> + <b>--shadow-focus</b> · error <b>--colour-danger</b> · success <b>--colour-success</b> ·
+        disabled <b>--colour-surface-sunken</b> · slot selected <b>--colour-brand-primary</b>.
+      </div>
+      <div class="a11y-note">
+        <strong>Accessibility:</strong> every field has a <code>&lt;label for&gt;</code>. Errors set <code>aria-invalid</code> +
+        <code>aria-describedby</code> and the message uses <code>role="alert"</code>. Time-slots are real radios in a
+        <code>role="radiogroup"</code>; disabled slots are not focusable. Steppers and combobox toggles are ≥ 44 px touch targets.
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<section data-rv></section>
+</body>
+</html>

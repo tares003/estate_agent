@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Command palette — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .stage { position: relative; min-height: 520px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--colour-border); background: linear-gradient(135deg,#eef0ec,#f6f7f9); }
+  .scrim { position: absolute; inset: 0; background: rgba(26,26,26,0.4); display: flex; justify-content: center; align-items: flex-start; padding-top: var(--space-16); padding-inline: var(--space-4); }
+  .palette { width: 100%; max-width: 560px; background: var(--colour-surface-base); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); overflow: hidden; }
+  .palette .pin { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); }
+  .palette .pin svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); flex: 0 0 auto; }
+  .palette .pin input { flex: 1; border: none; font-size: var(--text-body-lg); color: var(--colour-text-primary); }
+  .palette .pin input:focus-visible { outline: none; }
+  .palette .pin kbd { font-family: var(--font-mono); font-size: var(--text-caption); background: var(--colour-surface-sunken); border-radius: var(--radius-sm); padding: 2px var(--space-2); color: var(--colour-text-muted); }
+  .palette .grp { padding: var(--space-2) var(--space-5); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .palette .opt { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); font-size: var(--text-body-sm); cursor: pointer; }
+  .palette .opt svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--colour-text-muted); flex: 0 0 auto; }
+  .palette .opt .meta { margin-left: auto; font-size: var(--text-caption); color: var(--colour-text-muted); }
+  .palette .opt[aria-selected="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .palette .opt[aria-selected="true"] svg, .palette .opt[aria-selected="true"] .meta { color: var(--colour-brand-primary-on); opacity: 0.85; }
+  .palette .foot { display: flex; gap: var(--space-4); padding: var(--space-3) var(--space-5); border-top: 1px solid var(--colour-divider); background: var(--colour-surface-raised); font-size: var(--text-caption); color: var(--colour-text-muted); }
+  .palette .foot kbd { font-family: var(--font-mono); background: var(--colour-surface-base); border: 1px solid var(--colour-border); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+</style>
+</head>
+<body data-active="dashboard" data-crumb="Command palette">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Command palette</h1>
+    <span class="brief">EPIC-H design brief — keyboard command palette (H.27 / H.28)</span>
+    <dl class="annotations">
+      <div><dt>Trigger</dt><dd>⌘K / Ctrl+K · top-anchored over a scrim (designer interpretation of open Q3)</dd></div>
+      <div><dt>Grouped</dt><dd>actions · navigation · recent · search results — fuzzy-matched</dd></div>
+      <div><dt>A11y</dt><dd>fully keyboard-driven; <code>aria-activedescendant</code> on the selected item; visible focus per row</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Command palette</h1><p>Press ⌘K anywhere in the admin to jump to anything.</p></div></div>
+    <div class="stage">
+      <div class="scrim">
+        <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+          <div class="pin">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+            <input type="text" value="prop" aria-label="Type a command or search" aria-activedescendant="cmd-2" aria-controls="cmdlist" role="combobox" aria-expanded="true">
+            <kbd>esc</kbd>
+          </div>
+          <div id="cmdlist" role="listbox" aria-label="Commands">
+            <div class="grp">Actions</div>
+            <div class="opt" id="cmd-1" role="option" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add a property<span class="meta">⌘ N</span></div>
+            <div class="opt" id="cmd-2" role="option" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg>Go to Properties<span class="meta">G P</span></div>
+            <div class="grp">Recent properties</div>
+            <div class="opt" role="option" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/></svg>Palatine Road, Didsbury<span class="meta">EA-00417</span></div>
+            <div class="opt" role="option" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/></svg>Acomb Street, Rusholme<span class="meta">EA-00392</span></div>
+            <div class="grp">Navigation</div>
+            <div class="opt" role="option" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg>Property reports<span class="meta">Reports</span></div>
+          </div>
+          <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="a11y-note"><strong>Accessibility:</strong> the input is a <code>role="combobox"</code> with <code>aria-controls</code> + <code>aria-activedescendant</code> pointing at the highlighted option; arrow keys move selection without moving DOM focus, Enter activates, Escape closes and restores focus to the trigger. Fully operable by keyboard alone.</div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# Design canvas location
+#
+# Phase A foundation canvas is built and ready for sign-off.
+# Copy the line below into the repo-root .design-canvas-url, replacing
+# "status: not-yet-created".
+
+./design/canvas/index.html

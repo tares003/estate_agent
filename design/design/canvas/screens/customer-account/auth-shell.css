@@ -1,0 +1,63 @@
+/* ============================================================================
+   auth-shell.css — shared split-screen layout for sign-in / register /
+   reset / verify. Loaded after tokens.css + base.css.
+   ========================================================================== */
+.auth { display: grid; grid-template-columns: 1fr; min-height: 720px; border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+html.embed .auth { border: none; border-radius: 0; min-height: 100vh; }
+@media (min-width: 1024px) { .auth { grid-template-columns: 1.1fr 1fr; } }
+
+.brandside { display: none; position: relative; background: linear-gradient(135deg,#1f2937,#2d3a4d 55%,#3a4a5c); color: var(--colour-text-on-dark); padding: var(--space-12); flex-direction: column; justify-content: space-between; }
+@media (min-width: 1024px) { .brandside { display: flex; } }
+.brandside .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); }
+.brandside .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+.brandside blockquote { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); max-width: 18ch; }
+.brandside .who { color: var(--colour-brand-accent); font-size: var(--text-body-sm); margin-top: var(--space-4); }
+.brandside .stars { color: var(--colour-brand-accent); letter-spacing: 2px; }
+.brandside .foot { opacity: 0.7; font-size: var(--text-body-sm); }
+
+.formside { display: flex; align-items: center; justify-content: center; padding: var(--space-8) var(--space-6); background: var(--colour-surface-base); }
+.formcard { width: 100%; max-width: 400px; }
+.formcard .mobilebrand { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-8); font-family: var(--font-display); font-size: var(--text-heading-md); }
+@media (min-width: 1024px) { .formcard .mobilebrand { display: none; } }
+.formcard .mobilebrand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+.formcard h1 { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); }
+.formcard .sub { color: var(--colour-text-secondary); margin-top: var(--space-2); margin-bottom: var(--space-8); }
+
+.field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+.field label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+.field .control { height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+.field .control:hover { border-color: var(--colour-text-muted); }
+.field .control:focus-visible { outline: none; border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+.field .hint { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+.labelrow { display: flex; align-items: center; justify-content: space-between; }
+.labelrow a { font-size: var(--text-body-sm); color: var(--colour-brand-accent-hover); text-decoration: none; }
+.pwwrap { position: relative; display: flex; }
+.pwwrap .control { flex: 1; padding-right: var(--space-12); }
+.pwwrap .reveal { position: absolute; right: var(--space-1); top: 50%; transform: translateY(-50%); width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-muted); }
+.pwwrap .reveal svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+/* password strength meter */
+.meter { display: flex; gap: var(--space-1); margin-top: var(--space-2); }
+.meter i { flex: 1; height: var(--space-1); border-radius: var(--radius-pill); background: var(--colour-surface-sunken); }
+.meter i.on { background: var(--colour-success); }
+.meter i.mid { background: var(--colour-warning); }
+
+.consent { display: flex; gap: var(--space-3); align-items: flex-start; margin-bottom: var(--space-5); }
+.consent input { margin-top: 3px; width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); flex: 0 0 auto; }
+.consent label { font-size: var(--text-body-sm); } .consent a { color: var(--colour-brand-accent-hover); }
+.req { color: var(--colour-text-muted); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; height: var(--size-button-lg); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+.btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+.btn.primary:hover { background: var(--colour-brand-primary-hover); }
+
+.alt-link { text-align: center; margin-top: var(--space-6); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+.alt-link a { color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); text-decoration: none; }
+.secure { display: flex; align-items: center; gap: var(--space-2); justify-content: center; margin-top: var(--space-8); color: var(--colour-text-muted); font-size: var(--text-caption); }
+.secure svg { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+
+/* centred single-column variant (verify / reset-sent) */
+.formcard.centred { text-align: center; }
+.formcard .emblem { width: var(--space-16); height: var(--space-16); border-radius: var(--radius-circle); background: rgba(201,162,75,0.18); color: var(--colour-brand-accent-hover); display: grid; place-items: center; margin: 0 auto var(--space-5); }
+.formcard .emblem.success { background: rgba(16,185,129,0.12); color: var(--colour-success); }
+.formcard .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }

@@ -1,0 +1,233 @@
+/* ============================================================================
+   base.css — Estate Agent Platform design canvas
+   Reset + typography defaults + focus + reduced-motion + ?embed handling +
+   shared canvas chrome (annotations, spec tables, state grids).
+   Loads tokens.css first. Uses ONLY tokens for colour/space/size/radius/motion.
+   ========================================================================== */
+
+/* ---- Web fonts (font-display: swap per design-requirements.md §3) --------- */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* ---- Reset ---------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  font-weight: var(--weight-regular);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+a { color: inherit; }
+ul, ol { list-style: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; }
+::selection { background: var(--colour-selection); }
+
+/* ---- Typography defaults -------------------------------------------------- */
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: var(--weight-regular); }
+code, kbd, samp { font-family: var(--font-mono); }
+
+.t-display-xl { font-family: var(--font-display); font-size: var(--text-display-xl); line-height: var(--text-display-xl-lh); letter-spacing: var(--text-display-xl-ls); }
+.t-display-lg { font-family: var(--font-display); font-size: var(--text-display-lg); line-height: var(--text-display-lg-lh); letter-spacing: var(--text-display-lg-ls); }
+.t-display-md { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); }
+.t-display-sm { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); }
+.t-heading-lg { font-size: var(--text-heading-lg); line-height: var(--text-heading-lg-lh); font-weight: var(--weight-semibold); }
+.t-heading-md { font-size: var(--text-heading-md); line-height: var(--text-heading-md-lh); font-weight: var(--weight-semibold); }
+.t-heading-sm { font-size: var(--text-heading-sm); line-height: var(--text-heading-sm-lh); font-weight: var(--weight-semibold); }
+.t-body-lg { font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); }
+.t-body-md { font-size: var(--text-body-md); line-height: var(--text-body-md-lh); }
+.t-body-sm { font-size: var(--text-body-sm); line-height: var(--text-body-sm-lh); }
+.t-caption {
+  font-size: var(--text-caption); line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls); text-transform: uppercase;
+  font-weight: var(--weight-semibold); color: var(--colour-text-muted);
+}
+
+/* ---- Focus ring (DESIGN.md --colour-focus-ring; a11y rule 2) -------------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+  transition: box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+/* keep ring visible on rounded controls */
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: none;
+}
+
+/* ---- Skip link (a11y rule 4) ---------------------------------------------- */
+.skip-link {
+  position: absolute; left: var(--space-4); top: var(--space-4);
+  transform: translateY(-200%);
+  background: var(--colour-brand-primary); color: var(--colour-brand-primary-on);
+  padding: var(--space-2) var(--space-4); border-radius: var(--radius-md);
+  z-index: var(--z-toast);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* ---- Container widths ----------------------------------------------------- */
+.container { width: 100%; max-width: var(--size-container-2xl); margin-inline: auto; padding-inline: var(--space-4); }
+@media (min-width: 768px)  { .container { padding-inline: var(--space-8); } }
+@media (min-width: 1280px) { .container { padding-inline: var(--space-12); } }
+
+/* ============================================================================
+   CANVAS CHROME — annotations, spec tables, state grids.
+   All chrome is hidden in ?embed mode so iframes show only the artefact.
+   ========================================================================== */
+
+.canvas-head {
+  background: var(--colour-brand-primary);
+  color: var(--colour-text-on-dark);
+  padding: var(--space-8) var(--space-6);
+}
+.canvas-head .container { padding-inline: 0; }
+.canvas-head a.back { color: var(--colour-brand-accent); text-decoration: none; font-size: var(--text-body-sm); }
+.canvas-head a.back:hover { text-decoration: underline; }
+.canvas-head h1 {
+  font-family: var(--font-display); font-size: var(--text-display-sm);
+  line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls);
+  margin-top: var(--space-2);
+}
+.canvas-head .brief {
+  display: inline-block; margin-top: var(--space-3);
+  font-size: var(--text-caption); line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls); text-transform: uppercase;
+  font-weight: var(--weight-semibold); color: var(--colour-brand-accent);
+}
+.canvas-head .annotations {
+  margin-top: var(--space-5); display: grid; gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) { .canvas-head .annotations { grid-template-columns: repeat(3, 1fr); } }
+.canvas-head .annotations dt {
+  font-size: var(--text-caption); letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase; font-weight: var(--weight-semibold);
+  color: var(--colour-brand-accent); margin-bottom: var(--space-1);
+}
+.canvas-head .annotations dd {
+  font-size: var(--text-body-sm); line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-on-dark);
+}
+
+.canvas-body { padding: var(--space-12) var(--space-6); }
+.canvas-body .container { padding-inline: 0; }
+
+/* section + subsection scaffolding inside demo pages */
+.demo-section { margin-bottom: var(--space-16); }
+.demo-section > h2 {
+  font-family: var(--font-display); font-size: var(--text-heading-lg);
+  line-height: var(--text-heading-lg-lh); font-weight: var(--weight-semibold);
+  padding-bottom: var(--space-3); border-bottom: 1px solid var(--colour-border);
+  margin-bottom: var(--space-6);
+}
+.demo-section > .lede {
+  color: var(--colour-text-secondary); font-size: var(--text-body-md);
+  margin: calc(var(--space-2) * -1) 0 var(--space-6); max-width: 60ch;
+}
+.demo-block { margin-bottom: var(--space-10); }
+.demo-block > h3 {
+  font-size: var(--text-heading-sm); font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-1); color: var(--colour-text-primary); font-family: var(--font-body);
+}
+.demo-block > .note {
+  color: var(--colour-text-muted); font-size: var(--text-body-sm);
+  margin-bottom: var(--space-4); max-width: 70ch;
+}
+
+/* a soft tray to lay demo instances on */
+.demo-tray {
+  display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start;
+  padding: var(--space-6); background: var(--colour-surface-raised);
+  border: 1px solid var(--colour-border); border-radius: var(--radius-lg);
+}
+.demo-tray.dark { background: var(--colour-brand-primary); }
+.demo-tray.tight { gap: var(--space-4); }
+.demo-tray.col { flex-direction: column; }
+
+/* labelled cell: caption above an instance */
+.cell { display: flex; flex-direction: column; gap: var(--space-3); }
+.cell > .cap {
+  font-size: var(--text-caption); line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls); text-transform: uppercase;
+  font-weight: var(--weight-semibold); color: var(--colour-text-muted);
+}
+
+/* token annotation callout */
+.token-ref {
+  margin-top: var(--space-4); padding: var(--space-4) var(--space-5);
+  background: var(--colour-surface-sunken); border-radius: var(--radius-md);
+  font-family: var(--font-mono); font-size: var(--text-body-sm);
+  line-height: var(--text-body-lg-lh); color: var(--colour-text-secondary);
+}
+.token-ref b { color: var(--colour-text-primary); font-weight: var(--weight-medium); }
+
+/* a11y annotation callout */
+.a11y-note {
+  margin-top: var(--space-4); padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--colour-brand-accent);
+  background: var(--colour-surface-raised); border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh);
+  color: var(--colour-text-secondary);
+}
+.a11y-note strong { color: var(--colour-text-primary); }
+
+/* ---- Responsive-verification block (injected by canvas.js) ---------------- */
+.responsive-verification {
+  margin-top: var(--space-16); padding-top: var(--space-10);
+  border-top: 2px solid var(--colour-brand-primary);
+}
+.responsive-verification h2 {
+  font-family: var(--font-display); font-size: var(--text-heading-md);
+  margin-bottom: var(--space-2);
+}
+.responsive-verification > p {
+  color: var(--colour-text-muted); font-size: var(--text-body-sm);
+  margin-bottom: var(--space-6);
+}
+.responsive-verification .rv-rail {
+  display: flex; gap: var(--space-8); overflow-x: auto; padding-bottom: var(--space-6);
+  scroll-snap-type: x proximity;
+}
+.responsive-verification figure { scroll-snap-align: start; flex: 0 0 auto; }
+.responsive-verification figcaption {
+  font-size: var(--text-caption); letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase; font-weight: var(--weight-semibold);
+  color: var(--colour-text-muted); margin-bottom: var(--space-2);
+}
+.responsive-verification iframe {
+  border: 1px solid var(--colour-border); border-radius: var(--radius-md);
+  background: var(--colour-surface-base); box-shadow: var(--shadow-sm);
+}
+
+/* ---- Embed mode: hide all chrome, show only the artefact ------------------ */
+html.embed body { background: var(--colour-surface-base); }
+html.embed .canvas-head,
+html.embed .responsive-verification,
+html.embed .skip-link { display: none !important; }
+html.embed .canvas-body { padding: var(--space-6); }
+
+/* ---- Dark-mode hook (deferred per master spec §M; keep the seam) ---------- */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode is out of scope for V1 (designer-todo-sprint-01 acceptance).
+     The seam is intentionally left here so a future token override can flip
+     surfaces without restructuring. No overrides applied in V1. */
+}
+
+/* ---- Reduced motion (motion-spec.md §5) ----------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: var(--motion-duration-instant) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--motion-duration-instant) !important;
+    scroll-behavior: auto !important;
+  }
+}

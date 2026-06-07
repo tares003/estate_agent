@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End of tenancy — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .ptop { background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .ptop .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); max-width: var(--size-container-md); margin-inline: auto; }
+  .ptop .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-sm); color: var(--colour-text-on-dark); text-decoration: none; }
+  .ptop .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .ptop .brand .tag { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-accent); border-left: 1px solid rgba(255,255,255,0.2); padding-left: var(--space-3); }
+  .ptop .who { font-size: var(--text-body-sm); opacity: 0.85; }
+
+  .wrap { max-width: var(--size-container-md); margin-inline: auto; padding: var(--space-8) var(--space-6) var(--space-16); }
+  .pagetitle { font-family: var(--font-display); font-size: var(--text-display-sm); line-height: var(--text-display-sm-lh); letter-spacing: var(--text-display-sm-ls); font-weight: var(--weight-regular); margin-bottom: var(--space-2); }
+  .pagelede { color: var(--colour-text-secondary); margin-bottom: var(--space-6); }
+
+  .stepper { display: flex; gap: 0; margin-bottom: var(--space-8); overflow-x: auto; }
+  .step { flex: 1; min-width: 92px; display: flex; flex-direction: column; gap: var(--space-2); position: relative; padding-top: var(--space-8); }
+  .step .num { position: absolute; top: 0; left: 0; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); background: var(--colour-surface-sunken); color: var(--colour-text-muted); z-index: 1; }
+  .step::before { content:""; position: absolute; top: calc(var(--space-8)/2); left: var(--space-8); right: 0; height: 2px; background: var(--colour-border); } .step:last-child::before { display: none; }
+  .step.done .num { background: var(--colour-success); color: var(--colour-brand-primary-on); } .step.done::before { background: var(--colour-success); }
+  .step.current .num { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .step .lbl { font-size: var(--text-body-sm); font-weight: var(--weight-medium); color: var(--colour-text-muted); padding-right: var(--space-2); } .step.current .lbl, .step.done .lbl { color: var(--colour-text-primary); }
+
+  .panel { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); padding: var(--space-6); }
+  .panel h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-bottom: var(--space-1); }
+  .panel .desc { color: var(--colour-text-secondary); font-size: var(--text-body-sm); margin-bottom: var(--space-6); }
+  .stepview { display: none; } .stepview.active { display: block; }
+
+  .field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .field label { font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .control { width: 100%; height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-md); }
+  textarea.control { height: auto; min-height: 100px; padding-block: var(--space-3); resize: vertical; }
+  .control:focus-visible { outline: none; border-color: var(--colour-brand-accent); box-shadow: var(--shadow-focus); }
+
+  /* checklist */
+  .check { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); border: 1px solid var(--colour-border); border-radius: var(--radius-md); margin-bottom: var(--space-3); cursor: pointer; }
+  .check input { margin-top: 2px; width: var(--space-5); height: var(--space-5); accent-color: var(--colour-brand-primary); flex: 0 0 auto; }
+  .check strong { display: block; font-size: var(--text-body-md); } .check small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+
+  /* meter reading inputs */
+  .meters { display: grid; gap: var(--space-4); grid-template-columns: 1fr; } @media (min-width: 480px) { .meters { grid-template-columns: 1fr 1fr; } }
+
+  /* dropzone */
+  .dropzone { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-10) var(--space-6); border: 2px dashed var(--colour-border); border-radius: var(--radius-md); background: var(--colour-surface-raised); }
+  .dropzone svg { width: var(--size-icon-xl); height: var(--size-icon-xl); color: var(--colour-text-muted); } .dropzone .hint { font-size: var(--text-body-sm); color: var(--colour-text-muted); }
+
+  /* slots */
+  .slots { display: grid; grid-template-columns: repeat(2,1fr); gap: var(--space-3); } @media (min-width: 480px) { .slots { grid-template-columns: repeat(3,1fr); } }
+  .slot { position: relative; } .slot input { position: absolute; opacity: 0; }
+  .slot span { display: flex; align-items: center; justify-content: center; min-height: var(--size-touch-target-min); padding: var(--space-3); border: 1px solid var(--colour-border); border-radius: var(--radius-md); font-size: var(--text-body-sm); text-align: center; }
+  .slot:has(input:checked) span { border-color: var(--colour-brand-primary); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); font-weight: var(--weight-semibold); }
+  .slot:focus-within span { box-shadow: var(--shadow-focus); }
+
+  /* review */
+  .review .line { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); } .review .line dt { color: var(--colour-text-muted); } .review .line dd { font-weight: var(--weight-medium); text-align: right; } .review .line .edit { color: var(--colour-brand-accent-hover); margin-left: var(--space-2); }
+  .deposit-note { display: flex; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-left: 3px solid var(--colour-info); background: var(--colour-surface-raised); border-radius: var(--radius-sm); font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-5); }
+  .deposit-note svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-info); flex: 0 0 auto; }
+
+  .navrow { display: flex; gap: var(--space-3); justify-content: space-between; margin-top: var(--space-6); }
+  .btn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-md); }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); } .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .btn[hidden] { display: none; }
+
+  .success { text-align: center; padding: var(--space-10) var(--space-6); }
+  .success .emblem { width: var(--space-16); height: var(--space-16); border-radius: var(--radius-circle); background: rgba(16,185,129,0.12); color: var(--colour-success); display: grid; place-items: center; margin: 0 auto var(--space-4); } .success .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .success h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); }
+  .success .ref { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-4) 0; }
+  .timeline { text-align: left; max-width: 380px; margin: var(--space-6) auto 0; display: flex; flex-direction: column; gap: var(--space-4); }
+  .timeline .t { display: flex; gap: var(--space-3); } .timeline .t .dot { width: var(--space-6); height: var(--space-6); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; color: var(--colour-text-secondary); flex: 0 0 auto; font-size: var(--text-caption); } .timeline .t.now .dot { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .timeline .t strong { display: block; font-size: var(--text-body-sm); } .timeline .t small { color: var(--colour-text-muted); font-size: var(--text-caption); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>End-of-tenancy move-out</h1>
+    <span class="brief">EPIC-AA design brief — tenant move-out wizard (Phase B · interactive)</span>
+    <dl class="annotations">
+      <div><dt>Flow</dt><dd>Notice → Checklist → Meter readings → Photos → Move-out slot → Review → confirmation</dd></div>
+      <div><dt>Interactive</dt><dd>click the stepper or Back / Continue; stepper marks done / current</dd></div>
+      <div><dt>Trust</dt><dd>deposit return is explained, not promised — no balance maths shown to tenant</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="ptop"><div class="row"><a class="brand" href="tenant-dashboard.html" onclick="return false"><span class="mark">EA</span>Estate Agent<span class="tag">Tenant</span></a><span class="who">Daniel O'Hara · 14 Cromwell Grove</span></div></header>
+
+  <div class="wrap">
+    <h1 class="pagetitle">Ending your tenancy</h1>
+    <p class="pagelede">Let's get your move-out sorted. We'll guide you through notice, the checklist and handing back the keys.</p>
+
+    <ol class="stepper" id="stepper" aria-label="Move-out progress">
+      <li class="step current" data-step="1"><span class="num">1</span><span class="lbl">Notice</span></li>
+      <li class="step" data-step="2"><span class="num">2</span><span class="lbl">Checklist</span></li>
+      <li class="step" data-step="3"><span class="num">3</span><span class="lbl">Meters</span></li>
+      <li class="step" data-step="4"><span class="num">4</span><span class="lbl">Photos</span></li>
+      <li class="step" data-step="5"><span class="num">5</span><span class="lbl">Key return</span></li>
+      <li class="step" data-step="6"><span class="num">6</span><span class="lbl">Review</span></li>
+    </ol>
+
+    <div class="panel">
+      <section class="stepview active" data-view="1" aria-label="Step 1: Notice">
+        <h2>Confirm your notice</h2>
+        <p class="desc">Your tenancy is a 12-month term ending 27 September 2026. Notice is one month.</p>
+        <div class="field"><label for="moveout">Your intended move-out date</label><input id="moveout" class="control" type="date" value="2026-09-27" style="max-width:240px"></div>
+        <div class="field" style="margin-bottom:0"><label for="reason">Reason for leaving (optional)</label><textarea id="reason" class="control" placeholder="Helps us improve — and we may be able to help you find your next place."></textarea></div>
+      </section>
+
+      <section class="stepview" data-view="2" aria-label="Step 2: Checklist">
+        <h2>Move-out checklist</h2>
+        <p class="desc">Tick these off before you hand back the keys to help get your deposit back smoothly.</p>
+        <label class="check"><input type="checkbox" checked><span><strong>Remove all belongings &amp; rubbish</strong><small>Including the loft, garden and any storage.</small></span></label>
+        <label class="check"><input type="checkbox" checked><span><strong>Clean throughout</strong><small>Professional clean recommended — keep the receipt.</small></span></label>
+        <label class="check"><input type="checkbox"><span><strong>Return to original condition</strong><small>Fill picture holes, remove stick-on hooks.</small></span></label>
+        <label class="check"><input type="checkbox"><span><strong>Settle final bills</strong><small>Council tax, utilities, broadband.</small></span></label>
+      </section>
+
+      <section class="stepview" data-view="3" aria-label="Step 3: Meters">
+        <h2>Final meter readings</h2>
+        <p class="desc">Take a reading on your move-out day — a photo helps too.</p>
+        <div class="meters">
+          <div class="field"><label for="gas">Gas reading</label><input id="gas" class="control" inputmode="numeric" placeholder="e.g. 04821"></div>
+          <div class="field"><label for="elec">Electricity reading</label><input id="elec" class="control" inputmode="numeric" placeholder="e.g. 17640"></div>
+          <div class="field" style="margin-bottom:0"><label for="water">Water reading (if metered)</label><input id="water" class="control" inputmode="numeric" placeholder="optional"></div>
+        </div>
+      </section>
+
+      <section class="stepview" data-view="4" aria-label="Step 4: Photos">
+        <h2>Condition photos</h2>
+        <p class="desc">Optional but recommended — photos of each room protect you if there's any dispute over the deposit.</p>
+        <div class="dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <div><strong>Drag photos here</strong></div>
+          <button class="btn secondary" type="button">Choose photos</button>
+          <p class="hint">JPG or PNG · up to 500 KB each</p>
+        </div>
+      </section>
+
+      <section class="stepview" data-view="5" aria-label="Step 5: Key return">
+        <h2>Returning the keys</h2>
+        <p class="desc">Choose how you'd like to hand back the keys on your move-out day.</p>
+        <div class="field"><label>Preferred slot</label>
+          <div class="slots" role="group" aria-label="Key return slot">
+            <label class="slot"><input type="radio" name="slot" checked><span>Branch drop-off</span></label>
+            <label class="slot"><input type="radio" name="slot"><span>Agent collects</span></label>
+            <label class="slot"><input type="radio" name="slot"><span>Key safe</span></label>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0"><label for="keynotes">Anything we should know?</label><input id="keynotes" class="control" type="text" placeholder="e.g. 2 sets of keys + a fob"></div>
+      </section>
+
+      <section class="stepview" data-view="6" aria-label="Step 6: Review">
+        <h2>Check and submit</h2>
+        <p class="desc">A quick look before you confirm your move-out.</p>
+        <dl class="review">
+          <div class="line"><dt>Move-out date</dt><dd>27 Sep 2026 <a class="edit" href="#" data-goto="1">Edit</a></dd></div>
+          <div class="line"><dt>Checklist</dt><dd>2 of 4 done <a class="edit" href="#" data-goto="2">Edit</a></dd></div>
+          <div class="line"><dt>Meter readings</dt><dd>Gas + electricity <a class="edit" href="#" data-goto="3">Edit</a></dd></div>
+          <div class="line"><dt>Photos</dt><dd>6 added <a class="edit" href="#" data-goto="4">Edit</a></dd></div>
+          <div class="line"><dt>Key return</dt><dd>Branch drop-off <a class="edit" href="#" data-goto="5">Edit</a></dd></div>
+        </dl>
+        <div class="deposit-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <div>Your deposit of <strong>£1,270</strong> is protected with the DPS. After a check-out inspection, any agreed deductions will be explained in writing before your deposit is returned — usually within 10 working days.</div>
+        </div>
+      </section>
+
+      <section class="stepview" data-view="7" aria-label="Submitted">
+        <div class="success">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <h2>Move-out confirmed</h2>
+          <p style="color:var(--colour-text-secondary)">Thanks, Daniel. We've logged your move-out and the lettings team will be in touch to arrange the check-out inspection.</p>
+          <div class="ref">MO-2026-0087</div>
+          <div class="timeline">
+            <div class="t now"><span class="dot">✓</span><div><strong>Move-out requested</strong><small>Just now · confirmation emailed</small></div></div>
+            <div class="t"><span class="dot">2</span><div><strong>Check-out inspection</strong><small>We agree a time with you</small></div></div>
+            <div class="t"><span class="dot">3</span><div><strong>Deposit reviewed</strong><small>Any deductions explained in writing</small></div></div>
+            <div class="t"><span class="dot">4</span><div><strong>Deposit returned</strong><small>Usually within 10 working days</small></div></div>
+          </div>
+          <a class="btn primary" href="tenant-dashboard.html" style="margin-top:var(--space-8)">Back to dashboard</a>
+        </div>
+      </section>
+
+      <div class="navrow" id="navrow">
+        <button class="btn secondary" id="backBtn" type="button" hidden>Back</button>
+        <span></span>
+        <button class="btn primary" id="nextBtn" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+</main>
+<section data-rv></section>
+
+<script>
+(function(){
+  var total = 6, current = 1;
+  var steps = Array.prototype.slice.call(document.querySelectorAll('#stepper .step'));
+  var views = {}; document.querySelectorAll('.stepview').forEach(function(v){ views[v.getAttribute('data-view')] = v; });
+  var backBtn = document.getElementById('backBtn'), nextBtn = document.getElementById('nextBtn'), navrow = document.getElementById('navrow');
+  function render(){
+    Object.keys(views).forEach(function(k){ views[k].classList.toggle('active', +k === current); });
+    steps.forEach(function(s){ var n = +s.getAttribute('data-step'); s.classList.toggle('done', n < current); s.classList.toggle('current', n === current); var l = s.querySelector('.lbl'); if (n===current) l.setAttribute('aria-current','step'); else l.removeAttribute('aria-current'); });
+    if (current > total) { navrow.style.display = 'none'; return; }
+    navrow.style.display = 'flex'; backBtn.hidden = current === 1; nextBtn.textContent = current === total ? 'Confirm move-out' : 'Continue';
+  }
+  function go(n){ current = Math.max(1, Math.min(total+1, n)); render(); window.scrollTo({top:0,behavior:'smooth'}); }
+  nextBtn.addEventListener('click', function(){ go(current+1); });
+  backBtn.addEventListener('click', function(){ go(current-1); });
+  steps.forEach(function(s){ s.addEventListener('click', function(){ var n = +s.getAttribute('data-step'); if (n <= current) go(n); }); });
+  document.querySelectorAll('[data-goto]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); go(+a.getAttribute('data-goto')); }); });
+  render();
+})();
+</script>
+</body>
+</html>

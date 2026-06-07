@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — status — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .shead { padding-block: var(--space-12); text-align: center; }
+  .shead .banner { display: inline-flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); border-radius: var(--radius-pill); background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.4); color: #0b6b4f; font-weight: var(--weight-semibold); }
+  .shead .banner .d { width: 10px; height: 10px; border-radius: 50%; background: var(--colour-success); }
+  .shead h1 { font-size: var(--text-display-sm); margin-top: var(--space-5); }
+  .shead p { color: var(--mkt-ink-2); margin-top: var(--space-2); }
+
+  .components { border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .crow { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--mkt-border); } .crow:last-child { border-bottom: none; }
+  .crow .nm { font-weight: var(--weight-semibold); font-size: var(--text-body-md); flex: 1; }
+  .crow .state { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .crow .state .d { width: 8px; height: 8px; border-radius: 50%; }
+  .crow .state.ok { color: #0b6b4f; } .crow .state.ok .d { background: var(--colour-success); }
+  .crow .state.degraded { color: #8a5a00; } .crow .state.degraded .d { background: var(--colour-warning); }
+  .crow .state.down { color: var(--colour-priority-emergency); } .crow .state.down .d { background: var(--colour-danger); }
+  /* 90-day uptime sparkline */
+  .spark { display: flex; gap: 2px; align-items: flex-end; height: 28px; } .spark i { width: 3px; height: 100%; border-radius: 1px; background: var(--colour-success); } .spark i.warn { background: var(--colour-warning); height: 70%; } .spark i.down { background: var(--colour-danger); height: 45%; }
+  @media (max-width: 768px) { .spark { display: none; } }
+  .uptime { font-size: var(--text-caption); color: var(--mkt-ink-2); font-weight: var(--weight-semibold); min-width: 56px; text-align: right; }
+
+  .history h2 { font-size: var(--text-heading-md); font-weight: var(--weight-bold); margin-bottom: var(--space-5); }
+  .incident { border-left: 3px solid var(--mkt-border); padding: var(--space-1) 0 var(--space-5) var(--space-5); position: relative; }
+  .incident::before { content:""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--mkt-surface); border: 3px solid var(--mkt-border); }
+  .incident.resolved::before { border-color: var(--colour-success); } .incident.warn::before { border-color: var(--colour-warning); }
+  .incident .when { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-ink-2); font-weight: var(--weight-semibold); }
+  .incident h3 { font-size: var(--text-body-md); font-weight: var(--weight-semibold); margin: var(--space-1) 0; }
+  .incident p { font-size: var(--text-body-sm); color: var(--mkt-ink-2); line-height: var(--text-body-lg-lh); }
+  .incident .resolvedtag { display: inline-flex; padding: 1px var(--space-2); border-radius: var(--radius-pill); background: rgba(16,185,129,0.14); color: #0b6b4f; font-size: var(--text-caption); font-weight: var(--weight-semibold); margin-top: var(--space-2); }
+  .subscribe { display: flex; gap: var(--space-2); margin-top: var(--space-8); flex-wrap: wrap; max-width: 460px; }
+  .subscribe input { flex: 1; min-width: 200px; height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--mkt-border); border-radius: var(--radius-md); }
+  .grid2 { display: grid; gap: var(--space-10); grid-template-columns: 1fr; } @media (min-width: 1024px) { .grid2 { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — status</h1>
+    <span class="brief">EPIC-AE design brief — status page (integrated, not iframed — open Q4 recommendation)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>overall banner · per-component health rows with 90-day uptime sparkline · incident history timeline · subscribe</dd></div>
+      <div><dt>Designer interpretation</dt><dd>Q4 → built in-house rather than iframed, so it inherits the operator identity</dd></div>
+      <div><dt>States</dt><dd>operational · degraded · resolved incident shown</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="marketing-product.html">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="marketing-trust.html">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="mkt-section" style="padding-bottom:0">
+    <div class="mkt-inner shead">
+      <span class="banner" role="status"><span class="d"></span>All systems operational</span>
+      <h1 class="display">Platform status</h1>
+      <p>Live status of every part of the platform. Updated every minute.</p>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner grid2">
+      <div>
+        <div class="components">
+          <div class="crow"><span class="nm">Public websites</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">100%</span><span class="state ok"><span class="d"></span>Operational</span></div>
+          <div class="crow"><span class="nm">Admin &amp; CRM</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">99.99%</span><span class="state ok"><span class="d"></span>Operational</span></div>
+          <div class="crow"><span class="nm">API</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i class="warn"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">99.97%</span><span class="state degraded"><span class="d"></span>Degraded</span></div>
+          <div class="crow"><span class="nm">Email delivery</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">99.95%</span><span class="state ok"><span class="d"></span>Operational</span></div>
+          <div class="crow"><span class="nm">Search</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">100%</span><span class="state ok"><span class="d"></span>Operational</span></div>
+          <div class="crow"><span class="nm">Portal feeds (Rightmove / Zoopla)</span><span class="spark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="uptime">99.9%</span><span class="state ok"><span class="d"></span>Operational</span></div>
+        </div>
+        <div class="subscribe">
+          <label for="sub" style="position:absolute;left:-9999px">Email for status updates</label>
+          <input id="sub" type="email" placeholder="you@agency.co.uk">
+          <button class="mkt-btn primary">Subscribe to updates</button>
+        </div>
+      </div>
+      <div class="history">
+        <h2>Recent incidents</h2>
+        <div class="incident warn">
+          <span class="when">Today · 14:20 BST · ongoing</span>
+          <h3>Elevated API latency</h3>
+          <p>We're investigating slower-than-usual API responses affecting some admin actions. No data is affected. Public sites are unaffected.</p>
+        </div>
+        <div class="incident resolved">
+          <span class="when">2 Jun · 09:10–09:48 BST</span>
+          <h3>Email delivery delays</h3>
+          <p>Outbound emails were delayed up to 30 minutes due to a provider issue. All queued emails were delivered.</p>
+          <span class="resolvedtag">Resolved in 38 min</span>
+        </div>
+        <div class="incident resolved">
+          <span class="when">21 May · 02:00–02:15 BST</span>
+          <h3>Scheduled maintenance</h3>
+          <p>Planned database upgrade. No customer impact; completed ahead of schedule.</p>
+          <span class="resolvedtag">Completed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Properties — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .thumb { width: 56px; height: 42px; border-radius: var(--radius-sm); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); flex: 0 0 auto; }
+  .proprow { display: flex; align-items: center; gap: var(--space-3); }
+  .bulkbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); border-bottom: 1px solid var(--colour-divider); font-size: var(--text-body-sm); }
+  .bulkbar .btn { background: rgba(255,255,255,0.14); color: var(--colour-brand-primary-on); border: none; }
+  .bulkbar .spacer { flex: 1; }
+  .badge-mkt { display: inline-flex; padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); }
+  .m-available { background: var(--colour-status-available); }
+  .m-under-offer { background: var(--colour-status-under-offer); color: var(--colour-brand-accent-on); }
+  .m-sold-stc { background: var(--colour-status-sold-stc); }
+  .m-draft { background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+</style>
+</head>
+<body data-active="properties" data-crumb="Properties">
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Property list</h1>
+    <span class="brief">EPIC-F / EPIC-H — admin property list with filters, bulk actions, saved views</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>saved-view dropdown · filter chips · multi-select bulk bar · sortable table · pagination</dd></div>
+      <div><dt>Responsive</dt><dd>table → stacked cards below 768px; sidebar → icon → drawer</dd></div>
+      <div><dt>Row → </dt><dd>opens the 9-tab property editor</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+
+    <div class="page-h">
+      <div><h1>Properties</h1><p>312 active · 18 drafts · 47 archived</p></div>
+      <a class="btn primary" href="property-editor.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add a property</a>
+    </div>
+
+    <div class="tabstrip" role="tablist" aria-label="Saved views">
+      <button role="tab" aria-selected="true">All <span class="c">312</span></button>
+      <button role="tab" aria-selected="false">For sale <span class="c">198</span></button>
+      <button role="tab" aria-selected="false">To rent <span class="c">96</span></button>
+      <button role="tab" aria-selected="false">Drafts <span class="c">18</span></button>
+      <button role="tab" aria-selected="false">Needs attention <span class="c">4</span></button>
+    </div>
+
+    <div class="chips">
+      <span class="chip">Didsbury branch <button aria-label="Remove branch filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+      <span class="chip">Added this month <button aria-label="Remove date filter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+      <button class="chip clear">Clear all</button>
+    </div>
+
+    <div class="tablewrap">
+      <div class="bulkbar"><strong>2 selected</strong><div class="spacer"></div><button class="btn sm">Change status</button><button class="btn sm">Reassign branch</button><button class="btn sm">Export</button></div>
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr>
+            <th><input type="checkbox" class="rowcheck" aria-label="Select all"></th>
+            <th>Property</th><th>Status</th><th>Price</th><th>Type</th><th>Branch</th><th class="sortable">Added <span class="arr">↓</span></th><th>Views</th>
+          </tr></thead>
+          <tbody>
+            <tr><td><input type="checkbox" class="rowcheck" checked aria-label="Select Palatine Road"></td><td><div class="proprow"><span class="thumb"></span><span class="who"><strong>Palatine Road</strong><small>Didsbury, M20</small></span></div></td><td><span class="badge-mkt m-available">For sale</span></td><td>£525,000</td><td>Semi-detached</td><td>Didsbury</td><td>3 days ago</td><td>1,204</td></tr>
+            <tr><td><input type="checkbox" class="rowcheck" checked aria-label="Select Acomb Street"></td><td><div class="proprow"><span class="thumb"></span><span class="who"><strong>Acomb Street</strong><small>Rusholme, M14</small></span></div></td><td><span class="badge-mkt m-under-offer">Under offer</span></td><td>£399,995</td><td>Terraced</td><td>Didsbury</td><td>2 weeks ago</td><td>3,418</td></tr>
+            <tr><td><input type="checkbox" class="rowcheck" aria-label="Select The Sidings"></td><td><div class="proprow"><span class="thumb"></span><span class="who"><strong>The Sidings, plot 4</strong><small>Withington, M20</small></span></div></td><td><span class="badge-mkt m-available">For sale</span></td><td>£319,950</td><td>New home</td><td>New Homes</td><td>1 week ago</td><td>902</td></tr>
+            <tr><td><input type="checkbox" class="rowcheck" aria-label="Select Brooklawn Drive"></td><td><div class="proprow"><span class="thumb"></span><span class="who"><strong>Brooklawn Drive</strong><small>West Didsbury, M20</small></span></div></td><td><span class="badge-mkt m-sold-stc">Sold STC</span></td><td>£465,000</td><td>Detached</td><td>Didsbury</td><td>5 days ago</td><td>2,110</td></tr>
+            <tr><td><input type="checkbox" class="rowcheck" aria-label="Select Cromwell Grove"></td><td><div class="proprow"><span class="thumb"></span><span class="who"><strong>Cromwell Grove</strong><small>Levenshulme, M19</small></span></div></td><td><span class="badge-mkt m-draft">Draft</span></td><td>£289,950</td><td>Terraced</td><td>Didsbury</td><td>Today</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tabletop" style="border-top:1px solid var(--colour-divider);border-bottom:none">
+        <span class="res">Showing 1–5 of 312</span>
+        <div class="right"><button class="minibtn">Previous</button><button class="minibtn">Next</button></div>
+      </div>
+    </div>
+
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

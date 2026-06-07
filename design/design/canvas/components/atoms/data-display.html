@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data display atoms — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  /* status badge */
+  .badge { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill);
+    font-size: var(--text-caption); line-height: var(--text-caption-lh); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--colour-brand-primary-on); }
+  .badge .dot { width: var(--space-2); height: var(--space-2); border-radius: var(--radius-circle); background: currentColor; }
+  .badge.b-available { background: var(--colour-status-available); }
+  .badge.b-under-offer { background: var(--colour-status-under-offer); color: var(--colour-brand-accent-on); }
+  .badge.b-sold-stc { background: var(--colour-status-sold-stc); }
+  .badge.b-sold { background: var(--colour-status-sold); }
+  .badge.b-let-agreed { background: var(--colour-status-let-agreed); color: var(--colour-brand-accent-on); }
+  .badge.b-let { background: var(--colour-status-let); }
+  .badge.b-withdrawn { background: var(--colour-status-withdrawn); }
+  .badge.b-new { background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); }
+  /* priority */
+  .badge.p-emergency { background: var(--colour-priority-emergency); }
+  .badge.p-urgent { background: var(--colour-priority-urgent); color: var(--colour-brand-accent-on); }
+  .badge.p-standard { background: var(--colour-priority-standard); }
+  .badge.p-low { background: var(--colour-priority-low); }
+  /* soft badge variant */
+  .badge.soft { background: var(--colour-surface-sunken); color: var(--colour-text-secondary); }
+
+  /* pill / filter chip */
+  .pill { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--space-8); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); border: 1px solid var(--colour-border); background: var(--colour-surface-base); font-size: var(--text-body-sm); cursor: pointer; transition: border-color var(--motion-duration-fast) var(--motion-ease-standard), background var(--motion-duration-fast) var(--motion-ease-standard); }
+  .pill:hover { border-color: var(--colour-text-muted); }
+  .pill.active { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); border-color: var(--colour-brand-primary); }
+  .pill .x { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+
+  /* tag (feature chip) */
+  .tag { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+
+  /* avatar */
+  .avatar { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-circle); object-fit: cover; background: var(--colour-surface-sunken); display: grid; place-items: center; font-family: var(--font-display); color: var(--colour-text-secondary); overflow: hidden; aspect-ratio: var(--ratio-avatar); }
+  .avatar.sm { width: var(--space-8); height: var(--space-8); font-size: var(--text-body-sm); }
+  .avatar.lg { width: var(--space-16); height: var(--space-16); font-size: var(--text-heading-md); }
+
+  /* icon sizes */
+  .ic { color: var(--colour-text-primary); }
+  .ic.sm { width: var(--size-icon-sm); height: var(--size-icon-sm); }
+  .ic.md { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .ic.lg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+  .ic.xl { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+
+  /* skeleton */
+  .sk { background: var(--colour-surface-sunken); border-radius: var(--radius-sm); animation: sk-pulse 1500ms var(--motion-ease-linear) infinite; }
+  @keyframes sk-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+  @media (prefers-reduced-motion: reduce) { .sk { animation: none; opacity: 0.55; } }
+  .sk.line { height: var(--space-4); }
+  .sk.img { aspect-ratio: var(--ratio-card); width: 220px; border-radius: var(--radius-md); }
+
+  .swatchgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--space-3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Data display atoms</h1>
+    <span class="brief">EPIC-L design brief — Atoms · Badge · Pill · Tag · Avatar · Icon · Skeleton · Caption</span>
+    <dl class="annotations">
+      <div><dt>Atoms</dt><dd>Badge (status + priority) · Pill / chip · Tag · Avatar · Icon · Skeleton · Caption</dd></div>
+      <div><dt>States</dt><dd>default · active · hover · loading (skeleton)</dd></div>
+      <div><dt>Rules</dt><dd>every status badge carries an aria-label (a11y rule 10)</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Status badge — market status</h2>
+      <p class="lede">Maps 1:1 to <code>market_status</code> via <code>--colour-status-*</code>. Colour is never the only signal: each badge has an <code>aria-label</code> and a visible label.</p>
+      <div class="demo-tray tight">
+        <span class="badge b-available" aria-label="Status: available"><span class="dot"></span>For sale</span>
+        <span class="badge b-under-offer" aria-label="Status: under offer"><span class="dot"></span>Under offer</span>
+        <span class="badge b-sold-stc" aria-label="Status: sold subject to contract"><span class="dot"></span>Sold STC</span>
+        <span class="badge b-sold" aria-label="Status: sold"><span class="dot"></span>Sold</span>
+        <span class="badge b-let-agreed" aria-label="Status: let agreed"><span class="dot"></span>Let agreed</span>
+        <span class="badge b-let" aria-label="Status: let"><span class="dot"></span>Let</span>
+        <span class="badge b-withdrawn" aria-label="Status: withdrawn"><span class="dot"></span>Withdrawn</span>
+        <span class="badge b-new" aria-label="New listing">New home</span>
+      </div>
+      <div class="a11y-note"><strong>Note (gaps log #3):</strong> there is no <code>--colour-status-new-home</code> token, so the "new home" / featured marker uses <code>--colour-brand-accent</code> to read as promotional rather than as a market state.</div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Priority badge — repair / lead</h2>
+      <p class="lede">Uses <code>--colour-priority-*</code>. Same a11y contract.</p>
+      <div class="demo-tray tight">
+        <span class="badge p-emergency" aria-label="Priority: emergency">Emergency</span>
+        <span class="badge p-urgent" aria-label="Priority: urgent">Urgent</span>
+        <span class="badge p-standard" aria-label="Priority: standard">Standard</span>
+        <span class="badge p-low" aria-label="Priority: low">Low</span>
+        <span class="badge soft" aria-label="Status: draft">Draft</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Pill / filter chip and Tag</h2>
+      <p class="lede">Pills are interactive filters (toggle + removable). Tags are static feature chips on a property.</p>
+      <div class="demo-block"><h3>Filter chips</h3>
+        <div class="demo-tray tight">
+          <button class="pill active">2+ beds <svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button class="pill active">Under £600k <svg class="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          <button class="pill">Garden</button>
+          <button class="pill">Parking</button>
+          <button class="pill">New homes</button>
+        </div>
+      </div>
+      <div class="demo-block"><h3>Feature tags</h3>
+        <div class="demo-tray tight">
+          <span class="tag">Off-street parking</span><span class="tag">South-facing garden</span><span class="tag">EPC rating C</span><span class="tag">Chain-free</span><span class="tag">Period features</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Avatar</h2>
+      <p class="lede">Team photos and testimonial avatars (<code>--ratio-avatar</code> 1:1, <code>--radius-circle</code>). Falls back to initials.</p>
+      <div class="demo-tray tight" style="align-items:center">
+        <span class="avatar sm" aria-label="Agent: Priya Shah">PS</span>
+        <span class="avatar" aria-label="Agent: Tom Beckett">TB</span>
+        <span class="avatar lg" aria-label="Agent: Mariam Okafor">MO</span>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Icon scale and Caption</h2>
+      <p class="lede">Four sizes from <code>--size-icon-sm</code> (16) to <code>--size-icon-xl</code> (32). Caption is the eyebrow / meta label style.</p>
+      <div class="demo-tray tight" style="align-items:flex-end">
+        <span class="cell"><span class="cap">sm 16</span><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg></span>
+        <span class="cell"><span class="cap">md 18</span><svg class="ic md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg></span>
+        <span class="cell"><span class="cap">lg 20</span><svg class="ic lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg></span>
+        <span class="cell"><span class="cap">xl 32</span><svg class="ic xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/></svg></span>
+      </div>
+      <div style="margin-top:var(--space-6)">
+        <p class="t-caption">Trusted across Greater Manchester · Est. 1998</p>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Skeleton — loading placeholder</h2>
+      <p class="lede">Pulses opacity 0.4 → 0.8 over 1500 ms (motion-spec §4). Under reduced-motion it holds a static dimmed state.</p>
+      <div class="demo-tray">
+        <div style="display:flex;gap:var(--space-4);align-items:flex-start">
+          <span class="sk img"></span>
+          <div style="display:flex;flex-direction:column;gap:var(--space-3);width:200px;padding-top:var(--space-2)">
+            <span class="sk line" style="width:70%"></span>
+            <span class="sk line" style="width:90%"></span>
+            <span class="sk line" style="width:50%"></span>
+          </div>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> badge radius <b>--radius-pill</b> · status fills <b>--colour-status-*</b> / <b>--colour-priority-*</b> · avatar <b>--radius-circle</b>, <b>--ratio-avatar</b> · skeleton <b>--colour-surface-sunken</b>, pulse <b>1500ms</b> linear · caption <b>--text-caption</b>.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

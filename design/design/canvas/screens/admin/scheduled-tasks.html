@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduled tasks — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .runstate { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); }
+  .runstate .d { width: 8px; height: 8px; border-radius: 50%; }
+  .runstate.ok { background: rgba(16,185,129,0.14); color: #0b6b4f; } .runstate.ok .d { background: var(--colour-success); }
+  .runstate.running { background: rgba(59,130,246,0.12); color: var(--colour-priority-standard); } .runstate.running .d { background: var(--colour-info); }
+  .runstate.failed { background: rgba(239,68,68,0.12); color: var(--colour-priority-emergency); } .runstate.failed .d { background: var(--colour-danger); }
+  .runstate.idle { background: var(--colour-surface-sunken); color: var(--colour-text-secondary); } .runstate.idle .d { background: var(--colour-text-muted); }
+  .mono { font-family: var(--font-mono); font-size: var(--text-body-sm); color: var(--colour-text-secondary); }
+  .rowact { display: flex; gap: var(--space-1); justify-content: flex-end; }
+  .rowact button { width: var(--space-8); height: var(--space-8); display: grid; place-items: center; color: var(--colour-text-muted); border-radius: var(--radius-sm); } .rowact button:hover { background: var(--colour-surface-raised); color: var(--colour-text-primary); } .rowact svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  tr.failed-row td:first-child { box-shadow: inset 3px 0 0 var(--colour-danger); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Scheduled tasks">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Scheduled tasks console</h1>
+    <span class="brief">EPIC-H design brief — background-job / scheduled-task console (H.23)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>job table — name, schedule (cron-readable), last run, next run, status, duration + run-now / pause / logs</dd></div>
+      <div><dt>States</dt><dd>succeeded · running (live) · failed (red accent + retry) · paused/idle</dd></div>
+      <div><dt>A11y</dt><dd>running status announced via aria-live; every action a labelled button</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Scheduled tasks</h1><p>14 jobs · 1 failed in the last 24h</p></div><a class="btn secondary" href="#">View all logs</a></div>
+
+    <div class="tablewrap">
+      <div class="tabletop"><span class="res">Showing 6 of 14 jobs</span><div class="right"><button class="minibtn">Filter</button></div></div>
+      <div class="scrollx">
+        <table class="t">
+          <thead><tr><th>Job</th><th>Schedule</th><th>Last run</th><th>Next run</th><th>Duration</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="who"><strong>Send daily property alerts</strong><small>Emails saved-search matches</small></td><td class="mono">Daily · 08:00</td><td>Today 08:00</td><td>Tomorrow 08:00</td><td class="mono">42s</td><td><span class="runstate ok"><span class="d"></span>Succeeded</span></td><td><div class="rowact"><button aria-label="Run now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 4 14 8-14 8z"/></svg></button><button aria-label="View logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></div></td></tr>
+            <tr><td class="who"><strong>Refresh portal feeds</strong><small>Rightmove / Zoopla XML push</small></td><td class="mono">Every 15 min</td><td>2 min ago</td><td>In 13 min</td><td class="mono">8s</td><td><span class="runstate running" aria-live="polite"><span class="d"></span>Running</span></td><td><div class="rowact"><button aria-label="View logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></div></td></tr>
+            <tr class="failed-row"><td class="who"><strong>Sync deposit scheme</strong><small>DPS reconciliation</small></td><td class="mono">Daily · 02:00</td><td>Today 02:00</td><td>Tomorrow 02:00</td><td class="mono">—</td><td><span class="runstate failed"><span class="d"></span>Failed</span></td><td><div class="rowact"><button aria-label="Retry"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button><button aria-label="View logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></div></td></tr>
+            <tr><td class="who"><strong>Send review requests</strong><small>Post-completion feedback emails</small></td><td class="mono">Daily · 10:00</td><td>Today 10:00</td><td>Tomorrow 10:00</td><td class="mono">19s</td><td><span class="runstate ok"><span class="d"></span>Succeeded</span></td><td><div class="rowact"><button aria-label="Run now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 4 14 8-14 8z"/></svg></button><button aria-label="View logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></div></td></tr>
+            <tr><td class="who"><strong>Purge expired sessions</strong><small>Security housekeeping</small></td><td class="mono">Hourly</td><td>34 min ago</td><td>In 26 min</td><td class="mono">3s</td><td><span class="runstate ok"><span class="d"></span>Succeeded</span></td><td><div class="rowact"><button aria-label="View logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></div></td></tr>
+            <tr><td class="who"><strong>Weekly market digest</strong><small>Paused by admin</small></td><td class="mono">Mon · 09:00</td><td>2 Jun 09:00</td><td>—</td><td class="mono">—</td><td><span class="runstate idle"><span class="d"></span>Paused</span></td><td><div class="rowact"><button aria-label="Resume"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 4 14 8-14 8z"/></svg></button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p style="font-size:var(--text-body-sm);color:var(--colour-text-muted);margin-top:var(--space-4)"><strong style="color:var(--colour-danger)">1 job failed:</strong> Sync deposit scheme errored at 02:00 — DPS endpoint timed out. Retry, or view logs for the stack trace.</p>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Article — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<script src="../../canvas.js"></script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: var(--z-sticky); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); }
+  .site-header .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); padding: var(--space-4) var(--space-6); max-width: var(--size-container-2xl); margin-inline: auto; }
+  .brand { display: flex; align-items: center; gap: var(--space-3); font-family: var(--font-display); font-size: var(--text-heading-md); color: var(--colour-text-on-dark); text-decoration: none; }
+  .brand .mark { width: var(--space-8); height: var(--space-8); border-radius: var(--radius-sm); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); display: grid; place-items: center; font-weight: var(--weight-bold); }
+  .nav { display: none; gap: var(--space-1); } @media (min-width: 1024px) { .nav { display: flex; } .hamburger { display:none !important; } }
+  .nav a { color: var(--colour-text-on-dark); text-decoration: none; font-size: var(--text-body-md); padding: var(--space-2) var(--space-3); } .nav a:hover, .nav a[aria-current] { color: var(--colour-brand-accent); }
+  .cta { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; font-size: var(--text-body-sm); white-space: nowrap; }
+  .iconbtn { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; color: var(--colour-text-on-dark); } .iconbtn svg { width: var(--size-icon-lg); height: var(--size-icon-lg); }
+
+  /* reading progress bar */
+  .progress { position: sticky; top: 0; height: 3px; background: transparent; z-index: var(--z-sticky); }
+  .progress > i { display: block; height: 100%; width: 38%; background: var(--colour-brand-accent); }
+
+  /* hero */
+  .ahero { position: relative; aspect-ratio: var(--ratio-hero); max-height: 460px; background: linear-gradient(135deg,#3a4a5c,#6b7d6a 70%,#9bab8f); display: flex; align-items: flex-end; }
+  .ahero::after { content:""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,26,26,0) 35%, rgba(26,26,26,0.72)); }
+  .ahero .inner { position: relative; z-index: 1; padding: var(--space-12) var(--space-6); color: var(--colour-text-inverse); max-width: var(--size-container-md); margin-inline: auto; width: 100%; }
+  .ahero .cat { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent); font-weight: var(--weight-semibold); }
+  .ahero h1 { font-family: var(--font-display); font-size: var(--text-display-md); line-height: var(--text-display-md-lh); letter-spacing: var(--text-display-md-ls); font-weight: var(--weight-regular); margin-top: var(--space-3); }
+
+  /* article body — constrained reading width */
+  .article { max-width: var(--size-container-md); margin-inline: auto; padding: var(--space-12) var(--space-6) var(--space-16); }
+  .byline { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-6); margin-bottom: var(--space-8); border-bottom: 1px solid var(--colour-divider); }
+  .byline .av { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-circle); background: var(--colour-surface-sunken); display: grid; place-items: center; font-family: var(--font-display); color: var(--colour-text-secondary); flex: 0 0 auto; }
+  .byline .who strong { display: block; } .byline .who small { color: var(--colour-text-muted); font-size: var(--text-body-sm); }
+  .byline .share { margin-left: auto; display: flex; gap: var(--space-2); }
+  .byline .share a { width: var(--size-touch-target-min); height: var(--size-touch-target-min); display: grid; place-items: center; border: 1px solid var(--colour-border); border-radius: var(--radius-md); color: var(--colour-text-secondary); }
+  .byline .share a:hover { background: var(--colour-surface-raised); } .byline .share svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+
+  .prose > p { font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); color: var(--colour-text-primary); margin-bottom: var(--space-6); }
+  .prose > p.lead { font-size: var(--text-heading-sm); line-height: var(--text-heading-md-lh); color: var(--colour-text-secondary); }
+  .prose h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin: var(--space-10) 0 var(--space-4); }
+  .prose h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin: var(--space-8) 0 var(--space-3); }
+  .prose ul { margin: 0 0 var(--space-6) var(--space-5); } .prose li { list-style: disc; font-size: var(--text-body-lg); line-height: var(--text-body-lg-lh); color: var(--colour-text-primary); margin-bottom: var(--space-2); }
+  .prose blockquote { border-left: 3px solid var(--colour-brand-accent); padding: var(--space-2) 0 var(--space-2) var(--space-5); margin: var(--space-8) 0; font-family: var(--font-display); font-size: var(--text-heading-md); line-height: var(--text-heading-md-lh); color: var(--colour-text-secondary); }
+  .prose figure { margin: var(--space-8) 0; } .prose figure .ph { aspect-ratio: var(--ratio-hero); border-radius: var(--radius-lg); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); } .prose figure figcaption { font-size: var(--text-body-sm); color: var(--colour-text-muted); margin-top: var(--space-2); text-align: center; }
+
+  /* inline CTA */
+  .inlinecta { margin: var(--space-10) 0; padding: var(--space-6); border-radius: var(--radius-lg); background: var(--colour-brand-primary); color: var(--colour-text-on-dark); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .inlinecta strong { font-family: var(--font-display); font-size: var(--text-heading-sm); } .inlinecta p { font-size: var(--text-body-sm); opacity: 0.85; }
+  .inlinecta a { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); background: var(--colour-brand-accent); color: var(--colour-brand-accent-on); font-weight: var(--weight-semibold); text-decoration: none; }
+
+  /* related */
+  .related { max-width: var(--size-container-xl); margin-inline: auto; padding: 0 var(--space-6) var(--space-16); }
+  .related h2 { font-family: var(--font-display); font-size: var(--text-heading-lg); font-weight: var(--weight-semibold); margin-bottom: var(--space-6); }
+  .rgrid { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .rgrid { grid-template-columns: repeat(3,1fr); } }
+  .rcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; text-decoration: none; color: inherit; }
+  .rcard .ph { aspect-ratio: var(--ratio-hero); background: linear-gradient(135deg,#d9d3c6,#cfd6d0); } .rcard .b { padding: var(--space-5); } .rcard .cat { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-brand-accent-hover); font-weight: var(--weight-semibold); } .rcard h3 { font-family: var(--font-display); font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); margin-top: var(--space-2); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Article reading surface</h1>
+    <span class="brief">EPIC-C design brief — single-article reading surface (constrained width)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>cover hero · byline + share · constrained prose (~65ch) · inline CTA · related articles</dd></div>
+      <div><dt>Reading</dt><dd>sticky reading-progress bar; body never wider than --size-container-md</dd></div>
+      <div><dt>Trust</dt><dd>author + updated date shown; valuation CTA flagged indicative-only</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="site-header">
+    <div class="row"><a class="brand" href="portal-homepage.html"><span class="mark">EA</span>Estate Agent</a>
+      <nav class="nav" aria-label="Primary"><a href="properties-catalogue.html">For sale</a><a href="#">To rent</a><a href="area-guide.html">Area guides</a><a href="knowledge-hub.html" aria-current="page">Guides</a><a href="contact.html">Contact</a></nav>
+      <div style="display:flex;gap:var(--space-3);align-items:center"><a class="cta" href="#">Get a free valuation</a><button class="iconbtn hamburger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+  <div class="progress" aria-hidden="true"><i></i></div>
+
+  <article>
+    <div class="ahero"><div class="inner"><p class="cat">Selling</p><h1>How to get your home ready for viewings</h1></div></div>
+
+    <div class="article">
+      <div class="byline">
+        <span class="av" aria-hidden="true">PS</span>
+        <div class="who"><strong>Priya Shah</strong><small>Senior sales agent · Updated 14 May 2026 · 8 min read</small></div>
+        <div class="share">
+          <a href="#" aria-label="Share on Facebook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v6h4v-6h3l1-4h-4V8a1 1 0 0 1 1-1z"/></svg></a>
+          <a href="#" aria-label="Copy link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></a>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p class="lead">First impressions are made in seconds. A little preparation before a viewing can be the difference between a polite "we'll think about it" and an offer the same afternoon.</p>
+        <p>You don't need to spend a fortune or rip the place apart. Most of what makes a home show well is about light, space and a sense that it's been cared for. Here's how we'd approach it.</p>
+
+        <h2>Start at the front door</h2>
+        <p>Buyers form a view before they've even stepped inside. A tidy path, a clean door, a working bell and a pot of something green go a surprisingly long way. If your hallway is the first thing they see, keep it clear — coats, shoes and post have a way of shrinking a space.</p>
+        <blockquote>The homes that sell fastest aren't always the grandest — they're the ones that feel easy to picture living in.</blockquote>
+
+        <h2>Let the light in</h2>
+        <p>Open every curtain and blind, and clean the windows if you can. Natural light makes rooms feel larger and warmer. In darker rooms, a couple of well-placed lamps do more than a single bright ceiling bulb.</p>
+        <ul>
+          <li>Replace any dead bulbs — consistency matters more than brightness.</li>
+          <li>Turn lamps on for evening or winter viewings.</li>
+          <li>Push furniture back from windows so the light isn't blocked.</li>
+        </ul>
+
+        <figure><div class="ph"></div><figcaption>A bright, decluttered living room helps buyers imagine their own life in the space.</figcaption></figure>
+
+        <h2>Declutter, don't depersonalise entirely</h2>
+        <p>Clear surfaces and tidy storage make rooms feel bigger, but a completely stripped-back home can feel cold. Aim for "comfortable show home" — lived-in, but calm.</p>
+
+        <div class="inlinecta">
+          <div><strong>Thinking of selling?</strong><p>Start with a free, no-obligation valuation — indicative only.</p></div>
+          <a href="sales-landing.html">Book a valuation</a>
+        </div>
+
+        <h2>The little things on the day</h2>
+        <p>Fresh air, a tidy kitchen and somewhere obvious to stand and chat all help. We'll handle the accompanied viewing itself — your job is just to hand over a home that feels ready.</p>
+      </div>
+    </div>
+  </article>
+
+  <section class="related">
+    <h2>Keep reading</h2>
+    <div class="rgrid">
+      <a class="rcard" href="#"><div class="ph"></div><div class="b"><span class="cat">Selling</span><h3>Pricing right from day one</h3></div></a>
+      <a class="rcard" href="#"><div class="ph"></div><div class="b"><span class="cat">Buying</span><h3>A first-time buyer's timeline</h3></div></a>
+      <a class="rcard" href="#"><div class="ph"></div><div class="b"><span class="cat">Local area</span><h3>Best neighbourhoods for families</h3></div></a>
+    </div>
+  </section>
+</main>
+<section data-rv></section>
+</body>
+</html>

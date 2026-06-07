@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Success state patterns — Estate Agent canvas</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../base.css">
+<script src="../canvas.js"></script>
+<style>
+  .state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); }
+  .state .emblem { width: var(--space-16); height: var(--space-16); display: grid; place-items: center; border-radius: var(--radius-circle); background: rgba(16,185,129,0.12); color: var(--colour-success); }
+  .state .emblem svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .state h3 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .state p { color: var(--colour-text-secondary); max-width: 46ch; }
+  .state .acts { display: flex; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; height: var(--size-button-md); padding-inline: var(--space-5); border-radius: var(--radius-md); font-weight: var(--weight-semibold); font-size: var(--text-body-sm); text-decoration: none; }
+  .btn.primary { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .btn.secondary { background: var(--colour-surface-base); color: var(--colour-brand-primary); border: 1px solid var(--colour-border); }
+  .grid { display: grid; gap: var(--space-8); grid-template-columns: 1fr; }
+  @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+  .toast { display: flex; gap: var(--space-3); align-items: flex-start; max-width: 420px; padding: var(--space-4); border-radius: var(--radius-md); background: var(--colour-surface-base); box-shadow: var(--shadow-md); border: 1px solid var(--colour-border); }
+  .toast .bar { width: 4px; align-self: stretch; border-radius: var(--radius-pill); background: var(--colour-success); }
+  .toast svg { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--colour-success); flex: 0 0 auto; }
+  .toast strong { display: block; }
+  .toast p { font-size: var(--text-body-sm); color: var(--colour-text-secondary); margin-top: var(--space-1); }
+  .inline-ok { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--colour-success); font-size: var(--text-body-sm); font-weight: var(--weight-medium); }
+  .inline-ok svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .receipt { text-align: left; background: var(--colour-surface-raised); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-top: var(--space-2); }
+  .receipt div { display: flex; justify-content: space-between; gap: var(--space-4); padding: var(--space-2) 0; font-size: var(--text-body-sm); }
+  .receipt dt { color: var(--colour-text-muted); } .receipt dd { font-weight: var(--weight-medium); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../index.html">← Canvas index</a>
+    <h1>Success state patterns</h1>
+    <span class="brief">design-requirements.md §7 — confirm clearly, set the next expectation</span>
+    <dl class="annotations">
+      <div><dt>Forms</dt><dd>toast for small actions · confirmation page for substantial submissions</dd></div>
+      <div><dt>Rule</dt><dd>no confetti on commercial actions (motion-spec §7) — calm, credible confirmation</dd></div>
+      <div><dt>Always</dt><dd>say what happens next and by when</dd></div>
+    </dl>
+  </div>
+</header>
+
+<main id="main" class="canvas-body">
+  <div class="container">
+
+    <section class="demo-section">
+      <h2>Inline &amp; toast</h2>
+      <p class="lede">Lightweight confirmation for saves and small actions. Toast in from <code>translateY(8px)</code> + fade over <code>--motion-duration-base --motion-ease-emphasis</code>, auto-dismiss after 5 s.</p>
+      <div class="demo-tray col">
+        <span class="inline-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Changes saved</span>
+        <div class="toast" role="status">
+          <span class="bar"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <div><strong>Property published</strong><p>Palatine Road is now live on the public site and visible in search.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section">
+      <h2>Confirmation pages</h2>
+      <p class="lede">For substantial submissions — a booked viewing, a valuation request, a submitted repair. Restate the key details and the next step.</p>
+      <div class="grid">
+        <div class="state">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <h3>Your viewing is requested</h3>
+          <p>The Didsbury branch will confirm your time within one working day. We've emailed you a copy.</p>
+          <dl class="receipt">
+            <div><dt>Property</dt><dd>Palatine Road, M20</dd></div>
+            <div><dt>Requested</dt><dd>Sat 13 Jun · 10:00 am</dd></div>
+            <div><dt>Reference</dt><dd>VW-2026-0418</dd></div>
+          </dl>
+          <div class="acts"><a class="btn primary" href="#">Back to property</a><a class="btn secondary" href="#">Browse similar</a></div>
+        </div>
+        <div class="state">
+          <span class="emblem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <h3>Repair reported</h3>
+          <p>Thanks — we've logged your repair and the management team has been notified. You can track progress from your account.</p>
+          <dl class="receipt">
+            <div><dt>Issue</dt><dd>Boiler — no hot water</dd></div>
+            <div><dt>Priority</dt><dd>Urgent</dd></div>
+            <div><dt>Reference</dt><dd>RP-2026-1192</dd></div>
+          </dl>
+          <div class="acts"><a class="btn primary" href="#">Track this repair</a></div>
+        </div>
+      </div>
+      <div class="token-ref"><b>Tokens:</b> success emblem <code>rgba(16,185,129,0.12)</code> on <b>--colour-success</b> · toast <b>--shadow-md</b>, accent bar <b>--colour-success</b> · receipt <b>--colour-surface-raised</b>, <b>--radius-md</b> · heading <b>--text-heading-md</b> / <b>--font-display</b>.</div>
+      <div class="a11y-note"><strong>Accessibility:</strong> toasts use <code>role="status"</code> (polite). Confirmation pages move focus to the heading so screen-reader users hear the outcome. The reference number is selectable text, not an image. No motion celebration — calm, professional tone.</div>
+    </section>
+
+  </div>
+</main>
+<section data-rv></section>
+</body>
+</html>

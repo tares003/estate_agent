@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reports — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .filters { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-6); }
+  .seg { display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; }
+  .seg button { height: var(--size-button-md); padding-inline: var(--space-4); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); } .seg button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+
+  .kpis { display: grid; gap: var(--space-4); grid-template-columns: 1fr; margin-bottom: var(--space-6); }
+  @media (min-width: 640px) { .kpis { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1280px) { .kpis { grid-template-columns: repeat(4,1fr); } }
+  .kpi { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); padding: var(--space-5); }
+  .kpi .k { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); }
+  .kpi .v { font-family: var(--font-display); font-size: var(--text-display-sm); font-weight: var(--weight-semibold); margin: var(--space-2) 0; }
+  .kpi .d.up { color: var(--colour-success); font-size: var(--text-body-sm); } .kpi .d.down { color: var(--colour-danger); font-size: var(--text-body-sm); }
+
+  .cols { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .cols { grid-template-columns: 1.4fr 1fr; } }
+  .chartcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .chartcard .ch { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); } .chartcard .ch h2 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  .chartcard .cb { padding: var(--space-5); }
+  /* bar chart */
+  .bars { display: flex; align-items: flex-end; gap: var(--space-3); height: 200px; }
+  .bars .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+  .bars .col .bar { width: 100%; background: var(--colour-brand-primary); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+  .bars .col .bar.alt { background: var(--colour-brand-accent); }
+  .bars .col .lbl { font-size: var(--text-caption); color: var(--colour-text-muted); }
+  /* donut (conic) */
+  .donut { width: 160px; height: 160px; border-radius: 50%; margin: var(--space-2) auto; background: conic-gradient(var(--colour-brand-primary) 0 55%, var(--colour-status-available) 55% 78%, var(--colour-brand-accent) 78% 100%); position: relative; }
+  .donut::after { content:""; position: absolute; inset: 28px; border-radius: 50%; background: var(--colour-surface-base); }
+  .legend { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+  .legend .row { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-body-sm); } .legend .sw { width: 12px; height: 12px; border-radius: var(--radius-sm); flex: 0 0 auto; } .legend .row .pct { margin-left: auto; font-weight: var(--weight-semibold); }
+  .tablewrap2 { margin-top: var(--space-6); }
+</style>
+</head>
+<body data-active="dashboard" data-crumb="Reports">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Reports</h1>
+    <span class="brief">EPIC-H design brief — reports (H.21)</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>date-range + branch filters · KPI row · bar chart (listings vs sales) · donut (lead source) · agent table</dd></div>
+      <div><dt>Charts</dt><dd>token-driven CSS charts (placeholders for the real charting lib); export to CSV/PDF</dd></div>
+      <div><dt>Pack note</dt><dd>agent league table is a feedback_reviews-pack feature — UpsellEmptyState-gated when off (§2a)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Reports</h1><p>Performance across all branches</p></div><div style="display:flex;gap:var(--space-3)"><button class="minibtn">Export CSV</button><button class="minibtn">Export PDF</button></div></div>
+
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Date range"><button>7 days</button><button aria-pressed="true">30 days</button><button>Quarter</button><button>Year</button></div>
+      <div class="selectwrap" style="max-width:200px"><select class="control" aria-label="Branch"><option>All branches</option><option>Didsbury</option><option>City</option><option>Chorlton</option></select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="k">New listings</div><div class="v">48</div><div class="d up">▲ 12% vs prev</div></div>
+      <div class="kpi"><div class="k">Sales agreed</div><div class="v">19</div><div class="d up">▲ 6%</div></div>
+      <div class="kpi"><div class="k">Avg. days to sell</div><div class="v">28</div><div class="d down">▼ 3 days</div></div>
+      <div class="kpi"><div class="k">Enquiry → viewing</div><div class="v">34%</div><div class="d up">▲ 2pts</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="chartcard">
+        <div class="ch"><h2>Listings vs sales agreed</h2><span style="font-size:var(--text-caption);color:var(--colour-text-muted)"><span style="color:var(--colour-brand-primary)">■</span> Listings &nbsp; <span style="color:var(--colour-brand-accent)">■</span> Sales</span></div>
+        <div class="cb"><div class="bars" role="img" aria-label="Listings versus sales agreed over six months: listings rising from 32 to 48, sales steady around 16-19">
+          <div class="col"><div class="bar" style="height:120px"></div><div class="bar alt" style="height:52px;margin-top:-52px;width:50%;align-self:flex-start"></div><div class="lbl">Jan</div></div>
+          <div class="col"><div class="bar" style="height:140px"></div><div class="lbl">Feb</div></div>
+          <div class="col"><div class="bar" style="height:110px"></div><div class="lbl">Mar</div></div>
+          <div class="col"><div class="bar" style="height:160px"></div><div class="lbl">Apr</div></div>
+          <div class="col"><div class="bar" style="height:150px"></div><div class="lbl">May</div></div>
+          <div class="col"><div class="bar" style="height:190px"></div><div class="lbl">Jun</div></div>
+        </div></div>
+      </div>
+      <div class="chartcard">
+        <div class="ch"><h2>Lead source</h2></div>
+        <div class="cb">
+          <div class="donut" role="img" aria-label="Lead source: website 55%, portals 23%, phone and walk-in 22%"></div>
+          <div class="legend">
+            <div class="row"><span class="sw" style="background:var(--colour-brand-primary)"></span>Website <span class="pct">55%</span></div>
+            <div class="row"><span class="sw" style="background:var(--colour-status-available)"></span>Portals (Rightmove etc.) <span class="pct">23%</span></div>
+            <div class="row"><span class="sw" style="background:var(--colour-brand-accent)"></span>Phone &amp; walk-in <span class="pct">22%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tablewrap tablewrap2">
+      <div class="tabletop"><span class="res">Agent performance · 30 days</span><div class="right"><span class="ubadge grey">feedback_reviews pack</span></div></div>
+      <div class="scrollx"><table class="t">
+        <thead><tr><th>Agent</th><th>Branch</th><th>Listings</th><th>Viewings</th><th>Sales agreed</th><th>Avg. rating</th></tr></thead>
+        <tbody>
+          <tr><td class="who"><strong>Priya Shah</strong></td><td>Didsbury</td><td>14</td><td>38</td><td>7</td><td>4.9 ★</td></tr>
+          <tr><td class="who"><strong>Tom Beckett</strong></td><td>Didsbury</td><td>11</td><td>29</td><td>5</td><td>4.8 ★</td></tr>
+          <tr><td class="who"><strong>Mariam Okafor</strong></td><td>City</td><td>9</td><td>22</td><td>4</td><td>4.9 ★</td></tr>
+          <tr><td class="who"><strong>Sofia Lewis</strong></td><td>Chorlton</td><td>8</td><td>19</td><td>3</td><td>4.7 ★</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

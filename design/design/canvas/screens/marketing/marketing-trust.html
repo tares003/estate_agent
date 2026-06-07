@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — trust — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(34,211,238,0.22), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto; max-width: 16ch; }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 50ch; margin-inline: auto; }
+  .statuschip { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-6); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: rgba(16,185,129,0.15); color: #6ee7b7; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); } .statuschip .d { width: 8px; height: 8px; border-radius: 50%; background: #34d399; }
+
+  .pillars { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 768px) { .pillars { grid-template-columns: repeat(3,1fr); } }
+  .pillar { border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); padding: var(--space-6); }
+  .pillar .ic { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-md); background: rgba(79,70,229,0.1); color: var(--mkt-primary); display: grid; place-items: center; margin-bottom: var(--space-4); } .pillar .ic svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .pillar h3 { font-weight: var(--weight-bold); font-size: var(--text-heading-sm); margin-bottom: var(--space-3); }
+  .pillar li { display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--text-body-sm); color: var(--mkt-ink-2); padding: var(--space-1) 0; } .pillar li svg { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--mkt-primary); flex: 0 0 auto; margin-top: 2px; }
+
+  /* sub-processor table */
+  .subproc { background: var(--mkt-raised); }
+  .subproc h2 { font-size: var(--text-display-sm); margin-bottom: var(--space-2); } .subproc .sub { color: var(--mkt-ink-2); margin-bottom: var(--space-6); }
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); background: var(--mkt-surface); }
+  table.sp { width: 100%; border-collapse: collapse; min-width: 640px; }
+  table.sp th, table.sp td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--mkt-border); text-align: left; font-size: var(--text-body-sm); }
+  table.sp th { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-ink-2); font-weight: var(--weight-bold); }
+  table.sp tr:last-child td { border-bottom: none; }
+  table.sp .name { font-weight: var(--weight-semibold); }
+  .pending { background: rgba(245,158,11,0.08); } .pendtag { display: inline-flex; padding: 1px var(--space-2); border-radius: var(--radius-pill); background: rgba(245,158,11,0.16); color: #8a5a00; font-size: var(--text-caption); font-weight: var(--weight-semibold); }
+  .subscribe { display: flex; gap: var(--space-2); margin-top: var(--space-5); flex-wrap: wrap; max-width: 460px; }
+  .subscribe input { flex: 1; min-width: 200px; height: var(--size-input-md); padding-inline: var(--space-4); border: 1px solid var(--mkt-border); border-radius: var(--radius-md); }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — trust &amp; security</h1>
+    <span class="brief">EPIC-AE design brief — trust page (3-pillar) + live sub-processor list</span>
+    <dl class="annotations">
+      <div><dt>Pillars</dt><dd>Security · Compliance · Operations (TrustPillarSection)</dd></div>
+      <div><dt>Sub-processors</dt><dd>SubProcessorPublicList — live table; "changes effective in 14 days" highlight on a pending row (state §)</dd></div>
+      <div><dt>Status</dt><dd>operational chip; subscribe-to-change-notifications CTA (FR-AE-12)</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="#" aria-current="page">Trust</a><a href="marketing-roadmap.html">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Trust &amp; security</p>
+      <h1 class="display">Built to be trusted with your data.</h1>
+      <p>Security, compliance and operations — how we keep your agency and your customers safe.</p>
+      <a class="statuschip" href="#"><span class="d"></span>All systems operational · 99.98% uptime (90d)</a>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="pillars">
+        <div class="pillar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><h3>Security</h3><ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Encryption at rest &amp; in transit</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Enforced 2FA &amp; full audit log</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Annual penetration testing</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Vulnerability-disclosure policy</li></ul></div>
+        <div class="pillar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span><h3>Compliance</h3><ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>UK GDPR &amp; DPA 2018</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>ICO registered</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Property Ombudsman &amp; Material Information</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>AML stance &amp; data-retention policy</li></ul></div>
+        <div class="pillar"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></span><h3>Operations</h3><ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Public status page</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>99.98% uptime track record</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Incident-response SLA</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Daily encrypted backups</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section subproc">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Sub-processors</p>
+      <h2 class="display">Who we work with</h2>
+      <p class="sub">The third parties that process data on our behalf. We notify subscribers 14 days before any change.</p>
+      <div class="tbl-wrap">
+        <table class="sp" aria-label="Sub-processors">
+          <thead><tr><th>Sub-processor</th><th>Category</th><th>Country</th><th>Effective from</th><th>Last reviewed</th></tr></thead>
+          <tbody>
+            <tr><td class="name">[Cloud host]</td><td>Hosting &amp; storage</td><td>United Kingdom</td><td>Jan 2024</td><td>May 2026</td></tr>
+            <tr><td class="name">[Email provider]</td><td>Transactional email</td><td>EU (Ireland)</td><td>Jan 2024</td><td>May 2026</td></tr>
+            <tr><td class="name">[SMS provider]</td><td>SMS</td><td>United Kingdom</td><td>Jan 2024</td><td>Apr 2026</td></tr>
+            <tr class="pending"><td class="name">[Analytics provider] <span class="pendtag">Changes effective in 14 days</span></td><td>Product analytics</td><td>EU (Germany)</td><td>21 Jun 2026</td><td>Jun 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="subscribe">
+        <label for="sub" style="position:absolute;left:-9999px">Email for change notifications</label>
+        <input id="sub" type="email" placeholder="you@agency.co.uk">
+        <button class="mkt-btn primary">Subscribe to changes</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="#">Security</a><a href="#">Sub-processors</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

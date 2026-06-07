@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Template editor — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .editor { display: grid; gap: var(--space-6); grid-template-columns: 1fr; } @media (min-width: 1024px) { .editor { grid-template-columns: minmax(0,1fr) 380px; align-items: start; } }
+  .formcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .formcard .fh { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--colour-divider); display: flex; align-items: center; justify-content: space-between; } .formcard .fh h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); }
+  .fb { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); }
+  /* merge-field toolbar */
+  .merge { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .merge button { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--colour-surface-raised); border: 1px solid var(--colour-border); font-family: var(--font-mono); font-size: var(--text-body-sm); color: var(--colour-brand-accent-hover); }
+  .richtoolbar { display: flex; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--colour-border); border-bottom: none; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--colour-surface-raised); }
+  .richtoolbar button { width: var(--space-8); height: var(--space-8); display: grid; place-items: center; color: var(--colour-text-secondary); border-radius: var(--radius-sm); font-weight: var(--weight-bold); } .richtoolbar button:hover { background: var(--colour-surface-base); } .richtoolbar svg { width: var(--size-icon-md); height: var(--size-icon-md); }
+  .richbody { border: 1px solid var(--colour-border); border-radius: 0 0 var(--radius-md) var(--radius-md); padding: var(--space-4); min-height: 200px; font-size: var(--text-body-md); line-height: var(--text-body-lg-lh); }
+  .richbody .mf { background: rgba(201,162,75,0.16); border-radius: var(--radius-sm); padding: 0 4px; font-family: var(--font-mono); font-size: 0.9em; color: var(--colour-brand-accent-hover); }
+  /* live preview */
+  .prev-side { position: sticky; top: var(--space-6); }
+  .prevcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); overflow: hidden; }
+  .prevcard .ch { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--colour-divider); display: flex; align-items: center; justify-content: space-between; } .prevcard .ch h3 { font-size: var(--text-heading-sm); font-weight: var(--weight-semibold); font-family: var(--font-body); }
+  .prevcard .ch .toggle { display: inline-flex; border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; } .prevcard .ch .toggle button { padding: var(--space-1) var(--space-3); font-size: var(--text-caption); font-weight: var(--weight-semibold); color: var(--colour-text-muted); } .prevcard .ch .toggle button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .mailprev { padding: var(--space-5); background: #edeae3; }
+  .seg2 { display: inline-flex; gap: var(--space-1); margin-bottom: var(--space-5); background: var(--colour-surface-raised); padding: var(--space-1); border-radius: var(--radius-pill); }
+  .seg2 button { padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); color: var(--colour-text-secondary); } .seg2 button[aria-pressed="true"] { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Templates">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Email &amp; SMS template editor</h1>
+    <span class="brief">EPIC-H design brief — template editor (H.12) with merge fields + live preview</span>
+    <dl class="annotations">
+      <div><dt>Layout</dt><dd>email/SMS toggle · subject + rich body with merge-field toolbar · live preview (desktop/mobile)</dd></div>
+      <div><dt>Merge fields</dt><dd>inserted as highlighted tokens; preview substitutes sample data</dd></div>
+      <div><dt>Shown</dt><dd>the "viewing confirmation" email template</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Viewing confirmation</h1><p>Transactional template · sent when a viewing is confirmed</p></div><div style="display:flex;gap:var(--space-3)"><a class="btn secondary" href="#">Send test</a><a class="btn primary" href="#">Save template</a></div></div>
+
+    <div class="seg2" role="group" aria-label="Channel"><button aria-pressed="true">Email</button><button aria-pressed="false">SMS</button></div>
+
+    <div class="editor">
+      <div class="formcard">
+        <div class="fh"><h2>Email content</h2></div>
+        <div class="fb">
+          <div class="field"><label for="subj">Subject line</label><input id="subj" class="control" type="text" value="Your viewing is confirmed — {{viewing.date}}"></div>
+          <div class="field"><label>Insert a merge field</label><div class="merge"><button>{{customer.first_name}}</button><button>{{property.address}}</button><button>{{viewing.date}}</button><button>{{viewing.time}}</button><button>{{agent.name}}</button><button>{{branch.phone}}</button></div></div>
+          <div class="field"><label>Body</label>
+            <div class="richtoolbar" role="toolbar" aria-label="Formatting"><button aria-label="Bold">B</button><button aria-label="Italic" style="font-style:italic">I</button><button aria-label="Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg></button><button aria-label="Bullet list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button></div>
+            <div class="richbody" contenteditable="false">Hi <span class="mf">{{customer.first_name}}</span>,<br><br>Good news — your viewing is confirmed for <span class="mf">{{viewing.date}}</span> at <span class="mf">{{viewing.time}}</span>.<br><br>You'll be viewing <span class="mf">{{property.address}}</span> with <span class="mf">{{agent.name}}</span>, who'll meet you at the property.<br><br>Need to change anything? Just reply to this email or call <span class="mf">{{branch.phone}}</span>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="prev-side">
+        <div class="prevcard">
+          <div class="ch"><h3>Live preview</h3><div class="toggle" role="group" aria-label="Preview width"><button aria-pressed="true">Desktop</button><button>Mobile</button></div></div>
+          <div class="mailprev">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;font-family:'Inter',Arial,sans-serif;color:#1A1A1A">
+              <tr><td style="background:#1F2937;padding:18px 22px"><table role="presentation"><tr><td style="width:30px;height:30px;background:#C9A24B;border-radius:4px;color:#1A1A1A;font-weight:700;text-align:center;font-family:'Fraunces',Georgia,serif;vertical-align:middle">EA</td><td style="padding-left:10px;color:#F9FAFB;font-family:'Fraunces',Georgia,serif;font-size:17px">Estate Agent</td></tr></table></td></tr>
+              <tr><td style="padding:24px 22px 0"><span style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#0b6b4f">Viewing confirmed</span><h2 style="margin:6px 0 0;font-family:'Fraunces',Georgia,serif;font-weight:400;font-size:22px">Sat 13 June, 10:00am</h2></td></tr>
+              <tr><td style="padding:14px 22px 0;font-size:14px;line-height:1.6;color:#4B5563">Hi <strong style="color:#1A1A1A">Daniel</strong>,<br><br>Good news — your viewing is confirmed for <strong style="color:#1A1A1A">Sat 13 June</strong> at <strong style="color:#1A1A1A">10:00am</strong>. You'll be viewing <strong style="color:#1A1A1A">Palatine Road, M20</strong> with <strong style="color:#1A1A1A">Priya Shah</strong>.</td></tr>
+              <tr><td style="padding:20px 22px 26px;font-size:12px;color:#6B7280">Need to change anything? Reply or call 0161 000 0001.</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

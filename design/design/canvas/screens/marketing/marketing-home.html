@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — home — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .hero { background: var(--mkt-bg); color: var(--mkt-on-dark); position: relative; overflow: hidden; }
+  .hero::before { content:""; position: absolute; inset: 0; background: radial-gradient(60% 50% at 70% 0%, rgba(79,70,229,0.35), transparent 60%), radial-gradient(40% 40% at 15% 20%, rgba(34,211,238,0.18), transparent 60%); }
+  .hero .mkt-inner { position: relative; padding-block: var(--space-20); display: grid; gap: var(--space-12); grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 1024px) { .hero .mkt-inner { grid-template-columns: 1.05fr 0.95fr; } }
+  .hero h1 { font-size: var(--text-display-md); margin: var(--space-3) 0 var(--space-4); max-width: 16ch; }
+  @media (min-width: 1024px) { .hero h1 { font-size: var(--text-display-lg); } }
+  .hero p.sub { font-size: var(--text-body-lg); color: var(--mkt-on-dark-dim); max-width: 52ch; line-height: var(--text-body-lg-lh); }
+  .hero .ctas { display: flex; gap: var(--space-3); margin-top: var(--space-8); flex-wrap: wrap; }
+  /* product screenshot mock */
+  .shot { border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--mkt-border-dark); box-shadow: var(--shadow-lg); background: var(--mkt-surface); }
+  .shot .bar { display: flex; align-items: center; gap: 6px; padding: var(--space-3) var(--space-4); background: var(--mkt-raised); border-bottom: 1px solid var(--mkt-border); }
+  .shot .bar span { width: 10px; height: 10px; border-radius: 50%; background: #d4d7e6; }
+  .shot .body { padding: var(--space-5); }
+  .shot .skel { background: var(--mkt-raised); border-radius: var(--radius-sm); height: var(--space-4); margin-bottom: var(--space-3); }
+  .shot .kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .shot .kpi { background: var(--mkt-raised); border-radius: var(--radius-md); padding: var(--space-4); }
+  .shot .kpi .v { font-weight: var(--weight-bold); font-size: var(--text-heading-md); color: var(--mkt-ink); letter-spacing: -0.02em; }
+  .shot .kpi .k { font-size: var(--text-caption); color: var(--mkt-ink-2); text-transform: uppercase; letter-spacing: var(--text-caption-ls); font-weight: var(--weight-semibold); }
+  .shot .bargraph { display: flex; align-items: flex-end; gap: var(--space-2); height: 90px; }
+  .shot .bargraph i { flex: 1; background: var(--mkt-grad); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+
+  /* logo strip */
+  .logos { background: var(--mkt-bg); border-top: 1px solid var(--mkt-border-dark); }
+  .logos .mkt-inner { padding-block: var(--space-10); }
+  .logos p { text-align: center; font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--mkt-on-dark-dim); font-weight: var(--weight-semibold); margin-bottom: var(--space-6); }
+  .logos .row { display: flex; flex-wrap: wrap; gap: var(--space-8); justify-content: center; align-items: center; }
+  .logos .lg { height: var(--space-8); padding-inline: var(--space-5); display: grid; place-items: center; color: var(--mkt-on-dark); opacity: 0.6; font-weight: var(--weight-bold); letter-spacing: -0.02em; border: 1px solid var(--mkt-border-dark); border-radius: var(--radius-md); }
+
+  /* value props */
+  .props { display: grid; gap: var(--space-6); grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .props { grid-template-columns: repeat(3,1fr); } }
+  .prop { padding: var(--space-6); border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); background: var(--mkt-surface); transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard); }
+  .prop:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  @media (prefers-reduced-motion: reduce) { .prop:hover { transform: none; } }
+  .prop .ic { width: var(--space-12); height: var(--space-12); border-radius: var(--radius-md); background: rgba(79,70,229,0.1); color: var(--mkt-primary); display: grid; place-items: center; margin-bottom: var(--space-4); } .prop .ic svg { width: var(--size-icon-xl); height: var(--size-icon-xl); }
+  .prop h3 { font-weight: var(--weight-bold); font-size: var(--text-heading-sm); letter-spacing: -0.01em; margin-bottom: var(--space-2); } .prop p { color: var(--mkt-ink-2); font-size: var(--text-body-sm); line-height: var(--text-body-lg-lh); }
+
+  .props-head { text-align: center; max-width: 40ch; margin: 0 auto var(--space-12); }
+  .props-head h2 { font-size: var(--text-display-sm); margin: var(--space-2) 0; }
+  .props-head p { color: var(--mkt-ink-2); }
+
+  /* modular pricing teaser */
+  .teaser { background: var(--mkt-raised); }
+  .teaser .mkt-inner { display: grid; gap: var(--space-10); grid-template-columns: 1fr; align-items: center; } @media (min-width: 1024px) { .teaser .mkt-inner { grid-template-columns: 1fr 1fr; } }
+  .teaser h2 { font-size: var(--text-display-sm); margin: var(--space-2) 0 var(--space-4); } .teaser p { color: var(--mkt-ink-2); line-height: var(--text-body-lg-lh); margin-bottom: var(--space-6); }
+  .packchips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .packchip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--mkt-surface); border: 1px solid var(--mkt-border); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); }
+  .packchip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mkt-primary); } .packchip.beta .dot { background: var(--mkt-accent); }
+
+  /* incident banner (state variation) */
+  .incident { background: #8a5a00; color: #fff; } .incident .mkt-inner { padding-block: var(--space-3); display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-body-sm); flex-wrap: wrap; } .incident svg { width: var(--size-icon-md); height: var(--size-icon-md); } .incident a { color: #fff; font-weight: var(--weight-semibold); margin-left: auto; }
+
+  /* final CTA */
+  .finalcta { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .finalcta::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 80% at 50% 100%, rgba(79,70,229,0.4), transparent 60%); }
+  .finalcta .mkt-inner { position: relative; }
+  .finalcta h2 { font-size: var(--text-display-md); max-width: 18ch; margin: var(--space-2) auto var(--space-6); }
+  .finalcta .ctas { display: flex; gap: var(--space-3); justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — home</h1>
+    <span class="brief">EPIC-AE design brief — operator marketing site (sells the SaaS to agencies)</span>
+    <dl class="annotations">
+      <div><dt>Identity</dt><dd>operator-editorial — saturated indigo/cyan, geometric Inter, product-screenshot-driven (NOT the warm tenant identity)</dd></div>
+      <div><dt>Designer interpretation</dt><dd>op brand TBD (gaps #6) → scoped <code>.mkt</code> theme preset on EPIC-L primitives</dd></div>
+      <div><dt>Sections</dt><dd>incident banner (state) · hero + product shot · logo strip · value props · modular-pricing teaser · final CTA</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+
+  <div class="incident" role="alert"><div class="mkt-inner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>We're investigating elevated API latency. No data is affected.</span><a href="#">View status →</a></div></div>
+
+  <header class="mkt-header">
+    <div class="row">
+      <a class="mkt-brand" href="#"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#" aria-current="page">Product</a><a href="#">Features</a><a href="marketing-pricing.html">Pricing</a><a href="#">Customers</a><a href="#">Trust</a><a href="#">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="mkt-inner">
+      <div>
+        <p class="mkt-eyebrow">For UK estate agencies</p>
+        <h1 class="display">The modern platform for estate agencies.</h1>
+        <p class="sub">Sales, lettings, new homes and a website that sells — in one place. Pay for the packs you actually use, add more as you grow.</p>
+        <div class="ctas"><a class="mkt-btn primary lg" href="marketing-pricing.html">See pricing</a><a class="mkt-btn ghost-d lg" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10 8 6 4-6 4z"/><circle cx="12" cy="12" r="9"/></svg>Book a demo</a></div>
+      </div>
+      <div class="shot" aria-hidden="true">
+        <div class="bar"><span></span><span></span><span></span></div>
+        <div class="body">
+          <div class="kpis"><div class="kpi"><div class="v">312</div><div class="k">Listings</div></div><div class="kpi"><div class="v">47</div><div class="k">Enquiries</div></div><div class="kpi"><div class="v">£38k</div><div class="k">Pipeline</div></div></div>
+          <div class="skel" style="width:40%"></div>
+          <div class="bargraph"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:70%"></i><i style="height:95%"></i><i style="height:60%"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="logos">
+    <div class="mkt-inner">
+      <p>Trusted by agencies across the UK</p>
+      <div class="row"><span class="lg">Northern Homes</span><span class="lg">City &amp; Coast</span><span class="lg">Meadow</span><span class="lg">Parkview</span><span class="lg">Halcyon</span></div>
+    </div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="props-head"><p class="mkt-eyebrow">Why agencies switch</p><h2 class="display">Everything an agency needs, nothing it doesn't.</h2><p>One system for your website, your listings, your leads and your compliance.</p></div>
+      <div class="props">
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11 12 4l9 7"/><path d="M5 10v9h14v-9"/></svg></span><h3>A website that sells</h3><p>A fast, beautiful site with one property card used everywhere — built to convert valuations, not just look pretty.</p></div>
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></span><h3>Leads that don't slip</h3><p>Every enquiry routed, assigned and chased automatically — with SLA warnings before anything goes cold.</p></div>
+        <div class="prop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><h3>Compliance built in</h3><p>GDPR consent, audit logging, Material Information and 2FA come as standard — not as an afterthought.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section teaser">
+    <div class="mkt-inner">
+      <div>
+        <p class="mkt-eyebrow">Modular pricing</p>
+        <h2 class="display">Start small. Add packs as you grow.</h2>
+        <p>Begin with the essentials, then switch on Lettings, New Homes, Feedback &amp; reviews, Automation and more — each a clear monthly price, cancel anytime. No big-bang migration, no paying for what you don't use.</p>
+        <a class="mkt-btn primary lg" href="marketing-pricing.html">Explore pricing</a>
+      </div>
+      <div class="packchips">
+        <span class="packchip"><span class="dot"></span>Core</span>
+        <span class="packchip"><span class="dot"></span>Lettings</span>
+        <span class="packchip"><span class="dot"></span>New Homes</span>
+        <span class="packchip"><span class="dot"></span>Feedback &amp; reviews</span>
+        <span class="packchip"><span class="dot"></span>Automation</span>
+        <span class="packchip beta"><span class="dot"></span>Insights · Beta</span>
+        <span class="packchip"><span class="dot"></span>Custom domain</span>
+        <span class="packchip"><span class="dot"></span>Multi-branch</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="mkt-section finalcta">
+    <div class="mkt-inner">
+      <p class="mkt-eyebrow">Ready when you are</p>
+      <h2 class="display">See it on your own properties.</h2>
+      <div class="ctas"><a class="mkt-btn primary lg" href="marketing-pricing.html">See pricing</a><a class="mkt-btn ghost-d lg" href="#">Book a demo</a></div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer">
+    <div class="inner">
+      <div><a class="mkt-brand" href="#" style="margin-bottom:var(--space-4)"><span class="mark">EA</span>Estate Agent Platform</a><p style="color:var(--mkt-on-dark-dim);font-size:var(--text-body-sm);max-width:36ch">The modular platform for UK estate agencies. Built for sales, lettings and new homes.</p></div>
+      <div><h4>Product</h4><a href="#">Features</a><a href="marketing-pricing.html">Pricing</a><a href="#">Roadmap</a><a href="#">Customers</a></div>
+      <div><h4>Company</h4><a href="#">About</a><a href="#">Careers</a><a href="#">Contact</a><a href="#">Knowledge</a></div>
+      <div><h4>Trust</h4><a href="#">Security</a><a href="#">Sub-processors</a><a href="#">Status</a><a href="#">Legal</a></div>
+      <div class="legal">© 2026 Estate Agent Platform Ltd · Registered in England &amp; Wales · This is the operator marketing site, distinct from tenant agency sites.</div>
+    </div>
+  </footer>
+</main>
+<section data-rv></section>
+</body>
+</html>

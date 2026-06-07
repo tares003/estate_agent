@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom domain — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="admin-shell.css">
+<script src="../../canvas.js"></script>
+<script src="admin-shell.js"></script>
+<style>
+  .wiz { max-width: 760px; }
+  .wizsteps { display: flex; gap: 0; margin-bottom: var(--space-8); }
+  .wstep { flex: 1; position: relative; padding-top: var(--space-8); }
+  .wstep .n { position: absolute; top: 0; left: 0; width: var(--space-8); height: var(--space-8); border-radius: var(--radius-circle); display: grid; place-items: center; font-size: var(--text-body-sm); font-weight: var(--weight-semibold); background: var(--colour-surface-sunken); color: var(--colour-text-muted); z-index: 1; }
+  .wstep::before { content:""; position: absolute; top: calc(var(--space-8)/2); left: var(--space-8); right: 0; height: 2px; background: var(--colour-border); } .wstep:last-child::before { display: none; }
+  .wstep.done .n { background: var(--colour-success); color: var(--colour-brand-primary-on); } .wstep.done::before { background: var(--colour-success); }
+  .wstep.current .n { background: var(--colour-brand-primary); color: var(--colour-brand-primary-on); }
+  .wstep .l { font-size: var(--text-body-sm); color: var(--colour-text-muted); padding-right: var(--space-2); } .wstep.current .l, .wstep.done .l { color: var(--colour-text-primary); }
+
+  .formcard { border: 1px solid var(--colour-border); border-radius: var(--radius-lg); background: var(--colour-surface-base); overflow: hidden; }
+  .formcard .fh { padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--colour-divider); } .formcard .fh h2 { font-family: var(--font-display); font-size: var(--text-heading-md); font-weight: var(--weight-semibold); } .formcard .fh p { color: var(--colour-text-muted); font-size: var(--text-body-sm); margin-top: var(--space-1); }
+  .fb { padding: var(--space-6); }
+
+  /* DNS records table */
+  .dns { border: 1px solid var(--colour-border); border-radius: var(--radius-md); overflow: hidden; margin: var(--space-4) 0; }
+  .dns table { width: 100%; } .dns th { text-align: left; padding: var(--space-3) var(--space-4); font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; color: var(--colour-text-muted); font-weight: var(--weight-semibold); border-bottom: 1px solid var(--colour-divider); background: var(--colour-surface-raised); }
+  .dns td { padding: var(--space-3) var(--space-4); font-size: var(--text-body-sm); border-bottom: 1px solid var(--colour-divider); font-family: var(--font-mono); } .dns tr:last-child td { border-bottom: none; }
+  .dns td .copy { font-family: var(--font-body); color: var(--colour-brand-accent-hover); cursor: pointer; font-weight: var(--weight-semibold); }
+  .verify-state { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); margin-top: var(--space-4); font-size: var(--text-body-sm); }
+  .verify-state.pending { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); color: #8a5a00; }
+  .verify-state.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.35); color: #0b6b4f; }
+  .verify-state svg { width: var(--size-icon-lg); height: var(--size-icon-lg); flex: 0 0 auto; }
+  .spin { animation: sp 1s linear infinite; } @keyframes sp { to { transform: rotate(360deg); } } @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  .navrow { display: flex; justify-content: space-between; margin-top: var(--space-6); }
+</style>
+</head>
+<body data-active="settings" data-crumb="Settings · Custom domain">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Custom-domain wizard</h1>
+    <span class="brief">EPIC-S design brief — connect a custom domain (Phase B · B8)</span>
+    <dl class="annotations">
+      <div><dt>Steps</dt><dd>enter domain → add DNS records (copyable) → verify (polling state) → SSL issued → live</dd></div>
+      <div><dt>Shown</dt><dd>step 2 (DNS records) with a pending verification state</dd></div>
+      <div><dt>Trust</dt><dd>plain-English DNS guidance; auto-SSL via the platform, no manual certs</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <div class="app"><div class="main"><div class="content">
+    <div class="page-h"><div><h1>Custom domain</h1><p>Point your own web address at your Estate Agent site.</p></div></div>
+
+    <div class="wiz">
+      <ol class="wizsteps" aria-label="Domain setup progress">
+        <li class="wstep done"><span class="n" aria-hidden="true">✓</span><span class="l">Domain</span></li>
+        <li class="wstep current"><span class="n">2</span><span class="l" aria-current="step">DNS records</span></li>
+        <li class="wstep"><span class="n">3</span><span class="l">Verify</span></li>
+        <li class="wstep"><span class="n">4</span><span class="l">Go live</span></li>
+      </ol>
+
+      <div class="formcard">
+        <div class="fh"><h2>Add these DNS records</h2><p>Sign in to your domain provider (e.g. GoDaddy, Cloudflare) and add the records below. We'll detect them automatically.</p></div>
+        <div class="fb">
+          <p style="font-size:var(--text-body-sm);color:var(--colour-text-secondary);margin-bottom:var(--space-2)">Domain: <strong style="font-family:var(--font-mono);color:var(--colour-text-primary)">www.didsbury-homes.co.uk</strong></p>
+          <div class="dns">
+            <table>
+              <thead><tr><th>Type</th><th>Name</th><th>Value</th><th>TTL</th></tr></thead>
+              <tbody>
+                <tr><td>CNAME</td><td>www</td><td>sites.estateagent.app <span class="copy">Copy</span></td><td>3600</td></tr>
+                <tr><td>TXT</td><td>_ea-verify</td><td>ea-verify=9f2a4c8b1d <span class="copy">Copy</span></td><td>3600</td></tr>
+                <tr><td>A</td><td>@</td><td>76.76.21.21 <span class="copy">Copy</span></td><td>3600</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="verify-state pending" role="status">
+            <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+            <div><strong>Waiting for DNS to propagate…</strong> This can take a few minutes to a few hours. You can leave this page — we'll email you when it's verified.</div>
+          </div>
+          <div class="navrow"><button class="btn secondary">Back</button><button class="btn primary">Check now</button></div>
+        </div>
+      </div>
+
+      <p style="font-size:var(--text-body-sm);color:var(--colour-text-muted);margin-top:var(--space-5)">Once verified, we issue a free SSL certificate automatically — your visitors get <strong>https://</strong> with no extra steps.</p>
+    </div>
+  </div></div></div>
+</main>
+<section data-rv></section>
+</body>
+</html>

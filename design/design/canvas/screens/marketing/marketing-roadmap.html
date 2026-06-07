@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform marketing — roadmap — Estate Agent canvas</title>
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../base.css">
+<link rel="stylesheet" href="marketing-theme.css">
+<script src="../../canvas.js"></script>
+<style>
+  .phead { background: var(--mkt-bg); color: var(--mkt-on-dark); text-align: center; position: relative; overflow: hidden; }
+  .phead::before { content:""; position: absolute; inset: 0; background: radial-gradient(50% 60% at 50% 0%, rgba(79,70,229,0.3), transparent 60%); }
+  .phead .mkt-inner { position: relative; padding-block: var(--space-16); }
+  .phead h1 { font-size: var(--text-display-md); margin: var(--space-3) auto; max-width: 16ch; }
+  .phead p { color: var(--mkt-on-dark-dim); font-size: var(--text-body-lg); max-width: 50ch; margin-inline: auto; }
+
+  .board { display: grid; gap: var(--space-5); grid-template-columns: 1fr; } @media (min-width: 768px) { .board { grid-template-columns: repeat(2,1fr); } } @media (min-width: 1280px) { .board { grid-template-columns: repeat(4,1fr); } }
+  .lane { background: var(--mkt-raised); border: 1px solid var(--mkt-border); border-radius: var(--radius-lg); padding: var(--space-4); }
+  .lane .lh { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-1) var(--space-2); }
+  .lane .lh .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .lane .lh h2 { font-size: var(--text-body-md); font-weight: var(--weight-bold); } .lane .lh .c { margin-left: auto; font-size: var(--text-caption); color: var(--mkt-ink-2); font-weight: var(--weight-semibold); }
+  .lane.shipped .dot { background: var(--colour-success); } .lane.progress .dot { background: var(--colour-info); } .lane.planned .dot { background: var(--mkt-primary); } .lane.backlog .dot { background: var(--mkt-ink-2); }
+  .rcard { background: var(--mkt-surface); border: 1px solid var(--mkt-border); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-3); }
+  .rcard h3 { font-weight: var(--weight-semibold); font-size: var(--text-body-md); margin-bottom: var(--space-1); }
+  .rcard p { font-size: var(--text-body-sm); color: var(--mkt-ink-2); line-height: var(--text-body-lg-lh); margin-bottom: var(--space-3); }
+  .rcard .foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .rcard .when { font-size: var(--text-caption); letter-spacing: var(--text-caption-ls); text-transform: uppercase; font-weight: var(--weight-semibold); color: var(--mkt-ink-2); }
+  .upvote { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--space-8); padding-inline: var(--space-3); border-radius: var(--radius-pill); border: 1px solid var(--mkt-border); background: var(--mkt-surface); font-size: var(--text-body-sm); font-weight: var(--weight-semibold); cursor: pointer; transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
+  .upvote svg { width: 14px; height: 14px; }
+  .upvote.voted { background: var(--mkt-primary); color: #fff; border-color: var(--mkt-primary); }
+  .upvote .chip { transition: transform var(--motion-duration-fast) var(--motion-ease-emphasis); }
+  @media (prefers-reduced-motion: no-preference) { .upvote.bump .chip { transform: scale(1.3); } }
+  .shipped .rcard { opacity: 0.85; }
+</style>
+</head>
+<body class="mkt">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="canvas-head">
+  <div class="container">
+    <a class="back" href="../../index.html">← Canvas index</a>
+    <h1>Platform marketing — roadmap</h1>
+    <span class="brief">EPIC-AE design brief — public roadmap (RoadmapLaneBoard)</span>
+    <dl class="annotations">
+      <div><dt>Lanes</dt><dd>Shipped · In progress · Planned · Backlog</dd></div>
+      <div><dt>Interactive</dt><dd>per-feature upvote (click) with instant confirmation + count bump; count in the accessible name</dd></div>
+      <div><dt>Responsive</dt><dd>4 lanes → 2 → 1; each card carries feature, description, timeframe</dd></div>
+    </dl>
+  </div>
+</header>
+<main id="main">
+  <header class="mkt-header">
+    <div class="row"><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a>
+      <nav class="mkt-nav" aria-label="Primary"><a href="#">Product</a><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a><a href="marketing-customers.html">Customers</a><a href="marketing-trust.html">Trust</a><a href="#" aria-current="page">Roadmap</a></nav>
+      <div class="actions"><a class="mkt-btn ghost-d" href="#">Sign in</a><a class="mkt-btn primary" href="#">Book a demo</a><button class="ham" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    </div>
+  </header>
+
+  <section class="phead">
+    <div class="mkt-inner"><p class="mkt-eyebrow">Roadmap</p><h1 class="display">What we're building next.</h1><p>Shaped by agencies like yours. Upvote what matters to you — it informs what we ship.</p></div>
+  </section>
+
+  <section class="mkt-section">
+    <div class="mkt-inner">
+      <div class="board">
+        <div class="lane shipped"><div class="lh"><span class="dot"></span><h2>Shipped</h2><span class="c">3</span></div>
+          <div class="rcard"><h3>Tenant portal</h3><p>Rent, repairs &amp; documents in one tenant login.</p><div class="foot"><span class="when">Q1 2026</span><button class="upvote voted" aria-label="Tenant portal — 248 upvotes, you voted"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">248</span></button></div></div>
+          <div class="rcard"><h3>Custom domains + SSL</h3><p>Bring your own domain with automatic certificates.</p><div class="foot"><span class="when">Q1 2026</span><button class="upvote" aria-label="Custom domains — 190 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">190</span></button></div></div>
+        </div>
+        <div class="lane progress"><div class="lh"><span class="dot"></span><h2>In progress</h2><span class="c">2</span></div>
+          <div class="rcard"><h3>Insights pack (beta)</h3><p>Cross-branch reporting &amp; pipeline forecasting.</p><div class="foot"><span class="when">Q2 2026</span><button class="upvote" aria-label="Insights pack — 312 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">312</span></button></div></div>
+          <div class="rcard"><h3>WhatsApp lead capture</h3><p>Route WhatsApp enquiries into the CRM queue.</p><div class="foot"><span class="when">Q2 2026</span><button class="upvote" aria-label="WhatsApp lead capture — 156 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">156</span></button></div></div>
+        </div>
+        <div class="lane planned"><div class="lh"><span class="dot"></span><h2>Planned</h2><span class="c">2</span></div>
+          <div class="rcard"><h3>Mobile app</h3><p>iOS &amp; Android for agents on the move.</p><div class="foot"><span class="when">Q3 2026</span><button class="upvote" aria-label="Mobile app — 421 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">421</span></button></div></div>
+          <div class="rcard"><h3>AI listing descriptions</h3><p>Draft compliant descriptions, flagged for human review.</p><div class="foot"><span class="when">Q3 2026</span><button class="upvote" aria-label="AI listing descriptions — 388 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">388</span></button></div></div>
+        </div>
+        <div class="lane backlog"><div class="lh"><span class="dot"></span><h2>Backlog</h2><span class="c">2</span></div>
+          <div class="rcard"><h3>Commercial pack</h3><p>Commercial &amp; business-transfer property types.</p><div class="foot"><span class="when">Later</span><button class="upvote" aria-label="Commercial pack — 97 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">97</span></button></div></div>
+          <div class="rcard"><h3>Auction support</h3><p>Modern method of auction workflows.</p><div class="foot"><span class="when">Later</span><button class="upvote" aria-label="Auction support — 64 upvotes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 15 7-7 7 7"/></svg><span class="chip">64</span></button></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="mkt-footer"><div class="inner"><div><a class="mkt-brand" href="marketing-home.html"><span class="mark">EA</span>Estate Agent Platform</a></div><div><h4>Product</h4><a href="marketing-features.html">Features</a><a href="marketing-pricing.html">Pricing</a></div><div><h4>Company</h4><a href="#">About</a><a href="#">Contact</a></div><div><h4>Trust</h4><a href="marketing-trust.html">Security</a><a href="#">Status</a></div><div class="legal">© 2026 Estate Agent Platform Ltd</div></div></footer>
+</main>
+<section data-rv></section>
+
+<script>
+(function(){
+  document.querySelectorAll('.upvote').forEach(function(b){
+    b.addEventListener('click', function(){
+      var chip = b.querySelector('.chip'); var n = parseInt(chip.textContent,10);
+      var voted = b.classList.toggle('voted');
+      chip.textContent = voted ? n+1 : n-1;
+      b.classList.add('bump'); setTimeout(function(){ b.classList.remove('bump'); }, 200);
+    });
+  });
+})();
+</script>
+</body>
+</html>
