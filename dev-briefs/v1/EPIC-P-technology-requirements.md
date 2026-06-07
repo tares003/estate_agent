@@ -1,6 +1,7 @@
 # EPIC-P — Technology requirements (implementation-neutral)
 
 **Master spec reference:** Section P.
+**Pack:** Core.
 **Status:** CONTEXT (no implementation work).
 **Paired design brief:** [design-briefs/v1/EPIC-P-technology-requirements.md](../../design-briefs/v1/EPIC-P-technology-requirements.md).
 

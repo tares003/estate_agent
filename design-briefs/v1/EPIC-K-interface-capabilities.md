@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-K-interface-capabilities.md](../../dev-briefs/v1/EPIC-K-interface-capabilities.md).
 **Master spec reference:** Section K.
+**Pack:** Core (with pack-dependent capabilities gated per EPIC-AD).
 **Status:** CONTEXT (informs loading, empty, error, success states across all consuming surfaces).
 
 ## Purpose

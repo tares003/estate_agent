@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-P-technology-requirements.md](../../dev-briefs/v1/EPIC-P-technology-requirements.md).
 **Master spec reference:** Section P.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

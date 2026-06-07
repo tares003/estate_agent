@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-T-customer-accounts.md](../../dev-briefs/v1/EPIC-T-customer-accounts.md).
 **Master spec reference:** Section C.17.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

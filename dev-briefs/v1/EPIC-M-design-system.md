@@ -1,6 +1,7 @@
 # EPIC-M — UX and visual design system
 
 **Master spec reference:** Section M.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-M-design-system.md](../../design-briefs/v1/EPIC-M-design-system.md).
 

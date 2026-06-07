@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-E-static-info.md](../../dev-briefs/v1/EPIC-E-static-info.md).
 **Master spec reference:** Section E.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

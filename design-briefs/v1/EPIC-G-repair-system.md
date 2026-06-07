@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-G-repair-system.md](../../dev-briefs/v1/EPIC-G-repair-system.md).
 **Master spec reference:** Section G.
+**Pack:** Core (Lettings is part of core per PRODUCT.md §5).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

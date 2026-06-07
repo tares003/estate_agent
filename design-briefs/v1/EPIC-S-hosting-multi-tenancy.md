@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-S-hosting-multi-tenancy.md](../../dev-briefs/v1/EPIC-S-hosting-multi-tenancy.md).
 **Master spec reference:** Section S.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

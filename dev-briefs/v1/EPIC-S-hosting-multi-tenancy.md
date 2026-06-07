@@ -1,6 +1,7 @@
 # EPIC-S — Hosting and multi-tenancy NFRs
 
 **Master spec reference:** Section S (S.1–S.14).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-S-hosting-multi-tenancy.md](../../design-briefs/v1/EPIC-S-hosting-multi-tenancy.md).
 

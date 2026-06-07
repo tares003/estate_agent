@@ -1,6 +1,7 @@
 # EPIC-T — Customer accounts
 
 **Master spec reference:** Section C.17 (account routes), Section B.20–B.24 (registration / login / save / saved-search / customer dashboard features).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-T-customer-accounts.md](../../design-briefs/v1/EPIC-T-customer-accounts.md).
 **Phase ownership:** Phase 6 of the build roadmap.

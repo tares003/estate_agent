@@ -1,6 +1,7 @@
 # EPIC-AC — Feedback and review collection (design)
 
 **Dev brief:** [dev-briefs/v1/EPIC-AC-feedback-reviews.md](../../dev-briefs/v1/EPIC-AC-feedback-reviews.md).
+**Pack:** `feedback_reviews` (add-on; included with Professional and Enterprise tiers).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

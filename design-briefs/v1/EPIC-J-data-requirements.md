@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-J-data-requirements.md](../../dev-briefs/v1/EPIC-J-data-requirements.md).
 **Master spec reference:** Section J.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

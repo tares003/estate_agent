@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-F-property-data.md](../../dev-briefs/v1/EPIC-F-property-data.md).
 **Master spec reference:** Section F.
+**Pack:** Core (with new_homes, commercial, business_transfer, care_homes attributes gated by their packs).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

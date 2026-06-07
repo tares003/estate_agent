@@ -1,6 +1,7 @@
 # EPIC-A — Executive summary and architectural direction
 
 **Master spec reference:** Section A.
+**Pack:** Core.
 **Status:** CONTEXT (no implementation work).
 **Paired design brief:** [design-briefs/v1/EPIC-A-executive-summary.md](../../design-briefs/v1/EPIC-A-executive-summary.md).
 

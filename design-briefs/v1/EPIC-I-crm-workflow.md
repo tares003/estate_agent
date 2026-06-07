@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-I-crm-workflow.md](../../dev-briefs/v1/EPIC-I-crm-workflow.md).
 **Master spec reference:** Section I.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

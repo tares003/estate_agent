@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-C-public-pages-sitemap.md](../../dev-briefs/v1/EPIC-C-public-pages-sitemap.md).
 **Master spec reference:** Section C.
+**Pack:** Core (with new_homes, commercial, business_transfer, care_homes sections gated by their packs).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

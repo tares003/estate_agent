@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-X-bulk-import.md](../../dev-briefs/v1/EPIC-X-bulk-import.md).
 **Master spec reference:** Section H.22.
+**Pack:** `bulk_import` (add-on; often a one-off engagement at signup).
 **Status:** DEFERRED to Phase 8.
 
 ## Surfaces affected

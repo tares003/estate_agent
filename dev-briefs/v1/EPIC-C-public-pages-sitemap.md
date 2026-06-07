@@ -1,6 +1,7 @@
 # EPIC-C — Public pages and sitemap
 
 **Master spec reference:** Section C (C.1 through C.20).
+**Pack:** Core (with new_homes, commercial, business_transfer, care_homes sections gated by their packs).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-C-public-pages-sitemap.md](../../design-briefs/v1/EPIC-C-public-pages-sitemap.md).
 **Owns master-spec features:** B.1, B.2, B.3, B.4, B.14, B.30, B.31, B.32, B.36, B.37, B.38, B.39, B.40, B.41, B.42, B.43, B.44, B.45, B.46, B.47, B.48, B.50, B.51.

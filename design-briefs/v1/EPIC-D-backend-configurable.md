@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-D-backend-configurable.md](../../dev-briefs/v1/EPIC-D-backend-configurable.md).
 **Master spec reference:** Section D.
+**Pack:** Core (with pack-dependent section types gated).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-B-feature-audit.md](../../dev-briefs/v1/EPIC-B-feature-audit.md).
 **Master spec reference:** Section B.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

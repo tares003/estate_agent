@@ -2408,4 +2408,20 @@ The following hosting models all satisfy the requirements above in principle. Th
 |---|---|---|---|
 | Pure hyperscaler (managed services from a major cloud provider) | Highest | Lowest | Strongest (inherited certifications) |
 | Hybrid (rented compute combined with managed data and edge services) | Moderate | Moderate | Moderate (depends on chosen managed services) |
-| Pure self-hosted (rented dedicated servers under full team control) | Lowest | Highest |
+| Pure self-hosted (rented dedicated servers under full team control) | Lowest | Highest | Weakest (team must achieve compliance independently) |
+
+The cost saving of moving away from a pure hyperscaler can be substantial (60–80% at scale), but is only realised if the team has the operational capacity to absorb the work the hyperscaler would otherwise have done. The hybrid model is the typical answer for cost-sensitive B2B SaaS that needs to keep operational burden manageable.
+
+### S.14 What is intentionally not specified
+
+- The specific hosting provider or providers.
+- The specific container runtime, orchestrator, database product, object storage product, CDN, email provider, or monitoring service.
+- The specific deployment pipeline or infrastructure-as-code tool.
+- The specific tenant-provisioning workflow technology.
+- The specific cost figures for any tenant or scale point — these will be set when the architecture is committed and re-evaluated quarterly.
+
+These remain implementation decisions to be made when the architecture is committed.
+
+---
+
+**End of specification.**

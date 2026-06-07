@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-R-cross-cutting.md](../../dev-briefs/v1/EPIC-R-cross-cutting.md).
 **Master spec reference:** Section R.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

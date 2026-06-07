@@ -1,6 +1,7 @@
 # EPIC-I — CRM and lead workflow
 
 **Master spec reference:** Section I (I.1–I.5).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-I-crm-workflow.md](../../design-briefs/v1/EPIC-I-crm-workflow.md).
 

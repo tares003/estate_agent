@@ -1,6 +1,7 @@
 # EPIC-W — Stamp Duty and Mortgage calculators
 
 **Master spec reference:** Section B.58 (Stamp Duty), Section B.59 (Mortgage), Section P.2 (build).
+**Pack:** `calculators` (add-on; included with all tiers per PRODUCT.md §5c).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-W-calculators.md](../../design-briefs/v1/EPIC-W-calculators.md).
 

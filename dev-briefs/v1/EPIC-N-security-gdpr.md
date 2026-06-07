@@ -1,6 +1,7 @@
 # EPIC-N — Security and GDPR
 
 **Master spec reference:** Section N (N.1–N.9).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-N-security-gdpr.md](../../design-briefs/v1/EPIC-N-security-gdpr.md).
 

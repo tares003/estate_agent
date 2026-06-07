@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-M-design-system.md](../../dev-briefs/v1/EPIC-M-design-system.md).
 **Master spec reference:** Section M.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Purpose

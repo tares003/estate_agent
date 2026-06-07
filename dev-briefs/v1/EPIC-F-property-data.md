@@ -1,6 +1,7 @@
 # EPIC-F — Property listing data
 
 **Master spec reference:** Section F (and per-vertical extensions F.1–F.6).
+**Pack:** Core (with new_homes, commercial, business_transfer, care_homes attributes gated by their packs).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-F-property-data.md](../../design-briefs/v1/EPIC-F-property-data.md).
 

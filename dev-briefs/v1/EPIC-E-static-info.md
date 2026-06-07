@@ -1,6 +1,7 @@
 # EPIC-E — Static information areas
 
 **Master spec reference:** Section E.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-E-static-info.md](../../design-briefs/v1/EPIC-E-static-info.md).
 

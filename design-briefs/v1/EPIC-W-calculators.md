@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-W-calculators.md](../../dev-briefs/v1/EPIC-W-calculators.md).
 **Master spec reference:** Sections B.58, B.59.
+**Pack:** `calculators` (add-on; included with all tiers per PRODUCT.md §5c).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

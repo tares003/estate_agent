@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-A-executive-summary.md](../../dev-briefs/v1/EPIC-A-executive-summary.md).
 **Master spec reference:** Section A.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

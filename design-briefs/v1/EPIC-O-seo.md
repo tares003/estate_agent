@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-O-seo.md](../../dev-briefs/v1/EPIC-O-seo.md).
 **Master spec reference:** Section O.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

@@ -67,9 +67,30 @@ Where the engine and the UI may use different terms, this table is the authority
 | Seller valuation form | *Get a free valuation* | *Valuation* | `valuation_request` |
 | Maintenance reporting form | *Report a repair* | *Repair / Ticket* | `repair_request` |
 
-## 5. Tier model
+## 5. Tier model and feature packs
 
-The platform is sold in three subscription tiers.
+The platform is sold as a **modular product**. A tenant agency subscribes to a **plan tier** (Starter / Professional / Enterprise) which sets the base monthly fee and the included quotas. On top of the tier, the tenant enables zero or more **feature packs**, each of which switches on a discrete set of capabilities and may add to the monthly bill.
+
+The technical mechanism is owned by EPIC-AD ("Feature packs and modular entitlement"). The catalogue and commercial inclusions below are the source of truth — EPIC-AD implements them faithfully.
+
+### 5a. Pack catalogue
+
+| Pack slug | Pack name | What it enables | Always on? |
+|---|---|---|---|
+| `core` | Core platform | Public marketing site, property catalogue, property detail, contact form, viewing requests, basic CRM, basic admin, customer accounts, SEO, security, audit, GDPR compliance — **plus the full Lettings experience** (tenant repair flow, contractor magic-link portal, tenant portal, landlord portal, deposit-protection display, gas safety / EICR / EPC compliance tracking) | Yes — every tenant gets this |
+| `sales_plus` | Sales-plus | Vendor portal, comparables panel, offers entity, monthly vendor reports, vendor-side viewing-feedback display | No (add-on) |
+| `new_homes` | New Homes | Developments entity, "From price" qualifier, "new homes only" filter, off-plan flag, new-homes vertical landing page | No (add-on) |
+| `commercial` | Commercial | Commercial-specific property attributes (use class, business rates, VAT-payable, sqft critical), commercial enquiry form, commercial vertical landing page | No (add-on) |
+| `business_transfer` | Business Transfer | Business-transfer attributes (turnover, P&L, confidentiality flag), business enquiry form, business-transfer vertical landing page | No (add-on) |
+| `care_homes` | Care Homes | CQC rating, bed count, services offered, care-home vertical | No (add-on) |
+| `portal_syndication` | Portal Syndication | Outbound Rightmove / Zoopla / OnTheMarket feeds | No (add-on) |
+| `calculators` | Calculators | Stamp Duty + Mortgage calculators, embeddable on any CMS page | No (add-on) |
+| `bulk_import` | Bulk Import | CSV / XML import + scheduled feed from existing CRMs (often a one-off engagement at signup) | No (add-on) |
+| `feedback_reviews` | Feedback & Reviews | Cross-journey feedback collection, moderation queue, data-driven public reviews badge, agent league table | No (add-on) |
+| `live_chat` | Live Chat | Embedded chat product integration | No (add-on) |
+| `ai_assistant` | AI Assistant | AI rewrite of descriptions, AI alt-text suggestion, AI meta-title generation, AI lead-triage assistance | No (add-on) |
+
+### 5b. Tier model
 
 | Tier | Positioning | Plan code | Target buyer |
 |---|---|---|---|
@@ -77,9 +98,35 @@ The platform is sold in three subscription tiers.
 | **Professional** | Growing multi-branch agencies | `professional` | Two-to-five-branch agency, sub-500 active listings |
 | **Enterprise** | Large multi-branch and franchise networks | `enterprise` | More than five branches, more than 500 active listings, or specific compliance / data residency / SLA requirements |
 
-### Tier inclusions and metering
+### 5c. Pack inclusions per tier
 
-Each tier includes a base quota for the metered metrics. Usage above the quota is charged as overage at the next invoice.
+Tier subscription **automatically enables** the packs marked ✓. Packs marked + are available as paid add-ons. Tier upgrades add the newly-included packs automatically.
+
+| Pack | Starter | Professional | Enterprise |
+|---|---|---|---|
+| `core` | ✓ | ✓ | ✓ |
+| `sales_plus` | + | ✓ | ✓ |
+| `new_homes` | + | + | ✓ |
+| `commercial` | + | + | ✓ |
+| `business_transfer` | + | + | ✓ |
+| `care_homes` | + | + | + |
+| `portal_syndication` | + | ✓ | ✓ |
+| `calculators` | ✓ | ✓ | ✓ |
+| `bulk_import` | + | + | ✓ |
+| `feedback_reviews` | + | ✓ | ✓ |
+| `live_chat` | + | + | + |
+| `ai_assistant` | + | + | + |
+
+### 5d. Pack lifecycle (live-enable, support-disable)
+
+- **Enabling a pack is self-serve.** A tenant operator can enable any available pack from the admin's Plan & packs screen. The change takes effect within 60 seconds. Billing fires for the next invoice (prorated for partial periods).
+- **Disabling a pack requires a support conversation.** This is deliberate. Self-serve disable creates churn-on-enable risk and disincentivises packs from being made better; routing disablement through support gives us a chance to understand why and protects margin.
+- **Trial periods** of 14 days are supported per pack at the platform operator's discretion. During a trial the tenant is not billed for the pack; an automatic reminder fires 3 days before the trial ends.
+- **Disabling preserves data.** A tenant who disables a pack does not lose data — re-enabling restores everything. Data deletion only happens on tenant deprovisioning (master spec Section S.10).
+
+### Tier inclusions and metering (cross-pack)
+
+Each tier also includes a base quota for the metered metrics. Usage above the quota is charged as overage at the next invoice. These quotas apply regardless of which packs are enabled.
 
 | Metric | Starter included | Professional included | Enterprise included |
 |---|---|---|---|
@@ -96,7 +143,7 @@ Each tier includes a base quota for the metered metrics. Usage above the quota i
 | SLA target | 99.5% | 99.5% | 99.9% (with credits) |
 | Support response time | Best effort | Next business day | 4 working hours |
 
-Concrete pricing is not specified in this document; commercial terms are owned by the business and recorded outside this repo.
+Concrete per-tier and per-pack pricing is not specified in this document; commercial terms are owned by the business and recorded outside this repo.
 
 ## 6. Compliance regime
 
@@ -182,4 +229,4 @@ The platform does not (and will not in the foreseeable roadmap):
 
 ## 9a. Responsive design — universal expectation
 
-Every customer-facing surface this platform produces is **responsive by default** at every viewport from 320 px to 2,560 px wide. This is a commercial expectation, not just a technical one. UK estate-agency customers browse on phones during a commute, on tablets in the office, and on desktops at home. A website that looks broken on any of these
+Every customer-facing surface this platform produces is **responsive by default** at every viewport from 320 px to 2,560 px wide. This is a commercial expectation, not just a technical one. UK estate-agency customers browse on phones during a commute, on tablets in the office, and on desktops at home. A website that looks broken on any of these                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               

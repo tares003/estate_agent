@@ -1,6 +1,7 @@
 # EPIC-AB — Platform-operator admin (design)
 
 **Dev brief:** [dev-briefs/v1/EPIC-AB-platform-operator-admin.md](../../dev-briefs/v1/EPIC-AB-platform-operator-admin.md).
+**Pack:** Operator (always on for the platform operator; not tenant-facing).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

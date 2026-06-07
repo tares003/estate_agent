@@ -1,6 +1,7 @@
 # EPIC-Z — Landlord portal
 
 **Master spec reference:** Section J.5 (landlords entity), Section G (repairs), Section H.9 (compliance items).
+**Pack:** Core (Lettings is part of core per PRODUCT.md §5).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-Z-landlord-portal.md](../../design-briefs/v1/EPIC-Z-landlord-portal.md).
 

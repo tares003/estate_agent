@@ -1,6 +1,7 @@
 # EPIC-B — Website feature audit (cross-reference)
 
 **Master spec reference:** Section B (the 60-feature inventory).
+**Pack:** Core.
 **Status:** CONTEXT (no implementation work directly).
 **Paired design brief:** [design-briefs/v1/EPIC-B-feature-audit.md](../../design-briefs/v1/EPIC-B-feature-audit.md).
 

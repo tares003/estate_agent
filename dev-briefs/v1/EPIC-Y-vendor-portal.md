@@ -1,6 +1,7 @@
 # EPIC-Y — Vendor (seller) portal
 
 **Master spec reference:** Section J.5 (vendors entity), Section B.36 (reviews); new surface — not previously enumerated in the master spec.
+**Pack:** `sales_plus` (add-on; included with Professional and Enterprise tiers).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-Y-vendor-portal.md](../../design-briefs/v1/EPIC-Y-vendor-portal.md).
 

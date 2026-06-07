@@ -1,6 +1,7 @@
 # EPIC-U — Background workers and scheduled tasks
 
 **Master spec reference:** Section H.23 (admin scheduled-tasks console), Section P.1 (background-job capability), cross-cutting references in EPIC-G / EPIC-I / EPIC-N / EPIC-O.
+**Pack:** Core (individual workers may be pack-specific per EPIC-AD).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-U-workers-scheduled-tasks.md](../../design-briefs/v1/EPIC-U-workers-scheduled-tasks.md).
 **Phase ownership:** Phase E (cross-shell) of the build roadmap.

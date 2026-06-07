@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-L-frontend-components.md](../../dev-briefs/v1/EPIC-L-frontend-components.md).
 **Master spec reference:** Section L.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Purpose

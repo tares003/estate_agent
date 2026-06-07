@@ -1,6 +1,7 @@
 # EPIC-K — Interface capabilities
 
 **Master spec reference:** Section K (K.1–K.5).
+**Pack:** Core (with pack-dependent capabilities gated per EPIC-AD).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-K-interface-capabilities.md](../../design-briefs/v1/EPIC-K-interface-capabilities.md).
 

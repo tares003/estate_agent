@@ -1,6 +1,7 @@
 # EPIC-H — Admin dashboard
 
 **Master spec reference:** Section H (H.1 through H.28).
+**Pack:** Core (with pack-dependent admin sections gated).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-H-admin-dashboard.md](../../design-briefs/v1/EPIC-H-admin-dashboard.md).
 

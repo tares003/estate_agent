@@ -1,6 +1,7 @@
 # EPIC-X — Bulk import and data migration
 
 **Master spec reference:** Section H.22 (Imports / Exports), Section B.54 (Bulk property import).
+**Pack:** `bulk_import` (add-on; often a one-off engagement at signup).
 **Status:** NOT_STARTED. **Phase: deferred to Phase 8 of the build roadmap.**
 **Paired design brief:** [design-briefs/v1/EPIC-X-bulk-import.md](../../design-briefs/v1/EPIC-X-bulk-import.md).
 

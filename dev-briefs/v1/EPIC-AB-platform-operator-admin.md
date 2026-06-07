@@ -1,6 +1,7 @@
 # EPIC-AB — Platform-operator admin
 
 **Master spec reference:** Section S.3 (tenant registry), Section S.12 (billing), Section H (tenant-side admin is the foil).
+**Pack:** Operator (always on for the platform operator; not tenant-facing).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-AB-platform-operator-admin.md](../../design-briefs/v1/EPIC-AB-platform-operator-admin.md).
 

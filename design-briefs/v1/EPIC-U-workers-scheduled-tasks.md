@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-U-workers-scheduled-tasks.md](../../dev-briefs/v1/EPIC-U-workers-scheduled-tasks.md).
 **Master spec reference:** Section H.23.
+**Pack:** Core (individual workers may be pack-specific per EPIC-AD).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

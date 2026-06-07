@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-N-security-gdpr.md](../../dev-briefs/v1/EPIC-N-security-gdpr.md).
 **Master spec reference:** Section N.
+**Pack:** Core.
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

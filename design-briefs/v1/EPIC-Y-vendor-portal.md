@@ -1,6 +1,7 @@
 # EPIC-Y — Vendor (seller) portal (design)
 
 **Dev brief:** [dev-briefs/v1/EPIC-Y-vendor-portal.md](../../dev-briefs/v1/EPIC-Y-vendor-portal.md).
+**Pack:** `sales_plus` (add-on; included with Professional and Enterprise tiers).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

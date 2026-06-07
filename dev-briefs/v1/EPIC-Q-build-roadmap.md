@@ -1,6 +1,7 @@
 # EPIC-Q — Build roadmap (functional phases)
 
 **Master spec reference:** Section Q (Q.1–Q.8).
+**Pack:** Core.
 **Status:** CONTEXT (no implementation work).
 **Paired design brief:** [design-briefs/v1/EPIC-Q-build-roadmap.md](../../design-briefs/v1/EPIC-Q-build-roadmap.md).
 

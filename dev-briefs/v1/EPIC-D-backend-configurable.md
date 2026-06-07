@@ -1,6 +1,7 @@
 # EPIC-D — Backend configurable areas (CMS)
 
 **Master spec reference:** Section D.
+**Pack:** Core (with pack-dependent section types gated).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-D-backend-configurable.md](../../design-briefs/v1/EPIC-D-backend-configurable.md).
 

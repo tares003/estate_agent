@@ -1,6 +1,7 @@
 # EPIC-AA — Tenant portal (design)
 
 **Dev brief:** [dev-briefs/v1/EPIC-AA-tenant-portal.md](../../dev-briefs/v1/EPIC-AA-tenant-portal.md).
+**Pack:** Core (Lettings is part of core per PRODUCT.md §5).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

@@ -1,6 +1,7 @@
 # EPIC-L — Frontend components
 
 **Master spec reference:** Section L (L.1–L.8).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-L-frontend-components.md](../../design-briefs/v1/EPIC-L-frontend-components.md).
 

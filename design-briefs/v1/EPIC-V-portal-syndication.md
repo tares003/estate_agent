@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-V-portal-syndication.md](../../dev-briefs/v1/EPIC-V-portal-syndication.md).
 **Master spec reference:** Section Q.7 (Phase 7).
+**Pack:** `portal_syndication` (add-on).
 **Status:** DEFERRED to Phase 7.
 
 ## Surfaces affected

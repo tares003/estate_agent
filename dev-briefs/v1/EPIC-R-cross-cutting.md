@@ -1,6 +1,7 @@
 # EPIC-R — Cross-cutting (definition of done, glossary, open questions)
 
 **Master spec reference:** Section R (R.1–R.4).
+**Pack:** Core.
 **Status:** CONTEXT (no implementation work).
 **Paired design brief:** [design-briefs/v1/EPIC-R-cross-cutting.md](../../design-briefs/v1/EPIC-R-cross-cutting.md).
 

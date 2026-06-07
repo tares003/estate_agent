@@ -1,6 +1,7 @@
 # EPIC-O — SEO
 
 **Master spec reference:** Section O (O.1–O.9).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-O-seo.md](../../design-briefs/v1/EPIC-O-seo.md).
 

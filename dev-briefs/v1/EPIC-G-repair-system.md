@@ -1,6 +1,7 @@
 # EPIC-G — Repair system
 
 **Master spec reference:** Section G (G.1–G.7).
+**Pack:** Core (Lettings is part of core per PRODUCT.md §5).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-G-repair-system.md](../../design-briefs/v1/EPIC-G-repair-system.md).
 

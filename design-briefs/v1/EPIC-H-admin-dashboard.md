@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-H-admin-dashboard.md](../../dev-briefs/v1/EPIC-H-admin-dashboard.md).
 **Master spec reference:** Section H (H.1–H.28).
+**Pack:** Core (with pack-dependent admin sections gated).
 **Status:** NOT_STARTED.
 
 ## Surfaces affected

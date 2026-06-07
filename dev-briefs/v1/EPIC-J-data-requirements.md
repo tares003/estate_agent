@@ -1,6 +1,7 @@
 # EPIC-J — Data requirements (entities and attributes)
 
 **Master spec reference:** Section J (J.1–J.9).
+**Pack:** Core.
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-J-data-requirements.md](../../design-briefs/v1/EPIC-J-data-requirements.md).
 

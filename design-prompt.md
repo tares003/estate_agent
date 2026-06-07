@@ -269,4 +269,85 @@ DESIGN DISCIPLINE — APPLIES TO EVERY ARTEFACT
   - Every price example shows its price qualifier ("Offers in region of") adjacent.
   - Every valuation widget example shows "Indicative only".
   - Every personal-data form example shows the GDPR consent line.
-  - Every rent f
+  - Every rent figure shows PCM / PW / PA frequency.
+  - Every mortgage/fee calculator output shows "For guidance only — not financial advice".
+
+**Voice discipline.**
+  - Plain English. No marketing puffery. No "leverage", "synergy", "world-class", "delight".
+  - Confident, not boastful. Plural "we", not corporate "the platform".
+  - Honest about limits. Calm in error states.
+
+═══════════════════════════════════════════════════════════════
+PROGRESS REPORTING
+═══════════════════════════════════════════════════════════════
+
+After each phase: append a structured block to `audit/design-prompt-log.md` (create if it doesn't exist):
+
+```
+## Phase X — <name>
+Status: complete / blocked
+Components added: list
+Screens added: list
+Tokens referenced: count
+Tokens missing (added to gaps log): count
+A11y checks performed: list
+Reduced-motion fallbacks shown: yes/no
+Files written: list
+Blockers encountered + resolution:
+```
+
+═══════════════════════════════════════════════════════════════
+BLOCKER POLICY
+═══════════════════════════════════════════════════════════════
+
+If you find:
+  - A token gap → log to `audit/design-discovery-gaps.md`, use the closest existing token, continue. Do not invent.
+  - A copy gap (a screen needs copy not in any brief or PRODUCT.md) → use placeholder copy in `[brackets]` and log the gap.
+  - A behavioural ambiguity (the brief leaves a behaviour unspecified) → make the most defensible choice and document it in the file's header comment under "Designer interpretation".
+  - A foundation contradiction (DESIGN.md says one thing, motion-spec.md says another) → log it, pick the one that satisfies more design briefs, continue.
+
+Do not pause to ask for confirmation between phases. The human reviews at sign-off, not mid-flight.
+
+═══════════════════════════════════════════════════════════════
+COMMIT CONVENTIONS
+═══════════════════════════════════════════════════════════════
+
+Branch: `design/phase-a-foundation` for PHASE A, `design/<epic>-<scope>` for subsequent epic work (e.g. `design/EPIC-C-public-marketing`).
+
+Commits per phase: at least one per `components/atoms/` batch, one per `components/molecules/` batch, one per `screens/<surface>/` batch. Conventional Commits — use `feat(design):` for new artefacts, `fix(design):` for corrections, `chore(design):` for index updates.
+
+Include the trailer:
+```
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+═══════════════════════════════════════════════════════════════
+SIGN-OFF
+═══════════════════════════════════════════════════════════════
+
+PHASE A is signed off when:
+  - Every atom, molecule and layout primitive in EPIC-L design brief exists in `design/canvas/components/`.
+  - **Every artefact carries the responsive-verification block showing it at all seven breakpoints (320, 640, 768, 1024, 1280, 1440, 2560 px).** A file without that block is not counted as complete.
+  - The PropertyCard organism exists in every variant, responsive-verified.
+  - The four state patterns exist in `design/canvas/states/`, responsive-verified.
+  - The Cookie Banner, GDPR consent row and 2FA flow exist, responsive-verified.
+  - `tokens.css` exposes every token from `DESIGN.md` and `motion-spec.md`.
+  - `index.html` lists every artefact with a working link AND a per-artefact responsive-status badge (✓ all breakpoints / ⚠ partial / ✗ missing).
+  - `.design-canvas-url` points at `./design/canvas/index.html`.
+  - A human reviewer ticks every entry in the index, including the responsive badge per artefact.
+
+After PHASE A sign-off, PHASE B (screen-level design) begins, working through EPIC-C through EPIC-AC as listed. **Every screen in PHASE B carries the same responsive-verification block. No exceptions.**
+
+### Coverage report
+
+Before sign-off, run a coverage report (a shell command or a small script generating `design/canvas/responsive-coverage.json`) showing for every artefact in the canvas whether each breakpoint is verified. The report goes in the PR description. Any artefact missing a breakpoint blocks sign-off.
+
+═══════════════════════════════════════════════════════════════
+START NOW
+═══════════════════════════════════════════════════════════════
+
+Begin with STEP 0 (read 0a · 0b · 0c · 0d · 0e in order). Then PHASE A in the order A1 through A8. Do not ask for confirmation between phases.
+
+If `.design-canvas-url` already points at a non-placeholder canvas, ASK the user once whether to extend it or to start fresh in a new folder. Otherwise proceed.
+
+— end of design Claude prompt —

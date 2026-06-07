@@ -2,6 +2,7 @@
 
 **Dev brief:** [dev-briefs/v1/EPIC-Q-build-roadmap.md](../../dev-briefs/v1/EPIC-Q-build-roadmap.md).
 **Master spec reference:** Section Q.
+**Pack:** Core.
 **Status:** CONTEXT (no standalone visual surface).
 
 ## Purpose

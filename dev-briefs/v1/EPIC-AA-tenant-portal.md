@@ -1,6 +1,7 @@
 # EPIC-AA — Tenant portal
 
 **Master spec reference:** Section J.5 (tenants entity), Section G (repairs), Section C.16 (existing repair page).
+**Pack:** Core (Lettings is part of core per PRODUCT.md §5).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-AA-tenant-portal.md](../../design-briefs/v1/EPIC-AA-tenant-portal.md).
 

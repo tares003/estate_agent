@@ -1,6 +1,7 @@
 # EPIC-AC — Feedback and review collection
 
 **Master spec reference:** Section B.36 (reviews widget), Section J (testimonials), Section H.21 (agent league table).
+**Pack:** `feedback_reviews` (add-on; included with Professional and Enterprise tiers).
 **Status:** NOT_STARTED.
 **Paired design brief:** [design-briefs/v1/EPIC-AC-feedback-reviews.md](../../design-briefs/v1/EPIC-AC-feedback-reviews.md).
 

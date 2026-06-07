@@ -1,6 +1,7 @@
 # EPIC-V — Outbound portal syndication
 
 **Master spec reference:** Section Q.7 (Phase 7), Section B.54 (bulk import / feed support), Section P.2 (build-vs-buy).
+**Pack:** `portal_syndication` (add-on).
 **Status:** NOT_STARTED. **Phase: deferred to Phase 7 of the build roadmap.**
 **Paired design brief:** [design-briefs/v1/EPIC-V-portal-syndication.md](../../design-briefs/v1/EPIC-V-portal-syndication.md).
 
