@@ -1,0 +1,55 @@
+[project]
+name = "estate-platform"
+version = "0.0.0"
+description = "Django + Wagtail content stack and JSON API for the Estate Platform."
+requires-python = ">=3.12"
+license = { text = "UNLICENSED" }
+
+# Foundation dependency set. Versions use conservative lower bounds; the lockfile
+# (uv.lock) pins exact versions when the project is initialised in Phase B2.
+dependencies = [
+  "django>=5.2,<5.3",            # latest stable LTS (supports Python 3.12/3.13)
+  "wagtail>=6.3",               # CMS / StreamField page builder
+  "psycopg[binary]>=3.2",       # PostgreSQL driver (Django ORM)
+  # PostGIS spatial support is via django.contrib.gis (no extra package; needs GDAL on host)
+  "celery>=5.4",               # background jobs (EPIC-U)
+  "redis>=5.2",                # Celery broker + Django cache
+  "django-allauth>=65",         # auth / social providers
+  "django-otp>=1.5",           # staff 2FA
+  "django-otp-webauthn>=0.6",   # WebAuthn for staff 2FA
+  "django-sesame>=3.2",         # magic-link auth for portals
+  "cryptography>=44",          # Fernet/MultiFernet for per-tenant SMTP creds (ADR-0002)
+  "twilio>=9",                 # SMS (emergency repair tickets)
+  "stripe>=11",                # billing (subscriptions + metered per-pack)
+  "pydantic>=2.9",             # request/response models + validators (Pydantic half)
+  "requests>=2.32",            # Turnstile verification, outbound HTTP
+]
+
+# NOTE: the API framework dependency is intentionally NOT pinned here yet.
+# ADR-0001 (Proposed: django-ninja) must be Accepted before adding it, per AGENTS.md §9.
+# When ratified, add e.g.  "django-ninja>=1.3"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-django>=4.9",
+  "pytest-cov>=6",
+  "hypothesis>=6.122",
+  "schemathesis>=3.39",
+  "ruff>=0.8",
+  "mypy>=1.13",
+  "django-stubs>=5.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "estate_platform.settings.test"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+addopts = "--strict-markers"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

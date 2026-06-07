@@ -1,0 +1,7 @@
+# pnpm workspace — the JavaScript/TypeScript side of the two-stack monorepo.
+#
+# The Python side (services/django, services/workers) is managed by uv and is
+# intentionally NOT a pnpm workspace member. See services/django/pyproject.toml.
+packages:
+  - "apps/*"
+  - "packages/*"

@@ -1,19 +1,14 @@
 # Design canvas location
 #
 # Format: one URL or one local path per line. Lines starting with '#' are ignored.
-# When the design canvas is created, record its location below.
-#
-# Until then, this file exists so the autonomous build prompt can discover it
-# and report "no design canvas set" rather than failing on a missing file.
 
-status: not-yet-created
+./design/canvas/
 
-# When set, expected formats include:
-#   https://www.figma.com/file/...
-#   https://www.framer.com/projects/...
-#   ./design/canvas/                       (local path inside this repo)
+# Status: SET (local). The canvas is the visual source of truth for all component
+# and screen work — built against, tested against (visual regression mirrors
+# design/canvas/responsive-coverage.json), and not drifted from without a logged
+# DESIGN.md amendment + a paired canvas update.
 #
-# Notes for the autonomous agent (per the build prompt's STEP 0c):
-# - If this file says "status: not-yet-created", ASK the user once for the URL
-#   or local path before doing visual work.
-# - Cache the canvas under ./design/canvas/ regardless of original location.
+# History: originally committed at design/design/canvas/ (accidental double-nesting);
+# flattened to design/canvas/ in Phase B0 to match all brief + build-prompt references.
+# See audit/audit-report.md row D-004.

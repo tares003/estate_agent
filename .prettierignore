@@ -1,0 +1,20 @@
+# Generated / vendored — never reformat
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+pnpm-lock.yaml
+staticfiles/
+mediafiles/
+
+# Design canvas is the visual source of truth — ported verbatim, not reformatted.
+design/canvas/
+
+# Requirements foundation docs are owned by product/design — do not reformat.
+PRODUCT.md
+DESIGN.md
+motion-spec.md
+design-requirements.md
+Property-Agency-Website-Implementation-Spec.md

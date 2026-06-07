@@ -152,4 +152,165 @@ The stack has been chosen. Code may now be committed. The choices below are the 
 The product is built as two cooperating applications sharing one database and one design system:
 
 - **A Django + Wagtail "content" application** serving the content-heavy surfaces (public marketing site, agency editorial content, CMS page builder, knowledge hub, the platform's own marketing site).
-- **A Next.js "a
+- **A Next.js "app" application** serving the highly interactive surfaces (tenant admin, operator admin, customer accounts, vendor / landlord / tenant portals, CRM, repair flow, feedback flow, property catalogue and detail).
+
+The two communicate over a JSON API exposed by the Django side. Auth is unified: Django issues a session cookie; Next.js forwards it to the API on every request.
+
+### Per-surface stack ownership
+
+| Surface | Owning stack |
+|---|---|
+| EPIC-C public marketing site | Django + Wagtail (StreamField for editorial pages) |
+| EPIC-AE platform marketing site | Django + Wagtail (distinct theme preset; see EPIC-AE design brief) |
+| EPIC-D page-builder (the content authoring admin) | Wagtail StreamField — the content editor uses Wagtail admin |
+| EPIC-F property catalogue + detail | Next.js (interactive search, filters, gallery) consuming the Django property API |
+| EPIC-H tenant admin | Next.js |
+| EPIC-AB operator admin | Next.js (distinct visual identity) |
+| EPIC-T customer accounts | Next.js |
+| EPIC-Y / Z / AA vendor / landlord / tenant portals | Next.js |
+| EPIC-I CRM | Next.js (queue + slide-over + composer) |
+| EPIC-G repair flow | Tenant form (Next.js); admin inbox (Next.js); contractor portal (Next.js) |
+| EPIC-N auth foundation | Django (Django auth + django-allauth) |
+| EPIC-O SEO | Both: Wagtail-native for Django pages, Next.js metadata APIs for Next.js pages |
+| EPIC-U background workers | Celery (Python) + Redis |
+| EPIC-J data + EPIC-K capabilities | Django models + Django Ninja (or DRF) API |
+| EPIC-AC feedback flow | Next.js (form + moderation queue); Django backend |
+| EPIC-AD pack entitlement | Shared via the API — Django evaluates, Next.js consults |
+| EPIC-S multi-tenancy | Shared PostgreSQL + Row-Level Security; the Next.js side reads tenant context from the session |
+| EPIC-AE platform marketing site | Django + Wagtail |
+
+### Foundation stack
+
+| Layer | Choice |
+|---|---|
+| **Backend framework** | Django (latest stable LTS) with Python 3.12+ |
+| **CMS** | Wagtail (latest stable, paired with the chosen Django version) |
+| **API layer** | Django Ninja (preferred for type-safety) or Django REST Framework — implementation team confirms before B2 |
+| **Frontend framework (app side)** | Next.js (App Router) with TypeScript |
+| **UI / styling** | CSS custom properties from `design/canvas/tokens.css` ported verbatim; Tailwind CSS as the utility layer (configured to use the token CSS variables); no raw hex / px / ms per CI guard G7 |
+| **Component library (app side)** | First-party — built from the EPIC-L canvas artefacts. No third-party UI kit (preserves design fidelity per G7) |
+| **Database** | PostgreSQL 16+ |
+| **ORM (Django side)** | Django ORM |
+| **ORM (Next.js side)** | None — the Next.js app does not touch the database directly; it consumes the Django API |
+| **Object storage** | **Local filesystem** on the host, behind a `StorageBackend` interface. V1 default; no S3 dependency. Files served through a signed-token middleware (no pre-signed S3 URLs). The interface allows swapping to S3-compatible (MinIO / R2 / S3) later without touching feature code. |
+| **CDN** | Cloudflare **free tier** in front of the origin — DDoS protection + edge cache only. No Workers, no analytics, no paid features. |
+| **Image processing** | Wagtail's built-in renditions, persisted to the local-filesystem storage backend. |
+| **Transactional email (tenant)** | **Per-tenant SMTP.** Each tenant configures their own SMTP server from the admin: host, port, username, password (encrypted at rest with `django-cryptography` or equivalent), from-address, reply-to. Must support both **basic-auth with app passwords** and **OAuth 2.0** for Office 365 / Gmail / Outlook.com (which deprecated basic auth). Generic SMTP for everything else. The platform never holds tenant credentials in plaintext. |
+| **Transactional email (operator)** | **Configurable operator SMTP.** The platform operator configures their own SMTP at install time. Supported targets: Office 365 / Google Workspace / Gmail / self-hosted SMTP (Postfix, Maddy, Postal) / Postmark / Mailgun / any RFC-5321-compliant SMTP server. Used for operator-to-tenant emails (welcome, billing, sub-processor change notification, password reset, support correspondence). Tenants never see this account. |
+| **SMS** | Twilio (no realistic self-hosted alternative for SMS — carrier agreements required). Used for emergency repair tickets and optional staff 2FA fallback. Low volume by design. |
+| **Mapping** | **Per-tenant choice between Google Maps and Mapbox.** Each tenant provides their own API key from the admin. `MapBackend` interface; both implementations ship in the shared UI package. A tenant on Starter can begin with Mapbox's free tier; an enterprise tenant can pick Google Maps for their existing licence. |
+| **Anti-spam / challenge-response** | Cloudflare Turnstile (free tier; privacy-friendly; replaces reCAPTCHA). Token captured client-side, verified server-side on every form submission per CI guard G5 + G8. |
+| **Analytics** | **Deferred from V1.** No analytics layer in initial release. Add behind an interface later if commercial decision warrants. |
+| **Error monitoring** | **Deferred from V1.** Structured logging only — JSON to stdout, captured by the Docker logging driver. A Sentry-compatible backend (GlitchTip self-hosted or Sentry hosted) can be wired later behind an `ErrorReporter` interface. |
+| **Structured logging** | JSON to stdout per container, captured by the Docker logging driver. Optional aggregation to Loki + Grafana (self-hosted on the same Hetzner box) deferred from V1. |
+| **Background jobs** | Celery + Redis (Redis is also the cache layer). |
+| **Billing** | Stripe (subscriptions for tier + metered usage records for per-pack billing per EPIC-AD). Stripe is the only practical choice for regulated card processing; no self-hosted alternative exists for the payment-processor role. |
+| **Authentication** | Django auth + django-allauth for social providers (future); WebAuthn for staff 2FA via `django-otp` + `django-otp-webauthn`; magic-link auth for vendor / landlord / tenant portals via `django-sesame` |
+
+### Hosting model
+
+Per master spec §S.13, the **pure-self-hosted** model is committed.
+
+| Layer | Hosting |
+|---|---|
+| Django + Wagtail app | Hetzner dedicated server (AX or CCX class), Dockerised, deployed via Coolify or Dokku |
+| Next.js app | Same Hetzner server alongside Django, Dockerised, deployed via Coolify or Dokku |
+| PostgreSQL 16 + PostGIS | Hetzner-hosted on the same dedicated server. Schema-management via Django migrations; RLS policies in raw SQL migrations. |
+| Object storage | **Local filesystem** on the Hetzner host. Backed up via `restic` or `borg` to a separate Hetzner Storage Box. No S3 dependency. |
+| Cloudflare CDN | Cloudflare free tier (DDoS + edge cache). |
+| Redis | Hetzner-hosted on the same dedicated server (Celery broker + Django cache). |
+| Email (tenant) | Per-tenant SMTP — tenant brings their own (Office 365 / Gmail / any SMTP) configured in the admin. |
+| Email (operator) | Configurable SMTP — operator picks Office 365 / Google Workspace / self-hosted / Postmark / Mailgun at install time. |
+| SMS | Twilio (one provider account at the operator level; usage accounted per-tenant for billing). |
+| Region | UK / EU only (per master spec §S.7 data residency requirement). Hetzner's Falkenstein, Nuremberg or Helsinki data centres satisfy. |
+| Backup target | Hetzner Storage Box (separate physical box, cheap, EU-region) — daily `pg_dump` + local-filesystem `restic` snapshot. |
+
+### CI/CD
+
+| Layer | Choice |
+|---|---|
+| CI / CD provider | GitHub Actions |
+| Deployment Django | Docker image built in CI, pushed to GitHub Container Registry, Coolify pulls on tag |
+| Deployment Next.js | If Vercel: native push-to-deploy. If Hetzner: same Docker + Coolify path as Django |
+| IaC | Terraform for Cloudflare resources (DNS, R2 buckets, CDN config); Docker Compose for Hetzner-hosted services; `cloudflared` tunnel for local dev |
+| Secrets | GitHub Actions secrets in CI; Doppler or 1Password Secrets for runtime |
+
+### Testing stack
+
+| Layer | Choice |
+|---|---|
+| Django unit + integration tests | pytest + pytest-django |
+| Django property-based tests | hypothesis |
+| Django API contract tests | schemathesis (against the Django Ninja / DRF schema) |
+| Next.js unit + component tests | Vitest + React Testing Library |
+| Next.js visual regression | Playwright with `@playwright/test` + per-breakpoint screenshots per the canvas's `responsive-coverage.json` |
+| End-to-end across both stacks | Playwright with a per-test seed that exercises both Django and Next.js |
+| Accessibility automation | `@axe-core/playwright` (G9) |
+| Performance budget | Lighthouse CI per route (G3) |
+| Coverage | pytest-cov for Django; Vitest coverage for Next.js; combined report in CI |
+
+### Workspace layout (concrete)
+
+```
+apps/
+  next/                   ← Next.js (App Router) — tenant admin, operator admin, customer + portals, CRM, repair flow, feedback, property catalogue/detail
+services/
+  django/                 ← Django + Wagtail — public marketing site, platform marketing site, CMS, page builder, API, auth foundation
+  workers/                ← Celery worker processes (the same Django code, deployed with the worker entrypoint)
+packages/
+  tokens/                 ← design tokens (one source of truth; emits both CSS custom properties for Django and a TypeScript export for Next.js)
+  ui-components/          ← Next.js / React component library — the EPIC-L primitives ported from the design canvas
+  validators/             ← shared input validation schemas (Zod on the Next.js side; Pydantic on the Django side; both generated from one OpenAPI contract)
+  api-client/             ← Next.js API client generated from the Django OpenAPI spec
+infrastructure/           ← Terraform, Docker Compose, deployment manifests
+docs/
+  adr/                    ← architectural decision records
+  runbooks/               ← provisioning, restore, suspend, rotate-secrets, incident response
+```
+
+### Multi-tenancy implementation
+
+- **Shared PostgreSQL + Row-Level Security.** One database, every tenant-owned table carries a `tenant_id` column, RLS policies enforce isolation at the data layer.
+- Per-request Django middleware resolves the tenant by subdomain or custom-domain hostname, then sets the Postgres session GUC `SET LOCAL app.current_tenant_id = '<uuid>'` before any query runs. RLS policies reference `current_setting('app.current_tenant_id')::uuid`.
+- Cheapest to operate (one DB, one migration run, one backup, one connection pool); fastest to provision (INSERT a tenant row — sub-second, hitting the 10-minute target with room to spare); strongest fit for the modular cost goal in master spec §S.2.
+- Next.js receives the tenant identifier in the session cookie issued by Django; every API call carries it and Django middleware re-applies the GUC server-side. The Next.js side never reads tenant data directly.
+- Operator admin is on a separate subdomain (`admin.estateplatform.co.uk` or equivalent) and is NOT a tenant — it spans tenants and uses a distinct authorisation scope. Operator queries bypass tenant RLS via a privileged role used only by audited operator-admin handlers.
+- Per-tenant backup uses row-filtered `pg_dump` (`pg_dump --where="tenant_id='...'"`). Per-tenant restore is a documented runbook procedure under `docs/runbooks/`.
+- Enterprise-tier tenants requesting dedicated database isolation are promoted via a documented migration (`pg_dump` → new dedicated DB → swap `DATABASE_URL`). The shared-DB-with-RLS default covers Starter and Professional.
+
+### Pack entitlement implementation (EPIC-AD)
+
+- `enabled_packs` stored on the tenant model as a JSONB or text array.
+- `isPackEnabled(pack_slug)` helper in both Django (`apps/entitlement/helpers.py`) and Next.js (`packages/api-client/entitlement.ts` consuming a `/api/tenant/me` endpoint).
+- `@require_pack("sales_plus")` decorator for Django views / API routes.
+- `<RequirePack pack="sales_plus">…</RequirePack>` component for Next.js routes.
+- CI guard G12 enforces these wrappers across both codebases via a custom ESLint + flake8 rule.
+
+### Notes on what is intentionally NOT chosen here
+
+- **Django Ninja vs Django REST Framework** for the API layer — confirmed before B2.
+- **Pre-tenant SMTP encryption library** (`django-cryptography` vs a custom helper) — confirmed before EPIC-H §H.12 ships.
+- **Backup target box specifics** (Hetzner Storage Box vs an off-Hetzner provider for true geo-separation) — confirmed before first paying tenant.
+
+These three open decisions are documented as ADRs `docs/adr/0001-api-framework.md`, `docs/adr/0002-smtp-credential-encryption.md`, `docs/adr/0003-backup-target.md` and resolved before scaffolding the affected module.
+
+### Reasons-for-choice (defensible record)
+
+- **Django + Wagtail for content** — Wagtail StreamField is the strongest page-builder paradigm available; rebuilding it first-party would be months of work for inferior result.
+- **Next.js for app** — the interactive admin, portals and CRM benefit substantially from React's component model and Next.js's data-fetching primitives; the design canvas (static HTML + CSS) ports cleanly into React components.
+- **PostgreSQL + PostGIS** — the property-search radius queries require spatial; PostGIS is the canonical fit.
+- **Shared DB + Row-Level Security** — cheapest to operate, fastest to provision (sub-second per tenant), hits the 10-minute target with room to spare. Used in production by Supabase, Linear, Vercel and many modern B2B SaaS. PostgreSQL RLS is mature and well-trodden.
+- **Local-filesystem object storage** — zero per-byte storage cost, no third-party dependency, simplest backup model (one `restic` job covers all media). The `StorageBackend` abstraction preserves the option to swap to S3-compatible later if horizontal scaling becomes required.
+- **Cloudflare free tier for CDN** — DDoS protection and edge cache for free; processing happens on the Hetzner origin, Cloudflare never sees user data unencrypted.
+- **Per-tenant SMTP (Outlook / Office 365 / Gmail / any)** — tenants send email from their own brand identity at their own domain reputation. The platform never pays for outbound deliverability. OAuth support handles Office 365 / Gmail's basic-auth deprecation.
+- **Configurable operator SMTP** — the platform operator picks their preferred sending account at install time (Office 365, Google Workspace, self-hosted SMTP, Postmark, Mailgun). The configuration is per-deployment, not per-tenant.
+- **Twilio for SMS** — no self-hosted alternative for SMS exists (carrier agreements required). Twilio's UK SMS pricing is acceptable for emergency-repair use only (low volume).
+- **Per-tenant Google Maps OR Mapbox** — tenants bring their own API key; the platform pays no map fees. Either provider's free tier covers a small agency.
+- **Cloudflare Turnstile** — free, privacy-friendly, no cookie-consent banner complications, replaces reCAPTCHA.
+- **Stripe for billing** — only practical choice for regulated card processing; the per-pack metered-overage model in EPIC-AD maps cleanly to Stripe's metered billing primitives.
+- **Hetzner dedicated server with Docker + Coolify** — cost target in master spec §S.2 is significantly easier to hit with dedicated hardware, and the data-residency requirement in §S.7 is satisfied by Hetzner's EU regions. Coolify provides a tenant-operator-friendly deployment UI.
+- **GitHub Actions** — most teams already know it, runs anywhere (including a self-hosted runner on the same Hetzner box).
+- **SOPS + age for secrets** — encrypted secrets committed to the repo; no third-party secrets manager to run. Decryption keys live in GitHub Actions secrets at deploy time.
+- **Error monitoring deferred** — structured logging is sufficient for V1. Sentry-compatible error reporting (GlitchTip self-hosted or Sentry hosted) added behind an interface in Phase 7 if needed.
+
+Until any of the three "intentionally not chosen" items above is committed, the dev Claude must not commit code that depends on the unresolved choice.

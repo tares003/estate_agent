@@ -1,0 +1,54 @@
+# ─── Node / pnpm ───────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+.eslintcache
+
+# ─── Next.js / build output ────────────────────────────────────
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# ─── Python / Django ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.python-version
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+staticfiles/
+mediafiles/
+
+# ─── Test / coverage artefacts ─────────────────────────────────
+coverage/
+.coverage
+htmlcov/
+playwright-report/
+test-results/
+.lighthouseci/
+
+# ─── Secrets / env (NEVER commit plaintext secrets) ────────────
+# SOPS-encrypted files (*.enc.yaml / *.sops.yaml) ARE committed; raw env is not.
+.env
+.env.*
+!.env.example
+*.key
+age.key
+
+# ─── Local object storage (StorageBackend dev default) ─────────
+/var/storage/
+/storage-dev/
+
+# ─── OS / editor ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
