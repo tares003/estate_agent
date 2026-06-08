@@ -1,6 +1,6 @@
 # ADR 0001 — Client-side data fetching: Server Actions only vs Server Actions + tRPC
 
-- **Status:** Proposed (recommendation — awaiting ratification before EPIC-K scaffold)
+- **Status:** Accepted — ratified by the platform owner on 2026-06-08
 - **Date:** 2026-06-08
 - **Deciders:** Platform engineering
 - **Gates:** EPIC-K (interface capabilities). Per `AGENTS.md` §9, no client-side data-fetching code is committed until this ADR is `Accepted`.
@@ -38,9 +38,9 @@ The choice doesn't affect the public marketing site, the CMS-managed surfaces, o
 - Familiar to teams coming from React Query / SWR.
 - Adds a dependency and a routing layer; some duplication with Server Actions.
 
-## Decision (recommended)
+## Decision
 
-**Adopt Option A — Server Actions only for V1.** The reasoning:
+**Adopt Option A — Server Actions only for V1.** (Ratified 2026-06-08.) The reasoning:
 
 - The admin surfaces in scope (CRM queue, repair inbox, calendar, property editor) have moderate interactivity, not extreme. Server Actions + `revalidateTag` is sufficient.
 - Adding tRPC means a third "way of fetching" alongside RSC and Server Actions; one mental model is worth more than the ergonomic gain.

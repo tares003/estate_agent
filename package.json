@@ -2,7 +2,7 @@
   "name": "estate-platform",
   "version": "0.0.0",
   "private": true,
-  "description": "Multi-tenant SaaS platform for UK estate agencies — Django+Wagtail content stack + Next.js app stack. Workspace root.",
+  "description": "Multi-tenant SaaS platform for UK estate agencies — single Next.js (App Router) app with Payload CMS mounted inside it. TypeScript monorepo root.",
   "license": "UNLICENSED",
   "packageManager": "pnpm@10.33.2",
   "engines": {
@@ -14,17 +14,20 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
-    "test": "pnpm -r --if-present test",
-    "test:coverage": "pnpm -r --if-present test:coverage",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "dev": "turbo run dev",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
-    "guards": "pnpm --filter @estate/config guards"
+    "guards": "pnpm --filter @estate/config run guards",
+    "ci": "turbo run lint typecheck test build && pnpm run guards"
   },
   "devDependencies": {
     "prettier": "^3.4.2",
+    "turbo": "^2.5.0",
     "typescript": "^5.7.3"
   }
 }

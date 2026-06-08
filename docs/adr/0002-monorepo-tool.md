@@ -1,6 +1,6 @@
 # ADR 0002 — Monorepo orchestrator: Turborepo vs pnpm workspaces alone
 
-- **Status:** Proposed (recommendation — awaiting ratification before B0 scaffold)
+- **Status:** Accepted — ratified by the platform owner on 2026-06-08
 - **Date:** 2026-06-08
 - **Deciders:** Platform engineering
 - **Gates:** Phase B0 (workspace scaffold). Per `AGENTS.md` §9, the monorepo skeleton is not committed until this ADR is `Accepted`.
@@ -36,9 +36,9 @@ The recorded stack (`AGENTS.md` §9) is a single TypeScript monorepo with `apps/
 - No caching layer — CI rebuilds everything each time.
 - Sufficient if the monorepo stays small.
 
-## Decision (recommended)
+## Decision
 
-**Adopt Option A — Turborepo on pnpm.** The reasoning:
+**Adopt Option A — Turborepo on pnpm.** (Ratified 2026-06-08.) The reasoning:
 
 - With ~10 packages and 2 apps, dependency-aware task running pays back almost immediately on CI time.
 - Local DX of `turbo dev` running both `apps/web` and `apps/workers` together is meaningful for the day-to-day developer experience.

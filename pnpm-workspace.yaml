@@ -1,7 +1,9 @@
-# pnpm workspace — the JavaScript/TypeScript side of the two-stack monorepo.
+# pnpm workspace — the single-stack TypeScript monorepo.
 #
-# The Python side (services/django, services/workers) is managed by uv and is
-# intentionally NOT a pnpm workspace member. See services/django/pyproject.toml.
+# One Next.js (App Router) app with Payload CMS mounted inside it (apps/web),
+# a BullMQ worker process sharing the same codebase (apps/workers), and the
+# shared packages/* libraries. Turborepo (turbo.json) orchestrates the task
+# graph on top of these workspaces — see docs/adr/0002-monorepo-tool.md.
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'

@@ -1,6 +1,6 @@
 # ADR 0003 — Backup target & geo-separation
 
-- **Status:** Proposed (recommendation — awaiting ratification before the first paying tenant)
+- **Status:** Proposed — reviewed 2026-06-08; deferred to the launch-readiness checklist (not a foundation blocker). Option A remains the recommendation; ratify before the first paying tenant.
 - **Date:** 2026-06-07
 - **Deciders:** Platform engineering + operations
 - **Gates:** Production launch / first paying tenant. Not a blocker for foundation phases.
