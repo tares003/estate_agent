@@ -1,0 +1,113 @@
+// Estate Platform — Prisma schema.
+//
+// Shared-DB + Row-Level-Security multi-tenancy (CLAUDE.md §9 / EPIC-S): every
+// tenant-owned table carries tenant_id; RLS policies enforce isolation at the
+// data layer (see migrations/raw/0002_rls_policies.sql). The per-request tenant
+// GUC (`app.current_tenant_id`) is set by the client extension in src/.
+//
+// This wave lands the multi-tenancy spine + the cross-cutting tables
+// (audit_logs, consent_logs, notification_logs). The full §J per-entity catalogue
+// (properties, enquiries, viewings, …) lands in a dedicated follow-on migration
+// set. PostGIS + RLS + custom indexes live in raw SQL under migrations/raw/.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// The platform operator's customer — an estate agency. NOT itself tenant-scoped
+/// (it is the tenant registry); operator-only access. `enabled_packs` holds the
+/// optional pack slugs the tenant has switched on (core is implicit). EPIC-AD.
+model PlatformTenant {
+  id           String       @id @default(uuid()) @db.Uuid
+  slug         String       @unique
+  name         String
+  customDomain String?      @unique @map("custom_domain")
+  status       TenantStatus @default(active)
+  enabledPacks Json         @default("[]") @map("enabled_packs")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("platform_tenants")
+}
+
+enum TenantStatus {
+  active
+  suspended
+  deprovisioned
+
+  @@map("tenant_status")
+}
+
+/// A staff user belonging to a tenant agency. Tenant-scoped (RLS).
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  email     String
+  name      String
+  role      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+/// Append-only audit trail. Every state-changing action writes one row via the
+/// audit() helper (CI guard G4). Tenant-scoped (nullable for operator actions).
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  actor     String
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  diff      Json?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+/// GDPR consent record captured on personal-data form submission via
+/// recordConsent() (CI guard G5). Tenant-scoped.
+model ConsentLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String?  @map("tenant_id") @db.Uuid
+  scope       String
+  subject     String
+  consentText String   @map("consent_text")
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("consent_logs")
+}
+
+/// Outbound notification record written by notify() (master spec §H.13).
+/// Tenant-scoped.
+model NotificationLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String?  @map("tenant_id") @db.Uuid
+  event     String
+  channel   String
+  recipient String
+  status    String   @default("queued")
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("notification_logs")
+}
