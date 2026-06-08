@@ -15,3 +15,21 @@ export type { BadgeProps, BadgeTone } from './Badge/Badge.js';
 
 export { Spinner } from './Spinner/Spinner.js';
 export type { SpinnerProps, SpinnerSize } from './Spinner/Spinner.js';
+
+export { Skeleton } from './Skeleton/Skeleton.js';
+export type { SkeletonProps, SkeletonVariant, SkeletonDimension } from './Skeleton/Skeleton.js';
+
+export { Avatar } from './Avatar/Avatar.js';
+export type { AvatarProps, AvatarSize, AvatarShape } from './Avatar/Avatar.js';
+
+export { PackLockPill } from './PackLockPill/PackLockPill.js';
+export type { PackLockPillProps, PackLockPillSize } from './PackLockPill/PackLockPill.js';
+
+export { UpsellEmptyState } from './UpsellEmptyState/UpsellEmptyState.js';
+export type { UpsellEmptyStateProps } from './UpsellEmptyState/UpsellEmptyState.js';
+
+export { TrialCountdownPill } from './TrialCountdownPill/index.js';
+export type {
+  TrialCountdownPillProps,
+  TrialCountdownPillTone,
+} from './TrialCountdownPill/index.js';

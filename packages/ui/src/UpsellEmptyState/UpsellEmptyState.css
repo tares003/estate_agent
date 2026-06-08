@@ -1,0 +1,77 @@
+/* UpsellEmptyState — EPIC-L "locked admin section" pattern
+ * (design-requirements §2a.1). Shown where a pack-gated section would render
+ * when the pack is OFF. Every visual value references a design token from
+ * @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here (G7).
+ *
+ * Layout is a fluid single column, centred, capped to a readable measure — it
+ * fills whatever container it composes into at every breakpoint, so there is no
+ * per-breakpoint coverage to verify in isolation (see the opt-out marker in the
+ * test file). The CTA reuses the Button atom's class contract for the link
+ * variant; .btn styling is provided by Button.css. */
+
+.upsell-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  /* Cap to a readable measure with the relative `ch` unit (no px token exists
+   * for prose width, and inventing one needs a DESIGN.md amendment). */
+  max-width: 60ch;
+  margin-inline: auto;
+  padding-block: var(--space-16);
+  padding-inline: var(--space-6);
+  background: var(--colour-surface-raised);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  color: var(--colour-text-primary);
+}
+
+/* Decorative illustration / icon block above the copy. */
+.upsell-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-icon-xl);
+  height: var(--size-icon-xl);
+  margin-bottom: var(--space-2);
+  color: var(--colour-brand-accent);
+}
+
+.upsell-empty__icon > * {
+  width: 100%;
+  height: 100%;
+}
+
+/* Eyebrow: the pack name, so the user learns what would unlock the section. */
+.upsell-empty__pack {
+  margin: var(--space-0);
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body-sm);
+  letter-spacing: var(--text-body-sm-ls);
+  text-transform: uppercase;
+  color: var(--colour-brand-accent-hover);
+}
+
+.upsell-empty__title {
+  margin: var(--space-0);
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-heading-md);
+  line-height: var(--text-heading-md-lh);
+  letter-spacing: var(--text-heading-md-ls);
+  color: var(--colour-text-primary);
+}
+
+.upsell-empty__desc {
+  margin: var(--space-0);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-secondary);
+}
+
+.upsell-empty__cta {
+  margin-top: var(--space-3);
+}

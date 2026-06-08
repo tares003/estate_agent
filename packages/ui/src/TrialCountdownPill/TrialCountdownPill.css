@@ -1,0 +1,43 @@
+/* TrialCountdownPill atom — EPIC-AD trial entitlement. A status pill modelled
+ * on the EPIC-L Badge (.badge) treatment. Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). */
+
+.trial-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--colour-brand-primary-on);
+}
+
+/* ---- calm: plenty of trial runway --------------------------------------- */
+/* Quiet surface + secondary text, matching the Badge soft/neutral default, so
+ * a trial with time left reads as low-emphasis metadata. */
+.trial-countdown-pill.calm {
+  background: var(--colour-surface-sunken);
+  color: var(--colour-text-secondary);
+}
+
+/* ---- urgent: nearing the end of the trial ------------------------------- */
+/* Light amber warning fill; pair with the dark accent-on text for contrast,
+ * matching the Badge warning treatment. */
+.trial-countdown-pill.urgent {
+  background: var(--colour-warning);
+  color: var(--colour-brand-accent-on);
+}
+
+/* ---- ended: the trial has been spent ------------------------------------ */
+/* Danger fill on its light-on text. */
+.trial-countdown-pill.ended {
+  background: var(--colour-danger);
+  color: var(--colour-brand-primary-on);
+}

@@ -1,0 +1,64 @@
+/* PackLockPill atom — EPIC-L. Ported from
+ * design/canvas/components/modular/pack-state.html (.lockpill). Marks a feature
+ * as locked behind a feature pack. Every visual value references a design token
+ * from @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here
+ * (G7). The focus ring is provided globally by base.css. */
+
+.lockpill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--colour-border);
+  background: var(--colour-surface-sunken);
+  color: var(--colour-text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+/* sm — tighter inline use (e.g. beside a field label) */
+.lockpill.sm {
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+/* the decorative padlock glyph, tracking the pill's font-size */
+.lockpill .ico {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+/* interactive variants (button / anchor) get a pointer + hover affordance */
+a.lockpill,
+button.lockpill {
+  cursor: pointer;
+}
+
+a.lockpill:hover,
+button.lockpill:hover {
+  border-color: var(--colour-text-muted);
+  color: var(--colour-text-secondary);
+}
+
+/* a real <button> resets the UA chrome so it reads as a pill, not a control */
+button.lockpill {
+  font: inherit;
+  appearance: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lockpill {
+    transition: none;
+  }
+}

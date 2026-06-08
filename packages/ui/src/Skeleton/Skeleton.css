@@ -1,0 +1,82 @@
+/* Skeleton atom — EPIC-L. The loading-placeholder treatment, ported from the
+ * design canvas (design/canvas/states/loading-skeleton-patterns.html): a
+ * sunken-surface block that pulses opacity 0.4 -> 0.8 over the counter-duration
+ * with linear easing, mirroring the real layout to keep CLS low. Every visual
+ * value references a design token from @estate/tokens (tokens.css); no raw
+ * hex / px / ms / easing lives here (G7). */
+
+.skeleton {
+  display: block;
+}
+
+/* The decorative placeholders. The shimmer is a gentle opacity pulse on the
+ * sunken surface, so the meaning ("content is loading") survives even when the
+ * animation is off. */
+.skeleton-shape,
+.skeleton-line {
+  display: block;
+  background: var(--colour-surface-sunken);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse var(--motion-duration-counter) var(--motion-ease-linear) infinite;
+}
+
+/* text variant — a stack of lines at the body line-height, separated by a small
+ * gap. Each line defaults to full width; a caller may narrow it via the `width`
+ * prop (e.g. a 60%-wide heading) to mirror the real copy. */
+.skeleton.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.skeleton-line {
+  height: var(--space-4);
+}
+
+/* rect variant — a block placeholder (image, card, media). Intrinsic size is
+ * token-driven; a caller overrides it with the `width` / `height` props. */
+.skeleton.rect .skeleton-shape {
+  width: 100%;
+  height: var(--space-32);
+}
+
+/* circle variant — an avatar / icon placeholder. */
+.skeleton.circle .skeleton-shape {
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-circle);
+}
+
+/* Visually-hidden label — present in the a11y tree and the accessible name,
+ * but removed from the visual layout. Standard sr-only recipe. */
+.skeleton-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: var(--space-0);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Reduced-motion: stop the pulse and hold a single dimmed state, so the
+ * placeholder is still clearly a loading affordance without animated motion. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shape,
+  .skeleton-line {
+    animation: none;
+    opacity: 0.55;
+  }
+}
