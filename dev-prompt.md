@@ -99,39 +99,49 @@ Until these are recorded, **do not commit application code.** If the user has no
 STEP 2 — SCAFFOLD (Phase B0)
 ═══════════════════════════════════════════════════════════════
 
-Once the stack is recorded, scaffold the workspace per `AGENTS.md` §4:
+Once the stack is recorded, scaffold the monorepo per `AGENTS.md` §9:
 
 ```
 apps/
-  web/                    ← public marketing site + customer accounts
-  admin/                  ← tenant admin (may be a route within web/ or a separate app)
-  operator/               ← platform-operator admin (always separate domain per EPIC-AB)
-  marketing/              ← platform operator's own marketing site per EPIC-AE
-services/
-  api/                    ← primary platform API
-  workers/                ← background jobs per EPIC-U
+  web/                    ← Next.js (App Router) + Payload CMS mounted at /admin/cms
+                            Serves every user-facing surface (public marketing site,
+                            platform marketing site, tenant admin, operator admin,
+                            customer accounts, vendor/landlord/tenant portals,
+                            CRM, repair flow, feedback flow, property catalogue + detail).
+  workers/                ← BullMQ worker process (same TS codebase, different entrypoint)
 packages/
-  types/                  ← shared type definitions per master spec §J entities
-  validators/             ← shared input validation schemas per EPIC-K capabilities
-  ui/                     ← shared component library — ports the design canvas
-  config/                 ← shared lint, format and CI rules (including custom guards G1–G12)
-  email-templates/        ← shared transactional email source
-  tokens/                 ← runtime accessor for design tokens
-  entitlement/            ← per-tenant pack entitlement helper per EPIC-AD (isPackEnabled, requirePack)
-infrastructure/           ← IaC, deployment, per master spec §S non-functional requirements
+  tokens/                 ← design tokens (CSS custom properties + TS export)
+  ui/                     ← React component library — ports every EPIC-L primitive from the design canvas
+  db/                     ← Prisma schema + generated client + raw SQL migrations (PostGIS, RLS, indexes)
+  auth/                   ← Better Auth config + RBAC role library + multi-tenant access helpers
+  validators/             ← Zod schemas shared between client and server (consent-required on personal-data forms per G5)
+  email/                  ← React Email templates + nodemailer SMTP send abstraction + per-tenant credential resolver
+  storage/                ← StorageBackend interface (local-filesystem default; S3/MinIO/R2 swappable)
+  observability/          ← pino logger + ErrorReporter interface
+  entitlement/            ← isPackEnabled / requirePack Server Action wrapper / <RequirePack> RSC
+  config/                 ← shared lint, format, tsconfig, vitest preset, and all twelve custom guards G1–G12
+infrastructure/           ← Terraform (Cloudflare), Docker Compose (Hetzner), Coolify manifests
 docs/
   runbooks/               ← provisioning, restore, suspend, rotate-secrets, incident response
   adr/                    ← architectural decision records
 ```
 
+Monorepo orchestrator: Turborepo (or pnpm workspaces alone per ADR-0002). One root `package.json`, one lockfile, one `tsconfig` base.
+
 Then, in this order (each as its own PR with TDD discipline):
 
-1. **`packages/config`** — lint, format, type-check, all twelve custom guards G1–G12 wired into CI and **failing-closed** on a deliberate-violation fixture.
+1. **`packages/config`** — lint, format, type-check (`tsc --noEmit`), all twelve custom guards G1–G12 wired into CI and **failing-closed** on a deliberate-violation fixture. Includes the `prisma generate` and `payload generate:types` checks.
 2. **`packages/tokens` + `packages/ui`** — port `design/canvas/tokens.css` + `design/canvas/base.css`; build every EPIC-L atom and molecule **test-first** against its canvas artefact. This is the dependency every feature epic sits on (EPIC-L → EPIC-M → everything).
-3. **`packages/types` + `packages/validators`** — shared entities (canonical names from `PRODUCT.md` §2; covers every entity in master spec §J) and input schemas (consent-required on personal-data forms per G5).
-4. **`packages/entitlement`** — the per-tenant pack-entitlement helper per EPIC-AD (`isPackEnabled`, `requirePack` decorator / middleware). Wired into G12.
-5. **Foundation migrations** — every entity in master spec §J (and the `platform.tenants.enabled_packs` field per EPIC-AD §J.1 amendment). Each migration ships with an up + down + test per `_tdd-protocol.md`.
-6. **Shared helpers** — `audit()`, `notify()`, `recordConsent()` from `_cross-cutting.md` §2.
+3. **`packages/db`** — initial Prisma schema (every entity in master spec §J including the `platform.tenants.enabled_packs` field per EPIC-AD §J.1 amendment), the PostGIS extension migration, the RLS-policy raw SQL migration, the per-request Prisma client extension that issues `SET LOCAL app.current_tenant_id`. Each migration ships with an up + down + test per `_tdd-protocol.md`.
+4. **`packages/validators`** — Zod schemas mirroring every Prisma entity and every form input schema (consent-required on personal-data forms per G5).
+5. **`packages/auth`** — Better Auth configuration (OAuth providers, magic-link, WebAuthn), RBAC role library (Super Admin / Branch Manager / Property Lister / Lettings Negotiator / Sales Negotiator / Property Manager / Content Editor / Read-Only + custom roles), per-tenant session helpers.
+6. **`packages/entitlement`** — `isPackEnabled`, `requirePack` Server Action wrapper, `<RequirePack>` React Server Component. Wired into G12.
+7. **`packages/email`** — nodemailer abstraction, React Email base template, per-tenant SMTP credential resolver (encrypted-at-rest via AES-256-GCM helper).
+8. **`packages/storage`** — `StorageBackend` interface, local-filesystem implementation, signed-URL route helper.
+9. **`packages/observability`** — pino logger config, `ErrorReporter` no-op default interface.
+10. **Shared helpers** — `audit()`, `notify()`, `recordConsent()` from `_cross-cutting.md` §2, exported from the appropriate package.
+11. **`apps/web` scaffold** — Next.js App Router skeleton with Better Auth middleware, tenant-resolution middleware, Payload CMS mounted at `/admin/cms` with the per-tenant access functions configured. No feature routes yet — that's PHASE B1.
+12. **`apps/workers` scaffold** — BullMQ worker entrypoint, Redis connection, no queues yet (queues land with their owning epic, e.g. EPIC-U for the scheduled-task queue).
 
 Commit conventions per `AGENTS.md` §5: Conventional Commits; one PR per phase; each phase ≥ 3 commits (`test()` RED, `feat()` GREEN, `refactor()` clean-up — omit if no refactor was needed); `Co-Authored-By: Claude <noreply@anthropic.com>` trailer.
 

@@ -2412,10 +2412,49 @@ The following hosting models all satisfy the requirements above in principle. Th
 
 The cost saving of moving away from a pure hyperscaler can be substantial (60–80% at scale), but is only realised if the team has the operational capacity to absorb the work the hyperscaler would otherwise have done. The hybrid model is the typical answer for cost-sensitive B2B SaaS that needs to keep operational burden manageable.
 
-### S.13a Committed implementation — pure self-hosted on Hetzner
+### S.13a Committed implementation — single-stack TypeScript on Hetzner
 
-The team has committed to the pure-self-hosted model. The chosen stack is recorded authoritatively in `AGENTS.md` §9 / `CLAUDE.md` §9. Summary:
+The team has committed to a **single-stack TypeScript monorepo on a pure-self-hosted Hetzner deployment**. The chosen stack is recorded authoritatively in `AGENTS.md` §9 / `CLAUDE.md` §9. Summary:
 
 - **Compute:** Hetzner dedicated server (AX/CCX class), Dockerised containers, deployed via Coolify or Dokku.
-- **Database:** PostgreSQL 16 + PostGIS, on the same Hetzner host. Shared DB with Row-Level Security for multi-tenancy.
-- **Object storage:** Local filesystem on the Hetzner host (no S3 / R2 / MinIO dependency). Files served via signed-token middleware. `restic` snapshots to a separate Hetzner Storage Box for backup
+- **Application:** A single Next.js (App Router, TypeScript) application serves every user-facing surface. **Payload CMS 3.x** is mounted INSIDE the same Next.js app at `/admin/cms` to provide the page-builder, editorial admin, version history and rich-text editing for content-managed surfaces. **No separate backend service.** Server-side logic lives in Next.js Server Actions, route handlers, and Payload's auto-generated endpoints.
+- **Workers:** A separate `apps/workers` process (same TypeScript codebase, different entrypoint) consumes a **BullMQ** queue on the shared Redis.
+- **Database:** PostgreSQL 16 + PostGIS, on the same Hetzner host. **Shared DB with Row-Level Security** for multi-tenancy. **Prisma** as the ORM (Prisma Migrate for schema; raw SQL migrations for PostGIS, RLS policies, custom indexes).
+- **Auth:** **Better Auth** — OAuth providers (Microsoft / Google / Apple), magic-link for vendor / landlord / tenant portals, WebAuthn for staff 2FA. The session cookie carries the tenant identifier.
+- **Object storage:** Local filesystem on the Hetzner host (no S3 / R2 / MinIO dependency). Files served via a signed-URL route handler. `restic` snapshots to a separate Hetzner Storage Box for backup.
+- **CDN / edge:** Cloudflare free tier (DDoS + edge cache).
+- **Email (tenant-side):** **Per-tenant SMTP via `nodemailer`** — each tenant configures their own Office 365, Gmail, Outlook.com or any RFC-5321 SMTP server. OAuth 2.0 supported for Office 365 (Microsoft Graph) and Google Workspace (Google API). Credentials encrypted at rest using AES-256-GCM via Node's `crypto`. The platform never pays for outbound deliverability.
+- **Email (operator-side):** Configurable SMTP at install time — Office 365, Google Workspace, self-hosted SMTP, Postmark, Mailgun, etc.
+- **Email templates:** React Email (component-based, type-safe).
+- **SMS:** Twilio (no self-hosted alternative exists; used for emergency repair tickets only).
+- **Mapping:** Per-tenant choice of Google Maps or Mapbox — each tenant provides their own API key.
+- **Anti-spam:** Cloudflare Turnstile (free).
+- **Form validation:** Zod schemas shared between client (React Hook Form) and server (Server Action validation).
+- **Rich text:** Lexical (built into Payload).
+- **Billing:** Stripe (subscriptions + per-pack metered usage).
+- **CI/CD:** GitHub Actions.
+- **Secrets:** SOPS + age committed to the repo; decryption keys live in GitHub Actions secrets.
+- **Error monitoring:** Deferred from V1 (structured `pino` JSON logging only).
+- **Region:** Hetzner Falkenstein / Nuremberg / Helsinki — UK / EU-region only per §S.7.
+
+Trade-offs accepted:
+- Single-server architecture initially. Object-storage abstraction (`StorageBackend` interface) preserves the swap path to S3-compatible if horizontal scaling becomes required.
+- Single-stack consolidation. Removes the cross-language API seam and halves the type/schema/validator surface area at the cost of betting on the Node.js + Payload ecosystem for editorial features that Wagtail offers out-of-the-box. The Blocks-based page-builder in Payload is the closest TS-world equivalent and is judged sufficient for the planned editorial scope.
+- Tenants are responsible for their own outbound email deliverability (which most agencies prefer, since email comes from their own brand identity at their own domain reputation).
+- Operator-team owns infrastructure operations. No hyperscaler safety net.
+
+The "pay-only-for-running-cost" model from earlier drafts is **not** committed — the cost shape is a flat Hetzner monthly bill plus per-tenant Twilio SMS and Stripe fees. The 60–80% saving versus a hyperscaler is captured in the flat bill.
+
+### S.14 What is intentionally not specified
+
+- The specific hosting provider or providers.
+- The specific container runtime, orchestrator, database product, object storage product, CDN, email provider, or monitoring service.
+- The specific deployment pipeline or infrastructure-as-code tool.
+- The specific tenant-provisioning workflow technology.
+- The specific cost figures for any tenant or scale point — these will be set when the architecture is committed and re-evaluated quarterly.
+
+These remain implementation decisions to be made when the architecture is committed.
+
+---
+
+**End of specification.**

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(foreach \\($p in @\\(\"CLAUDE.md\",\"dev-briefs\\\\v1\\\\EPIC-H-admin-dashboard.md\",\"design-briefs\\\\v1\\\\EPIC-H-admin-dashboard.md\",\"PRODUCT.md\"\\)\\) { $f = Join-Path \"C:\\\\Users\\\\tares\\\\Documents\\\\Projects\\\\Estate Agent\" $p; $lines = Get-Content $f; \"=== $p === lines=$\\($lines.Count\\) bytes=$\\(\\(Get-Item $f\\).Length\\)\"; \"LAST LINE: \" + \\($lines | Select-Object -Last 1\\) })",
+      "Bash(git --version)",
+      "Bash(npm --version)",
+      "Bash(pnpm --version)",
+      "Bash(yarn --version)",
+      "Bash(py --version)"
+    ]
+  }
+}

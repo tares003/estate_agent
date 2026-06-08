@@ -12,8 +12,8 @@ A `Proposed` ADR records a recommendation that has **not yet been ratified**. Pe
 
 | ADR | Title | Status | Gates |
 |---|---|---|---|
-| [0001](0001-api-framework.md) | API framework — Django Ninja vs DRF | **Proposed** | Phase B2 (API capability layer) |
-| [0002](0002-smtp-credential-encryption.md) | Per-tenant SMTP credential encryption at rest | **Proposed** | EPIC-H §H.12 (tenant SMTP config screen) |
+| [0001](0001-data-fetching.md) | Client-side data fetching — Server Actions only vs Server Actions + tRPC | **Proposed** | EPIC-K (interface capabilities) |
+| [0002](0002-monorepo-tool.md) | Monorepo orchestrator — Turborepo vs pnpm workspaces alone | **Proposed** | Phase B0 (workspace scaffold) |
 | [0003](0003-backup-target.md) | Backup target & geo-separation | **Proposed** | First paying tenant |
 
-These three are the decisions `AGENTS.md` §9 lists as "intentionally NOT chosen yet". Ratify each (flip to `Accepted`) before starting the phase it gates.
+These three are the decisions `AGENTS.md` §9 lists as "intentionally NOT chosen yet". Ratify each (flip to `Accepted`) before st

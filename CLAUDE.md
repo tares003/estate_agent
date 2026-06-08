@@ -147,65 +147,71 @@ Follow the blocker policy in the autonomous build prompt:
 
 The stack has been chosen. Code may now be committed. The choices below are the **authoritative** answers; subsequent additions or substitutions require an amendment PR against this file.
 
-### Architecture pattern — hybrid two-stack
+### Architecture pattern — single-stack TypeScript monorepo
 
-The product is built as two cooperating applications sharing one database and one design system:
+The product is built as **one Next.js application** with **Payload CMS** mounted inside it, sharing one database, one design system, one auth layer, and one deployment.
 
-- **A Django + Wagtail "content" application** serving the content-heavy surfaces (public marketing site, agency editorial content, CMS page builder, knowledge hub, the platform's own marketing site).
-- **A Next.js "app" application** serving the highly interactive surfaces (tenant admin, operator admin, customer accounts, vendor / landlord / tenant portals, CRM, repair flow, feedback flow, property catalogue and detail).
+- **A single Next.js (App Router, TypeScript) application** serves every surface: the public marketing site, the platform marketing site, the tenant admin, the operator admin, customer accounts, the vendor / landlord / tenant portals, the CRM, the repair flow, the feedback flow, the property catalogue and detail.
+- **Payload CMS 3.x** is mounted INSIDE the same Next.js app at `/admin/cms`. It provides the page-builder (block schemas + React renderers), the editorial admin UI, version history, scheduled publish, rich-text editing (Lexical) and the content collections that back the CMS-managed public surfaces.
+- **Workers** run as a separate process (the same TypeScript codebase, different entrypoint) consuming a BullMQ queue on the shared Redis.
+- **Auth is unified**: Better Auth issues a session cookie that carries the tenant identifier. The same Next.js app reads it from every Server Action, route handler, and Payload access function.
 
-The two communicate over a JSON API exposed by the Django side. Auth is unified: Django issues a session cookie; Next.js forwards it to the API on every request.
+There is no separate backend API service. Server-side logic lives in Next.js Server Actions, route handlers, and Payload's auto-generated REST/GraphQL endpoints (used by the CMS admin and any external integrations).
 
 ### Per-surface stack ownership
 
-| Surface | Owning stack |
+Every surface ships from the same Next.js + Payload application. The "owning stack" column records which mechanism inside that app each surface uses.
+
+| Surface | Owning mechanism |
 |---|---|
-| EPIC-C public marketing site | Django + Wagtail (StreamField for editorial pages) |
-| EPIC-AE platform marketing site | Django + Wagtail (distinct theme preset; see EPIC-AE design brief) |
-| EPIC-D page-builder (the content authoring admin) | Wagtail StreamField — the content editor uses Wagtail admin |
-| EPIC-F property catalogue + detail | Next.js (interactive search, filters, gallery) consuming the Django property API |
-| EPIC-H tenant admin | Next.js |
-| EPIC-AB operator admin | Next.js (distinct visual identity) |
+| EPIC-C public marketing site | Next.js public routes + Payload Blocks (page-builder content) |
+| EPIC-AE platform marketing site | Next.js public routes + Payload Blocks (distinct theme preset; see EPIC-AE design brief) |
+| EPIC-D page-builder (the content authoring admin) | Payload CMS admin (mounted at `/admin/cms`); block schemas in `apps/web/payload/blocks/*` rendered by React components in `apps/web/components/blocks/*` |
+| EPIC-F property catalogue + detail | Next.js Server Components + Prisma queries (interactive search, filters, gallery) |
+| EPIC-H tenant admin | Next.js (Server Components + Server Actions) |
+| EPIC-AB operator admin | Next.js on a separate subdomain; distinct visual identity |
 | EPIC-T customer accounts | Next.js |
-| EPIC-Y / Z / AA vendor / landlord / tenant portals | Next.js |
+| EPIC-Y / Z / AA vendor / landlord / tenant portals | Next.js (magic-link auth via Better Auth) |
 | EPIC-I CRM | Next.js (queue + slide-over + composer) |
-| EPIC-G repair flow | Tenant form (Next.js); admin inbox (Next.js); contractor portal (Next.js) |
-| EPIC-N auth foundation | Django (Django auth + django-allauth) |
-| EPIC-O SEO | Both: Wagtail-native for Django pages, Next.js metadata APIs for Next.js pages |
-| EPIC-U background workers | Celery (Python) + Redis |
-| EPIC-J data + EPIC-K capabilities | Django models + Django Ninja (or DRF) API |
-| EPIC-AC feedback flow | Next.js (form + moderation queue); Django backend |
-| EPIC-AD pack entitlement | Shared via the API — Django evaluates, Next.js consults |
-| EPIC-S multi-tenancy | Shared PostgreSQL + Row-Level Security; the Next.js side reads tenant context from the session |
-| EPIC-AE platform marketing site | Django + Wagtail |
+| EPIC-G repair flow | Tenant form, admin inbox, contractor portal — all Next.js |
+| EPIC-N auth foundation | Better Auth (OAuth + magic-link + WebAuthn) |
+| EPIC-O SEO | Next.js metadata API + sitemap route; structured data emitted from Server Components |
+| EPIC-U background workers | BullMQ on Redis; TypeScript worker entrypoint in `apps/workers` |
+| EPIC-J data + EPIC-K capabilities | Prisma + Server Actions; complex client queries via tRPC (TBD per ADR-0002) |
+| EPIC-AC feedback flow | Next.js (form + moderation queue) |
+| EPIC-AD pack entitlement | Server Actions wrapper + middleware; `<RequirePack>` React component |
+| EPIC-S multi-tenancy | Shared PostgreSQL + Row-Level Security; tenant resolution in Next.js middleware; Prisma extension issues `SET LOCAL app.current_tenant_id` per request |
 
 ### Foundation stack
 
 | Layer | Choice |
 |---|---|
-| **Backend framework** | Django (latest stable LTS) with Python 3.12+ |
-| **CMS** | Wagtail (latest stable, paired with the chosen Django version) |
-| **API layer** | Django Ninja (preferred for type-safety) or Django REST Framework — implementation team confirms before B2 |
-| **Frontend framework (app side)** | Next.js (App Router) with TypeScript |
-| **UI / styling** | CSS custom properties from `design/canvas/tokens.css` ported verbatim; Tailwind CSS as the utility layer (configured to use the token CSS variables); no raw hex / px / ms per CI guard G7 |
-| **Component library (app side)** | First-party — built from the EPIC-L canvas artefacts. No third-party UI kit (preserves design fidelity per G7) |
-| **Database** | PostgreSQL 16+ |
-| **ORM (Django side)** | Django ORM |
-| **ORM (Next.js side)** | None — the Next.js app does not touch the database directly; it consumes the Django API |
-| **Object storage** | **Local filesystem** on the host, behind a `StorageBackend` interface. V1 default; no S3 dependency. Files served through a signed-token middleware (no pre-signed S3 URLs). The interface allows swapping to S3-compatible (MinIO / R2 / S3) later without touching feature code. |
+| **Runtime** | Node.js LTS (currently 22.x) |
+| **Framework** | Next.js (App Router) with TypeScript — strict mode, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` |
+| **CMS** | Payload CMS 3.x (currently 3.85.0) — mounted INSIDE the Next.js app at `/admin/cms`. Code-first config (collections, fields, access control in TS files). Blocks field type for page-builder. Lexical for rich text. |
+| **Data fetching / mutations** | React Server Components for reads; Server Actions for mutations; tRPC for complex client-side interactive queries (TBD per ADR-0002 — Server Actions only, vs Server Actions + tRPC) |
+| **UI / styling** | CSS custom properties from `design/canvas/tokens.css` ported verbatim into `packages/tokens`; Tailwind CSS as the utility layer (configured to use the token CSS variables); no raw hex / px / ms per CI guard G7 |
+| **Component library** | First-party — built from the EPIC-L canvas artefacts in `packages/ui`. No third-party UI kit (preserves design fidelity per G7) |
+| **Database** | PostgreSQL 16 + PostGIS |
+| **ORM** | Prisma. Schema lives in `packages/db/schema.prisma`. Raw SQL migrations under `packages/db/migrations/raw/` for: PostGIS extension, RLS policies, custom indexes, materialized views. Prisma extension wraps every query to issue `SET LOCAL app.current_tenant_id = '<uuid>'` from the request context. |
+| **Authentication** | Better Auth. OAuth providers (Microsoft / Google / Apple) for staff sign-in. Magic-link for vendor / landlord / tenant portals. WebAuthn for staff 2FA. Session cookie carries the tenant identifier. |
+| **Background jobs** | BullMQ on Redis. Workers run as a separate `apps/workers` process (same TS codebase, different entrypoint). Same Redis serves the BullMQ queue and the Next.js cache. |
+| **Object storage** | **Local filesystem** on the host, behind a `StorageBackend` interface (`packages/storage`). V1 default; no S3 dependency. Files served through a signed-URL route handler (no pre-signed S3 URLs). The interface allows swapping to S3-compatible (MinIO / R2 / S3) later without touching feature code. |
 | **CDN** | Cloudflare **free tier** in front of the origin — DDoS protection + edge cache only. No Workers, no analytics, no paid features. |
-| **Image processing** | Wagtail's built-in renditions, persisted to the local-filesystem storage backend. |
-| **Transactional email (tenant)** | **Per-tenant SMTP.** Each tenant configures their own SMTP server from the admin: host, port, username, password (encrypted at rest with `django-cryptography` or equivalent), from-address, reply-to. Must support both **basic-auth with app passwords** and **OAuth 2.0** for Office 365 / Gmail / Outlook.com (which deprecated basic auth). Generic SMTP for everything else. The platform never holds tenant credentials in plaintext. |
-| **Transactional email (operator)** | **Configurable operator SMTP.** The platform operator configures their own SMTP at install time. Supported targets: Office 365 / Google Workspace / Gmail / self-hosted SMTP (Postfix, Maddy, Postal) / Postmark / Mailgun / any RFC-5321-compliant SMTP server. Used for operator-to-tenant emails (welcome, billing, sub-processor change notification, password reset, support correspondence). Tenants never see this account. |
-| **SMS** | Twilio (no realistic self-hosted alternative for SMS — carrier agreements required). Used for emergency repair tickets and optional staff 2FA fallback. Low volume by design. |
-| **Mapping** | **Per-tenant choice between Google Maps and Mapbox.** Each tenant provides their own API key from the admin. `MapBackend` interface; both implementations ship in the shared UI package. A tenant on Starter can begin with Mapbox's free tier; an enterprise tenant can pick Google Maps for their existing licence. |
-| **Anti-spam / challenge-response** | Cloudflare Turnstile (free tier; privacy-friendly; replaces reCAPTCHA). Token captured client-side, verified server-side on every form submission per CI guard G5 + G8. |
+| **Image processing** | `sharp` (Next.js's built-in image-optimization library). Payload uses `sharp` for the CMS image renditions; persisted to the local-filesystem storage backend. |
+| **Transactional email (tenant)** | **Per-tenant SMTP** via `nodemailer`. Each tenant configures their own SMTP from the admin: host, port, username, password (encrypted at rest using AES-256-GCM via Node's `crypto`, key from env), from-address, reply-to. Must support both **basic-auth with app passwords** and **OAuth 2.0** for Office 365 / Microsoft 365 (via Microsoft Graph) and Google Workspace / Gmail (via Google API). The platform never holds tenant credentials in plaintext. |
+| **Transactional email (operator)** | **Configurable operator SMTP** via `nodemailer`. The platform operator configures their own SMTP at install time via env. Supported targets: Office 365 / Google Workspace / Gmail / self-hosted SMTP (Postfix, Maddy, Postal) / Postmark / Mailgun / any RFC-5321-compliant SMTP. Used for operator-to-tenant emails (welcome, billing, sub-processor change notification, password reset, support correspondence). Tenants never see this account. |
+| **Email templates** | React Email — component-based, type-safe templates compiled to HTML at send time. Source files in `packages/email/templates/*.tsx`. |
+| **SMS** | Twilio (no realistic self-hosted alternative — carrier agreements required). Used for emergency repair tickets and optional staff 2FA fallback. Low volume by design. |
+| **Mapping** | **Per-tenant choice between Google Maps and Mapbox.** Each tenant provides their own API key from the admin. `MapBackend` interface in `packages/ui`; both implementations ship in the same package, runtime-selected per-tenant. A tenant on Starter can begin with Mapbox's free tier; an enterprise tenant can pick Google Maps for their existing licence. |
+| **Anti-spam / challenge-response** | Cloudflare Turnstile (free tier; privacy-friendly; replaces reCAPTCHA). Token captured client-side, verified server-side on every form submission per CI guards G5 + G8. |
+| **Form validation** | Zod schemas in `packages/validators` — shared between client (React Hook Form + Zod resolver) and server (Server Action validation). Type inference gives end-to-end safety. |
+| **Rich text** | Lexical (Meta's open-source framework, built into Payload's rich-text field type). |
+| **Date / time** | `date-fns` (tree-shakeable, immutable). Server-side dates stored as UTC; rendered in the tenant's configured timezone. |
 | **Analytics** | **Deferred from V1.** No analytics layer in initial release. Add behind an interface later if commercial decision warrants. |
-| **Error monitoring** | **Deferred from V1.** Structured logging only — JSON to stdout, captured by the Docker logging driver. A Sentry-compatible backend (GlitchTip self-hosted or Sentry hosted) can be wired later behind an `ErrorReporter` interface. |
-| **Structured logging** | JSON to stdout per container, captured by the Docker logging driver. Optional aggregation to Loki + Grafana (self-hosted on the same Hetzner box) deferred from V1. |
-| **Background jobs** | Celery + Redis (Redis is also the cache layer). |
-| **Billing** | Stripe (subscriptions for tier + metered usage records for per-pack billing per EPIC-AD). Stripe is the only practical choice for regulated card processing; no self-hosted alternative exists for the payment-processor role. |
-| **Authentication** | Django auth + django-allauth for social providers (future); WebAuthn for staff 2FA via `django-otp` + `django-otp-webauthn`; magic-link auth for vendor / landlord / tenant portals via `django-sesame` |
+| **Error monitoring** | **Deferred from V1.** Structured logging only — JSON to stdout, captured by the Docker logging driver. A Sentry-compatible backend (GlitchTip self-hosted or Sentry hosted) can be wired later behind an `ErrorReporter` interface in `packages/observability`. |
+| **Structured logging** | `pino` with JSON output to stdout per container, captured by the Docker logging driver. Optional aggregation to Loki + Grafana (self-hosted on the same Hetzner box) deferred from V1. |
+| **Billing** | Stripe (subscriptions for tier + metered usage records for per-pack billing per EPIC-AD). Stripe is the only practical choice for regulated card processing. |
 
 ### Hosting model
 
@@ -213,12 +219,12 @@ Per master spec §S.13, the **pure-self-hosted** model is committed.
 
 | Layer | Hosting |
 |---|---|
-| Django + Wagtail app | Hetzner dedicated server (AX or CCX class), Dockerised, deployed via Coolify or Dokku |
-| Next.js app | Same Hetzner server alongside Django, Dockerised, deployed via Coolify or Dokku |
-| PostgreSQL 16 + PostGIS | Hetzner-hosted on the same dedicated server. Schema-management via Django migrations; RLS policies in raw SQL migrations. |
-| Object storage | **Local filesystem** on the Hetzner host. Backed up via `restic` or `borg` to a separate Hetzner Storage Box. No S3 dependency. |
+| Next.js + Payload app (`apps/web`) | Hetzner dedicated server (AX or CCX class), Dockerised, deployed via Coolify or Dokku |
+| Workers (`apps/workers`) | Same Hetzner server, separate Docker container (same image, different entrypoint) |
+| PostgreSQL 16 + PostGIS | Hetzner-hosted on the same dedicated server. Schema-management via Prisma Migrate; PostGIS extension + RLS policies + custom indexes in raw SQL migrations under `packages/db/migrations/raw/`. |
+| Redis | Hetzner-hosted on the same dedicated server (BullMQ queue + Next.js cache). |
+| Object storage | **Local filesystem** on the Hetzner host. Backed up via `restic` to a separate Hetzner Storage Box. No S3 dependency. |
 | Cloudflare CDN | Cloudflare free tier (DDoS + edge cache). |
-| Redis | Hetzner-hosted on the same dedicated server (Celery broker + Django cache). |
 | Email (tenant) | Per-tenant SMTP — tenant brings their own (Office 365 / Gmail / any SMTP) configured in the admin. |
 | Email (operator) | Configurable SMTP — operator picks Office 365 / Google Workspace / self-hosted / Postmark / Mailgun at install time. |
 | SMS | Twilio (one provider account at the operator level; usage accounted per-tenant for billing). |
@@ -230,87 +236,109 @@ Per master spec §S.13, the **pure-self-hosted** model is committed.
 | Layer | Choice |
 |---|---|
 | CI / CD provider | GitHub Actions |
-| Deployment Django | Docker image built in CI, pushed to GitHub Container Registry, Coolify pulls on tag |
-| Deployment Next.js | If Vercel: native push-to-deploy. If Hetzner: same Docker + Coolify path as Django |
-| IaC | Terraform for Cloudflare resources (DNS, R2 buckets, CDN config); Docker Compose for Hetzner-hosted services; `cloudflared` tunnel for local dev |
-| Secrets | GitHub Actions secrets in CI; Doppler or 1Password Secrets for runtime |
+| Deployment | Docker image built in CI, pushed to GitHub Container Registry, Coolify pulls on tag. One image runs both the `apps/web` and the `apps/workers` containers (different `CMD`). |
+| IaC | Terraform for Cloudflare resources (DNS, CDN config); Docker Compose for Hetzner-hosted services; `cloudflared` tunnel for local dev |
+| Secrets | SOPS + age encrypted secrets committed to the repo; decryption keys live in GitHub Actions secrets at deploy time |
 
 ### Testing stack
 
 | Layer | Choice |
 |---|---|
-| Django unit + integration tests | pytest + pytest-django |
-| Django property-based tests | hypothesis |
-| Django API contract tests | schemathesis (against the Django Ninja / DRF schema) |
-| Next.js unit + component tests | Vitest + React Testing Library |
-| Next.js visual regression | Playwright with `@playwright/test` + per-breakpoint screenshots per the canvas's `responsive-coverage.json` |
-| End-to-end across both stacks | Playwright with a per-test seed that exercises both Django and Next.js |
+| Unit + integration | Vitest + React Testing Library |
+| End-to-end | Playwright |
+| Visual regression | Playwright with `@playwright/test` + per-breakpoint screenshots per the canvas's `responsive-coverage.json` |
+| Database integration | Vitest against a per-test transactional Postgres via Testcontainers (transactional rollback per test) |
 | Accessibility automation | `@axe-core/playwright` (G9) |
 | Performance budget | Lighthouse CI per route (G3) |
-| Coverage | pytest-cov for Django; Vitest coverage for Next.js; combined report in CI |
+| Coverage | Vitest coverage; combined report in CI |
+| Type safety | `tsc --noEmit` in CI; `prisma generate` + `payload generate:types` checked in |
 
 ### Workspace layout (concrete)
 
 ```
 apps/
-  next/                   ← Next.js (App Router) — tenant admin, operator admin, customer + portals, CRM, repair flow, feedback, property catalogue/detail
-services/
-  django/                 ← Django + Wagtail — public marketing site, platform marketing site, CMS, page builder, API, auth foundation
-  workers/                ← Celery worker processes (the same Django code, deployed with the worker entrypoint)
+  web/                    ← Next.js (App Router) + Payload CMS mounted at /admin/cms
+                            Serves every user-facing surface:
+                            - public marketing site
+                            - platform marketing site
+                            - tenant admin
+                            - operator admin
+                            - customer accounts
+                            - vendor / landlord / tenant portals
+                            - CRM, repair flow, feedback flow
+                            - property catalogue + detail
+  workers/                ← BullMQ worker process (same TS codebase, different entrypoint)
 packages/
-  tokens/                 ← design tokens (one source of truth; emits both CSS custom properties for Django and a TypeScript export for Next.js)
-  ui-components/          ← Next.js / React component library — the EPIC-L primitives ported from the design canvas
-  validators/             ← shared input validation schemas (Zod on the Next.js side; Pydantic on the Django side; both generated from one OpenAPI contract)
-  api-client/             ← Next.js API client generated from the Django OpenAPI spec
-infrastructure/           ← Terraform, Docker Compose, deployment manifests
+  tokens/                 ← design tokens (one source of truth; emits CSS custom properties + TS export)
+  ui/                     ← React component library — the EPIC-L primitives ported from the design canvas
+  db/                     ← Prisma schema, generated client, raw SQL migrations for PostGIS / RLS / indexes
+  auth/                   ← Better Auth config + multi-tenant access helpers + RBAC role definitions
+  validators/             ← Zod schemas shared between client and server
+  email/                  ← React Email templates + SMTP send abstraction + per-tenant credential resolver
+  storage/                ← StorageBackend interface (local-filesystem default; S3/MinIO/R2 swappable)
+  observability/          ← pino logger + ErrorReporter interface (deferred Sentry/GlitchTip swap)
+  entitlement/            ← isPackEnabled / requirePack / <RequirePack> wrappers
+  config/                 ← shared lint, format, CI, tsconfig, eslint, vitest preset
+infrastructure/           ← Terraform (Cloudflare), Docker Compose (Hetzner), Coolify manifests
 docs/
   adr/                    ← architectural decision records
   runbooks/               ← provisioning, restore, suspend, rotate-secrets, incident response
 ```
 
+Monorepo tool: **Turborepo** (or pnpm workspaces alone if a single tool suffices). All `apps/*` and `packages/*` are TypeScript packages sharing one `tsconfig` base. One `package.json` lockfile at the root.
+
 ### Multi-tenancy implementation
 
 - **Shared PostgreSQL + Row-Level Security.** One database, every tenant-owned table carries a `tenant_id` column, RLS policies enforce isolation at the data layer.
-- Per-request Django middleware resolves the tenant by subdomain or custom-domain hostname, then sets the Postgres session GUC `SET LOCAL app.current_tenant_id = '<uuid>'` before any query runs. RLS policies reference `current_setting('app.current_tenant_id')::uuid`.
+- Per-request Next.js middleware resolves the tenant by subdomain or custom-domain hostname, attaches the tenant identifier to the request context.
+- A **Prisma Client extension** (`packages/db/extensions/tenant-rls.ts`) wraps every query and issues `SET LOCAL app.current_tenant_id = '<uuid>'` before the actual query runs, on the same transaction. RLS policies reference `current_setting('app.current_tenant_id')::uuid`.
+- The Better Auth session cookie carries the tenant identifier (set when the user signs into a tenant subdomain). Every Server Action, route handler, and Payload access function reads the tenant from the session and reapplies the GUC server-side.
+- Payload CMS access functions are configured to scope every collection to the current tenant — content authors only see their own tenant's pages, blocks, media.
 - Cheapest to operate (one DB, one migration run, one backup, one connection pool); fastest to provision (INSERT a tenant row — sub-second, hitting the 10-minute target with room to spare); strongest fit for the modular cost goal in master spec §S.2.
-- Next.js receives the tenant identifier in the session cookie issued by Django; every API call carries it and Django middleware re-applies the GUC server-side. The Next.js side never reads tenant data directly.
-- Operator admin is on a separate subdomain (`admin.estateplatform.co.uk` or equivalent) and is NOT a tenant — it spans tenants and uses a distinct authorisation scope. Operator queries bypass tenant RLS via a privileged role used only by audited operator-admin handlers.
+- Operator admin is on a separate subdomain (`admin.estateplatform.co.uk` or equivalent) and is NOT a tenant — it spans tenants and uses a distinct authorisation scope. Operator queries bypass tenant RLS via a privileged Postgres role used only by audited operator-admin handlers.
 - Per-tenant backup uses row-filtered `pg_dump` (`pg_dump --where="tenant_id='...'"`). Per-tenant restore is a documented runbook procedure under `docs/runbooks/`.
 - Enterprise-tier tenants requesting dedicated database isolation are promoted via a documented migration (`pg_dump` → new dedicated DB → swap `DATABASE_URL`). The shared-DB-with-RLS default covers Starter and Professional.
 
 ### Pack entitlement implementation (EPIC-AD)
 
-- `enabled_packs` stored on the tenant model as a JSONB or text array.
-- `isPackEnabled(pack_slug)` helper in both Django (`apps/entitlement/helpers.py`) and Next.js (`packages/api-client/entitlement.ts` consuming a `/api/tenant/me` endpoint).
-- `@require_pack("sales_plus")` decorator for Django views / API routes.
-- `<RequirePack pack="sales_plus">…</RequirePack>` component for Next.js routes.
-- CI guard G12 enforces these wrappers across both codebases via a custom ESLint + flake8 rule.
+- `enabled_packs` stored on the tenant model as JSONB.
+- `isPackEnabled(pack_slug)` helper in `packages/entitlement/index.ts` reads the current tenant's enabled packs from the session.
+- `requirePack("sales_plus")` Server Action wrapper that throws if the pack is not enabled.
+- `<RequirePack pack="sales_plus">…</RequirePack>` React Server Component for route-level gating.
+- Payload CMS access functions gate pack-scoped content collections via the same helper.
+- CI guard G12 enforces these wrappers via a custom ESLint rule.
 
 ### Notes on what is intentionally NOT chosen here
 
-- **Django Ninja vs Django REST Framework** for the API layer — confirmed before B2.
-- **Pre-tenant SMTP encryption library** (`django-cryptography` vs a custom helper) — confirmed before EPIC-H §H.12 ships.
+- **Server Actions only vs Server Actions + tRPC** for client-side interactive queries — confirmed before EPIC-K scaffold.
+- **Turborepo vs pnpm workspaces alone** as the monorepo orchestrator — confirmed before B0 scaffold.
 - **Backup target box specifics** (Hetzner Storage Box vs an off-Hetzner provider for true geo-separation) — confirmed before first paying tenant.
 
-These three open decisions are documented as ADRs `docs/adr/0001-api-framework.md`, `docs/adr/0002-smtp-credential-encryption.md`, `docs/adr/0003-backup-target.md` and resolved before scaffolding the affected module.
+These three open decisions are documented as ADRs `docs/adr/0001-data-fetching.md`, `docs/adr/0002-monorepo-tool.md`, `docs/adr/0003-backup-target.md` and resolved before scaffolding the affected module.
 
 ### Reasons-for-choice (defensible record)
 
-- **Django + Wagtail for content** — Wagtail StreamField is the strongest page-builder paradigm available; rebuilding it first-party would be months of work for inferior result.
-- **Next.js for app** — the interactive admin, portals and CRM benefit substantially from React's component model and Next.js's data-fetching primitives; the design canvas (static HTML + CSS) ports cleanly into React components.
-- **PostgreSQL + PostGIS** — the property-search radius queries require spatial; PostGIS is the canonical fit.
+- **Next.js end-to-end** — single language (TypeScript), single deployment, single log stream, single connection pool. Removes the cross-language API seam and halves the type/schema/validator surface area. The design canvas (static HTML + CSS) ports directly into React components.
+- **Payload CMS 3.x** — strongest TypeScript-native page-builder available. Mounts INSIDE the Next.js app at a route — one Docker image, one DB connection pool. Code-first config (collections, fields, access control all in TS files in the repo, code-reviewed, versioned). MIT licence, Series A funded in 2024 (Forerunner Ventures), Postgres-native, themable admin UI, Lexical for rich text. The `Blocks` field type is the TypeScript equivalent of Wagtail StreamField: each block has a TS schema plus a React render component, ported one-for-one from the design canvas.
+- **Prisma** — most mature TS ORM, excellent tooling (Studio for tenant-aware data browsing in dev, Migrate for schema management). Well-trodden multi-tenant + RLS pattern via Client extensions. Generates types end-to-end into the rest of the codebase.
+- **Better Auth** — TS-native, magic-link out of the box (for vendor / landlord / tenant portals), WebAuthn out of the box (for staff 2FA), OAuth providers (Microsoft / Google / Apple) built in, multi-session and multi-tenant primitives. MIT licence, fully self-host. Cleaner shape than NextAuth/Auth.js for our requirements.
+- **BullMQ on Redis** — fully self-host, mature (built on top of `ioredis`), no SaaS dependency. Same Redis serves the cache and the queue. Strong observability via the BullMQ Board admin UI.
+- **React Email** — component-based templates with type-safe variables, rendered to HTML at send time. Lives alongside the rest of the React code; one mental model.
+- **Lexical** — Meta's open-source rich-text framework, built into Payload's rich-text field type. Excellent extensibility, strong accessibility, used in Facebook/Instagram production.
+- **Zod for validation** — shared schemas between client and server. Type-inference gives end-to-end safety. Pairs cleanly with React Hook Form on the client and Server Action validation on the server.
+- **PostgreSQL + PostGIS** — property-search radius queries require spatial; PostGIS is the canonical fit.
 - **Shared DB + Row-Level Security** — cheapest to operate, fastest to provision (sub-second per tenant), hits the 10-minute target with room to spare. Used in production by Supabase, Linear, Vercel and many modern B2B SaaS. PostgreSQL RLS is mature and well-trodden.
 - **Local-filesystem object storage** — zero per-byte storage cost, no third-party dependency, simplest backup model (one `restic` job covers all media). The `StorageBackend` abstraction preserves the option to swap to S3-compatible later if horizontal scaling becomes required.
 - **Cloudflare free tier for CDN** — DDoS protection and edge cache for free; processing happens on the Hetzner origin, Cloudflare never sees user data unencrypted.
-- **Per-tenant SMTP (Outlook / Office 365 / Gmail / any)** — tenants send email from their own brand identity at their own domain reputation. The platform never pays for outbound deliverability. OAuth support handles Office 365 / Gmail's basic-auth deprecation.
-- **Configurable operator SMTP** — the platform operator picks their preferred sending account at install time (Office 365, Google Workspace, self-hosted SMTP, Postmark, Mailgun). The configuration is per-deployment, not per-tenant.
-- **Twilio for SMS** — no self-hosted alternative for SMS exists (carrier agreements required). Twilio's UK SMS pricing is acceptable for emergency-repair use only (low volume).
+- **Per-tenant SMTP (Outlook / Office 365 / Gmail / any) via `nodemailer`** — tenants send email from their own brand identity at their own domain reputation. The platform never pays for outbound deliverability. OAuth 2.0 support handles Office 365 / Gmail's basic-auth deprecation. Credentials encrypted at rest using AES-256-GCM via Node's `crypto` (no extra dependency).
+- **Configurable operator SMTP** — the platform operator picks their preferred sending account at install time. Configuration is per-deployment, not per-tenant.
+- **Twilio for SMS** — no self-hosted alternative exists (carrier agreements required). Twilio's UK SMS pricing is acceptable for emergency-repair use only (low volume).
 - **Per-tenant Google Maps OR Mapbox** — tenants bring their own API key; the platform pays no map fees. Either provider's free tier covers a small agency.
 - **Cloudflare Turnstile** — free, privacy-friendly, no cookie-consent banner complications, replaces reCAPTCHA.
 - **Stripe for billing** — only practical choice for regulated card processing; the per-pack metered-overage model in EPIC-AD maps cleanly to Stripe's metered billing primitives.
 - **Hetzner dedicated server with Docker + Coolify** — cost target in master spec §S.2 is significantly easier to hit with dedicated hardware, and the data-residency requirement in §S.7 is satisfied by Hetzner's EU regions. Coolify provides a tenant-operator-friendly deployment UI.
 - **GitHub Actions** — most teams already know it, runs anywhere (including a self-hosted runner on the same Hetzner box).
 - **SOPS + age for secrets** — encrypted secrets committed to the repo; no third-party secrets manager to run. Decryption keys live in GitHub Actions secrets at deploy time.
-- **Error monitoring deferred** — structured logging is sufficient for V1. Sentry-compatible error reporting (GlitchTip self-hosted or Sentry hosted) added behind an interface in Phase 7 if needed.
+- **Error monitoring deferred** — structured logging is sufficient for V1. Sentry-compatible error reporting added behind an interface later if needed.
 
 Until any of the three "intentionally not chosen" items above is committed, the dev Claude must not commit code that depends on the unresolved choice.

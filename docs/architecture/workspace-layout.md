@@ -1,30 +1,47 @@
 # Workspace layout
 
-The repository is a **two-stack monorepo**: a Python side (Django + Wagtail + Celery, managed by `uv`) and a TypeScript side (Next.js + shared packages, managed by `pnpm`). They share one PostgreSQL database and one design token source.
+The repository is a **single-stack TypeScript monorepo**: one Next.js (App Router) application with **Payload CMS 3.x** mounted inside it, plus a sibling workers process running on the same TypeScript codebase. One PostgreSQL database, one design token source, one auth layer, one deployment image.
 
 ```
 apps/
-  next/                 Next.js (App Router, TS) — tenant admin, operator admin,
-                        customer accounts + portals, CRM, repair flow, feedback,
-                        property catalogue/detail. Consumes the Django JSON API.
-services/
-  django/               Django + Wagtail — public + platform marketing sites, CMS,
-                        page builder, JSON API, auth foundation, models/migrations.
-  workers/              Celery worker entrypoint (runs the services/django codebase).
+  web/                  Next.js (App Router, TypeScript) — serves every user-facing surface:
+                        public marketing site, platform marketing site, tenant admin,
+                        operator admin, customer accounts, vendor/landlord/tenant portals,
+                        CRM, repair flow, feedback flow, property catalogue + detail.
+                        Payload CMS is mounted at /admin/cms inside this app.
+  workers/              BullMQ worker process (same image, different entrypoint).
+                        Consumes the shared Redis queue for scheduled tasks, email send,
+                        portal sync, bulk import, report generation, etc.
 packages/               TypeScript shared packages (pnpm workspace members):
-  config/               Lint/format/type-check config + the 12 CI guards (G1–G12).
-  tokens/               Design-token runtime accessor; one source → CSS vars + TS export.
-  types/                Canonical entity types for every master-spec §J entity.
-  validators/           Input-validation schemas. Zod (TS) + Pydantic (Py) generated
-                        from one OpenAPI contract.
-  i18n/                 Translation-key registry + t()/defineMessages() runtime.
-  ui-components/        First-party React component library — EPIC-L primitives ported
-                        from design/canvas/ (atoms, molecules, organisms, pack-state).
-  entitlement/          Per-tenant pack entitlement — isPackEnabled / <RequirePack>.
-  helpers/              Cross-cutting runtime helpers: audit(), notify(), recordConsent().
-  api-client/           Next.js API client generated from the Django OpenAPI spec.
-  email-templates/      Shared transactional email-template source.
-infrastructure/         Terraform (Cloudflare), Docker Compose, deployment manifests.
+  config/               Lint/format/type-check/tsconfig/vitest preset + the 12 CI guards.
+  tokens/               Design tokens (CSS custom properties + TS export).
+  ui/                   First-party React component library — every EPIC-L primitive
+                        ported from design/canvas/ (atoms, molecules, organisms,
+                        pack-state, responsive variants at all 7 breakpoints).
+  db/                   Prisma schema + generated client + raw SQL migrations
+                        (PostGIS extension, RLS policies, custom indexes).
+                        Prisma Client extension issuing SET LOCAL app.current_tenant_id
+                        per request lives here.
+  auth/                 Better Auth config (OAuth + magic-link + WebAuthn) +
+                        RBAC role library (Super Admin, Branch Manager, Property Lister,
+                        Lettings Negotiator, Sales Negotiator, Property Manager,
+                        Content Editor, Read-Only + custom-role composition) +
+                        multi-tenant session helpers.
+  validators/           Zod schemas shared between client (React Hook Form + Zod resolver)
+                        and server (Server Action validation). Consent-required on
+                        personal-data forms per CI guard G5.
+  email/                React Email templates (.tsx) + nodemailer SMTP send abstraction +
+                        per-tenant credential resolver (AES-256-GCM encrypted at rest).
+  storage/              StorageBackend interface (local-filesystem default;
+                        S3/MinIO/R2 implementations available for later swap).
+                        Signed-URL route handler.
+  observability/        pino logger config + ErrorReporter interface
+                        (no-op default; Sentry/GlitchTip swappable).
+  entitlement/          isPackEnabled() helper + requirePack() Server Action wrapper +
+                        <RequirePack> React Server Component (CI guard G12).
+  utils/                Cross-cutting runtime helpers: audit(), notify(), recordConsent().
+infrastructure/         Terraform (Cloudflare DNS + CDN), Docker Compose (Hetzner
+                        services: app, workers, postgres, redis), Coolify manifests.
 docs/
   adr/                  Architectural decision records.
   architecture/         Cross-cutting architecture notes (this file).
@@ -34,25 +51,7 @@ audit/                  master-prompt-log.md + audit-report.md (build progress +
 design/canvas/          Visual source of truth (ported verbatim; not reformatted).
 ```
 
-## Deviation from `AGENTS.md` §9 concrete layout — recorded per the §9 clause
+## Conformance with `AGENTS.md` §9
 
-`AGENTS.md` §9 lists a **minimal** `packages/` set (`tokens`, `ui-components`, `validators`, `api-client`). The foundation work (`dev-briefs/sprint-01/_cross-cutting.md` §2 and the build prompt's STEP 2) additionally requires shared packages for **types, i18n, entitlement, config, helpers, and email-templates**. This layout is therefore a **superset** of §9 — not a contradiction. §9 explicitly allows this: *"If the stack chosen mandates a different layout, document the deviation in this file before starting."* This document is that record. (Tracked as audit-report row **D-006**.)
+`AGENTS.md` §9 records the authoritative workspace layout. This document expands on it with the per-package responsibilities. Any structural change requires an amendment PR against `AGENTS.md` §9 first.
 
-### Mapping foundation shared packages (`_cross-cutting.md` §2) → directories
-
-| `_cross-cutting.md` §2 package | Directory |
-|---|---|
-| Validators | `packages/validators` |
-| Types | `packages/types` |
-| Tokens | `packages/tokens` |
-| i18n | `packages/i18n` |
-| UI primitives | `packages/ui-components` |
-| Audit log helper | `packages/helpers` → `audit()` |
-| Notification helper | `packages/helpers` → `notify()` |
-| GDPR consent helper | `packages/helpers` → `recordConsent()` |
-
-> Note: the audit / notify / consent helpers have a **Django (Python) counterpart** inside `services/django` as well — state changes originate server-side. The TS `packages/helpers` versions cover Next.js-side emission and the shared contract; both are tested to the 100% shared-package gate.
-
-## Package-naming convention
-
-TypeScript packages are scoped `@estate/<name>` (e.g. `@estate/tokens`, `@estate/config`). The Python project is `estate_platform` (see `services/django/pyproject.toml`).

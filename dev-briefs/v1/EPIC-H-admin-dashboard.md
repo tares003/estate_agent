@@ -74,4 +74,25 @@ FR-H-12 → tests/integration/form-builder.test.*
 FR-H-13 → tests/integration/automation-builder.test.*
 FR-H-14 → tests/integration/integrations-admin.test.*
 FR-H-15 → tests/integration/role-matrix.test.*, tests/integration/role-simulator.test.*
-FR-H-16 → tests/integrati
+FR-H-16 → tests/integration/settings-hierarchy.test.*
+FR-H-17 → tests/integration/audit-log-viewer.test.*
+FR-H-18 → tests/integration/reports-prebuilt.test.*, tests/integration/reports-custom.test.*
+FR-H-19 → tests/integration/scheduled-tasks-console.test.*
+FR-H-20 → tests/integration/maintenance-mode.test.*, tests/integration/feature-flags.test.*
+FR-H-21 → tests/component/keyboard-shortcuts.test.*, tests/component/command-palette.test.*
+A11y → tests/a11y/admin-routes.spec.*
+Visual → tests/visual/admin-screens.spec.* (per major screen)
+```
+
+## Dependencies
+
+- Every other implementation epic — EPIC-H is the surface through which every back-end capability is operated.
+- EPIC-N — auth, RBAC, audit logging.
+- EPIC-M — every primitive component.
+
+## Open questions
+
+1. Confirm the V1 scope of the no-code form builder — full feature set or simplified V1?
+2. Confirm the V1 scope of the workflow automation builder — full feature set or simplified V1?
+3. Confirm the V1 scope of A/B testing in the page builder (recommended: defer to Phase 8).
+4. Confirm the policy on impersonation — who can impersonate whom, and what session indicators must show during impersonation.
