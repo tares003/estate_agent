@@ -17,3 +17,6 @@ export {
   type AnyPrismaClient,
 } from './tenant-extension.js';
 export { PrismaPackSource, type TenantPackReader } from './pack-source.js';
+export { audit, type AuditInput, type AuditWriter } from './audit.js';
+export { recordConsent, type ConsentInput, type ConsentWriter } from './consent.js';
+export { notify, type NotifyInput, type NotifyChannel, type NotificationWriter } from './notify.js';
