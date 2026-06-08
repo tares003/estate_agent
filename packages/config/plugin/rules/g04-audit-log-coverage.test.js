@@ -45,6 +45,19 @@ it('G4 audit-log-coverage: mutating server actions must audit() or be exempt', (
       {
         code: "async function bulkCreate(rows){ 'use server'; await prisma.enquiry.createMany({ data: rows }); await audit({ action:'enquiry.bulk_created' }); }",
       },
+      // the real pattern: mutation + audit() inside the withTenant(...) tx callback
+      {
+        code: "async function submitEnquiry(data){ 'use server'; await withTenant(db, tenantId, async (tx) => { await tx.enquiry.create({ data }); await audit({ action:'enquiry.created' }); }); }",
+      },
+      // file-level 'use server' module (the shape Client Components must import):
+      // the top-level handler mutates + audits inside withTenant — compliant.
+      {
+        code: "'use server';\nexport async function submitEnquiry(data){ await withTenant(db, tenantId, async (tx) => { await tx.enquiry.create({ data }); await audit({ action:'enquiry.created' }); }); }",
+      },
+      // file-level module: a non-mutating helper alongside the action needs no audit.
+      {
+        code: "'use server';\nfunction trim(s){ return s.trim(); }\nexport async function ping(){ return 'pong'; }",
+      },
     ],
     invalid: [
       // mutation in a server action with no audit() and no exemption
@@ -70,6 +83,22 @@ it('G4 audit-log-coverage: mutating server actions must audit() or be exempt', (
       // arrow-function server action: mutation, no audit
       {
         code: "const removeProperty = async (id) => { 'use server'; await prisma.property.delete({ where:{id} }); };",
+        errors: [{ messageId: 'missingAudit' }],
+      },
+      // tx mutation inside a withTenant(...) callback with NO audit — must be caught
+      {
+        code: "async function submitEnquiry(data){ 'use server'; await withTenant(db, tenantId, async (tx) => { await tx.enquiry.create({ data }); }); }",
+        errors: [{ messageId: 'missingAudit' }],
+      },
+      // file-level 'use server' module: top-level handler mutates with no audit —
+      // caught once (the nested closure is covered by descent, not re-reported).
+      {
+        code: "'use server';\nexport async function createTenancy(data){ await withTenant(db, tenantId, async (tx) => { await tx.tenancy.create({ data }); }); }",
+        errors: [{ messageId: 'missingAudit' }],
+      },
+      // file-level module, direct mutation, no audit.
+      {
+        code: "'use server';\nexport async function removeProperty(id){ await prisma.property.delete({ where:{id} }); }",
         errors: [{ messageId: 'missingAudit' }],
       },
     ],

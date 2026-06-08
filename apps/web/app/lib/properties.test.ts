@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { listProperties, toCardProps, type PropertyRow } from './properties.js';
+import { getPropertyBySlug, listProperties, toCardProps, type PropertyRow } from './properties.js';
 
 const saleRow: PropertyRow = {
+  id: '11111111-1111-1111-1111-111111111111',
   slug: 'palatine-road-m20',
   displayAddress: 'Palatine Road, Didsbury',
   postcode: 'M20',
@@ -15,6 +16,7 @@ const saleRow: PropertyRow = {
 };
 
 const rentRow: PropertyRow = {
+  id: '22222222-2222-2222-2222-222222222222',
   slug: 'ellesmere-street-m15',
   displayAddress: 'Ellesmere Street, Castlefield',
   postcode: 'M15',
@@ -73,5 +75,38 @@ describe('listProperties', () => {
       orderBy: { publishedAt: 'desc' },
       take: 6,
     });
+  });
+});
+
+describe('getPropertyBySlug', () => {
+  it('fetches a single published, non-deleted property by slug and maps it to a detail', async () => {
+    const findFirst = vi
+      .fn()
+      .mockResolvedValue({ ...saleRow, description: 'A fine Edwardian semi.' });
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'palatine-road-m20');
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { slug: 'palatine-road-m20', publishedAt: { not: null }, deletedAt: null },
+    });
+    expect(detail).toMatchObject({
+      id: '11111111-1111-1111-1111-111111111111',
+      slug: 'palatine-road-m20',
+      href: '/properties/palatine-road-m20',
+      price: '£525,000',
+      description: 'A fine Edwardian semi.',
+      receptions: 2,
+    });
+  });
+
+  it('coerces a missing description to null and preserves the card mapping', async () => {
+    const findFirst = vi.fn().mockResolvedValue(rentRow);
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'ellesmere-street-m15');
+    expect(detail?.description).toBeNull();
+    expect(detail?.rentFrequency).toBe('PCM');
+    expect(detail?.receptions).toBeNull();
+  });
+
+  it('returns null when no published property matches the slug', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null);
+    expect(await getPropertyBySlug({ property: { findFirst } }, 'does-not-exist')).toBeNull();
   });
 });
