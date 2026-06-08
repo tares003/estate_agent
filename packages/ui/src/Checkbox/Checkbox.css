@@ -1,0 +1,153 @@
+/* Checkbox atom — EPIC-L. Ported from
+ * design/canvas/components/atoms/selection-controls.html (the checkbox block).
+ * Every visual value references a design token from @estate/tokens (tokens.css);
+ * no raw hex / px / ms / easing lives here (G7). The real <input> is visually
+ * hidden but focusable; the .checkbox-box is the painted control and the focus
+ * ring is driven by the token --shadow-focus. */
+
+.checkbox-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* The label wraps the control so the whole row is the hit target (≥ 44px). */
+.checkbox-row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: var(--size-touch-target-min);
+  padding-block: var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-primary);
+}
+
+/* Real, focusable input — visually hidden under the painted box. */
+.checkbox-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+/* Painted control. */
+.checkbox-box {
+  flex: 0 0 auto;
+  width: var(--space-5);
+  height: var(--space-5);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-sm);
+  background: var(--colour-surface-base);
+  color: var(--colour-brand-primary-on);
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.checkbox-tick {
+  grid-area: 1 / 1;
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+  opacity: 0;
+}
+
+/* Indeterminate dash — shown only when the input is in the mixed state. */
+.checkbox-dash {
+  grid-area: 1 / 1;
+  width: var(--space-3);
+  height: 0;
+  border-top: 2px solid currentColor;
+  border-radius: var(--radius-pill);
+  opacity: 0;
+}
+
+.checkbox-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.checkbox-label {
+  font-weight: var(--weight-medium);
+}
+
+.checkbox-description {
+  color: var(--colour-text-muted);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+}
+
+.checkbox-error {
+  color: var(--colour-danger);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  font-weight: var(--weight-medium);
+}
+
+/* Hover. */
+.checkbox-input:hover + .checkbox-box {
+  border-color: var(--colour-text-muted);
+}
+
+/* Focus ring (token-driven; mirrors base.css convention). */
+.checkbox-input:focus-visible + .checkbox-box {
+  box-shadow: var(--shadow-focus);
+  border-color: var(--colour-brand-accent);
+}
+
+/* Checked — filled box, tick visible. */
+.checkbox-input:checked + .checkbox-box {
+  background: var(--colour-brand-primary);
+  border-color: var(--colour-brand-primary);
+}
+.checkbox-input:checked + .checkbox-box .checkbox-tick {
+  opacity: 1;
+}
+
+/* Indeterminate — filled box, dash visible, tick hidden. The aria-checked
+ * value carries the mixed semantics for assistive tech. */
+.checkbox-input[aria-checked="mixed"] + .checkbox-box {
+  background: var(--colour-brand-primary);
+  border-color: var(--colour-brand-primary);
+}
+.checkbox-input[aria-checked="mixed"] + .checkbox-box .checkbox-tick {
+  opacity: 0;
+}
+.checkbox-input[aria-checked="mixed"] + .checkbox-box .checkbox-dash {
+  opacity: 1;
+}
+
+/* Error — danger border, status conveyed by the message text too (not colour alone). */
+.checkbox-field.has-error .checkbox-box {
+  border-color: var(--colour-danger);
+}
+.checkbox-field.has-error .checkbox-input:focus-visible + .checkbox-box {
+  border-color: var(--colour-danger);
+}
+
+/* Disabled. */
+.checkbox-input:disabled + .checkbox-box {
+  background: var(--colour-surface-sunken);
+  border-color: var(--colour-border);
+}
+.checkbox-input:disabled ~ .checkbox-text .checkbox-label,
+.checkbox-input:disabled ~ .checkbox-text .checkbox-description {
+  color: var(--colour-text-muted);
+}
+.checkbox-input:disabled + .checkbox-box,
+.checkbox-row:has(.checkbox-input:disabled) {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkbox-box {
+    transition: none;
+  }
+}

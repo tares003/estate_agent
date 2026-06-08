@@ -1,0 +1,149 @@
+/* Radio + RadioGroup atom — EPIC-L. Ported verbatim from
+ * design/canvas/components/atoms/selection-controls.html (the "Radio" section).
+ * Every visual value references a design token from @estate/tokens (tokens.css);
+ * no raw hex / px / ms / easing lives here (G7). */
+
+/* ---- Group container ------------------------------------------------------ */
+.radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0; /* let the fieldset shrink to its container (fluid width) */
+}
+
+.radio-group-legend {
+  padding: 0;
+  margin-bottom: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.radio-group-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.radio-group-help {
+  margin-top: var(--space-2);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-muted);
+}
+
+.radio-group-error {
+  margin-top: var(--space-2);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  font-weight: var(--weight-medium);
+  color: var(--colour-danger);
+}
+
+/* ---- Option row (the whole row is the ≥44px hit target) ------------------- */
+.radio {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  min-height: var(--size-touch-target-min);
+  padding-block: var(--space-1);
+  cursor: pointer;
+}
+
+/* Real input visually hidden but focusable underneath the .dot */
+.radio-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+/* The visible dot */
+.radio .dot {
+  flex: 0 0 auto;
+  width: var(--space-5);
+  height: var(--space-5);
+  margin-top: var(--space-1);
+  border: 1px solid var(--colour-border);
+  background: var(--colour-surface-base);
+  border-radius: var(--radius-circle);
+  display: grid;
+  place-items: center;
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.radio .dot::after {
+  content: "";
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-circle);
+  background: var(--colour-brand-primary);
+  transform: scale(0);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+/* hover */
+.radio-input:hover + .dot {
+  border-color: var(--colour-text-muted);
+}
+
+/* focus ring (self-contained; mirrors base.css :focus-visible) */
+.radio-input:focus-visible + .dot {
+  box-shadow: var(--shadow-focus);
+  border-color: var(--colour-brand-accent);
+}
+
+/* checked */
+.radio-input:checked + .dot {
+  border-color: var(--colour-brand-primary);
+}
+.radio-input:checked + .dot::after {
+  transform: scale(1);
+}
+
+/* disabled */
+.radio.is-disabled {
+  cursor: not-allowed;
+}
+.radio-input:disabled + .dot {
+  background: var(--colour-surface-sunken);
+  border-color: var(--colour-border);
+}
+.radio.is-disabled .radio-text {
+  color: var(--colour-text-muted);
+}
+
+/* ---- Label + description -------------------------------------------------- */
+.radio-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.radio-label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-primary);
+}
+
+.radio.is-disabled .radio-label {
+  color: var(--colour-text-muted);
+}
+
+.radio-description {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radio .dot,
+  .radio .dot::after {
+    transition-duration: var(--motion-duration-instant);
+  }
+}

@@ -1,0 +1,135 @@
+/* TextField atom — EPIC-L. Ported verbatim from
+ * design/canvas/components/atoms/form-fields.html. Every visual value
+ * references a design token from @estate/tokens (tokens.css); no raw hex / px /
+ * ms / easing lives here (G7). The error focus ring reuses the
+ * --shadow-focus / --colour-focus-ring tokens (the canvas's raw rgba ring is
+ * replaced by the danger border + token ring — a danger-tinted ring token
+ * would require a DESIGN.md amendment). */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* fluid width — fills its container; layout is the composing parent's job */
+  width: 100%;
+}
+
+.field > label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.field .req {
+  color: var(--colour-text-muted);
+  font-weight: var(--weight-regular);
+}
+
+.field .hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+/* wrapper holds the input plus any leading/trailing adornment */
+.inputwrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.inputwrap:hover {
+  border-color: var(--colour-text-muted);
+}
+
+.inputwrap:focus-within {
+  border-color: var(--colour-brand-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.inputwrap.is-error {
+  border-color: var(--colour-danger);
+}
+
+.inputwrap.is-disabled {
+  background: var(--colour-surface-sunken);
+}
+
+.control {
+  flex: 1 1 auto;
+  width: 100%;
+  height: var(--size-input-md);
+  padding-inline: var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.control::placeholder {
+  color: var(--colour-text-muted);
+}
+
+.control:disabled {
+  color: var(--colour-text-muted);
+  cursor: not-allowed;
+}
+
+/* adornments (prefix / suffix) — decorative, marked aria-hidden in markup */
+.adornment {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding-inline: var(--space-4);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-secondary);
+  background: var(--colour-surface-raised);
+}
+
+.adornment.leading {
+  border-right: 1px solid var(--colour-border);
+}
+
+.adornment.trailing {
+  border-left: 1px solid var(--colour-border);
+}
+
+.adornment .ico,
+.adornment svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  flex: 0 0 auto;
+}
+
+/* error message — colour is reinforced by the leading icon slot + role=alert */
+.field .err {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-danger);
+}
+
+.field .err .ico,
+.field .err svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inputwrap {
+    transition: none;
+  }
+}

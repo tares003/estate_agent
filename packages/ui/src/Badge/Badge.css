@@ -1,0 +1,76 @@
+/* Badge atom — EPIC-L. Ported verbatim from
+ * design/canvas/components/atoms/data-display.html (.badge / .badge.b-* /
+ * .badge.soft). Every visual value references a design token from
+ * @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here (G7). */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--colour-brand-primary-on);
+}
+
+/* leading status dot (market-status tones only) — decorative, inherits fill */
+.badge .dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  flex: 0 0 auto;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+}
+
+/* ---- Semantic tones ------------------------------------------------------ */
+/* `neutral` is the soft default per the canvas `.badge.soft`: quiet surface +
+ * secondary text, so it reads as a low-emphasis chip rather than a status. */
+.badge.neutral {
+  background: var(--colour-surface-sunken);
+  color: var(--colour-text-secondary);
+}
+.badge.success {
+  background: var(--colour-success);
+}
+.badge.warning {
+  /* warning fill is light; pair with the dark accent-on text for contrast */
+  background: var(--colour-warning);
+  color: var(--colour-brand-accent-on);
+}
+.badge.danger {
+  background: var(--colour-danger);
+}
+.badge.info {
+  background: var(--colour-info);
+}
+
+/* ---- Market-status tones (1:1 with the market_status enum) --------------- */
+.badge.available {
+  background: var(--colour-status-available);
+}
+.badge.under-offer {
+  background: var(--colour-status-under-offer);
+  color: var(--colour-brand-accent-on);
+}
+.badge.sold-stc {
+  background: var(--colour-status-sold-stc);
+}
+.badge.sold {
+  background: var(--colour-status-sold);
+}
+.badge.let-agreed {
+  background: var(--colour-status-let-agreed);
+  color: var(--colour-brand-accent-on);
+}
+.badge.let {
+  background: var(--colour-status-let);
+}
+.badge.withdrawn {
+  background: var(--colour-status-withdrawn);
+}

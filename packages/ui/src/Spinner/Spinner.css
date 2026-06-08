@@ -1,0 +1,66 @@
+/* Spinner atom — EPIC-L. The rotating-ring loading indicator, following the
+ * same border/animation treatment as the canvas button spinner
+ * (design/canvas/components/atoms/button.html). Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). */
+
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  color: var(--colour-brand-primary);
+}
+
+/* The visible rotating ring. `currentColor` lets a parent recolour the spinner
+ * (e.g. on a dark surface) without a new token. */
+.spinner .ring {
+  display: block;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-circle);
+  animation: spinner-rotate var(--motion-duration-gallery) var(--motion-ease-linear) infinite;
+}
+
+/* sizes — diameter maps to the icon scale */
+.spinner.sm .ring {
+  width: var(--size-icon-sm);
+  height: var(--size-icon-sm);
+}
+
+.spinner.lg .ring {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+/* Visually-hidden label — present in the a11y tree and the accessible name,
+ * but removed from the visual layout. Standard sr-only recipe. */
+.spinner .vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: var(--space-0);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Reduced-motion: stop the spin, keep a complete (non-colour-only) ring so the
+ * indicator is still visible and the meaning is preserved. */
+@media (prefers-reduced-motion: reduce) {
+  .spinner .ring {
+    animation: none;
+    border-top-color: currentColor;
+    opacity: 0.6;
+  }
+}
