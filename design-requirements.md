@@ -101,3 +101,112 @@ In any **picker / catalogue / palette** UI where the user chooses an item from a
 
 - `🔒 Requires New Homes pack`.
 - The locked item is keyboard-focusable but its primary action is replaced.
+- Clicking or activating the locked item opens the pack-enable modal rather than failing.
+- Locked items sit visually de-emphasised but discoverable, so the user **learns** what additional packs would unlock — modularisation drives upsell awareness without being intrusive.
+
+### 2a.3 The "pack-gated attribute group" pattern
+
+In any **multi-tab or multi-section form** where some attribute groups depend on a pack — for example the property editor's per-vertical attribute groups (Commercial, Business Transfer, Care Home) per EPIC-F — the pack-gated group shall not appear by default. In its place, an explicit affordance:
+
+- `+ Add [Pack-name] attributes` button styled as a secondary CTA.
+- Tooltip on hover / focus: "Requires the X pack".
+- Clicking opens the pack-enable modal directly.
+
+After the pack is enabled, the attribute group appears in place at the next form load (no page reload needed in the same session — toast confirms).
+
+### 2a.4 The "trial countdown" pattern
+
+When any of the tenant's enabled packs is in a trial period (per EPIC-AD FR-AD-5d trial policy), every screen the pack contributes to shall surface a small **trial countdown pill** in a consistent position:
+
+- Top-right of the section's title bar.
+- Format: `Trial: 11 days remaining`.
+- Colour shift to `--colour-warning` at ≤ 3 days, `--colour-danger` at ≤ 1 day.
+- One-click actions: `Keep` (which silently commits to billing from the trial-end date) and `Cancel` (which opens the pack-cancellation support flow per EPIC-AD).
+- Dismissable by the user; reappears on next session.
+- The pill is a real button with full keyboard reachability; the countdown announces via `aria-live` only on day changes.
+
+### 2a.5 The "pack-state change" toast pattern
+
+When a pack toggle takes effect (enable, trial-start, trial-end, cancel-processed), the platform shall display a consistent toast across the next screen the user lands on:
+
+- `Sales-plus pack is now active. Your Vendor portal is reachable at /vendor.` (enable success)
+- `Trial of Calculators pack started. You have 14 days.` (trial start)
+- `Trial of New Homes pack ended. You've been billed £X for this period.` (trial commit)
+- `Cancellation request received. Our team will be in touch within one business day.` (cancel requested)
+- `New Homes pack has been disabled per your request. Your data is preserved.` (cancel processed)
+
+The toast uses the standard Toast component (EPIC-L) per `motion-spec.md` toast rules.
+
+### 2a.6 The public-site pack-state visibility pattern
+
+The **public-facing tenant site** must hide every surface that depends on a pack the tenant doesn't have:
+
+- The portal homepage vertical tiles render only the verticals belonging to enabled packs.
+- The unified `/properties` listing-type filter offers only the listing types whose packs are enabled.
+- Vertical landing pages (`/new-homes`, `/commercial`, `/business-transfer`, `/care-homes`) return 404 when their pack is off, and are excluded from the sitemap and from internal links.
+- The customer-account "Save property" affordance is shown for every property regardless of pack (saved properties is core).
+- Vendor / landlord / tenant portal sign-in pages (`/vendor/sign-in`, `/landlord/sign-in`, `/tenant/sign-in`) return 404 when their owning pack is off.
+
+The public-site behaviour is silent — visitors do not see "this pack is locked"; the surface simply does not exist for that tenant. Upsell messaging is reserved for authenticated tenant-side surfaces.
+
+### 2a.7 Welcome and notification email pack-awareness
+
+Email templates that depend on pack-related events branch on the tenant's enabled-pack list:
+
+- The welcome email upon tenant signup includes a "What you have enabled" section enumerating the tenant's packs.
+- A pack-enable confirmation email goes to the tenant operator with a "Get started" guide for the newly-enabled pack.
+- A trial-end reminder email goes 3 days before any active trial ends, with one-click "Keep" / "Cancel" CTAs that resolve via signed tokens.
+- A pack-cancellation processed email confirms the change and reassures the user that their data is preserved.
+
+### 2a.8 What this section does not specify
+
+- The exact illustration for each pack's upsell state (these are art-directed per pack in PHASE B).
+- The exact copy of every email and notification (these are CMS-managed per EPIC-D, with English defaults shipped).
+- The pricing displayed on the upsell CTA (read from `PRODUCT.md` and the billing-provider state, not hardcoded).
+- The motion of the pack-enable modal (covered in EPIC-AD design brief).
+
+## 3. Performance budgets
+
+Tightly coupled to SEO (master spec Section O.5) and to per-tenant cost (Section S.2).
+
+### Core Web Vitals targets
+
+- **Largest Contentful Paint (LCP):** ≤ 2.5 seconds at the 75th percentile.
+- **Interaction to Next Paint (INP):** ≤ 200 ms at the 75th percentile.
+- **Cumulative Layout Shift (CLS):** ≤ 0.1 at the 75th percentile.
+
+### Bundle budgets (per route, gzipped)
+
+- **Public marketing routes:** JavaScript ≤ 150 KB, CSS ≤ 50 KB.
+- **Property catalogue:** JavaScript ≤ 200 KB, CSS ≤ 60 KB.
+- **Property detail:** JavaScript ≤ 220 KB, CSS ≤ 60 KB.
+- **Admin shell:** JavaScript ≤ 350 KB (one-time load, code-split per section thereafter).
+- **Customer account:** JavaScript ≤ 200 KB.
+
+### Image performance
+
+- WebP or AVIF first, JPEG fallback.
+- `width` and `height` attributes mandatory on every image to prevent layout shift.
+- `loading="lazy"` for any image below the fold.
+- Only the LCP image (typically the property hero) uses `fetchpriority="high"`.
+- Maximum source image dimension served on any viewport: 1920 px on the longest edge.
+- Maximum file size for a single served property image: 500 KB at the largest variant.
+
+### Font loading
+
+- `font-display: swap` on every web-font face.
+- One woff2 preloaded per family (display + body).
+- Variable fonts preferred over multiple weight files where the family supports them.
+
+### Third-party scripts
+
+- Cookie-consent-gated. Nothing loads before consent.
+- Maximum five third-party origins on any public page (analytics, error monitoring, reviews widget, anti-spam challenge, chat).
+- Each third-party script must declare a `crossorigin` and `referrerpolicy` and use `defer` or `async` loading.
+
+## 4. Internationalisation
+
+- All user-facing text is sourced from translation keys, even when only English is shipped. This positions the platform for future locales without a refactor.
+- Numbers, dates and currencies are formatted via the runtime's locale-aware formatters, never by hand.
+- Right-to-left layouts are not in scope for V1 but the underlying styling system must support them when they arrive (`dir="rtl"` flips correctly).
+- Property prices use the configured currency token; mixing of cur

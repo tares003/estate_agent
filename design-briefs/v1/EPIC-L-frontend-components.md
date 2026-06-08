@@ -33,4 +33,29 @@ These four components are referenced by every pack-gated surface across the prod
 
 - **`UpsellEmptyState`** — the "locked admin section" pattern. Used in place of a 404 when a tenant operator navigates to an admin section whose owning pack is off. Includes pack name, what it enables, illustration slot, monthly cost, primary "Enable" CTA opening the pack-enable modal, secondary "Learn more" link. Variants: full-screen (when the entire section is locked), inline (when a sub-section within an otherwise-enabled section is locked).
 
-- **`TrialCountdownPill`** — a small status pill rendered at the top-right of any screen contributing to a pack on trial. Colour shifts at ≤ 3 days (`--colour-warning`) and ≤ 1 day (`--colour
+- **`TrialCountdownPill`** — a small status pill rendered at the top-right of any screen contributing to a pack on trial. Colour shifts at ≤ 3 days (`--colour-warning`) and ≤ 1 day (`--colour-danger`). Actions: "Keep", "Cancel".
+
+- **`PackEnableModal`** — the modal launched whenever a user activates a pack-locked element. Defined in EPIC-AD design brief; lives in the shared library because every pack-gated surface reaches it.
+
+### Organisms (referenced from feature epics)
+
+`PropertyCard`, `PropertyGrid`, `PropertyCarousel`, `PropertyHero`, `PropertyGallery`, `PropertyFactsStrip`, `PropertyMap`, `AgentCard`, `TeamGrid`, `BranchCard`, `TestimonialsCarousel`, `FAQAccordion`, `PartnerLogosRow`, `CTAStrip`, `BookViewingForm`, `ContactAgentModal`, `RegistrationBanner`, `RichTextEditor`, `PageBuilder`, `AdminTable`, `AdminForm`, `AdminImageManager`, `AdminFileUpload`, `StatusBadge`, `NotificationPanel`, `CalendarView`, `ActivityFeed`.
+
+## Per-component documentation requirement
+
+Each component's canvas entry must show:
+
+1. Every prop variant.
+2. Default, hover, focus, active, disabled and loading states.
+3. Empty, error and success states where applicable.
+4. **Responsive variations at every breakpoint defined in `DESIGN.md` §10 — 320, 640, 768, 1024, 1280, 1440 and 2560 px** (mandate from `design-requirements.md` §0).
+5. Reduced-motion variation.
+6. Dark-mode variation (if dark mode is in scope; otherwise deferred).
+7. Accessibility annotations: focus management, label association, ARIA roles, keyboard support.
+8. Token references — every colour, spacing, size, motion value annotated with its token.
+
+## Responsive
+
+Every component in this library is **responsive by default** — there is no "desktop component" vs "mobile component" split, only one component that adapts. The canvas entries above are the contract: a component with a missing breakpoint variant is incomplete and will not pass the responsive-coverage CI guard.
+
+- Mobile-first markup: default styles target 320 px; media queries
