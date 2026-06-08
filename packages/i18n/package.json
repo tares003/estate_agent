@@ -1,0 +1,27 @@
+{
+  "name": "@estate/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Translation-key registry and runtime accessor (master spec §6). All user-facing strings route through t(); only en-GB ships in V1.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@estate/config": "workspace:*",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
