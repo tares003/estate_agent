@@ -197,3 +197,31 @@ All 6 packages green: format · typecheck · lint · test · guards. Coverage in
 Token spend rough estimate: parallel wave-3 workflow + integration + coverage verification — moderate.
 
 ---
+
+## Phase B4 — wave-4 both tracks (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `5dd1f1c` → `b7c4627`
+Tests added: 19 (i18n) + 74 (db core-entities) + 15+25+26+40 (ui molecules) = **199**
+
+### Track A
+
+- **`@estate/i18n`** (master spec §6): `t(key, args)` interpolates `{placeholders}`; unknown keys return the key, missing args stay visible; `defineMessages` preserves literal-key types; en-GB catalogue. 19 tests, 100% coverage.
+- **§J core entity schema** (extends `@estate/db`): Branch, Agent, Property, Enquiry, Viewing, Valuation, RepairRequest, Contact — all tenant-scoped, canonical names (Property≠Listing/House, Enquiry≠Lead), enums matching the token/PRODUCT vocabulary, sensible indexes, price in pence, soft-delete. `0003_core_entities_rls.sql` (RLS + NULLIF fail-closed policy on every new table) and `0004_property_postgis.sql` (geography(Point,4326) + GiST for radius search). `prisma validate`/`generate` pass; pglite RLS tests cover the new tables. (Vertical-pack attributes + satellite entities — images/documents/notes/history — land with their owning epics.)
+
+### Track B — `@estate/ui` molecules
+
+- **Modal** (portal dialog: focus-trap + restore + Escape + backdrop dismiss; token scrim via `color-mix` on `--colour-text-primary`), **Toast** (polite/assertive by tone, fake-timer auto-dismiss), **Select** (accessible styled native select), and the form-status set: **FormError** (role=alert), **FormSuccess** (role=status), **FormReviewSummary** (dl). Token-driven (G7), axe-clean (G9). Barrel now exports **15 ui components**.
+
+### Verification
+
+All 7 packages green: format · typecheck · lint · test · guards. §J schema reviewed for canonical naming + `prisma validate`/`generate` re-run during integration. New molecule CSS scanned — no raw colours (Modal's scrim is `color-mix` on a token). Coverage confirmed at the gates.
+
+### Next (wave-5+)
+
+- **Track A:** `packages/auth` (Better Auth — **spike first** per `_tdd-protocol.md` §9, then TDD: OAuth/magic-link/WebAuthn + RBAC roles + access helpers); §J vertical-pack + satellite entities.
+- **Track B:** stand up **Playwright visual-regression at the 7 breakpoints** and build the universal **PropertyCard** (9 market_status variants) — the prime responsive organism; plus the remaining EPIC-L pieces (Combobox, Drawer, Tabs, Accordion, Pagination, Breadcrumbs, Tooltip, Popover, Dropdown, DatePicker, TimeSlotSelector, MultiStepForm, FileDropzone, AntiSpamChallenge).
+
+Token spend rough estimate: parallel wave-4 workflow (6 agents incl. the §J schema) + integration/verification — substantial.
+
+---
