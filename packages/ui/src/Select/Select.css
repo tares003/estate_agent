@@ -1,0 +1,117 @@
+/* Select atom — EPIC-L. Ported from
+ * design/canvas/components/atoms/form-fields.html (Select and combobox
+ * section). A styled NATIVE <select> — accessible by default, no custom
+ * listbox ARIA. Every visual value references a design token from
+ * @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here (G7).
+ * The field / label / hint / error / focus chrome mirrors the TextField atom
+ * so the two read as one family. The native disclosure caret is suppressed
+ * (appearance: none) and replaced by a token-coloured chevron positioned in
+ * the right gutter (--space-12 reserved on the control). */
+
+.select-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* fluid width — fills its container; layout is the composing parent's job */
+  width: 100%;
+}
+
+.select-field > label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.select-field .req {
+  color: var(--colour-text-muted);
+  font-weight: var(--weight-regular);
+}
+
+.select-field .hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+/* wrapper anchors the disclosure chevron over the right gutter */
+.selectwrap {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+/* the caret — purely decorative, marked aria-hidden in markup */
+.selectwrap .select-caret {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  pointer-events: none;
+  color: var(--colour-text-muted);
+}
+
+.control {
+  flex: 1 1 auto;
+  width: 100%;
+  height: var(--size-input-md);
+  /* room on the right for the chevron so option text never collides */
+  padding-block: 0;
+  padding-left: var(--space-4);
+  padding-right: var(--space-12);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  /* suppress the native caret so the token chevron is the only marker */
+  appearance: none;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.control:hover {
+  border-color: var(--colour-text-muted);
+}
+
+.control:focus-visible {
+  outline: none;
+  border-color: var(--colour-brand-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.control.is-error {
+  border-color: var(--colour-danger);
+}
+
+.control:disabled {
+  color: var(--colour-text-muted);
+  background: var(--colour-surface-sunken);
+  cursor: not-allowed;
+}
+
+/* keep the chevron muted alongside the disabled control */
+.selectwrap:has(.control:disabled) .select-caret {
+  color: var(--colour-text-muted);
+}
+
+/* error message — colour is reinforced by the text + role=alert */
+.select-field .err {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control {
+    transition: none;
+  }
+}

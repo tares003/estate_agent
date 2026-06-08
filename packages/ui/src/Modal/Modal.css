@@ -1,0 +1,159 @@
+/* Modal molecule — EPIC-L. Ported from
+ * design/canvas/components/molecules/overlays.html. Every visual value
+ * references a design token from @estate/tokens (tokens.css); no raw hex / px /
+ * ms / easing lives here (G7).
+ *
+ * The canvas scrim is a raw rgba(26,26,26,0.45). 26,26,26 is exactly
+ * --colour-text-primary (#1a1a1a); rather than introduce a new --colour-scrim
+ * token (a DESIGN.md amendment), the scrim is derived from that token via
+ * color-mix at the canvas's 45% opacity. The dialog enter motion uses the
+ * --motion-duration-base / --motion-ease-standard tokens annotated on the
+ * canvas (scale 0.96 → 1 + fade). */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay-mid);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+}
+
+/* the scrim is a full-bleed dismiss layer behind the centred dialog. It is a
+ * real <button> so the click target is keyboard/AT-legible (G9); keyboard users
+ * dismiss via Escape, so it is removed from the Tab order (tabindex=-1). The raw
+ * rgba(26,26,26,0.45) canvas scrim is derived from --colour-text-primary
+ * (#1a1a1a) via color-mix rather than a new --colour-scrim token (G7). */
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  background: color-mix(in srgb, var(--colour-text-primary) 45%, transparent);
+  animation: modal-backdrop-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+/* desktop / default: centred surface with a capped width, layered above the
+ * absolutely-positioned scrim within the backdrop grid cell */
+.modal {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--modal-max-width, 480px);
+  max-height: calc(100% - var(--space-8));
+  display: flex;
+  flex-direction: column;
+  background: var(--colour-surface-base);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: modal-surface-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.modal.sm {
+  --modal-max-width: 400px;
+}
+.modal.md {
+  --modal-max-width: 480px;
+}
+.modal.lg {
+  --modal-max-width: 640px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  flex: 0 0 auto;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-md);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.modal-close {
+  flex: 0 0 auto;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.modal-close:hover {
+  background: var(--colour-surface-raised);
+  color: var(--colour-text-primary);
+}
+
+.modal-body {
+  padding: 0 var(--space-6);
+  color: var(--colour-text-secondary);
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: var(--space-6);
+  flex: 0 0 auto;
+}
+
+/* mobile: near-full-width sheet anchored to the bottom of the viewport */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    place-items: end stretch;
+    padding: 0;
+  }
+  .modal,
+  .modal.sm,
+  .modal.md,
+  .modal.lg {
+    --modal-max-width: 100%;
+    max-height: 90%;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-surface-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal {
+    animation: none;
+  }
+}

@@ -1,0 +1,129 @@
+/* Toast molecule — EPIC-L. Ported verbatim from
+ * design/canvas/components/molecules/feedback.html (.toast / .toast.success|
+ * info|warning|danger / .bar / .content / .close). Every visual value
+ * references a design token from @estate/tokens (tokens.css); no raw hex / px /
+ * ms / easing lives here (G7). */
+
+.toast {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  /* Toast column width, ported from the canvas .toast (420px). DESIGN.md
+   * defines no narrow-overlay width token; the value matches the canvas exactly
+   * and a new token would require a DESIGN.md amendment. */
+  max-width: 420px;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--colour-surface-base);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--colour-border);
+  /* In from a small rise + fade, with the emphasis overshoot per motion-spec §7
+   * (no confetti on commercial surfaces — a quiet entrance only). */
+  animation: toast-in var(--motion-duration-base) var(--motion-ease-emphasis);
+}
+
+/* Accent bar — decorative; the tone meaning is carried by the text + role. */
+.toast .bar {
+  /* 4px accent rail === --space-1 on the 4px base scale. */
+  width: var(--space-1);
+  align-self: stretch;
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
+}
+
+.toast .ico {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  flex: 0 0 auto;
+}
+
+/* ---- Tones --------------------------------------------------------------- */
+.toast.success .bar {
+  background: var(--colour-success);
+}
+.toast.success .ico {
+  color: var(--colour-success);
+}
+.toast.info .bar {
+  background: var(--colour-info);
+}
+.toast.info .ico {
+  color: var(--colour-info);
+}
+.toast.warning .bar {
+  background: var(--colour-warning);
+}
+.toast.warning .ico {
+  color: var(--colour-warning);
+}
+.toast.danger .bar {
+  background: var(--colour-danger);
+}
+.toast.danger .ico {
+  color: var(--colour-danger);
+}
+
+/* ---- Content ------------------------------------------------------------- */
+.toast .content {
+  flex: 1;
+}
+.toast .content .title {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+.toast .content .message {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-secondary);
+}
+/* Space the message below the title only when both are present. */
+.toast .content .title + .message {
+  margin-top: var(--space-1);
+}
+
+/* ---- Dismiss button ------------------------------------------------------ */
+/* A full --size-touch-target-min box keeps the control comfortably tappable
+ * (G9), while the icon stays at the canvas's compact glyph size. */
+.toast .close {
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.toast .close:hover {
+  background: var(--colour-surface-raised);
+}
+.toast .close svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced-motion: no slide/overshoot — appear in place. */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

@@ -1,0 +1,219 @@
+/* FormStatus molecules — EPIC-L form-status patterns. FormError, FormSuccess and
+ * FormReviewSummary, ported from design/canvas/states/error-state-patterns.html
+ * and success-state-patterns.html. Every visual value references a design token
+ * from @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here
+ * (G7). All three are fluid-width blocks that fill the composing container at
+ * every breakpoint, so responsive coverage is verified where they compose into
+ * forms/pages (see the opt-out markers in the test files). */
+
+/* ── FormError — form-level error summary (role="alert") ─────────────────── */
+
+.form-error {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-danger);
+  border-radius: var(--radius-md);
+  color: var(--colour-danger);
+}
+
+/* The focusable summary must show a visible ring when a form moves focus to it
+ * on a failed submit (G9). Reuse the standard focus-ring tokens. */
+.form-error:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.form-error__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--colour-danger);
+}
+
+.form-error__icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+}
+
+.form-error__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.form-error__title {
+  margin: var(--space-0);
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-heading-sm);
+  line-height: var(--text-heading-sm-lh);
+  color: var(--colour-danger);
+}
+
+.form-error__list {
+  margin: var(--space-0);
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-danger);
+}
+
+.form-error__link {
+  color: var(--colour-danger);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+}
+
+.form-error__link:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── FormSuccess — submission confirmation (role="status") ──────────────── */
+
+.form-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-12) var(--space-6);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  color: var(--colour-text-primary);
+}
+
+.form-success__icon {
+  display: grid;
+  place-items: center;
+  width: var(--space-16);
+  height: var(--space-16);
+  border-radius: var(--radius-circle);
+  /* Success emblem tint: surface-raised behind the success-tinted glyph keeps
+   * the palette token-only (no raw rgba; a tinted token needs a DESIGN.md
+   * amendment, matching the TextField error-ring precedent). */
+  background: var(--colour-surface-raised);
+  color: var(--colour-success);
+}
+
+.form-success__icon svg {
+  width: var(--size-icon-xl);
+  height: var(--size-icon-xl);
+}
+
+.form-success__title {
+  margin: var(--space-0);
+  font-family: var(--font-display);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-heading-md);
+  line-height: var(--text-heading-md-lh);
+  letter-spacing: var(--text-heading-md-ls);
+  color: var(--colour-text-primary);
+}
+
+.form-success__message {
+  margin: var(--space-0);
+  /* Cap to a readable measure with the relative `ch` unit (no px token exists
+   * for prose width; inventing one needs a DESIGN.md amendment). */
+  max-width: 46ch;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-secondary);
+}
+
+.form-success__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* ── FormReviewSummary — read-only review (dl / dt / dd) ─────────────────── */
+
+.form-review {
+  margin: var(--space-0);
+  width: 100%;
+  background: var(--colour-surface-raised);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-5);
+}
+
+.form-review__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--colour-divider);
+  font-size: var(--text-body-sm);
+}
+
+.form-review__row:last-of-type {
+  border-bottom: none;
+}
+
+.form-review__term {
+  font-family: var(--font-body);
+  color: var(--colour-text-muted);
+}
+
+.form-review__detail {
+  margin: var(--space-0);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  text-align: right;
+}
+
+.form-review__value {
+  font-family: var(--font-body);
+  font-weight: var(--weight-medium);
+  color: var(--colour-text-primary);
+}
+
+/* Edit affordance — a real button styled as an inline text action. Padding
+ * keeps the hit area comfortable; the 44px touch-target minimum is met where it
+ * composes with surrounding controls and is enforced in the visual suite. */
+.form-review__edit {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch-target-min);
+  padding-inline: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-brand-accent);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.form-review__edit:hover {
+  color: var(--colour-brand-accent-hover);
+}
+
+.form-review__edit:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.form-review__overall {
+  display: flex;
+  justify-content: flex-end;
+  padding-block: var(--space-2);
+}
