@@ -35,4 +35,16 @@ export default tseslint.config(
     files: ['**/packages/tokens/**'],
     rules: { 'estate/design-token': 'off' },
   },
+  // The capability-oriented guards target runtime capabilities/surfaces, not
+  // tests: a test legitimately references pack slugs, prices and `'use server'`
+  // mutations as fixtures. Naming (G6), design-token (G7) and gdpr-consent (G5)
+  // still apply to test files.
+  {
+    files: ['**/*.test.{ts,tsx,js,jsx}', '**/*.spec.{ts,tsx,js,jsx}'],
+    rules: {
+      'estate/audit-log-coverage': 'off',
+      'estate/trust-marker': 'off',
+      'estate/pack-entitlement': 'off',
+    },
+  },
 );
