@@ -14,14 +14,17 @@ Legend: **OPEN** (needs action) · **RESOLVED** · **PROPOSED** (recommendation 
 | D-004 | Design canvas committed at doubled path `design/design/canvas/`; every brief + prompt reference `design/canvas/`. | Medium | **RESOLVED** | Flattened via `git mv` to `design/canvas/` (91 files). `.design-canvas-url` updated to `./design/canvas/`. |
 | D-005 | `CLAUDE.md` §9 minor leftovers from earlier drafts: IaC line mentions "R2 buckets" (storage is local-fs); CI line mentions a Vercel deploy branch (hosting is committed self-hosted). | Low | **OPEN** | Cosmetic only. `AGENTS.md` mirror was written without these leftovers. Recommend the owner align `CLAUDE.md` (or accept minor drift). No build impact. |
 | D-006 | Workspace package set is a **superset** of the §9 concrete layout: §9 lists `packages/{tokens,ui-components,validators,api-client}`; the foundation also requires `types`, `i18n`, `entitlement`, `config`, `helpers`, `email-templates` (per `_cross-cutting.md` §2 + the build prompt's STEP 2). | Info | **DOCUMENTED** | Extension documented in `docs/architecture/workspace-layout.md`. Consistent with §9's clause "if the stack mandates a different layout, document the deviation." |
+| D-007 | Stale **two-stack** references survived the all-Next.js pivot (`e82f87e`): `package.json` description and `pnpm-workspace.yaml` comment named a Django+Wagtail / uv side that no longer exists; the prior `master-prompt-log` B0 block and this report's Open-ADRs table referenced the superseded ADR set (Django Ninja / SMTP-Fernet). | Medium | **RESOLVED** | Rewrote `package.json` description + `pnpm-workspace.yaml` comment for the single Next.js + Payload stack; refreshed the Open-ADRs table below to the current ADR set; appended a new dated B0 block to the log. |
 
 ## Open ADRs
 
+The ADR files on disk after the all-Next.js pivot are `docs/adr/0001-data-fetching.md`, `0002-monorepo-tool.md`, `0003-backup-target.md` (the earlier Django-Ninja / SMTP-encryption ADRs no longer exist — see D-007).
+
 | ID | Decision | Status | Gates |
 |---|---|---|---|
-| ADR-0001 | API framework → **Django Ninja** | **PROPOSED** | Phase B2 |
-| ADR-0002 | SMTP credential encryption → **first-party Fernet/MultiFernet** | **PROPOSED** | EPIC-H §H.12 |
-| ADR-0003 | Backup target → **Hetzner Storage Box + restic** (geo-replica upgrade path) | **PROPOSED** | First paying tenant |
+| ADR-0001 | Client data fetching → **Server Actions only** (no tRPC for V1) | **ACCEPTED** (ratified 2026-06-08) | EPIC-K / Phase B2 |
+| ADR-0002 | Monorepo orchestrator → **Turborepo on pnpm** | **ACCEPTED** (ratified 2026-06-08) | Phase B0 scaffold |
+| ADR-0003 | Backup target → **Hetzner Storage Box + restic** (geo-replica upgrade path) | **PROPOSED** (deferred to launch-readiness checklist) | First paying tenant |
 
 ## Deferred epics (not Sprint 01–04 scope)
 
