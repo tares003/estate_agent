@@ -51,3 +51,6 @@ export type {
   FormReviewSummaryProps,
   FormReviewItem,
 } from './FormStatus/index.js';
+
+export { PropertyCard } from './PropertyCard/index.js';
+export type { PropertyCardProps, PropertyCardStatus } from './PropertyCard/index.js';
