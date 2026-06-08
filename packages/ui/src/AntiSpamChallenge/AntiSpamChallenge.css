@@ -1,0 +1,29 @@
+/* AntiSpamChallenge — EPIC-L anti-spam primitive. A token-only wrapper around
+ * the injected Cloudflare Turnstile widget. Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). It is a fluid-width block that fills its composing form cell
+ * at every breakpoint, so responsive coverage is verified where it composes
+ * (see the opt-out marker in the test file). */
+
+.anti-spam {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+/* The Turnstile widget mounts here. It renders its own iframe at a fixed
+ * intrinsic size; the wrapper just reserves a comfortable minimum so layout
+ * does not jump when the widget finishes loading. min-height is the standard
+ * touch-target token so the interactive region clears the minimum (G9). */
+.anti-spam__widget {
+  min-height: var(--size-touch-target-min);
+}
+
+.anti-spam__description {
+  margin: var(--space-0);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-muted);
+}

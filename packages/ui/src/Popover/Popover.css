@@ -1,0 +1,102 @@
+/* Popover molecule — EPIC-L. A non-modal floating panel anchored to a trigger
+ * button. Every visual value references a design token from @estate/tokens
+ * (tokens.css); no raw hex / px / ms / easing lives here (G7). Hairline 1px
+ * borders are permitted.
+ *
+ * The panel sits at the dropdown/popover stacking level (--z-overlay-low). It
+ * is portalled to document.body, so it is positioned `fixed`; the simple `side`
+ * presets nudge it off a notional anchor point. (Pixel-perfect anchoring to the
+ * trigger's measured rect is layered on where the popover composes into a page;
+ * this primitive provides the side-aware offset + enter motion only.) */
+
+.popover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch-target-min);
+  padding: 0 var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-medium);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.popover-trigger:hover {
+  background: var(--colour-surface-raised);
+}
+
+/* the floating panel surface */
+.popover-panel {
+  position: fixed;
+  z-index: var(--z-overlay-low);
+  min-width: var(--space-32);
+  max-width: calc(100vw - var(--space-8));
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  animation: popover-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.popover-body {
+  padding: var(--space-4);
+  color: var(--colour-text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+}
+
+/* the panel's accessible name mirrors the trigger; shown to AT only, hidden
+ * from sighted users (the trigger already displays the label). Standard
+ * visually-hidden recipe — no token needed for the clip rect. */
+.popover-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* side presets: offset the panel from its notional anchor and give the enter
+ * motion a direction matching the anchored edge */
+.popover-panel.bottom {
+  margin-top: var(--space-2);
+}
+.popover-panel.top {
+  margin-bottom: var(--space-2);
+}
+.popover-panel.left {
+  margin-right: var(--space-2);
+}
+.popover-panel.right {
+  margin-left: var(--space-2);
+}
+
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popover-panel {
+    animation: none;
+  }
+}

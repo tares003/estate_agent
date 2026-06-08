@@ -1,0 +1,126 @@
+/* MultiStepForm composite — EPIC-L. Every visual value references a design
+ * token from @estate/tokens (tokens.css); no raw hex / px / ms / easing lives
+ * here (G7).
+ *
+ * Step state (completed / current / upcoming) is never conveyed by colour
+ * alone (G9): each step carries a visually-hidden status word read by AT, the
+ * active step carries aria-current="step", and the numeric marker switches to a
+ * tick glyph on completed steps. The navigation Back/Next controls are the
+ * Button atom, which already meets the 44px touch-target minimum and carries
+ * the base.css focus ring. */
+
+.multi-step-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ---- Step indicator ------------------------------------------------------- */
+.multi-step-form-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--colour-divider);
+  padding-bottom: var(--space-4);
+}
+
+.multi-step-form-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--text-body-sm-lh);
+  color: var(--colour-text-muted);
+}
+
+/* the numeric marker — a circular badge that also conveys position */
+.multi-step-form-marker {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-circle);
+  border: 1px solid var(--colour-border);
+  background: var(--colour-surface-base);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--colour-text-muted);
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.multi-step-form-step-title {
+  color: inherit;
+}
+
+/* completed: filled marker with a tick glyph, so "done" reads without colour */
+.multi-step-form-step.is-complete {
+  color: var(--colour-text-secondary);
+}
+.multi-step-form-step.is-complete .multi-step-form-marker {
+  background: var(--colour-brand-primary);
+  border-color: var(--colour-brand-primary);
+  color: var(--colour-brand-primary-on);
+  /* tabular numbers stay legible; the tick communicates completion as a glyph */
+  font-size: 0;
+}
+.multi-step-form-step.is-complete .multi-step-form-marker::after {
+  content: "\2713"; /* check mark — shape conveys completion, not colour */
+  font-size: var(--text-body-sm);
+  line-height: 1;
+}
+
+/* current: emphasised marker + bolder, primary-coloured title */
+.multi-step-form-step.is-current {
+  color: var(--colour-text-primary);
+  font-weight: var(--weight-semibold);
+}
+.multi-step-form-step.is-current .multi-step-form-marker {
+  border-color: var(--colour-brand-accent);
+  color: var(--colour-text-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+/* the status word is for assistive tech only — the visible state is conveyed by
+ * the marker glyph, weight and aria-current; standard sr-only recipe. */
+.multi-step-form-step-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: var(--space-0);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- Active step content -------------------------------------------------- */
+.multi-step-form-panel {
+  color: var(--colour-text-secondary);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+}
+
+/* ---- Navigation ----------------------------------------------------------- */
+.multi-step-form-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .multi-step-form-marker {
+    transition-duration: var(--motion-duration-instant);
+  }
+}

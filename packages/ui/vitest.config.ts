@@ -18,7 +18,10 @@ export default defineConfig({
         'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
         'src/test-setup.ts',
+        // Pure re-export barrels (the package entry + per-component index.ts)
+        // carry no executable logic; the components they re-export are covered.
         'src/index.ts',
+        'src/**/index.ts',
       ],
     },
   },

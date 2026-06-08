@@ -1,0 +1,215 @@
+/* FileDropzone molecule — EPIC-L. Drag-and-drop upload with a keyboard-operable
+ * <input type="file"> fallback (design-requirements §1). Every visual value
+ * references a design token from @estate/tokens (tokens.css); no raw hex / px /
+ * ms / easing lives here (G7). The drag-over fill is derived from the accent
+ * token via color-mix rather than introducing a new tint token (matches the
+ * Modal scrim approach); hairline 1px borders are permitted. */
+
+.filedropzone-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* fluid width — fills its container; layout is the composing parent's job */
+  width: 100%;
+}
+
+/* The drop target. A dashed surface; the whole area is a click affordance that
+ * forwards to the input, and the centred <label> is the native picker trigger. */
+.filedropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  /* clears the 44px touch-target minimum with room for the icon + text */
+  min-height: calc(var(--size-touch-target-min) * 2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  cursor: pointer;
+  border: 1px dashed var(--colour-border);
+  border-radius: var(--radius-md);
+  background: var(--colour-surface-base);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.filedropzone:hover {
+  border-color: var(--colour-text-muted);
+}
+
+/* drag-over: accent border + a faint accent wash derived from the accent token */
+.filedropzone.is-dragover {
+  border-color: var(--colour-brand-accent);
+  background: color-mix(in srgb, var(--colour-brand-accent) 8%, var(--colour-surface-base));
+}
+
+/* The label carries the field name and is a native picker trigger. */
+.filedropzone-label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+  cursor: pointer;
+}
+
+.filedropzone-icon {
+  color: var(--colour-text-muted);
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.filedropzone-icon svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  display: block;
+}
+
+.filedropzone.is-dragover .filedropzone-icon {
+  color: var(--colour-brand-accent);
+}
+
+.filedropzone-cta {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+/* The real input: visually hidden but focusable. When it receives :focus-visible
+ * (Tab), the focus ring is painted on the dropzone surface so the affordance is
+ * clearly visible (mirrors base.css :focus-visible). */
+.filedropzone-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: calc(-1 * var(--space-1));
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.filedropzone:has(.filedropzone-input:focus-visible) {
+  border-color: var(--colour-brand-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Visually-hidden live region — announced by AT, not painted (it carries no
+ * visual meaning the dropzone styling doesn't already convey). */
+.filedropzone-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: calc(-1 * var(--space-1));
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.filedropzone-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+/* Rejection alert — colour is reinforced by the leading icon + role=alert text
+ * (status conveyed beyond colour, G9). */
+.filedropzone-error {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-danger);
+}
+
+.filedropzone-error-icon {
+  flex: 0 0 auto;
+  margin-top: var(--space-1);
+}
+
+.filedropzone-error-icon svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  display: block;
+}
+
+.filedropzone-error-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Selected-file list */
+.filedropzone-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.filedropzone-file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--colour-surface-raised);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-sm);
+}
+
+.filedropzone-file-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-primary);
+}
+
+.filedropzone-file-size {
+  flex: 0 0 auto;
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  color: var(--colour-text-muted);
+}
+
+/* Remove button — a ≥44px touch target (G9). */
+.filedropzone-remove {
+  flex: 0 0 auto;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.filedropzone-remove:hover {
+  background: var(--colour-surface-sunken);
+  color: var(--colour-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filedropzone,
+  .filedropzone-icon,
+  .filedropzone-remove {
+    transition: none;
+  }
+}

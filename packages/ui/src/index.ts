@@ -66,3 +66,34 @@ export type { DrawerProps, DrawerSide, DrawerSize } from './Drawer/Drawer.js';
 
 export { Breadcrumbs } from './Breadcrumbs/Breadcrumbs.js';
 export type { BreadcrumbsProps, BreadcrumbItem } from './Breadcrumbs/Breadcrumbs.js';
+
+export { Combobox } from './Combobox/index.js';
+export type { ComboboxProps, ComboboxOption } from './Combobox/index.js';
+
+export { Popover } from './Popover/Popover.js';
+export type { PopoverProps, PopoverSide, PopoverTriggerProps } from './Popover/Popover.js';
+
+export { Dropdown } from './Dropdown/Dropdown.js';
+export type { DropdownProps, DropdownItem, DropdownAlign } from './Dropdown/Dropdown.js';
+
+export { DatePicker } from './DatePicker/index.js';
+export type { DatePickerProps } from './DatePicker/index.js';
+
+export { TimeSlotSelector } from './TimeSlotSelector/TimeSlotSelector.js';
+export type { TimeSlotSelectorProps, TimeSlot } from './TimeSlotSelector/TimeSlotSelector.js';
+
+export { MultiStepForm } from './MultiStepForm/MultiStepForm.js';
+export type { MultiStepFormProps, MultiStepFormStep } from './MultiStepForm/MultiStepForm.js';
+
+export { FileDropzone } from './FileDropzone/FileDropzone.js';
+export type { FileDropzoneProps } from './FileDropzone/FileDropzone.js';
+
+export {
+  AntiSpamChallenge,
+  defaultTurnstileRenderer,
+} from './AntiSpamChallenge/AntiSpamChallenge.js';
+export type {
+  AntiSpamChallengeProps,
+  TurnstileRenderer,
+  TurnstileRenderOptions,
+} from './AntiSpamChallenge/AntiSpamChallenge.js';

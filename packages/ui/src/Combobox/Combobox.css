@@ -1,0 +1,181 @@
+/* Combobox molecule — EPIC-L. An ARIA 1.2 editable combobox: a labelled text
+ * input that owns a token-styled listbox popup. Visual values reference design
+ * tokens from @estate/tokens (tokens.css); no raw hex / px / ms / easing lives
+ * here (G7). The input + listbox borrow the TextField / Select visual grammar
+ * (the same border, radius, focus ring, danger styling) so the field reads as
+ * one of the form family. The popup elevation reuses --shadow-md and sits on the
+ * dropdown/popover z-layer (--z-overlay-low). */
+
+.combobox-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* fluid width — fills its container; layout is the composing parent's job */
+  width: 100%;
+}
+
+.combobox-field > label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.combobox-field .combobox-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+/* anchor: positions the popup relative to the input */
+.combobox-anchor {
+  position: relative;
+  width: 100%;
+}
+
+.combobox-control {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.combobox-control:hover {
+  border-color: var(--colour-text-muted);
+}
+
+.combobox-control:focus-within {
+  border-color: var(--colour-brand-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.combobox-control.is-error {
+  border-color: var(--colour-danger);
+}
+
+.combobox-input {
+  flex: 1 1 auto;
+  width: 100%;
+  height: var(--size-input-md);
+  padding-inline: var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.combobox-input::placeholder {
+  color: var(--colour-text-muted);
+}
+
+/* the chevron toggle is a real button so it is keyboard / AT legible */
+.combobox-toggle {
+  flex: 0 0 auto;
+  width: var(--size-touch-target-min);
+  height: var(--size-input-md);
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.combobox-toggle svg {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.combobox-control.is-open .combobox-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* ---- Popup listbox -------------------------------------------------------- */
+.combobox-popup {
+  position: absolute;
+  z-index: var(--z-overlay-low);
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  max-height: calc(var(--size-input-md) * 5);
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  animation: combobox-popup-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.combobox-option {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-primary);
+  cursor: pointer;
+}
+
+/* highlight (keyboard active descendant) and hover share the raised surface;
+ * the active option also carries a brand-accent rail so the highlight is
+ * conveyed beyond colour alone (G9). aria-selected="true" marks it for AT. */
+.combobox-option:hover,
+.combobox-option.is-active {
+  background: var(--colour-surface-raised);
+}
+
+.combobox-option.is-active {
+  box-shadow: inset var(--space-1) 0 0 0 var(--colour-brand-accent);
+}
+
+.combobox-empty {
+  padding: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+  text-align: center;
+}
+
+/* error message — colour is reinforced by role="alert" + aria-invalid */
+.combobox-field .combobox-error {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-danger);
+}
+
+@keyframes combobox-popup-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combobox-control,
+  .combobox-toggle svg {
+    transition: none;
+  }
+  .combobox-popup {
+    animation: none;
+  }
+}

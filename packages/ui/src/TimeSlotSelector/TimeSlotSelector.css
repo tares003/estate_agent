@@ -1,0 +1,131 @@
+/* TimeSlotSelector primitive — EPIC-L. Real grouped <input type="radio"> chips
+ * inside a <fieldset>/<legend> (design-requirements.md §1). Every visual value
+ * references a design token from @estate/tokens (tokens.css); no raw hex / px /
+ * ms / easing lives here (G7). Translucent selected/hover fills are derived from
+ * a token via color-mix rather than introducing new tokens (cf. Modal.css). */
+
+/* ---- Group container ------------------------------------------------------ */
+.time-slot-selector {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-inline-size: 0; /* let the fieldset shrink to its container (fluid width) */
+}
+
+.time-slot-legend {
+  padding: 0;
+  margin-bottom: var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+/* Chips wrap onto as many rows as the container width allows (fluid). */
+.time-slot-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---- Chip (the whole chip is the ≥44px hit target) ------------------------ */
+.time-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch-target-min);
+  padding-inline: var(--space-4);
+  padding-block: var(--space-2);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-pill);
+  background: var(--colour-surface-base);
+  cursor: pointer;
+  transition:
+    background var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+/* Real input visually hidden but focusable beneath the chip. */
+.time-slot-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.time-slot-label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-primary);
+}
+
+/* The check mark is hidden until the chip is selected — selection is conveyed
+ * by the mark + border + fill, never colour alone (G9). */
+.time-slot-mark {
+  display: grid;
+  place-items: center;
+  inline-size: var(--size-icon-sm);
+  block-size: var(--size-icon-sm);
+  margin-inline-start: calc(var(--size-icon-sm) * -1 - var(--space-2));
+  color: var(--colour-brand-primary);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--motion-duration-fast) var(--motion-ease-standard),
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    margin-inline-start var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.time-slot-mark svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* hover (only on enabled chips) */
+.time-slot:not(.is-disabled):hover {
+  border-color: var(--colour-text-muted);
+  background: color-mix(in srgb, var(--colour-brand-primary) 6%, var(--colour-surface-base));
+}
+
+/* focus ring (self-contained; mirrors base.css :focus-visible) */
+.time-slot-input:focus-visible + .time-slot-mark {
+  /* keep the mark slot stable; the visible ring is on the chip below */
+}
+.time-slot:has(.time-slot-input:focus-visible) {
+  box-shadow: var(--shadow-focus);
+  border-color: var(--colour-brand-accent);
+}
+
+/* selected */
+.time-slot.is-selected {
+  border-color: var(--colour-brand-primary);
+  background: color-mix(in srgb, var(--colour-brand-primary) 10%, var(--colour-surface-base));
+}
+.time-slot.is-selected .time-slot-label {
+  font-weight: var(--weight-semibold);
+}
+.time-slot.is-selected .time-slot-mark {
+  opacity: 1;
+  transform: scale(1);
+  margin-inline-start: 0;
+}
+
+/* disabled */
+.time-slot.is-disabled {
+  cursor: not-allowed;
+  background: var(--colour-surface-sunken);
+  border-color: var(--colour-border);
+}
+.time-slot.is-disabled .time-slot-label {
+  color: var(--colour-text-muted);
+  text-decoration: line-through;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .time-slot,
+  .time-slot-mark {
+    transition-duration: var(--motion-duration-instant);
+  }
+}

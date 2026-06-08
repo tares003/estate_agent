@@ -1,0 +1,273 @@
+/* DatePicker primitive — EPIC-L. A labelled date field plus a non-modal
+ * calendar popover. Every visual value references a design token from
+ * @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here (G7).
+ * The field / label / hint / error chrome mirrors the TextField + Select atoms
+ * so the trio read as one family. The selected-day fill and the popover scale
+ * shadow reuse the same tokens as the Modal/Select; translucent tints are
+ * derived from a token via color-mix rather than introducing a new token (a
+ * DESIGN.md amendment). */
+
+.datepicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* fluid width — fills its container; layout is the composing parent's job */
+  width: 100%;
+}
+
+.datepicker-label {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+/* the control wraps the trigger and anchors the absolutely-positioned popover */
+.datepicker-control {
+  position: relative;
+  width: 100%;
+}
+
+/* trigger reads like a text input (label-associated, opens the calendar) */
+.datepicker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  height: var(--size-input-md);
+  padding-inline: var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.datepicker-trigger:hover {
+  border-color: var(--colour-text-muted);
+}
+
+.datepicker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--colour-brand-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.datepicker-trigger.is-error {
+  border-color: var(--colour-danger);
+}
+
+/* placeholder copy is muted; a real selection is full-contrast body text */
+.datepicker-value {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.datepicker-value.is-placeholder {
+  color: var(--colour-text-muted);
+}
+
+.datepicker-icon {
+  flex: 0 0 auto;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  color: var(--colour-text-muted);
+}
+
+/* ---- Popover ------------------------------------------------------------- */
+
+.datepicker-popover {
+  position: absolute;
+  z-index: var(--z-overlay-low);
+  top: calc(100% + var(--space-2));
+  left: 0;
+  width: max-content;
+  max-width: min(100vw, var(--size-container-sm));
+  padding: var(--space-4);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: datepicker-pop-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+.datepicker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+/* prev/next month — square targets that clear the 44px touch minimum */
+.datepicker-navbtn {
+  flex: 0 0 auto;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.datepicker-navbtn:hover {
+  background: var(--colour-surface-raised);
+  color: var(--colour-text-primary);
+}
+
+.datepicker-navbtn svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+.datepicker-month {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+/* ---- Grid ---------------------------------------------------------------- */
+
+.datepicker-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.datepicker-weekdays,
+.datepicker-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+
+.datepicker-weekday {
+  display: grid;
+  place-items: center;
+  height: var(--space-8);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase;
+  color: var(--colour-text-muted);
+}
+
+.datepicker-cell {
+  display: grid;
+  place-items: center;
+}
+
+.datepicker-cell.is-empty {
+  /* keeps the column alignment for leading/trailing blanks */
+  min-height: var(--size-touch-target-min);
+}
+
+/* a day target — meets the 44px touch-target minimum (G9) */
+.datepicker-day {
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.datepicker-day:hover {
+  background: var(--colour-surface-raised);
+}
+
+.datepicker-day:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* today — a ring drawn with the accent border (status not by colour alone:
+ * also conveyed via aria-current="date") */
+.datepicker-day.is-today {
+  border-color: var(--colour-brand-accent);
+  font-weight: var(--weight-semibold);
+}
+
+/* selected — filled with brand primary (status also conveyed via
+ * aria-selected="true") */
+.datepicker-day.is-selected {
+  background: var(--colour-brand-primary);
+  color: var(--colour-brand-primary-on);
+  font-weight: var(--weight-semibold);
+}
+
+.datepicker-day.is-selected:hover {
+  background: var(--colour-brand-primary-hover);
+}
+
+.datepicker-day:disabled {
+  color: var(--colour-text-muted);
+  background: transparent;
+  cursor: not-allowed;
+  /* tint the muted day so out-of-range reads beyond text colour */
+  opacity: 0.45;
+}
+
+/* ---- Hint / error -------------------------------------------------------- */
+
+.datepicker-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-text-muted);
+}
+
+.datepicker-err {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: var(--text-body-sm);
+  color: var(--colour-danger);
+}
+
+@keyframes datepicker-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-1))) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .datepicker-popover {
+    animation: none;
+  }
+  .datepicker-trigger,
+  .datepicker-navbtn,
+  .datepicker-day {
+    transition: none;
+  }
+}

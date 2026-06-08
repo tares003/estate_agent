@@ -1,0 +1,128 @@
+/* Dropdown (menu button) composite — EPIC-L. Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). The menu surface mirrors the raised-panel treatment used by
+ * the overlays canvas: a token-radius card on --colour-surface-base with the
+ * --shadow-md elevation and a hairline border.
+ *
+ * The trigger and items meet the 44px touch-target minimum
+ * (--size-touch-target-min) for pointer + AT users (G9); the focus ring is the
+ * shared base.css :focus-visible treatment. */
+
+.dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-trigger {
+  min-height: var(--size-touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.dropdown-trigger:hover {
+  background: var(--colour-surface-raised);
+  border-color: var(--colour-text-muted);
+}
+
+.dropdown-trigger[aria-expanded="true"] {
+  border-color: var(--colour-brand-accent);
+}
+
+/* The popup surface, absolutely positioned beneath the trigger. The container
+ * is the positioning context; --shadow-md lifts the menu off the page. */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  z-index: var(--z-overlay-low);
+  min-width: var(--size-container-sm, 12rem);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  background: var(--colour-surface-base);
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  animation: dropdown-menu-in var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.dropdown-menu.align-start {
+  left: 0;
+}
+
+.dropdown-menu.align-end {
+  right: 0;
+}
+
+.dropdown-item {
+  width: 100%;
+  min-height: var(--size-touch-target-min);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  color: var(--colour-text-primary);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.dropdown-item:hover {
+  background: var(--colour-surface-raised);
+}
+
+/* The roving-focused item carries the surface highlight in addition to the
+ * focus ring, so the active row is conveyed beyond colour alone (G9). */
+.dropdown-item:focus-visible {
+  background: var(--colour-surface-raised);
+}
+
+.dropdown-item.is-disabled {
+  color: var(--colour-text-muted);
+  cursor: not-allowed;
+}
+
+.dropdown-item.is-disabled:hover {
+  background: transparent;
+}
+
+@keyframes dropdown-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-trigger,
+  .dropdown-item {
+    transition: none;
+  }
+  .dropdown-menu {
+    animation: none;
+  }
+}
