@@ -254,3 +254,34 @@ On `main`: **config · tokens · validators · entitlement · i18n · ui (16 com
 Token spend rough estimate: better-auth spike+build (agent) + Playwright harness + PropertyCard + integration — substantial.
 
 ---
+
+## Phase B6 — wave-6 both tracks: infra packages + §J satellite + ui molecules (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `625febe` → `0135e5c`
+Tests added: 40 (storage) + 16 (observability) + 13 (email) + 40 (db satellite) + 19+17+18+12 (ui) = **175**
+
+### Track A
+
+- **`@estate/storage`** — StorageBackend + LocalFilesystemBackend (path-traversal-safe key guard, never escapes root) + HMAC signed-URL tokens (constant-time, expiry). 100% coverage.
+- **`@estate/observability`** — pino structured JSON logger (level from env) + ErrorReporter seam (Noop default / Collecting for tests; Sentry/GlitchTip swap later). 100%.
+- **`@estate/email`** — AES-256-GCM per-tenant SMTP credential encrypt/decrypt (random IV + auth-tag, tamper-detecting, 32-byte key) + nodemailer Mailer abstraction with an injectable transport. React Email templates deferred. 100% on logic.
+- **§J satellite entities** (`@estate/db`) — PropertyImage, PropertyDocument (+DocumentType enum), Note, PropertyStatusEvent, tenant-scoped with RLS (`0005_satellite_rls.sql`). prisma validate/generate pass; pglite RLS tests.
+
+### Track B — `@estate/ui` molecules
+
+- **Tabs** (tablist/tab/tabpanel + roving arrow-key nav), **Accordion** (disclosure, single/multi), **Drawer** (portal off-canvas reusing the Modal focus-trap pattern), **Breadcrumbs** (nav + aria-current). Token-driven (G7), axe-clean (G9). Barrel now exports **20 ui components**.
+
+### Verification
+
+All 11 packages green: format · typecheck · lint · test · guards. G2 enforced 10 touched files; G11 verified 4 visual tests; G10 correctly did NOT flag nodemailer/pino (self-hosted, not SaaS sub-processors). New ui CSS scanned — no raw colours (Drawer scrim uses color-mix on a token).
+
+### Follow-ons (tracked, not blocking)
+
+- Drawer responsive layout → a Playwright CT spec (RTL covers behaviour now; opt-out marker in place).
+- Remaining EPIC-L: Combobox, Popover, Dropdown, DatePicker, TimeSlotSelector, MultiStepForm, FileDropzone, AntiSpamChallenge.
+- React Email template set (`@estate/email`); better-auth table generation into the Prisma schema (D-011).
+
+Token spend rough estimate: 8-agent parallel wave + integration/verification — substantial.
+
+---
