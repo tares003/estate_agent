@@ -96,3 +96,35 @@ Token spend rough estimate: foundation discovery + B0 config/guards build (2 wor
 B1 — `packages/tokens` (port `design/canvas/tokens.css`) → `packages/ui` primitives (EPIC-L) → `packages/types`/`validators` (§J) → `packages/entitlement` → `packages/db` (§J migrations + RLS) → shared helpers `audit()`/`notify()`/`recordConsent()` → `packages/auth` (Better Auth, EPIC-N).
 
 ---
+
+## Phase B1 — design tokens + foundation wave-1 (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Branches (fast-forwarded to main): `chore/phase-b1-tokens`, `chore/phase-b1-foundation-wave`
+Main: `056ddbb` → `a7179bd` (tokens) → `387a95b` (wave-1)
+Tests added: 3 (tokens drift) + 74 (validators) + 20 (entitlement) + 24 (ui Button) = **121**
+
+### Shipped
+
+- **`@estate/tokens` (EPIC-M):** ported `tokens.css` (140 tokens, verbatim) + a curated product `base.css` (reset/typography/focus/skip-link/container/reduced-motion/dark-seam — canvas chrome excluded) + a type-safe `var()` accessor for every token group. Drift test asserts the accessor ↔ css stay in exact sync. Pushed to main.
+- **Parallel wave-1** (user chose "both tracks in parallel"; built via a 3-agent workflow, integrated + verified in the main loop):
+  - **`@estate/validators`:** Zod schemas for buyer-enquiry / viewing / valuation / repair, each carrying `gdpr_consent` (G5-clean), canonical `enquiry` naming (G6); shared field helpers (email/ukPhone/ukPostcode); 100/100 coverage.
+  - **`@estate/entitlement` (EPIC-AD):** `isPackEnabled` / `requirePack` / `<RequirePack>` + the 12-pack catalogue, with an injectable `PackSource` (Prisma-backed impl deferred to `@estate/db`). Makes **G12** enforce against a real helper. 100/100 coverage.
+  - **`@estate/ui` (EPIC-L):** component-test infra (RTL + jsdom + axe) + the **Button** atom — variants/sizes/states, token-driven via `Button.css` (G7), `aria-busy` loading, 44px touch target. 90/80 coverage. The proven pattern for the remaining ~29 primitives.
+
+### Verification (independent, not agent self-reports)
+
+All green across 5 packages: `format:check`, `turbo typecheck`, `turbo lint` (incl. @estate guards), `turbo test` (121 tests), and `pnpm guards`. The diff-based guards now bite on real product code: **G2 evaluated 13 touched files against their coverage thresholds** (all pass), **G11 verified Button's test**, **G1** confirmed 16 impl files paired with tests. Adversarial: read `Button.css`/`Button.tsx` directly — confirmed token-driven and accessible.
+
+### Findings
+
+- **Design gap — no border-width token.** `Button.css` uses raw `1px`/`2px` hairline borders and a `0.5px` press nudge; this matches the design canvas itself (its `base.css` uses raw `1px`/`3px` for borders) — there is no `--border-width-*` token in DESIGN.md. G7 (ESLint) does not lint `.css` files, so it does not catch these. Recommend a DESIGN.md amendment to add border-width tokens (owner decision), or accept the hairline px as canvas-consistent. (audit-report D-008)
+- **Spec divergence (validators).** Repair urgency 4th tier used `low` (per the build-wave spec) vs EPIC-G FR-G-5's `non-urgent`. Flag for reconciliation when EPIC-G is implemented.
+
+### Blockers
+
+None. Deferred (heavier infra, next waves): `packages/db` (Prisma + RLS — needs Postgres/Testcontainers), `audit()`/`notify()`/`recordConsent()` helpers, `packages/auth` (Better Auth), the remaining `@estate/ui` primitives + Playwright visual-regression at the 7 breakpoints (needs browsers/baselines).
+
+Token spend rough estimate: tokens build + 2 parallel workflows + integration — substantial.
+
+---
