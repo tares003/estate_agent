@@ -1,0 +1,5 @@
+/* Tailwind utility layer. Preflight (base reset) is disabled in tailwind.config
+ * — @estate/tokens' base.css is the canonical reset/typography. Tokens + base
+ * are imported ahead of this file in app/layout.tsx. */
+@tailwind components;
+@tailwind utilities;
