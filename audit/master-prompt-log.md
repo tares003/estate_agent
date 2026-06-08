@@ -128,3 +128,45 @@ None. Deferred (heavier infra, next waves): `packages/db` (Prisma + RLS — need
 Token spend rough estimate: tokens build + 2 parallel workflows + integration — substantial.
 
 ---
+
+## Phase B2 — wave-2 both tracks (2026-06-08)
+
+Status: **complete** (pushed to `main`; commits made directly on main per the "push to main" directive)
+Main: `827a673` → `32c8a41`
+Tests added: 14 (db) + 27+22+22+Badge+Spinner (ui atoms) ≈ **120**
+
+### Infra probe (before building)
+
+- **Docker daemon not running**, no local Postgres, `DATABASE_URL` unset → Testcontainers migration tests can't run in this dev env. Resolution: build the Prisma schema + raw SQL migrations (validate/generate need no live DB) and test RLS isolation with **pglite** (in-process Postgres, no Docker); Testcontainers + PostGIS-on-real-PG documented as the CI integration path.
+- **Playwright browsers are cached** (chromium-1200 etc.) → visual-regression is feasible; deferred to responsive organisms (the wave-2 atoms are viewport-invariant → honest G11 opt-out, RTL + axe).
+
+### Track A — `@estate/db` (EPIC-S / §J multi-tenancy spine)
+
+- Prisma schema: `PlatformTenant` (with `enabled_packs` JSONB), `User`, and the cross-cutting tables `audit_logs` / `consent_logs` / `notification_logs` + enums. (Full §J per-entity catalogue is a dedicated follow-on.)
+- Raw SQL migrations: `0001_postgis.sql` (PostGIS extension), `0002_rls_policies.sql` (RLS enable + tenant-isolation policies).
+- `tenantGucStatement` (UUID-validated, injection-safe) + `withTenant` (transaction-scoped `SET LOCAL app.current_tenant_id`); `PrismaPackSource` implementing `@estate/entitlement`'s `PackSource` against `platform_tenants.enabled_packs`.
+- `prisma validate` + `prisma generate` pass; **14 tests** incl. the pglite RLS isolation suite; 100% coverage on logic (client.ts excluded as DB-connection glue).
+- **Bug found + fixed via the pglite test:** an unset custom GUC returns `''` (not NULL), so `''::uuid` *errored* instead of failing closed. Policy now uses `NULLIF(current_setting(...), '')::uuid` → unscoped access yields no rows gracefully. (audit-report D-009)
+
+### Track B — `@estate/ui` atoms (EPIC-L, parallel workflow)
+
+- TextField (+ EmailField/PhoneField/NumberField), Checkbox, Radio (+ RadioGroup), Badge, Spinner — token-driven CSS (G7), label association + aria wiring + 44px targets (G9), honest G11 opt-out for viewport-invariant atoms. Barrel updated to export all six atoms.
+
+### Tooling
+
+- `eslint/base.js`: the capability guards G4/G8/G12 are turned **off for test files** (tests legitimately reference pack slugs/prices/mutations as fixtures); G5/G6/G7 still apply. (Fixed a G12 false-positive on a db test fixture.)
+- Root `package.json`: `pnpm.onlyBuiltDependencies` allows Prisma/esbuild/unrs-resolver install scripts (pnpm blocks them by default).
+- `@estate/db` uses the `react-library` tsconfig preset so tsc can parse the JSX in entitlement's `<RequirePack>` pulled in via the `PackSource` type import.
+
+### Verification
+
+All 6 packages green: format · typecheck · lint · test · guards. The diff guards bite: G2 enforced coverage on touched files, G11 verified 5 atom tests, G1 paired 17 impl files with tests.
+
+### Blockers / deferred
+
+- Testcontainers Postgres integration (Docker unavailable in dev) — RLS proven via pglite; real-PG + PostGIS verification is the CI path.
+- Next (wave-3): `audit()` / `notify()` / `recordConsent()` helpers (on the cross-cutting tables); `packages/auth` (Better Auth); full §J entity schema; UI molecules/organisms (PropertyCard, PackLockPill, UpsellEmptyState) + Playwright visual-regression at the 7 breakpoints for responsive surfaces.
+
+Token spend rough estimate: infra probe + db build + parallel UI workflow + integration/fixes — substantial.
+
+---
