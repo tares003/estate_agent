@@ -8,6 +8,7 @@ import { formatPrice, priceQualifier, rentFrequency, toCardStatus } from './form
 
 /** The Property columns the catalogue reads. */
 export interface PropertyRow {
+  id: string;
   slug: string;
   displayAddress: string;
   postcode: string;
@@ -18,9 +19,10 @@ export interface PropertyRow {
   bedrooms: number | null;
   bathrooms: number | null;
   receptions: number | null;
+  description?: string | null;
 }
 
-export interface PropertyReader {
+export interface PropertyListReader {
   property: {
     findMany(args: {
       where?: Record<string, unknown>;
@@ -28,6 +30,20 @@ export interface PropertyReader {
       take?: number;
     }): Promise<PropertyRow[]>;
   };
+}
+
+export interface PropertyDetailReader {
+  property: {
+    findFirst(args: { where?: Record<string, unknown> }): Promise<PropertyRow | null>;
+  };
+}
+
+/** Property detail view model — card props plus the detail-only fields. */
+export interface PropertyDetail extends PropertyCardProps {
+  id: string;
+  slug: string;
+  description: string | null;
+  receptions: number | null;
 }
 
 export interface ListPropertiesOptions {
@@ -54,7 +70,7 @@ export function toCardProps(row: PropertyRow): PropertyCardProps {
 
 /** List published, non-withdrawn properties for the catalogue, newest first. */
 export async function listProperties(
-  db: PropertyReader,
+  db: PropertyListReader,
   options: ListPropertiesOptions = {},
 ): Promise<PropertyCardProps[]> {
   const where: Record<string, unknown> = { publishedAt: { not: null }, deletedAt: null };
@@ -65,4 +81,22 @@ export async function listProperties(
     take: options.take ?? 24,
   });
   return rows.map(toCardProps);
+}
+
+/** Fetch a single published property by slug (RLS scopes the query to the tenant). */
+export async function getPropertyBySlug(
+  db: PropertyDetailReader,
+  slug: string,
+): Promise<PropertyDetail | null> {
+  const row = await db.property.findFirst({
+    where: { slug, publishedAt: { not: null }, deletedAt: null },
+  });
+  if (!row) return null;
+  return {
+    ...toCardProps(row),
+    id: row.id,
+    slug: row.slug,
+    description: row.description ?? null,
+    receptions: row.receptions,
+  };
 }

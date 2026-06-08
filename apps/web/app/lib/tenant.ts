@@ -16,3 +16,19 @@ export async function getCurrentTenantId(): Promise<string> {
   }
   return tenantId;
 }
+
+/**
+ * Best-effort originating IP for the current request, for audit + GDPR-consent
+ * provenance (master spec §S.7). Reads the standard proxy headers in priority
+ * order; the first hop of `x-forwarded-for` is the real client. Returns null when
+ * none is present (e.g. in tests) — provenance is best-effort, never a hard gate.
+ */
+export async function getRequestIp(): Promise<string | null> {
+  const requestHeaders = await headers();
+  const forwardedFor = requestHeaders.get('x-forwarded-for');
+  if (forwardedFor) {
+    const first = forwardedFor.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  return requestHeaders.get('x-real-ip')?.trim() || null;
+}

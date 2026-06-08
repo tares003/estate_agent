@@ -2,11 +2,15 @@
  * G4 — Audit-log-coverage guard (CLAUDE.md §2: "Audit-log every state-changing
  * action"; master spec audit-log-coverage CI guard).
  *
- * A *mutating server-action handler* is a function whose body:
- *   1. carries the `'use server'` directive (a top-of-body string-literal
- *      ExpressionStatement, the App Router server-action marker), AND
+ * A *mutating server-action handler* is a function that:
+ *   1. is a server action — EITHER its own body carries the `'use server'`
+ *      directive (a function-level marker), OR it lives in a module whose first
+ *      statement is a `'use server'` directive (a file-level server-action
+ *      module — the idiomatic shape for actions imported by Client Components,
+ *      which Next.js requires over the inline function-level form), AND
  *   2. performs at least one Prisma mutation — a CallExpression whose callee is
- *      `prisma.<model>.<op>` where <op> is one of:
+ *      `<client>.<model>.<op>` (the client may be `prisma` or a tenant-scoped
+ *      `tx`/`db` from a withTenant(...) callback) where <op> is one of:
  *      create, update, delete, upsert, createMany, updateMany, deleteMany.
  *
  * Such a handler MUST, in the same function body, ALSO either:
@@ -18,8 +22,8 @@
  * messageId `missingAudit`.
  *
  * Reads (findUnique, findMany, count, …) and mutations outside a server action
- * are out of scope. A `.update()` on a non-`prisma` receiver is not a Prisma
- * mutation and is ignored.
+ * are out of scope. A `.update()` whose receiver is not a `<client>.<model>`
+ * member chain is ignored.
  */
 
 /** Prisma write operations that mutate persisted state. */
@@ -34,21 +38,51 @@ const MUTATION_OPS = new Set([
 ]);
 
 /**
- * True if `node` is a CallExpression of the shape `prisma.<model>.<op>(...)`
- * where <op> is a mutating Prisma operation.
+ * Identifier names treated as a Prisma client receiver: the base client, and the
+ * tenant-scoped transaction client passed into a withTenant(...) callback. Scoped
+ * (not any identifier) so an unrelated `store.session.update(...)` isn't flagged.
+ */
+const DB_CLIENT_NAMES = new Set(['prisma', 'tx', 'db', 'client', 'dbClient']);
+
+/**
+ * True if `node` is a CallExpression of the shape `<client>.<model>.<op>(...)`
+ * where <op> is a mutating Prisma operation and <client> is a known DB-client
+ * identifier (`prisma`, or the tenant-scoped `tx`/`db` inside a withTenant(...)
+ * callback) — so transaction-scoped mutations are covered without flagging an
+ * unrelated `store.session.update(...)`.
  * @param {import('estree').Node} node
  */
-function isPrismaMutationCall(node) {
+function isMutationCall(node) {
   if (node.type !== 'CallExpression') return false;
   const op = node.callee;
   // op must be: <modelMember>.<opName>
   if (op.type !== 'MemberExpression' || op.computed) return false;
   if (op.property.type !== 'Identifier' || !MUTATION_OPS.has(op.property.name)) return false;
-  // op.object must be: prisma.<model>
+  // op.object must be: <clientIdentifier>.<model>
   const model = op.object;
   if (model.type !== 'MemberExpression' || model.computed) return false;
-  const base = model.object;
-  return base.type === 'Identifier' && base.name === 'prisma';
+  return model.object.type === 'Identifier' && DB_CLIENT_NAMES.has(model.object.name);
+}
+
+/**
+ * True if `node` is a module-top-level function (no enclosing function in its
+ * ancestor chain). In a file-level `'use server'` module, only the top-level
+ * handlers are server actions; nested closures (e.g. a withTenant callback) are
+ * covered by descent from their enclosing handler, so checking them again would
+ * double-report.
+ * @param {import('eslint').Rule.Node} node
+ */
+function isTopLevelFunction(node) {
+  for (let parent = node.parent; parent; parent = parent.parent) {
+    if (
+      parent.type === 'FunctionDeclaration' ||
+      parent.type === 'FunctionExpression' ||
+      parent.type === 'ArrowFunctionExpression'
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /** True if `node` is a CallExpression to the bare identifier `audit`. */
@@ -61,12 +95,16 @@ function isAuditCall(node) {
 }
 
 /**
- * Does the function body begin with the `'use server'` directive?
- * @param {import('estree').BlockStatement | null | undefined} body
+ * Does a statement list begin with a `'use server'` directive? Scans the leading
+ * directive prologue (a run of bare string-literal expression statements) and
+ * returns true if `'use server'` appears in it. Works for both a function's
+ * `body.body` (function-level marker) and a module's `Program.body` (file-level
+ * server-action module).
+ * @param {import('estree').Statement[] | null | undefined} statements
  */
-function hasUseServerDirective(body) {
-  if (!body || body.type !== 'BlockStatement') return false;
-  for (const stmt of body.body) {
+function hasUseServerDirective(statements) {
+  if (!statements) return false;
+  for (const stmt of statements) {
     if (
       stmt.type === 'ExpressionStatement' &&
       stmt.expression.type === 'Literal' &&
@@ -103,35 +141,32 @@ const rule = {
   create(context) {
     const sourceCode = context.sourceCode ?? context.getSourceCode();
 
+    // Set once per file: true when the module itself is a `'use server'` module,
+    // in which case every top-level handler in it is a server action.
+    let fileIsServerModule = false;
+
     /** @param {import('eslint').Rule.Node} node */
     function checkFunction(node) {
       const body = node.body;
-      if (!hasUseServerDirective(body)) return;
+      const functionLevel =
+        body && body.type === 'BlockStatement' && hasUseServerDirective(body.body);
+      const fileLevel = fileIsServerModule && isTopLevelFunction(node);
+      if (!functionLevel && !fileLevel) return;
 
       let sawMutation = false;
       let sawAudit = false;
 
-      // Walk only this function's own body — not nested functions, so that a
-      // mutation in this scope is not "covered" by an audit() inside a closure
-      // (and vice versa). We scan the statement subtree but stop descending at
-      // nested function boundaries.
+      // Scan the whole handler INCLUDING nested closures — the real server-action
+      // pattern wraps the mutation (and its audit) in a withTenant(..., (tx) => {
+      // ... }) callback, so both live one closure deep. We descend into node's
+      // children (params + body); `node` itself is a function, so it never
+      // matches the mutation/audit predicates.
       const visit = (n) => {
         if (!n || typeof n.type !== 'string') return;
-        if (n === node) {
-          // descend into the function's body block
-          for (const stmt of body.body) visit(stmt);
-          return;
+        if (n !== node) {
+          if (isMutationCall(n)) sawMutation = true;
+          if (isAuditCall(n)) sawAudit = true;
         }
-        // do not cross into nested function scopes
-        if (
-          n.type === 'FunctionDeclaration' ||
-          n.type === 'FunctionExpression' ||
-          n.type === 'ArrowFunctionExpression'
-        ) {
-          return;
-        }
-        if (isPrismaMutationCall(n)) sawMutation = true;
-        if (isAuditCall(n)) sawAudit = true;
         for (const key of Object.keys(n)) {
           if (key === 'parent') continue;
           const child = n[key];
@@ -163,6 +198,9 @@ const rule = {
     }
 
     return {
+      Program(node) {
+        fileIsServerModule = hasUseServerDirective(node.body);
+      },
       FunctionDeclaration: checkFunction,
       FunctionExpression: checkFunction,
       ArrowFunctionExpression: checkFunction,
