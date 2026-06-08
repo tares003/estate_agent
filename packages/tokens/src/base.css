@@ -1,0 +1,213 @@
+/* ============================================================================
+   base.css — Estate Platform global base styles
+   Reset + typography defaults + focus ring + skip link + container +
+   reduced-motion + dark-mode seam. Ported from design/canvas/base.css
+   (canvas-only chrome excluded). Loads tokens.css first. Uses ONLY tokens for
+   colour/space/size/radius/motion (DESIGN.md §11 / CI guard G7).
+   ========================================================================== */
+
+/* ---- Web fonts (font-display: swap per design-requirements.md §3) --------- */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
+/* ---- Reset ---------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  font-weight: var(--weight-regular);
+  color: var(--colour-text-primary);
+  background: var(--colour-surface-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+a {
+  color: inherit;
+}
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+::selection {
+  background: var(--colour-selection);
+}
+
+/* ---- Typography defaults -------------------------------------------------- */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-regular);
+}
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+.t-display-xl {
+  font-family: var(--font-display);
+  font-size: var(--text-display-xl);
+  line-height: var(--text-display-xl-lh);
+  letter-spacing: var(--text-display-xl-ls);
+}
+.t-display-lg {
+  font-family: var(--font-display);
+  font-size: var(--text-display-lg);
+  line-height: var(--text-display-lg-lh);
+  letter-spacing: var(--text-display-lg-ls);
+}
+.t-display-md {
+  font-family: var(--font-display);
+  font-size: var(--text-display-md);
+  line-height: var(--text-display-md-lh);
+  letter-spacing: var(--text-display-md-ls);
+}
+.t-display-sm {
+  font-family: var(--font-display);
+  font-size: var(--text-display-sm);
+  line-height: var(--text-display-sm-lh);
+  letter-spacing: var(--text-display-sm-ls);
+}
+.t-heading-lg {
+  font-size: var(--text-heading-lg);
+  line-height: var(--text-heading-lg-lh);
+  font-weight: var(--weight-semibold);
+}
+.t-heading-md {
+  font-size: var(--text-heading-md);
+  line-height: var(--text-heading-md-lh);
+  font-weight: var(--weight-semibold);
+}
+.t-heading-sm {
+  font-size: var(--text-heading-sm);
+  line-height: var(--text-heading-sm-lh);
+  font-weight: var(--weight-semibold);
+}
+.t-body-lg {
+  font-size: var(--text-body-lg);
+  line-height: var(--text-body-lg-lh);
+}
+.t-body-md {
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+}
+.t-body-sm {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+}
+.t-caption {
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  letter-spacing: var(--text-caption-ls);
+  text-transform: uppercase;
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-muted);
+}
+
+/* ---- Focus ring (DESIGN.md --colour-focus-ring; a11y rule 2) -------------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+  transition: box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+}
+
+/* ---- Skip link (a11y rule 4) ---------------------------------------------- */
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: var(--space-4);
+  transform: translateY(-200%);
+  background: var(--colour-brand-primary);
+  color: var(--colour-brand-primary-on);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  z-index: var(--z-toast);
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* ---- Container widths ----------------------------------------------------- */
+.container {
+  width: 100%;
+  max-width: var(--size-container-2xl);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+@media (min-width: 768px) {
+  .container {
+    padding-inline: var(--space-8);
+  }
+}
+@media (min-width: 1280px) {
+  .container {
+    padding-inline: var(--space-12);
+  }
+}
+
+/* ---- Dark-mode hook (deferred per master spec §M; keep the seam) ---------- */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode is out of scope for V1 (designer-todo-sprint-01 acceptance).
+     The seam is intentionally left here so a future token override can flip
+     surfaces without restructuring. No overrides applied in V1. */
+}
+
+/* ---- Reduced motion (motion-spec.md §5) ----------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--motion-duration-instant) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--motion-duration-instant) !important;
+    scroll-behavior: auto !important;
+  }
+}
