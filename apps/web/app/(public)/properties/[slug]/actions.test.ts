@@ -11,6 +11,11 @@ vi.mock('../../../lib/tenant.js', () => ({
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const verifyTurnstile = vi.fn();
+vi.mock('../../../lib/turnstile.js', () => ({
+  verifyTurnstile: (...args: unknown[]) => verifyTurnstile(...args),
+}));
+
 const recordConsent = vi.fn();
 const audit = vi.fn();
 const enquiryCreate = vi.fn();
@@ -30,6 +35,7 @@ const validFields: Record<string, string> = {
   message: 'Is the Palatine Road semi still available to view?',
   propertyId: 'prop-1',
   gdpr_consent: 'on',
+  'cf-turnstile-response': 'turnstile-token-ok',
 };
 
 function form(fields: Record<string, string>): FormData {
@@ -43,6 +49,7 @@ beforeEach(() => {
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
+  verifyTurnstile.mockResolvedValue(true);
 });
 
 describe('submitEnquiry', () => {
@@ -50,6 +57,7 @@ describe('submitEnquiry', () => {
     const result = await submitEnquiry({ ok: false }, form(validFields));
 
     expect(result).toEqual({ ok: true });
+    expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token-ok', '203.0.113.7');
     expect(withTenant).toHaveBeenCalledWith({}, TENANT, expect.any(Function));
     expect(enquiryCreate).toHaveBeenCalledWith({
       data: {
@@ -86,6 +94,19 @@ describe('submitEnquiry', () => {
       entityId: 'enq-1',
       ip: '203.0.113.7',
     });
+  });
+
+  it('rejects when the Turnstile challenge fails and writes nothing', async () => {
+    verifyTurnstile.mockResolvedValue(false);
+
+    const result = await submitEnquiry({ ok: false }, form(validFields));
+
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]?.message).toMatch(/security challenge/i);
+    expect(withTenant).not.toHaveBeenCalled();
+    expect(enquiryCreate).not.toHaveBeenCalled();
+    expect(recordConsent).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
   });
 
   it('rejects a submission with no consent and writes nothing', async () => {

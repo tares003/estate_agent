@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — this asserts the form's composition and its
 // success/error states; the responsive layout is covered by the page-level
 // Playwright e2e pass (design-requirements §3).
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
@@ -17,6 +17,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   submitEnquiry.mockResolvedValue({ ok: false });
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('EnquiryForm', () => {
   it('renders the enquiry fields with the verbatim consent affirmation', () => {
@@ -54,5 +56,20 @@ describe('EnquiryForm', () => {
 
     const link = await screen.findByRole('link', { name: /Enter a valid email address/i });
     expect(link).toHaveAttribute('href', '#email');
+  });
+
+  it('renders the Turnstile anti-spam challenge when a sitekey is configured', () => {
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'site-key-123');
+    render(<EnquiryForm propertyId="prop-1" propertyTitle="Palatine Road semi" />);
+
+    expect(screen.getByRole('group', { name: /security challenge/i })).toBeInTheDocument();
+    expect(document.querySelector('input[name="cf-turnstile-response"]')).toBeInTheDocument();
+  });
+
+  it('omits the challenge when no sitekey is configured (dev/test)', () => {
+    render(<EnquiryForm propertyId="prop-1" propertyTitle="Palatine Road semi" />);
+
+    expect(screen.queryByRole('group', { name: /security challenge/i })).not.toBeInTheDocument();
+    expect(document.querySelector('input[name="cf-turnstile-response"]')).not.toBeInTheDocument();
   });
 });
