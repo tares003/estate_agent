@@ -349,3 +349,35 @@ Main: `323a8ef` → `b5ef842`
 Token spend rough estimate: apps/web scaffold + 5 Next-integration fixes + verification — substantial.
 
 ---
+
+## Phase B9 — EPIC-F property catalogue (first feature surface) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `ccb1703` → `7bc2807`
+Tests added: 20 (apps/web now 6 files / 20 tests)
+
+### Shipped — `apps/web` EPIC-F catalogue
+
+- **Public shell** `app/(public)/layout.tsx` — header + labelled primary nav (Buy/Rent/Sell/Contact) + footer carrying the indicative-pricing / rent-PCM trust note.
+- **Trust-marker formatters** `app/lib/format.ts` — `market_status`→PropertyCard status, `formatPrice` (pence→GBP, POA), `priceQualifier` (never a bare price), `rentFrequency` (PCM). 100%.
+- **Property repository** `app/lib/properties.ts` — pure mapping of §J Property rows → PropertyCard view model; `listProperties` queries published/non-deleted newest-first with a saleType filter. Unit-tested with a fake client (100%); live data runs tenant-scoped via `withTenant` (Testcontainers/CI).
+- **`/properties` catalogue route** — Server Component (`force-dynamic`) resolving the tenant, querying inside the RLS scope, rendering the PropertyCard grid + empty state. `next build`: server-rendered on demand, **114 kB First Load JS (< the 200 KB catalogue budget, G3)**.
+- **EPIC-S seam** — `middleware.ts` resolves the tenant from the request (dev default for now; full hostname lookup is EPIC-S) into a header; `getCurrentTenantId()` reads it (fail-closed).
+
+### Guard refinement
+
+- **G11** visual-surface predicate now matches `.tsx`/`.jsx` render tests only — pure-logic `.ts` tests (formatters/repositories/helpers) under apps/web aren't rendered surfaces. (`fix(config)`; the guard suite is still 67/67.)
+
+### Verification
+
+All 12 packages green: format · typecheck · lint · test (apps/web 100%/97% branch) · guards. `next build` clean; the catalogue is correctly dynamic.
+
+### Next
+
+- Property **detail** page + the **enquiry Server Action** (`@estate/validators` + `audit()` + `recordConsent()` — proves G4/G5 on real product code) + a viewing-request flow.
+- Page-level **Playwright e2e** against the running app for route-level G9 (axe) / G11 (responsive) / G3 (Lighthouse).
+- EPIC-C vertical landings + the EPIC-D Payload CMS mount (page-builder).
+
+Token spend rough estimate: catalogue data layer + route + shell + middleware + G11 fix + verification — substantial.
+
+---
