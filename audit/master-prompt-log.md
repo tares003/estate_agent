@@ -170,3 +170,30 @@ All 6 packages green: format · typecheck · lint · test · guards. The diff gu
 Token spend rough estimate: infra probe + db build + parallel UI workflow + integration/fixes — substantial.
 
 ---
+
+## Phase B3 — wave-3 both tracks (2026-06-08)
+
+Status: **complete** (pushed to `main`, directly on main per the directive)
+Main: `c76935f` → `c14b812`
+Tests added: 15 (db helpers) + 19+17+25+28+24 = **128**
+
+### Track A — `@estate/db` shared write-helpers
+
+- `audit(client, input)` → audit_logs (the implementation guard **G4** resolves to); `recordConsent(client, input)` → consent_logs (backs **G5**); `notify(client, input)` → notification_logs (status `queued`; email/SMS dispatch deferred to `@estate/email`). Injected-client + own input types (PrismaPackSource pattern) — testable with fakes, no live DB. 15 tests, **100% coverage** on all helper files.
+
+### Track B — `@estate/ui` pack-state organisms + atoms (parallel workflow)
+
+- **PackLockPill**, **UpsellEmptyState** (reuses Button for its CTA), **TrialCountdownPill** (pluralised / urgent-threshold / ended states) — the pack-state surfaces from `design-requirements.md` §2a; presentational (gating stays in `@estate/entitlement`). Plus **Skeleton** (reduced-motion, role=status) and **Avatar** (image + initials fallback). Token-driven (G7), axe-clean (G9), honest G11 opt-out for viewport-invariant components. Barrel exports all 11 ui components now.
+
+### Verification
+
+All 6 packages green: format · typecheck · lint · test · guards. Coverage independently confirmed: db helpers 100/100; ui components all ≥ 90/80 (most 100). Adversarial CSS scan: no raw colours in the new component CSS.
+
+### Next (wave-4+)
+
+- **Track A:** `packages/auth` (Better Auth — OAuth/magic-link/WebAuthn); the full §J per-entity schema (properties, enquiries, viewings, valuations, repairs, contacts, …) + their RLS; `packages/i18n` (the `t()` registry, §6).
+- **Track B:** remaining EPIC-L molecules (Select, Combobox, Modal, Drawer, Toast, Tabs, Accordion, Pagination, Breadcrumbs, AntiSpamChallenge, FileDropzone, MultiStepForm, FormError/Success/ReviewSummary, Tooltip, Popover, Dropdown, DatePicker, TimeSlotSelector) and the universal **PropertyCard** (9 market_status variants) → stand up **Playwright visual-regression at the 7 breakpoints** for the genuinely responsive organisms.
+
+Token spend rough estimate: parallel wave-3 workflow + integration + coverage verification — moderate.
+
+---
