@@ -381,3 +381,43 @@ All 12 packages green: format · typecheck · lint · test (apps/web 100%/97% br
 Token spend rough estimate: catalogue data layer + route + shell + middleware + G11 fix + verification — substantial.
 
 ---
+
+## Phase B10 — EPIC-F property detail + EPIC-I buyer-enquiry action (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `a154169` → `55e3573` (RED) → `0dad703` (GREEN)
+Tests added: 19 (apps/web now 39 tests; config G4 spec +4 cases → 67 tests)
+
+This is the **G4/G5-on-real-code milestone** — the first product code that performs a state-changing, personal-data mutation, so the audit-log and GDPR-consent guards now bite on real handlers, not just rule fixtures.
+
+### Shipped — `apps/web` EPIC-F detail + EPIC-I enquiry
+
+- **`getPropertyBySlug`** (`app/lib/properties.ts`) — single published/non-deleted property by slug → `PropertyDetail` view model (card props + `id`/`description`/`receptions`). Added `id` to `PropertyRow` so the enquiry can reference the real `Property` UUID. 100%.
+- **`getRequestIp`** (`app/lib/tenant.ts`) — best-effort originating IP (x-forwarded-for first hop → x-real-ip → null) for consent + audit provenance (§S.7). 100%.
+- **`submitEnquiry` Server Action** (`.../[slug]/actions.ts`) — a **file-level `'use server'` module** (Next requires this for actions imported by Client Components). Validates with `@estate/validators` `buyerEnquirySchema`, then inside one `withTenant` tx: `recordConsent` (verbatim affirmation, **G5**) + `Enquiry.create` + `audit('enquiry.created')` (**G4**). `leadType` omitted to use the DB default and keep the forbidden 'lead' noun out of code (**G6**). Returns `{ ok, errors? }` with field-linked messages. Branch 85% (only the type-required empty-path guard is unreachable with this flat schema).
+- **`EnquiryForm`** (client, `useActionState`) — TextField/Email/Phone/Checkbox/Button + `FormError` summary (anchored per field) + inline errors; calm `FormSuccess` on success. The consent checkbox label **is** the persisted affirmation (`consent-text.ts` shares the string). 100%.
+- **Detail page** `/properties/[slug]` — tenant-scoped fetch inside `withTenant`, `notFound()` on miss, detail beside the form. Price renders as a destructured local beside its qualifier+frequency markers (the PropertyCard trust-marker pattern, **G8**). 100%.
+
+### Guard enhancement — G4 now covers file-level `'use server'` modules
+
+The G4 rule previously only detected **function-level** `'use server'` directives. The idiomatic shape for actions imported by Client Components is a **file-level** module — which Next.js in fact *requires* (it rejects inline function-level actions imported into client components). The rule now also treats top-level handlers in a file-level `'use server'` module as server actions (top-level only, so a nested `withTenant` closure isn't double-reported). Spec extended with valid + invalid file-level cases (config suite 67/67).
+
+### Findings logged
+
+- **D-012** (Medium): cross-tenant FK on the user-supplied hidden `propertyId` — RLS scopes the INSERT but Postgres FK checks bypass RLS; platform-wide, best fixed with composite `(tenant_id, id)` FKs. Background task spawned.
+- **D-013** (Medium): Cloudflare Turnstile not yet wired on the public enquiry form (no CI guard enforces it; cross-cutting across all public forms). Background task spawned.
+- **D-014** (Low): no Textarea atom in `@estate/ui`; the message field uses single-line `TextField`.
+
+### Verification
+
+All gates green: `tsc --noEmit` · ESLint (G4–G8, G12) · apps/web 39 tests (100% line, scope-thresholds met; actions.ts 85% branch) · config 67 tests · diff guards G1/G2/G10/G11 · `next build` (detail route correctly dynamic, `/properties/[slug]` 115 kB First Load JS) · prettier.
+
+### Next
+
+- Page-level **Playwright e2e** against the running app (route-level G9 axe / G11 responsive / G3 Lighthouse) — the page analogue of the @estate/ui CT harness.
+- **Viewing-request** flow (EPIC-F/I) reusing the action+form pattern; the shared **Turnstile** wrapper (D-013).
+- EPIC-C vertical landings + the **EPIC-D Payload CMS** mount (page-builder).
+
+Token spend rough estimate: detail page + enquiry action + form + consent/audit wiring + G4 rule enhancement + full gate run + verification — substantial.
+
+---
