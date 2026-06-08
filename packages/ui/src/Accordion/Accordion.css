@@ -1,0 +1,100 @@
+/* Accordion molecule — EPIC-L disclosure list. Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). The chevron rotation + panel reveal use the
+ * --motion-duration-slow token (annotated "section reveal, accordion" in
+ * tokens.css) with the standard easing, and are disabled under reduced motion. */
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius-lg);
+  background: var(--colour-surface-base);
+  overflow: hidden;
+}
+
+/* hairline divider between rows; the first row has no top rule */
+.accordion-item + .accordion-item {
+  border-top: 1px solid var(--colour-divider);
+}
+
+/* the heading is a structural wrapper only; the real control is the button */
+.accordion-heading {
+  margin: 0;
+  font: inherit;
+}
+
+.accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: var(--size-touch-target-min); /* 44px touch target (G9) */
+  padding: var(--space-4) var(--space-5);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+  transition: background-color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.accordion-trigger:hover {
+  background: var(--colour-surface-raised);
+}
+
+.accordion-title {
+  flex: 1 1 auto;
+}
+
+/* the chevron points down when collapsed, flips to point up when open */
+.accordion-chevron {
+  flex: 0 0 auto;
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  color: var(--colour-text-muted);
+  transition: transform var(--motion-duration-slow) var(--motion-ease-standard);
+}
+
+.accordion-item.is-open .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-panel {
+  color: var(--colour-text-secondary);
+  animation: accordion-panel-in var(--motion-duration-slow) var(--motion-ease-standard);
+}
+
+.accordion-panel-inner {
+  padding: var(--space-1) var(--space-5) var(--space-5);
+  font-family: var(--font-body);
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md-lh);
+}
+
+@keyframes accordion-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-2)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion-chevron,
+  .accordion-trigger {
+    transition: none;
+  }
+  .accordion-panel {
+    animation: none;
+  }
+}

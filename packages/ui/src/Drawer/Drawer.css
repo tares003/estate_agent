@@ -1,0 +1,210 @@
+/* Drawer molecule — EPIC-L. An edge-anchored off-canvas panel built on the
+ * Modal precedent. Every visual value references a design token from
+ * @estate/tokens (tokens.css); no raw hex / px / ms / easing lives here (G7).
+ *
+ * The scrim is derived from --colour-text-primary (#1a1a1a) via color-mix at
+ * the canvas's 45% opacity, matching the Modal scrim (rather than introducing a
+ * new --colour-scrim token, which would require a DESIGN.md amendment). The
+ * panel enter motion uses the --motion-duration-base / --motion-ease-standard
+ * tokens (slide from the anchored edge + fade). */
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay-mid);
+  display: flex;
+}
+
+/* alignment of the panel within the backdrop, per anchored edge */
+.drawer-backdrop.left {
+  justify-content: flex-start;
+  align-items: stretch;
+}
+.drawer-backdrop.right {
+  justify-content: flex-end;
+  align-items: stretch;
+}
+.drawer-backdrop.bottom {
+  justify-content: stretch;
+  align-items: flex-end;
+}
+
+/* the scrim is a full-bleed dismiss layer behind the anchored panel. It is a
+ * real <button> so the click target is keyboard/AT-legible (G9); keyboard users
+ * dismiss via Escape, so it is removed from the Tab order (tabindex=-1). The raw
+ * rgba(26,26,26,0.45) canvas scrim is derived from --colour-text-primary
+ * (#1a1a1a) via color-mix rather than a new --colour-scrim token (G7). */
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: default;
+  background: color-mix(in srgb, var(--colour-text-primary) 45%, transparent);
+  animation: drawer-backdrop-in var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+/* the panel surface: a flex column anchored above the absolutely-positioned
+ * scrim, sliding in from its edge */
+.drawer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--colour-surface-base);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+/* side / bottom anchoring: dimension + corner radius + slide-in origin */
+.drawer.left,
+.drawer.right {
+  height: 100%;
+  width: 100%;
+  max-width: var(--drawer-size, 420px);
+}
+.drawer.left {
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+  animation: drawer-slide-in-left var(--motion-duration-base) var(--motion-ease-standard);
+}
+.drawer.right {
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+  animation: drawer-slide-in-right var(--motion-duration-base) var(--motion-ease-standard);
+}
+.drawer.bottom {
+  width: 100%;
+  height: 100%;
+  max-height: var(--drawer-size, 420px);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  animation: drawer-slide-in-bottom var(--motion-duration-base) var(--motion-ease-standard);
+}
+
+/* size presets: panel width (left/right) and sheet height (bottom) share the
+ * single --drawer-size custom property, consumed by max-width / max-height */
+.drawer.sm {
+  --drawer-size: 320px;
+}
+.drawer.md {
+  --drawer-size: 420px;
+}
+.drawer.lg {
+  --drawer-size: 560px;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  flex: 0 0 auto;
+}
+
+.drawer-title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading-md);
+  font-weight: var(--weight-semibold);
+  color: var(--colour-text-primary);
+}
+
+.drawer-close {
+  flex: 0 0 auto;
+  width: var(--size-touch-target-min);
+  height: var(--size-touch-target-min);
+  display: grid;
+  place-items: center;
+  color: var(--colour-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.drawer-close:hover {
+  background: var(--colour-surface-raised);
+  color: var(--colour-text-primary);
+}
+
+.drawer-body {
+  padding: 0 var(--space-6) var(--space-6);
+  color: var(--colour-text-secondary);
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+/* mobile: the panel becomes a full-bleed sheet from its anchored edge — a
+ * left/right panel fills the width, a bottom sheet caps its height */
+@media (max-width: 640px) {
+  .drawer.left,
+  .drawer.right,
+  .drawer.left.sm,
+  .drawer.left.md,
+  .drawer.left.lg,
+  .drawer.right.sm,
+  .drawer.right.md,
+  .drawer.right.lg {
+    --drawer-size: 100%;
+    border-radius: 0;
+  }
+  .drawer.bottom,
+  .drawer.bottom.sm,
+  .drawer.bottom.md,
+  .drawer.bottom.lg {
+    --drawer-size: 90%;
+  }
+}
+
+@keyframes drawer-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drawer-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-slide-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-scrim,
+  .drawer {
+    animation: none;
+  }
+}
