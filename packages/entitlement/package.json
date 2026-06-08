@@ -1,0 +1,31 @@
+{
+  "name": "@estate/entitlement",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Per-tenant pack entitlement (EPIC-AD): isPackEnabled / requirePack / <RequirePack>. Every pack-dependent code path consults this helper (CI guard G12).",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@estate/config": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
