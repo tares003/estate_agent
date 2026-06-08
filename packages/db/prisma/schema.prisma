@@ -32,7 +32,15 @@ model PlatformTenant {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  users User[]
+  users          User[]
+  branches       Branch[]
+  agents         Agent[]
+  properties     Property[]
+  enquiries      Enquiry[]
+  viewings       Viewing[]
+  valuations     Valuation[]
+  repairRequests RepairRequest[]
+  contacts       Contact[]
 
   @@map("platform_tenants")
 }
@@ -110,4 +118,357 @@ model NotificationLog {
 
   @@index([tenantId])
   @@map("notification_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §J core (always-on / core-pack) catalogue + CRM entities.
+//
+// Every model below is TENANT-SCOPED: it carries tenant_id (uuid), relates back
+// to the PlatformTenant registry, and is isolated by the tenant_isolation RLS
+// policy in migrations/raw/0003_core_entities_rls.sql. Table + column + enum
+// names map to snake_case (@@map / @map) to satisfy the canonical-naming guards
+// (PRODUCT.md §2/§3). The catalogue entity is Property (never Listing/House);
+// the inbound-lead entity is Enquiry (never Lead/Inquiry).
+//
+// Attribute coverage here is the core spine of master spec §F/§J; vertical-pack
+// attributes (commercial / new-homes / business-transfer) and the satellite
+// entities (images, documents, notes, history) land in their owning epics.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// An agency office (master spec §J.2). Public-facing branch directory + the
+/// owning branch of every property and agent.
+model Branch {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  slug         String
+  name         String
+  addressLine1 String   @map("address_line1")
+  addressLine2 String?  @map("address_line2")
+  town         String
+  county       String?
+  postcode     String
+  country      String   @default("United Kingdom")
+  phone        String?
+  email        String?
+  latitude     Float?
+  longitude    Float?
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant     PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  agents     Agent[]
+  properties Property[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("branches")
+}
+
+/// A staff member shown on the public Team page (master spec §J.2). This is the
+/// public-facing profile and is distinct from the auth User; an Agent may carry
+/// an optional link to a User when the same person also signs in.
+model Agent {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  branchId     String?  @map("branch_id") @db.Uuid
+  userId       String?  @map("user_id") @db.Uuid
+  slug         String
+  name         String
+  roleTitle    String?  @map("role_title")
+  department   String?
+  bio          String?
+  email        String?
+  phone        String?
+  whatsapp     String?
+  photoUrl     String?  @map("photo_url")
+  isActive     Boolean  @default(true) @map("is_active")
+  showOnTeam   Boolean  @default(true) @map("show_on_team")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, branchId])
+  @@map("agents")
+}
+
+/// The catalogue entity (master spec §F/§J.3). NEVER named Listing/House. One
+/// row per property, discriminated by listingType; price is stored in pence.
+model Property {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  branchId      String?      @map("branch_id") @db.Uuid
+  reference     String
+  slug          String
+  title         String?
+  displayAddress String      @map("display_address")
+  postcode      String
+  postcodePrefix String?     @map("postcode_prefix")
+  town          String?
+  county        String?
+  latitude      Float?
+  longitude     Float?
+  listingType   ListingType  @default(residential) @map("listing_type")
+  saleType      SaleType     @map("sale_type")
+  marketStatus  MarketStatus @default(for_sale) @map("market_status")
+  price         Int?
+  bedrooms      Int?
+  bathrooms     Int?
+  receptions    Int?
+  description   String?
+  publishedAt   DateTime?    @map("published_at")
+  deletedAt     DateTime?    @map("deleted_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  tenant     PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch     Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  enquiries  Enquiry[]
+  viewings   Viewing[]
+  repairs    RepairRequest[]
+
+  @@unique([tenantId, reference])
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, marketStatus])
+  @@index([tenantId, saleType, listingType])
+  @@map("properties")
+}
+
+/// The unifying inbound-lead record (master spec §J.4). NEVER named Lead/Inquiry.
+model Enquiry {
+  id         String        @id @default(uuid()) @db.Uuid
+  tenantId   String        @map("tenant_id") @db.Uuid
+  propertyId String?       @map("property_id") @db.Uuid
+  reference  String?
+  leadType   LeadType      @default(buyer_enquiry) @map("lead_type")
+  name       String
+  email      String
+  phone      String?
+  message    String
+  status     EnquiryStatus @default(new)
+  sourceUrl  String?       @map("source_url")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, propertyId])
+  @@map("enquiries")
+}
+
+/// A request to view a property (viewing_request — master spec §J.4).
+model Viewing {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  propertyId  String        @map("property_id") @db.Uuid
+  name        String
+  email       String
+  phone       String
+  preferredAt DateTime      @map("preferred_at")
+  status      ViewingStatus @default(pending)
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, propertyId])
+  @@map("viewings")
+}
+
+/// A request for a property appraisal (valuation_request — master spec §J.4).
+model Valuation {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  name         String
+  email        String
+  phone        String
+  addressLine1 String          @map("address_line1")
+  addressLine2 String?         @map("address_line2")
+  town         String?
+  postcode     String
+  propertyType String          @map("property_type")
+  bedrooms     Int?
+  status       ValuationStatus @default(new)
+  notes        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("valuations")
+}
+
+/// A maintenance ticket raised by a tenant (repair_request — master spec §J.6/§G).
+/// propertyId is optional for the property-not-yet-known case (master spec §J.9).
+model RepairRequest {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  propertyId  String?       @map("property_id") @db.Uuid
+  reference   String?
+  name        String
+  email       String
+  phone       String?
+  category    String
+  description String
+  urgency     RepairUrgency @default(standard)
+  status      RepairStatus  @default(new)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, urgency])
+  @@map("repair_requests")
+}
+
+/// A CRM contact record (master spec §J.5). One unified entity with a role
+/// discriminator (landlord / tenant / vendor / buyer) per the brief's open
+/// question 1 default-to-separate note; the role is captured on `type`.
+model Contact {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  email     String?
+  phone     String?
+  type      String
+  notes     String?
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@map("contacts")
+}
+
+/// The vertical discriminator for a property (master spec §F; PRODUCT.md §2).
+/// Core ships the always-on verticals; vertical packs (new_homes, commercial,
+/// business_transfer, care_homes) extend behaviour, not this enum's core values.
+enum ListingType {
+  residential
+  new_home
+  commercial
+  business_transfer
+  care_home
+  land
+
+  @@map("listing_type")
+}
+
+/// For sale, or to rent (PRODUCT.md §4: sale_type=sale / sale_type=rent).
+enum SaleType {
+  sale
+  rent
+
+  @@map("sale_type")
+}
+
+/// Current sale/let state. Values map 1:1 to the --colour-status-* token set
+/// (DESIGN.md): for_sale/to_let are the available states, sold_stc + let_agreed
+/// are the dashed-token names in snake_case (PRODUCT.md §4).
+enum MarketStatus {
+  for_sale
+  under_offer
+  sold_stc
+  sold
+  to_let
+  let_agreed
+  let
+  withdrawn
+
+  @@map("market_status")
+}
+
+/// The kind of inbound lead (master spec §J.4; PRODUCT.md §4 lead_type).
+enum LeadType {
+  buyer_enquiry
+  viewing_request
+  valuation_request
+  landlord_enquiry
+  tenant_enquiry
+  repair_request
+  general_contact
+  newsletter_signup
+
+  @@map("lead_type")
+}
+
+/// Enquiry lifecycle (master spec §J.4).
+enum EnquiryStatus {
+  new
+  contacted
+  viewing_booked
+  valuation_booked
+  waiting
+  converted
+  lost
+  archived
+
+  @@map("enquiry_status")
+}
+
+/// Viewing-request lifecycle (master spec §J.4).
+enum ViewingStatus {
+  pending
+  confirmed
+  rescheduled
+  cancelled
+  attended
+  no_show
+
+  @@map("viewing_status")
+}
+
+/// Valuation-request lifecycle (master spec §J.4).
+enum ValuationStatus {
+  new
+  booked
+  completed
+  declined
+  instructed
+
+  @@map("valuation_status")
+}
+
+/// Repair triage urgency (master spec §G). emergency carries the tightest SLA.
+enum RepairUrgency {
+  emergency
+  urgent
+  standard
+  low
+
+  @@map("repair_urgency")
+}
+
+/// Repair-ticket lifecycle (master spec §G).
+enum RepairStatus {
+  new
+  triaged
+  assigned
+  in_progress
+  awaiting_parts
+  completed
+  cancelled
+
+  @@map("repair_status")
 }
