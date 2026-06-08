@@ -316,3 +316,36 @@ On `main`: **config** (12 CI guards + CI workflow + Playwright harness) · **tok
 Token spend rough estimate: 8-agent final UI wave + integration + coverage fix — substantial.
 
 ---
+
+## Phase B8 — apps/web scaffold (Next.js App Router shell) (2026-06-08)
+
+Status: **complete** (pushed to `main`) — first feature-phase wave
+Main: `323a8ef` → `b5ef842`
+
+### Shipped — `@estate/web` (the single Next.js App Router app)
+
+- Next.js 15 App Router scaffold: `next.config.ts`, `tsconfig` (extends the `next` preset), `postcss` + `tailwind.config.ts`, `app/layout.tsx` (imports `@estate/tokens` tokens.css + base.css + the Tailwind layer; html lang + skip-link), and a **homepage skeleton** consuming `@estate/ui` (Button) + token utilities.
+- **Tailwind as the utility layer mapped entirely to design-token CSS vars** (preflight off — base.css is the reset; breakpoints use the literal token px since media queries can't take var()). App markup stays token-driven (G7).
+- `.claude/launch.json` now registers the **web dev server** (port 3000) — the first runnable dev server in the repo.
+
+### Integration issues resolved (the hard part of consuming the foundation in Next)
+
+1. **`.js`-extension TS imports** in the `@estate/*` packages didn't resolve under webpack → added `resolve.extensionAlias` in `next.config.ts` (`.js` → `.ts`/`.tsx`).
+2. **`'use client'`** — 23 interactive `@estate/ui` components used hooks without the directive (jsdom didn't care; Next does) → marked them (a separate `chore(ui)` commit); presentational components stay Server Components.
+3. **Component CSS imports** (`import './Button.css'`) compile cleanly in the App Router via `transpilePackages` (no CSS-module refactor needed).
+4. **Vitest JSX** — the app's tsconfig uses `jsx: preserve` (Next compiles JSX), so Vitest needs `@vitejs/plugin-react` for its own JSX transform (caught a `React is not defined` failure).
+5. ESLint ignores Next's generated `next-env.d.ts` (triple-slash refs).
+
+### Verification
+
+`next build` compiles clean; **homepage = 114 kB First Load JS, under the 150 KB public-marketing budget (G3)**. All 12 packages green: format · typecheck · lint · test (homepage RTL) · guards.
+
+### Next (the feature surfaces)
+
+- **EPIC-F catalogue**: a public layout/nav, `/properties` (a property repository over Prisma — unit-tested with a mocked client, live via Testcontainers; renders the PropertyCard grid) + property detail, and the enquiry Server Action (`@estate/validators` + `audit()` + `recordConsent()`).
+- **Page-level e2e**: a Playwright pass against the running app for route-level G9 (axe) + G11 (responsive) + G3 (real Lighthouse) — the page-level analogue of the @estate/ui CT harness.
+- Payload CMS mounts in the EPIC-C/D page-builder wave.
+
+Token spend rough estimate: apps/web scaffold + 5 Next-integration fixes + verification — substantial.
+
+---
