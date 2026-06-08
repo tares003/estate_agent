@@ -1,0 +1,154 @@
+/* Button atom — EPIC-L. Ported verbatim from
+ * design/canvas/components/atoms/button.html. Every visual value references a
+ * design token from @estate/tokens (tokens.css); no raw hex / px / ms / easing
+ * lives here (G7). The focus ring is provided globally by base.css. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  position: relative;
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body-md);
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  padding-inline: var(--space-5);
+  height: var(--size-button-md);
+  min-width: var(--size-touch-target-min);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-standard),
+    border-color var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard),
+    color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.btn:active {
+  /* instant press per motion-spec */
+  transform: translateY(0.5px);
+}
+
+/* sizes */
+.btn.sm {
+  height: var(--size-button-sm);
+  font-size: var(--text-body-sm);
+  padding-inline: var(--space-4);
+}
+
+.btn.lg {
+  height: var(--size-button-lg);
+  font-size: var(--text-body-lg);
+  padding-inline: var(--space-6);
+}
+
+/* primary */
+.btn.primary {
+  background: var(--colour-brand-primary);
+  color: var(--colour-brand-primary-on);
+}
+.btn.primary:hover {
+  background: var(--colour-brand-primary-hover);
+}
+
+/* secondary (outline) */
+.btn.secondary {
+  background: var(--colour-surface-base);
+  color: var(--colour-brand-primary);
+  border-color: var(--colour-border);
+}
+.btn.secondary:hover {
+  background: var(--colour-surface-raised);
+  border-color: var(--colour-text-muted);
+}
+
+/* ghost */
+.btn.ghost {
+  background: transparent;
+  color: var(--colour-brand-primary);
+}
+.btn.ghost:hover {
+  background: var(--colour-surface-raised);
+}
+
+/* destructive */
+.btn.destructive {
+  background: var(--colour-danger);
+  color: var(--colour-brand-primary-on);
+}
+.btn.destructive:hover {
+  /* No --colour-danger-hover token exists; darken via filter (no raw hex, no
+   * new token — a new token would require a DESIGN.md amendment). Matches the
+   * canvas's own brightness-based press treatment. */
+  filter: brightness(0.92);
+}
+
+/* link */
+.btn.link {
+  background: transparent;
+  color: var(--colour-brand-primary);
+  padding-inline: var(--space-1);
+  height: auto;
+  text-underline-offset: var(--space-1);
+}
+.btn.link:hover {
+  color: var(--colour-brand-accent-hover);
+  text-decoration: underline;
+  text-decoration-color: var(--colour-brand-accent);
+}
+
+/* disabled */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* loading — hide the label, show the centred spinner */
+.btn.loading {
+  color: transparent;
+  pointer-events: none;
+}
+.btn.loading .spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-circle);
+  color: var(--colour-brand-primary-on);
+  animation: btn-spin var(--motion-duration-gallery) var(--motion-ease-linear) infinite;
+}
+.btn.secondary.loading .spinner,
+.btn.ghost.loading .spinner,
+.btn.link.loading .spinner {
+  color: var(--colour-brand-primary);
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.loading .spinner {
+    animation: none;
+    border-top-color: currentColor;
+    opacity: 0.6;
+  }
+}
+
+.btn .ico {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
