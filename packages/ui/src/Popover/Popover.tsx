@@ -1,3 +1,5 @@
+'use client';
+
 // responsive-coverage: opt-out all — Popover is a fluid/viewport-invariant primitive; responsive layout is verified where it composes into page tests.
 import {
   useCallback,

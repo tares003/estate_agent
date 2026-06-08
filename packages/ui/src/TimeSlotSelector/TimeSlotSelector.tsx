@@ -1,3 +1,5 @@
+'use client';
+
 import { useId, type ReactElement, type ReactNode } from 'react';
 import './TimeSlotSelector.css';
 

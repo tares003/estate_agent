@@ -1,3 +1,5 @@
+'use client';
+
 // responsive-coverage: opt-out all — the Accordion is fluid (single column,
 // full width of its container at every breakpoint); there is no breakpoint-
 // specific layout to screenshot. Disclosure behaviour, aria wiring and keyboard

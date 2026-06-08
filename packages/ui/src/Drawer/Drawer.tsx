@@ -1,3 +1,5 @@
+'use client';
+
 // responsive-coverage: opt-out all — Drawer responsive sheet/panel layout is verified via Playwright in a follow-on; RTL covers focus/escape/aria behaviour
 import { useCallback, useEffect, useId, useRef, type ReactElement, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';

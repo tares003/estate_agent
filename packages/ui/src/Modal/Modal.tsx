@@ -1,3 +1,5 @@
+'use client';
+
 // responsive-coverage: opt-out all — Modal responsive layout (mobile sheet vs desktop dialog) is verified via Playwright visual-regression (pending wave-5); RTL covers focus/escape/aria behaviour
 import { useCallback, useEffect, useId, useRef, type ReactElement, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';

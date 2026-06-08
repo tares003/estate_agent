@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useId, useState, type ReactElement, type ReactNode } from 'react';
 import { Button } from '../Button/Button.js';
 import './MultiStepForm.css';
