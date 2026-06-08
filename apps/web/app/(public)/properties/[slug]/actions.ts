@@ -5,6 +5,7 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 import type { FormErrorItem } from '@estate/ui';
 import { getDb } from '../../../lib/db.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { verifyTurnstile } from '../../../lib/turnstile.js';
 import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
 
 /**
@@ -74,6 +75,21 @@ export async function submitEnquiry(
   const enquiry = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+
+  // Anti-spam gate: verify the Cloudflare Turnstile token BEFORE any write
+  // (CLAUDE.md §9). On failure nothing is persisted — no consent, enquiry or
+  // audit row — and the form shows a retry-the-challenge error.
+  const turnstileToken = formData.get('cf-turnstile-response');
+  const challengePassed = await verifyTurnstile(
+    typeof turnstileToken === 'string' ? turnstileToken : null,
+    ip,
+  );
+  if (!challengePassed) {
+    return {
+      ok: false,
+      errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+    };
+  }
 
   await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as EnquiryWriteClient;

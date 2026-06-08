@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import {
+  AntiSpamChallenge,
   Button,
   Checkbox,
   EmailField,
@@ -33,6 +34,13 @@ export interface EnquiryFormProps {
  */
 export function EnquiryForm({ propertyId, propertyTitle }: EnquiryFormProps) {
   const [state, formAction, pending] = useActionState(submitEnquiry, INITIAL_STATE);
+
+  // Cloudflare Turnstile — operator-level sitekey from env (CLAUDE.md §9). When
+  // unconfigured (local dev / tests) the challenge is omitted and the server
+  // action's verifier allows the submission; in production the key is set and
+  // the action verifies the token server-side.
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   if (state.ok) {
     return (
@@ -85,6 +93,13 @@ export function EnquiryForm({ propertyId, propertyTitle }: EnquiryFormProps) {
         required
         error={errorFor('gdpr_consent')}
       />
+
+      {turnstileSiteKey ? (
+        <>
+          <AntiSpamChallenge sitekey={turnstileSiteKey} onVerify={setTurnstileToken} />
+          <input type="hidden" name="cf-turnstile-response" value={turnstileToken} />
+        </>
+      ) : null}
 
       <Button type="submit" loading={pending}>
         Send enquiry
