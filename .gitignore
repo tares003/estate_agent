@@ -30,6 +30,7 @@ coverage/
 htmlcov/
 playwright-report/
 test-results/
+.cache/
 .lighthouseci/
 
 # ─── Secrets / env (NEVER commit plaintext secrets) ────────────
