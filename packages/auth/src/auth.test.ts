@@ -1,0 +1,97 @@
+import { describe, expect, it } from 'vitest';
+
+import { createAuth, type CreateAuthOptions } from './auth.js';
+
+// A structural stand-in for a PrismaClient. better-auth's `prismaAdapter`
+// types its first argument as `PrismaClient {}` (an empty interface), so any
+// object satisfies it; the adapter is lazy and never touches the DB at
+// construction time. We assert the *configuration*, not a live connection.
+const fakePrisma = {} as never;
+
+const dummyCreds: CreateAuthOptions = {
+  secret: 'test-secret-not-used-to-connect',
+  baseURL: 'https://acme.estateplatform.test',
+  social: {
+    microsoft: { clientId: 'ms-id', clientSecret: 'ms-secret' },
+    google: { clientId: 'g-id', clientSecret: 'g-secret' },
+    apple: { clientId: 'apple-id', clientSecret: 'apple-secret' },
+  },
+  sendMagicLink: async () => {
+    /* no-op in the shape test */
+  },
+};
+
+describe('createAuth — configuration shape (no DB connection)', () => {
+  const auth = createAuth(fakePrisma, dummyCreds);
+
+  it('returns a better-auth instance exposing the standard surface', () => {
+    expect(typeof auth.handler).toBe('function');
+    expect(typeof auth.api).toBe('object');
+    expect(auth.options).toBeTypeOf('object');
+  });
+
+  it('enables email-and-password authentication', () => {
+    expect(auth.options.emailAndPassword?.enabled).toBe(true);
+  });
+
+  it('configures the Microsoft, Google and Apple social providers', () => {
+    const social = auth.options.socialProviders ?? {};
+    expect(social.microsoft).toBeDefined();
+    expect(social.google).toBeDefined();
+    expect(social.apple).toBeDefined();
+  });
+
+  it('keys each social provider from the supplied credentials', () => {
+    const social = auth.options.socialProviders ?? {};
+    // better-auth types each provider value as `ProviderOptions | (() =>
+    // Awaitable<ProviderOptions>)`. We supply the static-object form, so narrow
+    // to a record before reading the credential fields.
+    const creds = (value: unknown): Record<string, unknown> => {
+      expect(typeof value).toBe('object');
+      return value as Record<string, unknown>;
+    };
+    expect(creds(social.microsoft).clientId).toBe('ms-id');
+    expect(creds(social.microsoft).clientSecret).toBe('ms-secret');
+    expect(creds(social.google).clientId).toBe('g-id');
+    expect(creds(social.apple).clientId).toBe('apple-id');
+  });
+
+  it('registers the magic-link and two-factor (WebAuthn-track) plugins', () => {
+    const pluginIds = (auth.options.plugins ?? []).map((plugin) => plugin.id);
+    expect(pluginIds).toContain('magic-link');
+    expect(pluginIds).toContain('two-factor');
+  });
+
+  it('carries the tenant identifier on the session via an additional field', () => {
+    const sessionFields = auth.options.session?.additionalFields ?? {};
+    expect(sessionFields.tenantId).toBeDefined();
+    expect(sessionFields.tenantId?.type).toBe('string');
+  });
+
+  it('also carries the staff role on the user via an additional field', () => {
+    const userFields = auth.options.user?.additionalFields ?? {};
+    expect(userFields.role).toBeDefined();
+    expect(userFields.tenantId).toBeDefined();
+  });
+
+  it('passes the supplied baseURL and secret straight through to the config', () => {
+    expect(auth.options.baseURL).toBe('https://acme.estateplatform.test');
+    expect(auth.options.secret).toBe('test-secret-not-used-to-connect');
+  });
+
+  it('configures the prisma adapter as the database layer', () => {
+    expect(auth.options.database).toBeDefined();
+  });
+
+  it('omits a social provider when no credentials are supplied for it', () => {
+    const partial = createAuth(fakePrisma, {
+      secret: 'x',
+      sendMagicLink: async () => {},
+      social: { google: { clientId: 'g', clientSecret: 's' } },
+    });
+    const social = partial.options.socialProviders ?? {};
+    expect(social.google).toBeDefined();
+    expect(social.microsoft).toBeUndefined();
+    expect(social.apple).toBeUndefined();
+  });
+});
