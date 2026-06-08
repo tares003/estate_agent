@@ -70,8 +70,7 @@ const rule = {
   meta: {
     type: 'problem',
     docs: {
-      description:
-        'Disallow forbidden estate-agency nouns in code identifiers (PRODUCT.md §2/§3).',
+      description: 'Disallow forbidden estate-agency nouns in code identifiers (PRODUCT.md §2/§3).',
     },
     schema: [],
     messages: {

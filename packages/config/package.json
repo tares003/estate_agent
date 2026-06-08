@@ -14,15 +14,22 @@
     "./vitest/base": "./vitest/base.ts",
     "./vitest/react": "./vitest/react.ts"
   },
-  "files": ["tsconfig", "eslint", "vitest", "guards"],
+  "files": [
+    "tsconfig",
+    "eslint",
+    "vitest",
+    "guards"
+  ],
   "scripts": {
     "guards": "tsx guards/run-all.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^3.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-import-x": "^4.0.0",
