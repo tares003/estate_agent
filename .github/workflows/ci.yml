@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Static gates — typecheck · lint · tests · CI guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the diff-based guards (G1, G10) can compare against
+          # the PR base ref.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format check (Prettier)
+        run: pnpm run format:check
+
+      - name: Type-check (tsc, per package)
+        run: pnpm run typecheck
+
+      # ESLint runs the six AST-level guards: G4 audit-log-coverage,
+      # G5 gdpr-consent, G6 naming, G7 design-token, G8 trust-marker,
+      # G12 pack-entitlement.
+      - name: Lint (ESLint + @estate guards G4/G5/G6/G7/G8/G12)
+        run: pnpm run lint
+
+      # Vitest runs every guard's fail-closed suite (deliberate-violation +
+      # clean fixtures) plus all package tests.
+      - name: Tests (Vitest — incl. guard fail-closed suites)
+        run: pnpm run test
+
+      # The diff-based guards against the real PR: G1 PR-has-tests,
+      # G2 coverage-threshold, G10 sub-processor-manifest, G11 responsive-coverage.
+      - name: CI guards — diff-based (G1 · G2 · G10 · G11)
+        env:
+          GUARDS_BASE_REF: origin/${{ github.base_ref || 'main' }}
+        run: pnpm run guards
+
+  runtime-gates:
+    name: Runtime gates — G3 performance budget · G9 accessibility
+    runs-on: ubuntu-latest
+    # G3 (per-route gzipped JS/CSS budget + Lighthouse CI) and G9
+    # (@axe-core/playwright at the seven breakpoints) need a production Next.js
+    # build and a headless browser. They activate when apps/web ships
+    # (Phase B-web). Their evaluation cores are unit-tested today under
+    # packages/config/guards (g03-performance-budget, g09-accessibility).
+    if: ${{ false }}
+    steps:
+      - run: echo "G3 + G9 activate with apps/web."

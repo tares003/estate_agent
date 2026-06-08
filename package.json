@@ -20,8 +20,8 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "dev": "turbo run dev",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md,yaml,yml}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,yaml,yml}\"",
     "guards": "pnpm --filter @estate/config run guards",
     "ci": "turbo run lint typecheck test build && pnpm run guards"
   },

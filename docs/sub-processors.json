@@ -1,0 +1,24 @@
+{
+  "note": "Published sub-processor list (GDPR Art. 28). The `services[].name` values here are the manifest that CI guard G10 checks every newly-added external-service dependency against. Keep this file in sync with the human-readable sub-processor page surfaced from the privacy policy (EPIC-AB / EPIC-AE).",
+  "services": [
+    {
+      "name": "Twilio",
+      "purpose": "SMS — emergency repair-ticket alerts and optional staff 2FA fallback",
+      "region": "EU/UK",
+      "dataShared": "recipient mobile number, message body"
+    },
+    {
+      "name": "Stripe",
+      "purpose": "Subscription billing (tier) and metered per-pack usage billing",
+      "region": "EU/UK",
+      "dataShared": "billing contact details; card data held by Stripe, never by the platform"
+    },
+    {
+      "name": "Cloudflare",
+      "purpose": "CDN, DDoS protection and Turnstile anti-spam (free tier)",
+      "region": "Global edge; origin processing stays on EU infrastructure",
+      "dataShared": "request metadata, Turnstile challenge token"
+    }
+  ],
+  "notes": "Per-tenant bring-your-own services (tenant SMTP, tenant Google Maps / Mapbox key) are configured by each tenant and declared in that tenant's own privacy disclosures, not here. The self-hosted stack (PostgreSQL, Redis, local-filesystem object storage, restic backup to a Hetzner Storage Box) runs on operator-controlled EU infrastructure and is not a third-party sub-processor."
+}
