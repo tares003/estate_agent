@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getPropertyBySlug, listProperties, toCardProps, type PropertyRow } from './properties.js';
+import {
+  getPropertyBySlug,
+  searchProperties,
+  toCardProps,
+  type PropertyRow,
+} from './properties.js';
 
 const saleRow: PropertyRow = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -52,29 +57,97 @@ describe('toCardProps', () => {
     expect(card.rentFrequency).toBe('PCM');
     expect(card.title).toBe('Ellesmere Street, Castlefield');
   });
+
+  it('renders a null-price (POA) row without a numeric price', () => {
+    const card = toCardProps({ ...saleRow, price: null });
+    expect(card.price).toBe('POA');
+  });
 });
 
-describe('listProperties', () => {
-  it('queries published, non-deleted properties newest-first and maps them to cards', async () => {
-    const findMany = vi.fn().mockResolvedValue([saleRow, rentRow]);
-    const cards = await listProperties({ property: { findMany } });
+describe('searchProperties', () => {
+  function reader(rows: PropertyRow[], total = rows.length) {
+    const findMany = vi.fn().mockResolvedValue(rows);
+    const count = vi.fn().mockResolvedValue(total);
+    return { db: { property: { findMany, count } }, findMany, count };
+  }
+
+  const BASE_WHERE = { publishedAt: { not: null }, deletedAt: null };
+
+  it('queries published, non-deleted properties newest-first, page 1, default page size', async () => {
+    const { db, findMany, count } = reader([saleRow, rentRow], 2);
+    const result = await searchProperties(db);
     expect(findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { not: null }, deletedAt: null },
+      where: BASE_WHERE,
       orderBy: { publishedAt: 'desc' },
+      skip: 0,
       take: 24,
     });
-    expect(cards).toHaveLength(2);
-    expect(cards[0]?.href).toBe('/properties/palatine-road-m20');
+    expect(count).toHaveBeenCalledWith({ where: BASE_WHERE });
+    expect(result.items).toHaveLength(2);
+    expect(result).toMatchObject({ total: 2, page: 1, pageSize: 24, totalPages: 1 });
+    expect(result.items[0]?.href).toBe('/properties/palatine-road-m20');
   });
 
-  it('applies the saleType filter and take override', async () => {
-    const findMany = vi.fn().mockResolvedValue([]);
-    await listProperties({ property: { findMany } }, { saleType: 'rent', take: 6 });
-    expect(findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { not: null }, deletedAt: null, saleType: 'rent' },
-      orderBy: { publishedAt: 'desc' },
-      take: 6,
+  it('composes every filter into the where clause', async () => {
+    const { db, findMany } = reader([]);
+    await searchProperties(db, {
+      saleType: 'rent',
+      listingType: 'residential',
+      priceMin: 100_000,
+      priceMax: 500_000,
+      bedroomsMin: 2,
+      bathroomsMin: 1,
     });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          ...BASE_WHERE,
+          saleType: 'rent',
+          listingType: 'residential',
+          price: { gte: 100_000, lte: 500_000 },
+          bedrooms: { gte: 2 },
+          bathrooms: { gte: 1 },
+        },
+      }),
+    );
+  });
+
+  it('only adds a price clause for the bounds provided', async () => {
+    const { db, findMany } = reader([]);
+    await searchProperties(db, { priceMax: 300_000 });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { ...BASE_WHERE, price: { lte: 300_000 } } }),
+    );
+  });
+
+  it('maps each sort option to the right orderBy (price sorts pin POA/null last)', async () => {
+    const { db, findMany } = reader([]);
+    await searchProperties(db, { sort: 'price_asc' });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { price: { sort: 'asc', nulls: 'last' } } }),
+    );
+    await searchProperties(db, { sort: 'price_desc' });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { price: { sort: 'desc', nulls: 'last' } } }),
+    );
+    await searchProperties(db, { sort: 'oldest' });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { publishedAt: 'asc' } }),
+    );
+  });
+
+  it('paginates with skip/take and computes totalPages', async () => {
+    const { db, findMany } = reader([saleRow], 50);
+    const result = await searchProperties(db, { page: 3, pageSize: 10 });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 20, take: 10 }));
+    expect(result).toMatchObject({ total: 50, page: 3, pageSize: 10, totalPages: 5 });
+  });
+
+  it('clamps page size to 60 and floors page to 1', async () => {
+    const { db, findMany } = reader([], 0);
+    const result = await searchProperties(db, { page: 0, pageSize: 1000 });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, take: 60 }));
+    expect(result).toMatchObject({ page: 1, pageSize: 60, totalPages: 1 });
   });
 });
 
