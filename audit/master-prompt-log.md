@@ -225,3 +225,32 @@ All 7 packages green: format · typecheck · lint · test · guards. §J schema 
 Token spend rough estimate: parallel wave-4 workflow (6 agents incl. the §J schema) + integration/verification — substantial.
 
 ---
+
+## Phase B5 — wave-5 both tracks: Better Auth + Playwright/PropertyCard (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `d080eaa` → `c5c62ac`
+Tests added: 44 (auth) + 19 (PropertyCard RTL) + the PropertyCard Playwright CT suite (7 breakpoints)
+
+### Track A — `@estate/auth` (EPIC-N, background agent: spike → TDD)
+
+- Spiked better-auth@1.6.15 to pin its real API (read-only), then built test-first: 8 staff roles (master spec §H.1) + a typed permission catalogue; `hasPermission`/`requirePermission` + access helpers (`isOperator`/`canManagePacks`/…) at **100% coverage**; `createAuth(prisma, options)` wiring `prismaAdapter` + email/password + OAuth (microsoft/google/apple) + magic-link + `twoFactor` (TOTP). Session carries `tenantId` via `additionalFields`. 44 tests; `auth.ts` excluded from coverage as connection glue (like db's `client.ts`).
+- **D-011:** WebAuthn/passkey is a separate `@better-auth/passkey` package (not installed) — staff 2FA wired via in-core TOTP for now; passkey is a documented follow-on. better-auth tables + live flows are the Testcontainers CI path.
+
+### Track B — Playwright visual-regression + PropertyCard (main loop)
+
+- **Stood up Playwright component testing** (`@playwright/experimental-ct-react` + Vite + `@axe-core/playwright`): downloaded chromium-1223 (the cache had 1148/1200), `playwright-ct.config.ts` + mount template loading the tokens, `test:ct` script, `*.spec.tsx` excluded from Vitest, build caches ignored by ESLint+git. Smoke-tested before building.
+- **PropertyCard** (EPIC-F universal organism, 9 market-status variants) — trust markers (qualifier + rent frequency), labelled status badges, muted sold/let with a live "Notify me of similar", accessible **stretched-link** pattern (no button-in-anchor), token-driven CSS (color-mix on tokens). 19 RTL tests; the **Playwright CT spec verifies responsive layout + WCAG AA in real chromium at all 7 breakpoints** (no overflow, 44px targets, axe-clean).
+- **D-010:** real-browser axe surfaced that the status badges fail AA colour-contrast (white on saturated `--colour-status-*`). A DESIGN.md token gap (canvas-specified, do-not-touch) — logged for the owner; the CT spec excludes `.badge` from contrast pending the fix; status remains conveyed by text + aria-label (G9 holds). This is exactly the class of issue real-browser visual-regression exists to catch.
+
+### Verification
+
+All 8 packages green: format · typecheck · lint · test · guards. PropertyCard CT suite green at 320/640/768/1024/1280/1440/2560. Per-package lint cache exclusions added for Playwright artefacts.
+
+### Foundation status
+
+On `main`: **config · tokens · validators · entitlement · i18n · ui (16 components incl. PropertyCard) · db (multi-tenancy + §J core + helpers) · auth**. Remaining EPIC-L pieces (Combobox, Drawer, Tabs, Accordion, Pagination, Breadcrumbs, Tooltip, Popover, Dropdown, DatePicker, TimeSlotSelector, MultiStepForm, FileDropzone, AntiSpamChallenge), §J vertical/satellite entities, and infra packages (email/storage/observability) remain.
+
+Token spend rough estimate: better-auth spike+build (agent) + Playwright harness + PropertyCard + integration — substantial.
+
+---
