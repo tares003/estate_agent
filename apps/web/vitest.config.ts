@@ -15,7 +15,14 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'lcov'],
       include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
-      exclude: ['app/**/*.test.{ts,tsx}', 'app/layout.tsx', '**/*.config.*'],
+      exclude: [
+        'app/**/*.test.{ts,tsx}',
+        'app/**/layout.tsx',
+        // Request/connection glue (Prisma client construction) — exercised via
+        // integration/e2e, not unit tests (constructing Prisma overflows jsdom).
+        'app/lib/db.ts',
+        '**/*.config.*',
+      ],
     },
   },
 });
