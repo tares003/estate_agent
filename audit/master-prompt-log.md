@@ -480,3 +480,39 @@ All gates green: apps/web 52 tests (turnstile lib 100% cov; actions 98.7%/89.5% 
 Token spend rough estimate: Turnstile verifier + action gate + form wiring + 13 tests + full gate run + verification — moderate.
 
 ---
+
+## Phase B14 — EPIC-F property search: filter, sort, pagination (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `90a92f3` → `a292a17` (RED) → `ab41684` (GREEN)
+Tests added: ~30 (@estate/validators 83 total; apps/web 71 total)
+
+Resumes the parked EPIC-F search wave (master spec §C.10 filter bar + §K.1 public capability + feature #17 sort). Preceded by a 4-reader **understand** workflow over the spec / briefs / EPIC-L components / existing code, which tiered the work; this ships the always-on **Must-have** core, server-rendered with the URL query string as the single source of truth (works without JavaScript).
+
+### Shipped
+
+- **`@estate/validators` `propertySearchSchema` + `parsePropertySearch`** — fail-soft parser of the query string into a typed filter object. Every field is optional and `.catch`-guarded, so a malformed/hostile param is dropped, never 500-ing a public cacheable page. `page` capped at 10k and prices at £999,999,999 to bound OFFSET scans and the ×100 conversion. Declared `// pack: core` (the parser recognises every listing-type value; entitlement is enforced elsewhere — G12).
+- **`searchProperties` (app/lib/properties.ts)** — builds the Prisma `where` (sale type, listing type, £ price min/max, min beds/baths), maps the four sort options to `orderBy` (**price sorts pin POA/null rows last** via the Postgres `nulls` option), and offset-paginates with a single shared `where` reused for `findMany` + `count` (totals can't diverge). Returns `{ items, total, page, pageSize, totalPages }`.
+- **`PropertyFilters`** — a GET `<form>` of native `Select`/`NumberField` controls (submitting resets to page 1, no client JS). **`search-params.ts`** (pure, unit-tested) builds stable query strings + the removable active-filter chips. The **catalogue route** composes the bar, aria-labelled remove-chips, an `aria-live` result count, the PropertyCard grid, and prev/next pagination — converting £→pence at the boundary.
+
+### Adversarial review (Ultracode)
+
+A 4-lens review (correctness, security/robustness, accessibility, test-validity) ran before commit. Acted on: null-price sort determinism (`nulls: 'last'`), `page`/price input caps (unbounded-OFFSET guard), pagination a11y (omit disabled prev/next rather than `aria-disabled` spans), chip `aria-label`, `NumberField` default cleanup, the pounds-not-pence docstring, plus page-level sort / null-price / total=0 tests. Noted-but-declined with reasoning: the `tx as unknown as PropertyListReader` cast (the documented withTenant pattern — the runtime object is the full Prisma client, as in B9/B10), `Record<string,unknown>` where-type + manual `PropertyRow` (intentional structural typing for DB-free tests; inputs are enum/int-validated), find/count divergence (already a shared const), tenant fail-fast (getCurrentTenantId already throws).
+
+### Findings logged
+
+- **D-017** (Low): the listing-type filter offers all types; pack-aware option gating is deferred to EPIC-AD entitlement wiring (no capability leak — pack-gated properties aren't publicly listed).
+
+### Verification
+
+All gates green: @estate/validators 83 tests (100% cov) · apps/web 71 tests (catalogue route 98.9%/94.3% branch; all scope thresholds met) · typecheck · ESLint (incl. G12 pack-entitlement) · diff guards G1/G2/G10/G11 · `next build` (/properties 114 kB First Load JS, within budget) · prettier.
+
+### Next
+
+- Page-level **Playwright e2e** (route-level G9/G11/G3) — blocked on a running Postgres (the dynamic routes query at request time); pairs with the Testcontainers CI path.
+- EPIC-F **radius / PostGIS** search (the geog column + `ST_DWithin` raw-SQL path from 0004) and **saved searches** (EPIC-T auth).
+- EPIC-C vertical landings + the **EPIC-D Payload CMS** mount (page-builder).
+
+Token spend rough estimate: understand workflow + validator + repository extension + filter bar + route + search-params + ~30 tests + 4-lens review + fixes + full gate run — substantial.
+
+---
