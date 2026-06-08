@@ -285,3 +285,34 @@ All 11 packages green: format · typecheck · lint · test · guards. G2 enforce
 Token spend rough estimate: 8-agent parallel wave + integration/verification — substantial.
 
 ---
+
+## Phase B7 — wave-7: final EPIC-L UI batch (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `08b72d5` → `0a3ce03`
+Tests added: 23+16+21+27+16+18+20+12 = **153** (ui now totals **591 tests across 30 files**, 98.48% coverage)
+
+### Track B — the last 8 EPIC-L primitives (parallel workflow, RTL + axe)
+
+- **Combobox** (ARIA 1.2 editable: combobox/listbox, filter, activedescendant, full keyboard), **Popover** (non-modal floating panel, Escape/outside-click, focus move+restore), **Dropdown** (menu button: role=menu/menuitem, roving keyboard), **DatePicker** (in-component date math, role=grid calendar, keyboard date nav — no external date lib), **TimeSlotSelector** (real `<input type=radio>` per design-requirements §1), **MultiStepForm** (accessible stepper + aria-current, reuses Button), **FileDropzone** (drag-drop + keyboard-accessible file input + validation), **AntiSpamChallenge** (injectable Turnstile renderer — testable without the live script; Cloudflare is the declared sub-processor). All token-driven (G7), keyboard-operable, axe-clean (G9).
+
+### Integration fix
+
+- A nested re-export barrel (`DatePicker/index.ts` etc.) tripped G2 at 0/0 coverage. Added `src/**/index.ts` to the ui coverage exclude (pure re-exports carry no logic; the components they re-export are covered). Re-verified: ui 98.48% coverage, G2 green.
+
+### Verification
+
+All 11 packages green: format · typecheck · lint · test (591 ui) · guards. Critical full-package ui `tsc` run confirmed all 28 components coexist cleanly (the agents' concurrent per-component tsc runs had seen each other's in-progress files — the integrated run is the truth). CSS scanned — no raw colours.
+
+### Foundation status — Sprint-01 COMPLETE
+
+On `main`: **config** (12 CI guards + CI workflow + Playwright harness) · **tokens** · **validators** · **entitlement** · **i18n** · **db** (shared-DB+RLS multi-tenancy, §J core + satellite schema, audit/notify/consent, PrismaPackSource) · **auth** (Better Auth + RBAC) · **storage** · **observability** · **email** · **ui** (the full 28-component EPIC-L library). Every shared package, the §J schema, all twelve guards, auth, and the component library exist and are verified.
+
+### Remaining follow-ons (tracked, non-blocking)
+
+- React Email template set (`@estate/email`); better-auth table generation into the Prisma schema (D-011); Drawer Playwright responsive spec; the two owner design decisions (D-010 badge contrast, D-011 passkey dep).
+- **Next phase = the feature surfaces** (Sprint-02+): scaffold `apps/web` (the Next.js + Payload CMS app — this is where a dev server finally appears for `.claude/launch.json`) and build EPIC-C public site / EPIC-F catalogue / EPIC-H admin / etc., consuming the foundation.
+
+Token spend rough estimate: 8-agent final UI wave + integration + coverage fix — substantial.
+
+---
