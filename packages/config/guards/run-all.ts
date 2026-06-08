@@ -96,15 +96,19 @@ function loadSubProcessorManifest(): string[] {
   }
 }
 
-/** A changed test file that exercises a visual surface (so G11 applies). */
+/**
+ * A changed test file that exercises a visual surface (so G11 applies). A surface
+ * test renders UI, so it is a .tsx/.jsx file — pure-logic .ts tests (formatters,
+ * repositories, helpers) are not visual surfaces and are excluded.
+ */
 function isVisualSurfaceTest(file: string): boolean {
   const path = file.replace(/\\/g, '/');
-  const isTest = /\.(test|spec)\.[jt]sx?$/.test(path);
+  const isTest = /\.(test|spec)\.[jt]sx$/.test(path);
   if (!isTest) return false;
   return (
     path.startsWith('packages/ui/') ||
     path.startsWith('apps/web/') ||
-    /\.(visual|a11y)\.[jt]sx?$/.test(path)
+    /\.(visual|a11y)\.[jt]sx$/.test(path)
   );
 }
 
