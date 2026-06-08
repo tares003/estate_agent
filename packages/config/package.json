@@ -1,0 +1,40 @@
+{
+  "name": "@estate/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared tooling presets (tsconfig, ESLint, Prettier, Vitest) and the G1-G12 CI guards for the Estate Platform monorepo.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./tsconfig/react-library.json": "./tsconfig/react-library.json",
+    "./tsconfig/next.json": "./tsconfig/next.json",
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/react": "./eslint/react.js",
+    "./vitest/base": "./vitest/base.ts",
+    "./vitest/react": "./vitest/react.ts"
+  },
+  "files": ["tsconfig", "eslint", "vitest", "guards"],
+  "scripts": {
+    "guards": "tsx guards/run-all.ts",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-import-x": "^4.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "fast-glob": "^3.3.0",
+    "globals": "^15.0.0",
+    "jsdom": "^25.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}
