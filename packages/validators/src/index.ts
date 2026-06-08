@@ -19,3 +19,13 @@ export {
   type RepairRequest,
   type RepairUrgency,
 } from './repair-request.js';
+export {
+  propertySearchSchema,
+  parsePropertySearch,
+  PROPERTY_SORTS,
+  LISTING_TYPES,
+  DEFAULT_PAGE_SIZE,
+  type PropertySearch,
+  type PropertySort,
+  type ListingTypeFilter,
+} from './property-search.js';
