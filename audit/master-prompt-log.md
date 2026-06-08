@@ -421,3 +421,34 @@ All gates green: `tsc --noEmit` · ESLint (G4–G8, G12) · apps/web 39 tests (1
 Token spend rough estimate: detail page + enquiry action + form + consent/audit wiring + G4 rule enhancement + full gate run + verification — substantial.
 
 ---
+
+## Phase B12 — D-012: composite tenant foreign keys (cross-tenant FK hardening) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `d590211` → `db02d12` (RED) → `3df15b6` (GREEN)
+Tests added: 24 (`@estate/db` now 167 tests)
+
+A security-hardening wave closing audit finding **D-012**: Postgres validates a foreign key with RLS BYPASSED, so RLS alone protects only the row being written, not the existence check of the referenced parent. A user-supplied id (the enquiry form's hidden `property_id`) could therefore link a tenant-A child to a tenant-B parent.
+
+### Shipped
+
+- **`migrations/raw/0006_composite_tenant_fks.sql`** — a UNIQUE `(tenant_id, id)` index on each referenced parent (`branches`, `properties`) + a composite `(tenant_id, <fk>)` foreign key on every tenant-scoped child relation (8 in total: `agents`/`properties` → `branches`; `enquiries`/`repair_requests`/`viewings`/`property_images`/`property_documents`/`property_status_events` → `properties`). A reference must match `(tenant_id, id)`, so a cross-tenant id finds no parent and the write is rejected at the DB layer regardless of RLS.
+- Nullable relations use `ON DELETE SET NULL (<fk>)` (PG15+ **column-list** form) so a parent delete nulls only the fk and preserves the NOT NULL `tenant_id`; non-nullable relations CASCADE. MATCH SIMPLE lets a NULL fk (general enquiry / unassigned agent) skip the check. Idempotent.
+- **`src/composite-tenant-fks.test.ts`** — applies the REAL migration to minimal tables on pglite (PG16) and asserts: the single-column-FK **vulnerability demo** (cross-tenant ref wrongly accepted); an exhaustive **all-8** sweep (same-tenant accepted, cross-tenant rejected with a *foreign-key* violation); **UPDATE** re-pointing rejected; `SET NULL` preserves `tenant_id` on **both** parents; CASCADE deletes the child; NULL fk allowed; plus a static content guard over the migration.
+
+### Adversarial review (Ultracode)
+
+Before committing, the migration + test were reviewed by a 4-lens workflow (Postgres-correctness, completeness, security/isolation, test-validity). Postgres-correctness and completeness passed clean; the security and test-validity lenses raised concerns, all folded in: FK-violation message assertions, all-8 behavioural coverage, UPDATE coverage, a second SET NULL parent, and an explicit vulnerability demo. The "harden the soft Agent references too" finding was **declined** (they carry no `@relation` by design and are server-set, not user input) and recorded as **D-016** instead.
+
+### Verification
+
+All gates green: `@estate/db` 167 tests (incl. the migration applied live on pglite) · typecheck · ESLint · diff guards G1/G2/G10/G11 · prettier. Full apply against PostgreSQL runs via Testcontainers in CI.
+
+### Next
+
+- **D-013** — wire Cloudflare Turnstile on the public forms (in progress).
+- Resume the **EPIC-F property search & filter** wave (parked when D-012/D-013 were handed over).
+
+Token spend rough estimate: schema enumeration + migration + comprehensive pglite spec + 4-lens adversarial review + fixes + verification — substantial.
+
+---
