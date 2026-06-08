@@ -452,3 +452,31 @@ All gates green: `@estate/db` 167 tests (incl. the migration applied live on pgl
 Token spend rough estimate: schema enumeration + migration + comprehensive pglite spec + 4-lens adversarial review + fixes + verification — substantial.
 
 ---
+
+## Phase B13 — D-013: Cloudflare Turnstile anti-spam on the public enquiry form (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `a968252` → `8b4c59b` (RED) → `e1e4895` (GREEN)
+Tests added: 13 (apps/web now 52 tests)
+
+Closes audit finding **D-013**: the public buyer-enquiry form did not yet capture/verify a Cloudflare Turnstile token, though CLAUDE.md §9 mandates it on every form submission.
+
+### Shipped
+
+- **`apps/web/app/lib/turnstile.ts`** — `verifyTurnstile(token, ip, verifier?)` over an injectable `TurnstileVerifier`. The default `cloudflareVerifier` POSTs to Cloudflare's `siteverify` with the operator secret and **fails closed** (empty token / non-2xx / malformed JSON / network error → `false`). `getTurnstileVerifier()` resolves from env: real verifier when `TURNSTILE_SECRET_KEY` is set; **allow** in non-production (dev ergonomics) and **deny** in production when unset (a missing secret must never silently disable the gate).
+- **Key ownership decision (documented):** Turnstile keys are **operator-level** (env, per-deployment) — Cloudflare is operator infrastructure here (it also fronts the origin as the CDN). The interface leaves a per-tenant swap open later, mirroring the per-tenant Maps-key pattern.
+- **`submitEnquiry`** now verifies the `cf-turnstile-response` token (with the request IP) **before** the `withTenant` write — on failure it returns a retry-the-challenge error and persists **nothing** (no consent, enquiry or audit row).
+- **`EnquiryForm`** renders `@estate/ui`'s `AntiSpamChallenge` + a hidden `cf-turnstile-response` field **when a sitekey is configured** (omitted in dev/test, where the server verifier allows). Designed for reuse by the viewing / valuation / repair forms.
+
+### Verification
+
+All gates green: apps/web 52 tests (turnstile lib 100% cov; actions 98.7%/89.5% branch; all scope thresholds met) · typecheck · ESLint (G4–G8, G12) · diff guards G1/G2/G10/G11 · `next build` (detail route 115 kB First Load JS, within budget) · prettier. Cloudflare/Turnstile already in `docs/sub-processors.json`, so G10 + the GDPR sub-processor disclosure already cover the challenge token.
+
+### Next
+
+- Both spawned hardening tasks (D-012, D-013) are now **RESOLVED**.
+- Resume the parked **EPIC-F property search & filter** wave, or take direction.
+
+Token spend rough estimate: Turnstile verifier + action gate + form wiring + 13 tests + full gate run + verification — moderate.
+
+---
