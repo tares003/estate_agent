@@ -32,15 +32,19 @@ model PlatformTenant {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  users          User[]
-  branches       Branch[]
-  agents         Agent[]
-  properties     Property[]
-  enquiries      Enquiry[]
-  viewings       Viewing[]
-  valuations     Valuation[]
-  repairRequests RepairRequest[]
-  contacts       Contact[]
+  users                User[]
+  branches             Branch[]
+  agents               Agent[]
+  properties           Property[]
+  enquiries            Enquiry[]
+  viewings             Viewing[]
+  valuations           Valuation[]
+  repairRequests       RepairRequest[]
+  contacts             Contact[]
+  propertyImages       PropertyImage[]
+  propertyDocuments    PropertyDocument[]
+  notes                Note[]
+  propertyStatusEvents PropertyStatusEvent[]
 
   @@map("platform_tenants")
 }
@@ -227,11 +231,14 @@ model Property {
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
-  tenant     PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch     Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  enquiries  Enquiry[]
-  viewings   Viewing[]
-  repairs    RepairRequest[]
+  tenant       PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  enquiries    Enquiry[]
+  viewings     Viewing[]
+  repairs      RepairRequest[]
+  images       PropertyImage[]
+  documents    PropertyDocument[]
+  statusEvents PropertyStatusEvent[]
 
   @@unique([tenantId, reference])
   @@unique([tenantId, slug])
@@ -361,6 +368,104 @@ model Contact {
   @@map("contacts")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// §J satellite entities — the records that hang off the core catalogue.
+//
+// PropertyImage / PropertyDocument carry a property's media + paperwork
+// (EPIC-F §F.1); Note is the polymorphic CRM/internal annotation (master spec
+// §J.5); PropertyStatusEvent is the append-only audit of market_status changes
+// (master spec §J.3 lifecycle). Every model is TENANT-SCOPED: it carries
+// tenant_id (uuid), relates back to the PlatformTenant registry, indexes
+// tenant_id, and is isolated by the tenant_isolation RLS policy in
+// migrations/raw/0005_satellite_rls.sql.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A gallery image for a property (EPIC-F §F.1). Uploaded via pre-signed direct
+/// upload (FR-F-6); `width`/`height` are populated by the post-process job
+/// (FR-F-7) so are optional. `sortOrder` preserves gallery order across
+/// re-uploads; exactly one row per property is the `isPrimary` hero.
+model PropertyImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  url        String
+  alt        String
+  sortOrder  Int      @default(0) @map("sort_order")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, propertyId])
+  @@map("property_images")
+}
+
+/// A document attached to a property — EPC, floorplan, brochure or other
+/// paperwork (EPIC-F §F.1). Discriminated by DocumentType.
+model PropertyDocument {
+  id         String       @id @default(uuid()) @db.Uuid
+  tenantId   String       @map("tenant_id") @db.Uuid
+  propertyId String       @map("property_id") @db.Uuid
+  type       DocumentType
+  title      String
+  url        String
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, propertyId])
+  @@map("property_documents")
+}
+
+/// A free-text internal/CRM annotation against any entity (master spec §J.5).
+/// Polymorphic by (entityType, entityId) — the simplest defensible shape, so a
+/// single table backs notes on properties, enquiries, contacts, etc. The
+/// authoring agent is optional (system-generated notes carry none). NOT a hard
+/// FK to Agent: notes survive an agent leaving.
+model Note {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id") @db.Uuid
+  body          String
+  authorAgentId String?  @map("author_agent_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, entityType, entityId])
+  @@map("notes")
+}
+
+/// Append-only audit of a property's market_status transitions (master spec
+/// §J.3 lifecycle). `fromStatus` is null for the first transition. Reuses the
+/// MarketStatus enum. The acting agent is optional (system/import changes carry
+/// none).
+model PropertyStatusEvent {
+  id                String        @id @default(uuid()) @db.Uuid
+  tenantId          String        @map("tenant_id") @db.Uuid
+  propertyId        String        @map("property_id") @db.Uuid
+  fromStatus        MarketStatus? @map("from_status")
+  toStatus          MarketStatus  @map("to_status")
+  changedByAgentId  String?       @map("changed_by_agent_id") @db.Uuid
+  changedAt         DateTime      @default(now()) @map("changed_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, propertyId])
+  @@map("property_status_events")
+}
+
 /// The vertical discriminator for a property (master spec §F; PRODUCT.md §2).
 /// Core ships the always-on verticals; vertical packs (new_homes, commercial,
 /// business_transfer, care_homes) extend behaviour, not this enum's core values.
@@ -471,4 +576,16 @@ enum RepairStatus {
   cancelled
 
   @@map("repair_status")
+}
+
+/// The kind of document attached to a property (EPIC-F §F.1). `epc` is the
+/// Energy Performance Certificate; `floorplan` and `brochure` are the common
+/// marketing attachments; `other` is the catch-all for anything else.
+enum DocumentType {
+  epc
+  floorplan
+  brochure
+  other
+
+  @@map("document_type")
 }
