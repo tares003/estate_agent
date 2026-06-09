@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     menus: Menu;
     email_templates: EmailTemplate;
+    email_settings: EmailSetting;
     cms_users: CmsUser;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -83,6 +84,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     menus: MenusSelect<false> | MenusSelect<true>;
     email_templates: EmailTemplatesSelect<false> | EmailTemplatesSelect<true>;
+    email_settings: EmailSettingsSelect<false> | EmailSettingsSelect<true>;
     cms_users: CmsUsersSelect<false> | CmsUsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -461,6 +463,32 @@ export interface EmailTemplate {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email_settings".
+ */
+export interface EmailSetting {
+  id: number;
+  /**
+   * Owning platform tenant — set automatically from the request.
+   */
+  tenant: string;
+  host: string;
+  port: number;
+  /**
+   * Use implicit TLS on connect (port 465).
+   */
+  secure?: boolean | null;
+  user: string;
+  /**
+   * SMTP password / app password. Encrypted at rest; never shown again.
+   */
+  pass?: string | null;
+  fromAddress: string;
+  replyTo?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cms_users".
  */
 export interface CmsUser {
@@ -524,6 +552,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'email_templates';
         value: number | EmailTemplate;
+      } | null)
+    | ({
+        relationTo: 'email_settings';
+        value: number | EmailSetting;
       } | null)
     | ({
         relationTo: 'cms_users';
@@ -794,6 +826,22 @@ export interface EmailTemplatesSelect<T extends boolean = true> {
         description?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email_settings_select".
+ */
+export interface EmailSettingsSelect<T extends boolean = true> {
+  tenant?: T;
+  host?: T;
+  port?: T;
+  secure?: T;
+  user?: T;
+  pass?: T;
+  fromAddress?: T;
+  replyTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }
