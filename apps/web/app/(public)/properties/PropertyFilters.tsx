@@ -1,4 +1,4 @@
-import { Button, NumberField, Select, type SelectOption } from '@estate/ui';
+import { Button, NumberField, Select, TextField, type SelectOption } from '@estate/ui';
 import { LISTING_TYPES, type PropertySearch } from '@estate/validators';
 import { LISTING_TYPE_LABELS } from './search-params.js';
 
@@ -57,6 +57,12 @@ export function PropertyFilters({ current }: PropertyFiltersProps) {
       aria-label="Filter properties"
       className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
     >
+      <TextField
+        name="location"
+        label="Location"
+        placeholder="Town or postcode"
+        defaultValue={current.location ?? ''}
+      />
       <Select
         name="saleType"
         label="Buy or rent"

@@ -51,6 +51,7 @@ export interface PropertyDetail extends PropertyCardProps {
 
 /** The catalogue filter / sort / pagination inputs (master spec §C.10 / §K.1). */
 export interface PropertySearchOptions {
+  location?: string;
   saleType?: 'sale' | 'rent';
   listingType?: string;
   priceMin?: number;
@@ -96,6 +97,16 @@ function buildWhere(options: PropertySearchOptions): Record<string, unknown> {
   const where: Record<string, unknown> = { publishedAt: { not: null }, deletedAt: null };
   if (options.saleType) where['saleType'] = options.saleType;
   if (options.listingType) where['listingType'] = options.listingType;
+
+  // Free-text location: match the town (case-insensitive substring) OR a postcode
+  // prefix (e.g. "Didsbury" or "M20"). Geographic radius search (PostGIS) is a
+  // later phase; this is the text-based location filter.
+  if (options.location) {
+    where['OR'] = [
+      { town: { contains: options.location, mode: 'insensitive' } },
+      { postcode: { startsWith: options.location.toUpperCase() } },
+    ];
+  }
 
   const price: Record<string, number> = {};
   if (options.priceMin != null) price['gte'] = options.priceMin;

@@ -60,11 +60,18 @@ const optionalPounds = z.preprocess(
   z.coerce.number().int().min(0).max(999_999_999).optional().catch(undefined),
 );
 
+/** An optional trimmed free-text value (max 100 chars); blank/over-long is dropped. */
+const optionalText = z.preprocess(
+  blankToUndefined,
+  z.string().trim().min(1).max(100).optional().catch(undefined),
+);
+
 /** An optional enum value; anything not in the set is dropped (treated as "no filter"). */
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess(blankToUndefined, z.enum(values).optional().catch(undefined));
 
 export const propertySearchSchema = z.object({
+  location: optionalText,
   saleType: optionalEnum(['sale', 'rent'] as const),
   listingType: optionalEnum(LISTING_TYPES),
   priceMin: optionalPounds,

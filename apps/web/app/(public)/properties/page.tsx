@@ -22,6 +22,7 @@ function toOptions(search: PropertySearch): PropertySearchOptions {
   return {
     sort: search.sort,
     page: search.page,
+    ...(search.location ? { location: search.location } : {}),
     ...(search.saleType ? { saleType: search.saleType } : {}),
     ...(search.listingType ? { listingType: search.listingType } : {}),
     ...(search.priceMin != null ? { priceMin: search.priceMin * 100 } : {}),

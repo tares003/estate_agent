@@ -24,6 +24,7 @@ const GBP = new Intl.NumberFormat('en-GB', {
 
 /** The query keys we serialise, in a stable order (stable, shareable URLs). */
 const KEYS: ReadonlyArray<keyof PropertySearch> = [
+  'location',
   'saleType',
   'listingType',
   'priceMin',
@@ -75,6 +76,7 @@ export function activeChips(search: PropertySearch): FilterChip[] {
     chips.push({ key, label, removeQuery: toSearchQuery(search, { [key]: undefined, page: 1 }) });
   };
 
+  if (search.location) add('location', `In ${search.location}`);
   if (search.saleType) add('saleType', search.saleType === 'sale' ? 'For sale' : 'To rent');
   if (search.listingType && LISTING_TYPES.includes(search.listingType)) {
     add('listingType', LISTING_TYPE_LABELS[search.listingType]);
