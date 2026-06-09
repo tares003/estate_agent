@@ -69,6 +69,35 @@ export async function getPublishedPage(
   };
 }
 
+/** A published page reduced to what the sitemap needs. */
+export interface SitemapPage {
+  slug: string;
+  updatedAt: Date;
+}
+
+/**
+ * List the tenant's published pages for the sitemap (FR-D-4: drafts never appear
+ * until published). Tenant + _status filtered explicitly (the Local API runs
+ * privileged). Returns slug + last-modified for crawler freshness.
+ */
+export async function listPublishedPages(tenantId: string): Promise<SitemapPage[]> {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: 'pages',
+    where: {
+      and: [{ tenant: { equals: tenantId } }, { _status: { equals: 'published' } }],
+    },
+    depth: 0,
+    limit: 1000,
+    pagination: false,
+  });
+
+  return result.docs.map((doc) => ({
+    slug: String(doc.slug ?? ''),
+    updatedAt: doc.updatedAt ? new Date(String(doc.updatedAt)) : new Date(),
+  }));
+}
+
 /**
  * Fetch the CMS-managed navigation menu for a location + tenant (FR-D-7), or null
  * if none. The Local API runs PRIVILEGED, so the tenant guard MUST be an explicit
