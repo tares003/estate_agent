@@ -1022,3 +1022,32 @@ Per-tenant SMTP configuration, encrypted at rest — the storage the FR-D-8 send
 - The admin **"send test" button** (Payload custom UI / endpoint) that calls `renderTemplate` + `getTenantMailer` + `sendTemplatedEmail` — the building blocks all exist + are tested; only the admin-UI wiring remains. Operator (platform-level) SMTP via env is separate (master spec §S).
 
 ---
+
+## Phase B30 — hostname → tenant resolution core (EPIC-S FR-S-1) (2026-06-09)
+
+Status: **core complete** (branch feat/EPIC-S-tenant-resolution → PR #4; off main after PR #3 merged)
+Main: RED → GREEN (`apps/web/tenant-host.ts`)
+
+> PR #3 (B29 per-tenant SMTP) **merged to main** (`cee3735`) on owner authorisation.
+
+The reusable, fully-tested core that replaces the dev-tenant stub: resolve the platform tenant from the request hostname.
+
+- **`parseTenantHost(host, base)`** (pure) → `apex` (base / www / localhost) · `operator` (`admin.<base>`) · `subdomain` (a single-label tenant slug) · `custom` (a domain not under `<base>`). Port-stripped, lowercased.
+- **`resolveTenantIdByHost(host, base, registry)`** → active tenant id or null; apex/operator never query the registry.
+- **`createTenantRegistry(db)`** → looks up **active** tenants by slug / custom domain over a structural client (`platform_tenants` is the registry table — not tenant-scoped, so no GUC). DB-free to unit-test; the real Prisma delegate satisfies it.
+- 100% lines, 13 tests.
+
+### Deliberate scope boundary — the live proxy rewire is a separate step
+
+The proxy is the **single** tenant-resolution point that BOTH the app (`getCurrentTenantId`) and the Payload access functions (`tenantScopedAccess`) depend on, via the `x-estate-tenant` header. Wiring real hostname resolution there needs an architecture decision with **high blast radius on a security-critical flow**:
+
+- **Option A** — Node-runtime middleware (`proxy.ts` `runtime: 'nodejs'`) doing a cached Prisma host→id lookup. Cleanest (single point, existing contract intact) but Prisma-in-middleware has known bundling/runtime caveats — needs verification.
+- **Option B** — dual resolution: `getCurrentTenantId` + `getTenantFromReq` each resolve from the host header (cached), proxy stops resolving. No middleware-Prisma, but touches two security-critical consumers + makes the access functions async.
+
+Either deserves an ADR + a focused, well-smoked phase (incl. a cross-tenant negative test per FR-S-2). So the proxy keeps its `DEV_TENANT_ID` stub for now (unchanged, zero risk) and this phase ships the proven resolution core it will call. The rest of EPIC-S (provisioning, lifecycle, custom-domain wizard, TLS, billing-metering) remains its own large epic.
+
+### Verification
+
+13 unit tests @ 100% lines; typecheck + repo lint + prettier + diff guards G1/G2/G10/G11 — all green. Proxy + access flow untouched.
+
+---
