@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildAdminPropertyWhere,
+  getAdminProperty,
   listAdminProperties,
+  type AdminPropertyDetail,
+  type AdminPropertyDetailReader,
   type AdminPropertyReader,
   type AdminPropertyRow,
 } from './admin-properties.js';
@@ -60,5 +63,53 @@ describe('listAdminProperties', () => {
     const { db, calls } = reader([]);
     await listAdminProperties(db, { page: 2, pageSize: 500 });
     expect(calls.findMany[0]).toMatchObject({ skip: 60, take: 60 });
+  });
+});
+
+describe('getAdminProperty', () => {
+  function detail(over: Partial<AdminPropertyDetail> = {}): AdminPropertyDetail {
+    return {
+      id: 'p1',
+      title: 'Edwardian semi',
+      displayAddress: 'Palatine Road, Didsbury',
+      postcode: 'M20 6RE',
+      saleType: 'sale',
+      marketStatus: 'for_sale',
+      price: 52_500_000,
+      bedrooms: 4,
+      bathrooms: 2,
+      receptions: 2,
+      description: 'A handsome semi.',
+      publishedAt: null,
+      ...over,
+    };
+  }
+
+  function reader(result: AdminPropertyDetail | null): {
+    db: AdminPropertyDetailReader;
+    calls: unknown[];
+  } {
+    const calls: unknown[] = [];
+    const db: AdminPropertyDetailReader = {
+      property: {
+        findFirst: vi.fn(async (args) => {
+          calls.push(args);
+          return result;
+        }),
+      },
+    };
+    return { db, calls };
+  }
+
+  it('loads a listing by id, drafts included, soft-deleted excluded', async () => {
+    const { db, calls } = reader(detail());
+    const result = await getAdminProperty(db, 'p1');
+    expect(result?.id).toBe('p1');
+    expect(calls[0]).toEqual({ where: { id: 'p1', deletedAt: null } });
+  });
+
+  it('returns null when there is no such listing', async () => {
+    const { db } = reader(null);
+    expect(await getAdminProperty(db, 'missing')).toBeNull();
   });
 });

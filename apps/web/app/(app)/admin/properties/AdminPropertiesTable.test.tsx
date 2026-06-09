@@ -29,7 +29,11 @@ describe('AdminPropertiesTable', () => {
       <AdminPropertiesTable result={result({ items: [row({ marketStatus: 'under_offer' })] })} />,
     );
     const table = within(screen.getByRole('table'));
-    expect(table.getByText('Palatine Road, Didsbury')).toBeInTheDocument();
+    // the address links to the admin detail/edit page
+    expect(table.getByRole('link', { name: 'Palatine Road, Didsbury' })).toHaveAttribute(
+      'href',
+      '/admin/properties/p1',
+    );
     expect(table.getByText('For sale')).toBeInTheDocument(); // saleType
     expect(table.getByText('Under offer')).toBeInTheDocument(); // humanised marketStatus
     expect(table.getByText('£525,000')).toBeInTheDocument();
