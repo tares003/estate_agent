@@ -548,3 +548,37 @@ All gates green: @estate/validators 84 tests (100% cov) · apps/web 73 tests (ca
 Token spend rough estimate: validator field + where OR + filter input + chip + ~7 tests + full gate run — modest (reused B14 patterns).
 
 ---
+
+## Phase B16 — Real Postgres 16 + PostGIS Testcontainers integration suite (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `9431336` → `<this commit>`
+Tests added: 4 (opt-in integration suite; `@estate/db` unit run unchanged at 167)
+
+**Docker became available** (the daemon was down all prior session), unblocking the "Testcontainers in CI" path the migration comments always referenced. This wave closes that gap: the full data layer is now verified against a **real PostgreSQL 16 + PostGIS** engine for the first time — pglite only ever pattern-tested it (no PostGIS, superuser-only).
+
+### Shipped
+
+- **`@estate/db` deps**: `@testcontainers/postgresql`, `pg`, `@types/pg` (dev). New `vitest.integration.config.ts` + `test:integration` script; the default `pnpm test` **excludes** `*.integration.test.ts` so the fast, Docker-free unit run is unchanged.
+- **`src/real-postgres.integration.test.ts`** — boots `postgis/postgis:16-3.4`, runs `prisma db push` (the real schema + Prisma's single-column FKs), applies raw migrations **0001–0006** in order, then asserts:
+  1. **PostGIS**: the 0004 trigger geocodes `geog` on insert; `ST_DWithin` radius filtering returns the right properties **ordered by distance** (5km → {p1,p2}; 500m → {p1}).
+  2. **RLS**: under a non-superuser `app_user` role, the `tenant_isolation` policy admits only the current tenant's rows and **fails closed** when the GUC is unset.
+  3. **Composite FK (0006)**: a cross-tenant `enquiry.property_id` is rejected even as a superuser (RLS bypassed → proves the FK, not RLS), and `0006` **dropped** the Prisma `enquiries_property_id_fkey` and **added** `enquiries_tenant_property_fkey`.
+- Suite `describe.skipIf(!docker)` — skips gracefully where Docker is absent.
+
+### Finding
+
+- **D-018** (Low): `@updatedAt` columns have no DB default, so raw-SQL inserts (seed / raw tenant provisioning) must supply `updated_at` — surfaced when the seed `INSERT` into `platform_tenants` first failed the NOT-NULL constraint. App code (Prisma) is unaffected.
+
+### Verification
+
+`pnpm --filter @estate/db test:integration` → 4/4 pass on real Postgres+PostGIS (~9s warm). Default unit run 167/167 (integration excluded) · typecheck · ESLint · diff guards G1/G2/G10/G11 · prettier.
+
+### Next
+
+- **EPIC-F radius search (B17)** — now properly testable: build the `ST_DWithin` query path into the catalogue (the location input from B15 + browser geolocation / map coords), verified by an integration test like this one. Still needs a units/default decision (miles, default radius) — pick + document.
+- Page-level **Playwright e2e** is also unblocked now (a real Postgres can back the running app).
+
+Token spend rough estimate: Testcontainers + pg setup + integration test (PostGIS/RLS/FK) + image pull + iteration + gate run — substantial.
+
+---
