@@ -7,13 +7,20 @@ import { render, screen } from '@testing-library/react';
 import HomePage from './page.js';
 
 describe('HomePage', () => {
-  it('renders the hero heading and the primary calls to action', () => {
+  it('renders the hero heading and the primary calls to action as navigating links', () => {
     render(<HomePage />);
     expect(
       screen.getByRole('heading', { level: 1, name: /Move with people/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Browse properties' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Get a free valuation' })).toBeInTheDocument();
+    // The CTAs must navigate — they are links, not inert buttons.
+    expect(screen.getByRole('link', { name: 'Browse properties' })).toHaveAttribute(
+      'href',
+      '/properties',
+    );
+    expect(screen.getByRole('link', { name: 'Get a free valuation' })).toHaveAttribute(
+      'href',
+      '/valuation',
+    );
   });
 
   it('exposes a main landmark and a section heading hierarchy', () => {

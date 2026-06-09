@@ -1294,3 +1294,20 @@ The contact directory at `/admin/contacts` — closes the conversion loop: conve
 Per-type tabs (landlord/tenant/vendor/buyer), duplicate detection + merge, compliance items with auto-expiry alerts, the contact detail/edit surface, and a link from the converted enquiry to its contact.
 
 ---
+
+## Phase B41 — fix: homepage hero CTAs do nothing on click (2026-06-09)
+
+Status: **complete** (branch fix/EPIC-C-hero-cta-links)
+
+Bug (user-reported): clicking "Browse properties" / "Get a free valuation" on the homepage hero did nothing. Root cause — the CTAs were `@estate/ui` `Button`s, which render a real `<button type="button">` with no `onClick` and no navigation. They were placeholder buttons from the EPIC-C homepage skeleton, never wired to a destination.
+
+Fix — the CTAs are navigation, so they must be links:
+- `packages/ui/src/Button/Button.tsx`: extracted + exported `buttonClassName({ variant, size, loading })` — the same `btn` classes `Button` renders. `.btn` is class-based (element-agnostic), so an `<a class="btn …">` is visually identical. Button now composes its own className from it (no behaviour change; Button.tsx stays 100%).
+- `apps/web/app/(app)/page.tsx`: the two hero CTAs are now Next `<Link>`s — "Browse properties" → `/properties` (live), "Get a free valuation" → `/valuation` (the canonical destination the site nav already points "Sell" to; the route lands with the valuation epic). Proper client-side navigation, identical styling.
+
+These were the only inert `<Button>` CTAs in the app (a repo-wide scan confirmed all other Buttons are form submits).
+
+### Verification
+RED→GREEN: the homepage test flipped from asserting `getByRole('button', …)` to `getByRole('link', { name: 'Browse properties' }).toHaveAttribute('href', '/properties')` (+ valuation), and 3 new `buttonClassName` tests. `@estate/ui` 594 tests (Button.tsx 100%), web suite green; tsc (web + ui) + `next build` (homepage route compiles) + repo lint + prettier + diff guards G1/G2/G7/G9/G10/G11 — all green. A live click-through needs the DB-backed dev server (proxy resolves a tenant per request); the link + href is proven by the test, which is more precise than a screenshot.
+
+---

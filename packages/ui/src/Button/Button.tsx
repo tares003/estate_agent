@@ -37,6 +37,20 @@ function cx(...parts: Array<string | false | undefined>): string {
 }
 
 /**
+ * The `btn` class string for a given variant/size — the same classes `Button`
+ * renders. Use it to style a real link (a CTA that navigates) as a button:
+ * `<Link className={buttonClassName({ variant: 'primary', size: 'lg' })}>` — an
+ * anchor is the correct element for navigation (a `<button>` does nothing without
+ * an `onClick`), and `.btn` is element-agnostic so the styling is identical.
+ */
+export function buttonClassName(
+  options: { variant?: ButtonVariant; size?: ButtonSize; loading?: boolean } = {},
+): string {
+  const { variant = 'primary', size = 'md', loading = false } = options;
+  return cx('btn', variant, size, loading && 'loading');
+}
+
+/**
  * Button — the first-party EPIC-L atom. Renders a real `<button>`, is fully
  * token-driven via `Button.css` (G7), and is keyboard- and touch-accessible
  * (G9): focus ring comes from `base.css`, disabled uses the native attribute,
@@ -63,7 +77,7 @@ export const Button = forwardRef(function Button(
     <button
       ref={ref}
       type={type}
-      className={cx('btn', variant, size, loading && 'loading', className)}
+      className={cx(buttonClassName({ variant, size, loading }), className)}
       disabled={isDisabled}
       aria-busy={loading}
       {...rest}

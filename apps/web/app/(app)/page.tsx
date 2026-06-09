@@ -1,10 +1,14 @@
-import { Button } from '@estate/ui';
+import Link from 'next/link';
+import { buttonClassName } from '@estate/ui';
 
 /**
  * Public homepage skeleton (EPIC-C). A Server Component that composes the
  * @estate/ui primitives and token-driven Tailwind utilities — proving the
  * design-system integration end to end. Real content/blocks come with the
  * EPIC-C page-builder wave.
+ *
+ * The hero CTAs are real links (they navigate) styled as buttons via
+ * `buttonClassName` — a `<button>` with no handler does nothing.
  */
 export default function HomePage() {
   return (
@@ -18,12 +22,18 @@ export default function HomePage() {
             tenancy — all in one place.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Button variant="primary" size="lg">
+            <Link
+              href="/properties"
+              className={buttonClassName({ variant: 'primary', size: 'lg' })}
+            >
               Browse properties
-            </Button>
-            <Button variant="secondary" size="lg">
+            </Link>
+            <Link
+              href="/valuation"
+              className={buttonClassName({ variant: 'secondary', size: 'lg' })}
+            >
               Get a free valuation
-            </Button>
+            </Link>
           </div>
         </div>
       </section>

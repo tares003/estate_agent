@@ -1,4 +1,4 @@
-export { Button } from './Button/Button.js';
+export { Button, buttonClassName } from './Button/Button.js';
 export type { ButtonProps, ButtonVariant, ButtonSize } from './Button/Button.js';
 
 export { TextField, EmailField, PhoneField, NumberField } from './TextField/index.js';
