@@ -12,9 +12,11 @@ vi.mock('../../lib/tenant.js', () => ({
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const getStaffActor = vi.fn();
+const getStaffUserId = vi.fn();
 const requireStaffPermission = vi.fn();
 vi.mock('../../lib/staff-session.js', () => ({
   getStaffActor: () => getStaffActor(),
+  getStaffUserId: () => getStaffUserId(),
   requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
 }));
 
@@ -22,8 +24,13 @@ const audit = vi.fn();
 const findFirst = vi.fn();
 const update = vi.fn();
 const create = vi.fn();
+const eventCreate = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-  fn({ enquiry: { findFirst, update }, contact: { create } }),
+  fn({
+    enquiry: { findFirst, update },
+    contact: { create },
+    enquiryStatusEvent: { create: eventCreate },
+  }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
@@ -44,6 +51,7 @@ beforeEach(() => {
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
   getStaffActor.mockResolvedValue('agent:dev-staff');
+  getStaffUserId.mockResolvedValue(null);
   requireStaffPermission.mockResolvedValue(undefined);
   findFirst.mockResolvedValue({
     id: ENQ,
@@ -54,6 +62,7 @@ beforeEach(() => {
   });
   create.mockResolvedValue({ id: CONTACT });
   update.mockResolvedValue({});
+  eventCreate.mockResolvedValue({});
 });
 
 describe('convertEnquiry', () => {
@@ -76,6 +85,16 @@ describe('convertEnquiry', () => {
       },
     });
     expect(update).toHaveBeenCalledWith({ where: { id: ENQ }, data: { status: 'converted' } });
+    // the conversion is also recorded on the status timeline (from → converted)
+    expect(eventCreate).toHaveBeenCalledWith({
+      data: {
+        tenantId: TENANT,
+        enquiryId: ENQ,
+        fromStatus: 'contacted',
+        toStatus: 'converted',
+        changedByAgentId: null,
+      },
+    });
     expect(audit).toHaveBeenCalledWith(expect.anything(), {
       tenantId: TENANT,
       actor: 'agent:dev-staff',

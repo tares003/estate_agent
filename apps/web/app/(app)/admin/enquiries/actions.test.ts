@@ -12,17 +12,20 @@ vi.mock('../../lib/tenant.js', () => ({
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const getStaffActor = vi.fn();
+const getStaffUserId = vi.fn();
 const requireStaffPermission = vi.fn();
 vi.mock('../../lib/staff-session.js', () => ({
   getStaffActor: () => getStaffActor(),
+  getStaffUserId: () => getStaffUserId(),
   requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
 }));
 
 const audit = vi.fn();
 const findFirst = vi.fn();
 const update = vi.fn();
+const eventCreate = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-  fn({ enquiry: { findFirst, update } }),
+  fn({ enquiry: { findFirst, update }, enquiryStatusEvent: { create: eventCreate } }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
@@ -42,9 +45,11 @@ beforeEach(() => {
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
   getStaffActor.mockResolvedValue('agent:dev-staff');
+  getStaffUserId.mockResolvedValue(null);
   requireStaffPermission.mockResolvedValue(undefined);
   findFirst.mockResolvedValue({ id: ENQ, status: 'new' });
   update.mockResolvedValue({});
+  eventCreate.mockResolvedValue({});
 });
 
 describe('updateEnquiryStatus', () => {
@@ -58,6 +63,16 @@ describe('updateEnquiryStatus', () => {
     expect(requireStaffPermission).toHaveBeenCalledWith('enquiry.write');
     expect(withTenant).toHaveBeenCalledWith({}, TENANT, expect.any(Function));
     expect(update).toHaveBeenCalledWith({ where: { id: ENQ }, data: { status: 'contacted' } });
+    // an append-only status-timeline event is recorded in the same transaction
+    expect(eventCreate).toHaveBeenCalledWith({
+      data: {
+        tenantId: TENANT,
+        enquiryId: ENQ,
+        fromStatus: 'new',
+        toStatus: 'contacted',
+        changedByAgentId: null,
+      },
+    });
     expect(audit).toHaveBeenCalledWith(expect.anything(), {
       tenantId: TENANT,
       actor: 'agent:dev-staff',

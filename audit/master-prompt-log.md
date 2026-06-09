@@ -1333,3 +1333,20 @@ The full sixteen pre-built reports (time-to-first-contact needs a status-event t
 EPIC-I backend (status/notes/reports/conversion, #7–#10) → EPIC-H admin UI (shell/queue/detail/actions/contacts, #11–#15) → fix homepage CTAs (#16) → reports page (this). The CRM is operable end-to-end and its key metric is visible. Next: EPIC-N (staff sessions/roster) to unlock assignment (FR-I-3), SLA (FR-I-4 + a status-event timeline), saved views (FR-I-9), and real RBAC behind the staff-session seam.
 
 ---
+
+## Phase B43 — EPIC-I enquiry status-event timeline: table + RLS + action wiring (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-I-status-events)
+
+The append-only **enquiry status timeline** (master spec §I.3) — the foundation for the CRM activity feed (FR-H-3) and for SLA / time-to-first-contact metrics (FR-I-4 / FR-I-10). Mirrors `PropertyStatusEvent`.
+
+- `packages/db` — new `EnquiryStatusEvent` model (`enquiryId`, `fromStatus?`, `toStatus`, `changedByAgentId?`, `changedAt`; soft `enquiryId` reference like `Note.entityId`; tenant relation + back-relation on `PlatformTenant`). New raw migration `0007_enquiry_status_events_rls.sql` (ENABLE + FORCE RLS + fail-closed `tenant_isolation` policy, same shape as 0003/0005). `prisma generate` clean.
+- `apps/web/.../actions.ts` (`updateEnquiryStatus`) + `.../conversion-actions.ts` (`convertEnquiry`): both now write an `EnquiryStatusEvent` (from → to, `changedByAgentId` from the `getStaffUserId` seam) in the **same tenant transaction** as the update + audit row — so the timeline can never diverge from the actual status.
+
+### Verification
+db: 5 new tests (schema-shape; 0007 RLS assertions; pglite isolation — admits only the tenant's rows, fails closed unset, blocks cross-tenant insert), full db suite 174 passed. web: the two action tests now assert the event is created (from/to/agent) in-transaction; full app suite 376 passed; the actions meet their scope threshold. Runtime smoke: **`prisma db push` against Docker PostGIS 16** applied `enquiry_status_events` — `from_status`/`to_status enquiry_status`, `enquiry_id`/`changed_by_agent_id uuid`, `changed_at` default now, + the `(tenant_id, enquiry_id)` index. tsc + `next build` + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G4/G9/G10/G11 — all green.
+
+### Next (B44)
+A `listEnquiryStatusEvents` read model + render the timeline on the enquiry detail page (FR-H-3 activity feed); then SLA (FR-I-4) + time-to-first-contact can compute from this.
+
+---
