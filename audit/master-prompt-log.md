@@ -936,3 +936,21 @@ Verified: sitemap unit tests (published pages appear, tenant-scoped); runtime sm
 Follow-up: a sitemap *index* + child sitemaps once more public surfaces exist (news, area guides, team).
 
 ---
+
+## Phase B26 — four more page-builder blocks (EPIC-D FR-D-2) (2026-06-09)
+
+Status: **complete** (on feat/EPIC-D-payload-cms-mount → PR #1)
+Main: `610f379` (RED) → `145bdf4` (GREEN)
+
+Expands the V1 block set from 4 → **8** (FR-D-2 coverage). Added four self-contained, canvas-faithful, token-driven presentational blocks, each via the established recipe (renderer + Zod schema in `components/blocks/*`, Payload Block in `payload/blocks/*` with 1:1 field/required parity, registered in `BLOCK_REGISTRY` + `pageBlocks`):
+
+- **three_pillar** — heading + ≤3 feature pillars (title + body), responsive 3-up grid.
+- **stats_row** — heading + headline KPIs (value + label) on a sunken band.
+- **testimonials** — heading + customer quotes (semantic `<blockquote>`/`<cite>`, optional role).
+- **two_column** — optional heading + exactly two stacking text columns.
+
+The 8-block Payload↔Zod parity contract (`blocks.test.ts`) guards every block (field-name + required parity) and the block-set == renderer-registry invariant — so the CMS authoring schema and the renderer can never drift. Icons (need an icon component) and media/dynamic/interactive sections (gallery, pricing_tiers, property_carousel/grid, four_pillar, video, partner_logos, team_grid, contact_info, form_embed) remain follow-ups.
+
+Verified: renderer unit tests + parity (51 tests across the block files); tsc + ESLint + prettier + next build + diff guards G1/G2/G10/G11 green; payload-types regenerated with the new block interfaces.
+
+---
