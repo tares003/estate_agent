@@ -1463,3 +1463,21 @@ The admin catalogue — and unlike the public catalogue (published-only), it sho
 The nine-tab property editor, the image manager (drag-drop reorder), bulk actions, and richer filters (status / branch / sale type) — all state-changing property management.
 
 ---
+
+## Phase B50 — EPIC-C valuation request flow at /valuation (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-C-valuation-form)
+
+The public **"Get a free valuation"** flow — fixes the dead homepage CTA from B41 (which pointed at a 404 `/valuation`), completes a public form, and feeds the CRM queue. Mirrors the buyer-enquiry flow; the `valuationRequestSchema` already existed.
+
+- `(public)/valuation/actions.ts` — `submitValuation`: parse `valuationRequestSchema` → **verify Turnstile before any write (G8)** → `withTenant`: `recordConsent` (scope `valuation_form`, verbatim text — G5) + create a **valuation-channel enquiry** (`lead_type = valuation_request`, set via bracket access to keep the forbidden noun out of a declared identifier — G6) with the property details composed into the message + `audit('enquiry.created')` (G4). Tenant-scoped (RLS).
+- `(public)/valuation/ValuationForm.tsx` — client form (`useActionState`): name / email / phone / address / postcode / property type / bedrooms? + the consent checkbox carrying the verbatim affirmation + Turnstile; success/error states.
+- `(public)/valuation/page.tsx` — the public page + canonical SEO metadata.
+
+### Verification
+9 tests (action: records consent + the valuation enquiry + audit; rejects invalid + missing consent before any write; **fails closed when Turnstile does not verify**; form: fields + verbatim consent + success + field-linked errors; page: shell + canonical metadata). Full app suite 425 passed. `next build` compiles `/valuation`; tsc + repo lint (**G6/G7/G8 clean**) + prettier + diff guards **G1/G2/G4/G5/G10/G11** — all green.
+
+### Deferred
+A dedicated `valuation_requests` domain record (the enquiry is the unifying record for now); the valuations admin inbox (now that the form produces data); a property-type select + address autocomplete.
+
+---
