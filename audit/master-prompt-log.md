@@ -582,3 +582,32 @@ Tests added: 4 (opt-in integration suite; `@estate/db` unit run unchanged at 167
 Token spend rough estimate: Testcontainers + pg setup + integration test (PostGIS/RLS/FK) + image pull + iteration + gate run — substantial.
 
 ---
+
+## Phase B17 — EPIC-F radius / PostGIS search (mi + km) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `8268de6` → `f3eeb0f` (RED) → `2138d50` (GREEN)
+Tests added: ~13 unit (@estate/validators 87 total; apps/web 81 unit) + 3 real-PostGIS integration
+
+The geographic radius search (master spec §K.1 "search radius"), now buildable + **verifiable** because B16 stood up the real Postgres+PostGIS path. **Ratified decision** (was an open question): distance units are **selectable mi/km, defaulting to miles** (UK property convention), per the user.
+
+### Shipped
+
+- **`@estate/validators`**: `lat`/`lng`/`radius`/`unit` added to `propertySearchSchema` (fail-soft, bounded: coords range-checked, radius positive ≤100, unit→`mi` default) + `radiusToMetres(radius, unit)` (mi = 1609.344 m, km = 1000 m).
+- **`searchPropertiesNear`** (`app/lib/properties.ts`): a **parameterised** `ST_DWithin` raw query — only `$N` placeholders in the SQL, every value bound (no interpolation → no injection) — over an injectable `PropertyRawClient` (the Prisma tx in production; a `pg` adapter in the integration test, so the module stays DB-free + unit-testable). Returns geocoded properties within the radius, **nearest-first** (`geog <-> point`), combined with the same filters, paginated, with a matching count. RLS still scopes rows to the tenant.
+- **Route** switches to the radius query when a centre point + radius are present (radius→metres at the boundary). **`NearMeButton`** (browser geolocation, no third-party geocoding) writes the coords into the form + submits; **`PropertyFilters`** gains Distance + Unit selects + the "Search near me" button; **`search-params`** serialises the geo params and renders one "Within N mi/km" remove-chip (clearing it drops the whole geo search).
+
+### Verification
+
+- **Unit**: SQL building (fragments + bound params, distinct count), `radiusToMetres`, fail-soft parsing, geolocation behaviour (jsdom mock), filter-bar controls, route branching (radius vs Prisma).
+- **Integration (real PostgreSQL 16 + PostGIS, Testcontainers)** — new opt-in apps/web suite (`pnpm --filter @estate/web test:integration`): `searchPropertiesNear`'s **assembled** SQL runs on PostGIS — 5 km → {p1,p2} nearest-first; 500 m → {p1}; radius + saleType + price → {p2}. Proves the `::enum` casts, `<->` distance order, and bound params all parse/execute for real.
+- All gates green: validators 87 + apps/web 81 unit (integration excluded) · typecheck · ESLint · diff guards G1/G2/G10/G11 · `next build` (/properties 114 kB First Load JS) · prettier.
+
+### Next
+
+- Page-level **Playwright e2e** against the running app (now possible — a real Postgres can back it).
+- EPIC-C vertical landings + the **EPIC-D Payload CMS** mount.
+
+Token spend rough estimate: validator + radius raw-query builder + geolocation UI + filter wiring + ~13 unit tests + apps/web integration harness + real-PostGIS integration test + gate run — substantial.
+
+---
