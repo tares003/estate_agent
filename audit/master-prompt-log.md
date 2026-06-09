@@ -841,3 +841,49 @@ The auto-mode classifier is now **blocking direct pushes to `main`** (it enforce
 - Carried: D-019 (property images), D-020 (`LinkButton`).
 
 ---
+
+## Phase B23.2–B23.4 — page-builder content, tenant isolation, live rendering (EPIC-D) (2026-06-09)
+
+Status: **complete** (committed; push pending — classifier still blocks `main`)
+Main: `d1d5d34`→`4e8eb1f` (B23.2) · `0780371`→`8e874c9` (B23.3) · `bae7a55`→`8d7b2f8` (B23.4) · `181f90f` (types) · `b51ba82` (importMap fix)
+
+The CMS mount (B23.1) is now a working page-builder: editors author typed sections, content is tenant-isolated, and the public site renders live published pages through the existing token-driven renderers. Every sub-phase RED→GREEN.
+
+### B23.2 — Blocks mirroring the renderers (`d1d5d34`/`4e8eb1f`)
+
+- `payload/blocks/*` — hero, cta_strip, faq (1:1 field mirrors of the `components/blocks/*` Zod schemas) + rich_text (Lexical `content` + `align`). Wired into `Pages` as the ordered `sections` blocks field (FR-D-1/3).
+- **Parity contract** (`blocks.test.ts`, 14 tests): field-name + required-ness parity per block, and the block set === the renderer registry — drift in either direction fails the build.
+- Runtime smoke: `pages_blocks_hero/_cta_strip/_faq(+_faq_items)/_rich_text` pushed to the `payload` schema.
+
+### B23.3 — app-layer per-tenant isolation (`0780371`/`8e874c9`)
+
+- Payload's Drizzle queries bypass the Prisma tenant-RLS extension, so isolation is enforced in `payload/access/tenant.ts`: `tenantScopedAccess` (read/update/delete → `where tenant=equals`, **fail-closed**), `tenantCreateAccess` (authenticated + tenant), and a `tenant` field auto-stamped from `x-estate-tenant` on create, immutable after. Applied to Pages + Media. (Auth-collection `cms_users` scoping deferred to EPIC-N — login/first-user/email-uniqueness.)
+- **Proven end-to-end**: editor created a page as tenant A → A reads it, **B reads 0**; forged body `tenant=B` ignored (header wins); unauthenticated create → 403. Plus 9 unit tests.
+- Header trust (hostname-derived, non-forgeable) is **EPIC-S's** job — documented dependency.
+
+### B23.4 — live rendering (`bae7a55`/`8d7b2f8`)
+
+- `cms-mapper.ts` (pure, 11 tests) maps Payload blocks `{blockType,…}` → renderer sections `{type,data}`; **strips Payload null-optionals** (Zod `.optional()` rejects `null`, which silently dropped blocks — caught by the runtime smoke). Round-trip tests validate mapped output against the real `BLOCK_REGISTRY` schemas with realistic null-bearing samples.
+- `cms.ts` reads published pages for the current tenant via the Local API (filtered by tenant + `_status: published` — drafts never leak) and serialises rich_text via Payload's `convertLexicalToHTML`.
+- `app/(app)/[...slug]/page.tsx` renders them through the shared `PageRenderer`; specific routes win.
+- **Proven end-to-end**: `/about` (published, tenant A) renders hero + Lexical rich-text as token HTML; draft → 404; cross-tenant → 404.
+
+### Structural + housekeeping
+
+- **Multiple-root-layouts** (B23.1 `1971b89`): the app moved under `app/(app)/`, the CMS owns `app/(payload)/` — the only way Next allows Payload's `<html>`-rendering root layout alongside the app's.
+- **importMap fix** (`b51ba82`): switched from an empty stub to Payload's generated import map so the Lexical editor's admin components load (verified: admin create-page returns the RichText/lexical editor). Committed + `pnpm generate:importmap`.
+- **Generated types** (`181f90f`): `payload-types.ts` checked in (CLAUDE.md §9) + `pnpm generate:types`.
+
+### Verification (whole B23)
+
+162 unit tests · tsc · ESLint · prettier · `next build --webpack` (all `/admin/cms/*` + `/[...slug]` routes) · diff guards G1 (30 impl / 22 tests), G2 (28 files meet threshold), G10, G11 — all green.
+
+### Follow-ups
+
+- CMS published pages → sitemap (FR-D-4 acceptance: drafts excluded — already enforced in the render path; sitemap inclusion is the remaining piece).
+- Admin authoring e2e (Playwright) for the page-builder + Lexical editor (client interaction).
+- `cms_users` tenant scoping with EPIC-N auth.
+- Remaining V1 block types (FR-D-2): two_column, three_pillar, stats_row, gallery, etc.
+- Carried: D-019 (property images), D-020 (`LinkButton`).
+
+---
