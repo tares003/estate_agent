@@ -1368,3 +1368,23 @@ Surfaces the status-event timeline (B43) on the enquiry detail page — the FR-H
 Enquiry lifecycle is fully operable + observable in the admin: queue → detail (summary, status changer, convert, notes, **activity timeline**) → contacts directory → pipeline report. Every write RBAC-gated + audited + timelined, tenant-isolated (RLS). Remaining: SLA (FR-I-4, now computable from the timeline) + time-to-first-contact reporting; assignment (FR-I-3) / saved views (FR-I-9) / real RBAC need EPIC-N (staff sessions/roster).
 
 ---
+
+## Phase B45 — EPIC-H audit-log viewer at /admin/audit (FR-H-17) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-audit-viewer)
+
+Makes the audit trail visible — every state-changing action across the CRM (status, note, conversion, …) writes an `audit_logs` row (G4); this surfaces them.
+
+- `lib/audit-log.ts` (read model, tested): `listAuditLogs` over a structural client (mirrors contacts.ts) — optional entity filter, newest-first, clamped pagination (max 100). `audit_logs` is already RLS-isolated, so a `withTenant` read returns only the tenant's entries. 100%.
+- `admin/audit/audit-params.ts` (pure, tested): `parseAuditParams` (URL entity+page, trimmed) + `auditQuery`. URL is the single source of truth.
+- `admin/audit/AuditLogTable.tsx`: semantic table (`th scope=col`) — When / Action / Actor / Target (entity + id) / IP / **full diff** (JSON); a server-rendered GET entity filter (no JS); dashes for missing id/IP/diff; empty state; filter-preserving pagination. Token-driven (G7).
+- `admin/audit/page.tsx` (RSC): tenant-scoped `listAuditLogs` via withTenant.
+- `components/admin/admin-nav.ts`: Audit log added to the Insights nav section.
+
+### Verification
+17 tests (where/list incl. entity filter + clamp; URL parse/serialise incl. trim; table action/actor/target/IP/diff + the missing-value dashes + empty state + pagination; the page tenant-scoped query + entity passthrough + bare entry; nav includes the audit link). Full app suite 395 passed; `audit-log`/`audit-params` 100%, others meet their thresholds. `next build` compiles `/admin/audit`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-17 remainder)
+The user-agent column / per-entry detail drawer, richer filters (actor / action / date range), and a diff pretty-printer.
+
+---
