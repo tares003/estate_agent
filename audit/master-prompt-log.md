@@ -1174,3 +1174,27 @@ FR-I-10 / master spec §I.5 — the first built-in CRM report: the **enquiry con
 Leads-by-`lead_type`-over-time, average-time-to-first-contact (needs a contacted-at timestamp / status-event history), outstanding-follow-ups (needs `follow_up_date`), days-on-market (from PropertyStatusEvent), branch/agent filters (need EPIC-N), CSV/Excel/PDF export, the custom report builder, and the report page UI (needs the EPIC-H admin shell).
 
 ---
+
+## Phase B35 — EPIC-I CRM: enquiry conversion → Contact (FR-I-6) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-I-conversion)
+
+FR-I-6 — converting a qualified enquiry produces a **Contact record** (Buyer / Tenant / Vendor / Landlord) **linked back to the originating enquiry**, and moves the enquiry to `converted`. Completes the enquiry lifecycle the status workflow (B32) opened.
+
+### B35.1 — `Contact.sourceEnquiryId` link (`packages/db`)
+- Added `sourceEnquiryId String? @map("source_enquiry_id") @db.Uuid` — a **soft reference** (no Prisma relation/FK, like `Note.authorAgentId`; RLS keeps both rows tenant-isolated). Null for contacts created by other means. Schema-shape test asserts it; `prisma generate` regenerated the client.
+
+### B35.2 — conversion validator (`packages/validators/src/contact-type.ts`)
+- `CONTACT_TYPES = [buyer, tenant, vendor, landlord]` (the four parties FR-I-6 names) + `enquiryConversionSchema { enquiryId uuid, contactType enum }`. The staff member **chooses the contact type explicitly** at conversion (no ambiguous auto-derivation from `lead_type`, and no `leadType` identifier in code — G6). 100% coverage.
+
+### B35.3 — `convertEnquiry` action (`apps/web/app/(app)/admin/enquiries/conversion-actions.ts`)
+- Parse → **RBAC gate `enquiry.write` (fail-closed before any read/write)** → `withTenant` → load the enquiry → **`canTransition(status, "converted")`** (reuses the status allow-list; an enquiry that cannot reach `converted` writes nothing) → `contact.create` (type + the enquiry’s already-consented name/email/phone + `sourceEnquiryId`) → enquiry `status → converted` → **`audit(tx, { action: "enquiry.converted", diff: { status: {from,to}, contact: {id, type} } })` in the same transaction (G4)**.
+- Reuses the enquiry’s already-consented contact details — no new personal-data capture, so no fresh GDPR consent (G5 not triggered).
+
+### Verification
+5 conversion tests (creates a linked contact + marks converted + audits; refuses from a non-convertible state writing nothing; not-found; invalid contact type rejected before any write; **RBAC-denied before `withTenant`**). Full app suite 301 passed; validators `contact-type.ts` 100%, db core-entities 75 pass. **Runtime smoke: `prisma db push` against Docker PostGIS 16 applied `contacts.source_enquiry_id uuid` (nullable).** tsc + `next build` + repo lint (G6 clean) + prettier + diff guards G1/G2/G4/G5/G10/G11 — all green.
+
+### Deferred (FR-I-6 remainder)
+The convert UI (type picker, EPIC-H shell); de-duplicating against existing contacts; the converted contact appearing in the Contacts admin list; portal invite on conversion.
+
+---
