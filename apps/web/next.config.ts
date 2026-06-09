@@ -15,6 +15,10 @@ const config: NextConfig = {
   // The @estate/* packages import siblings with explicit `.js` extensions (NodeNext
   // style) that resolve to `.ts`/`.tsx` source. Vite/tsc/Vitest handle this; tell
   // webpack to try the TS extensions for a requested `.js` too.
+  //
+  // Next 16 defaults to Turbopack, so the app builds/runs with `--webpack` (see the
+  // package.json scripts): this webpack config is honoured, and Payload's
+  // `withPayload` (which injects a webpack config) will compose here too (CLAUDE.md §9).
   webpack(config) {
     config.resolve ??= {};
     config.resolve.extensionAlias = {

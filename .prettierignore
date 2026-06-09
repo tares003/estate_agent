@@ -8,6 +8,7 @@ coverage/
 pnpm-lock.yaml
 staticfiles/
 mediafiles/
+next-env.d.ts
 
 # Design canvas is the visual source of truth — ported verbatim, not reformatted.
 design/canvas/

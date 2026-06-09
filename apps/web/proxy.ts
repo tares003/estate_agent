@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// EPIC-S tenant resolution + EPIC-O URL canonicalisation.
+// EPIC-S tenant resolution + EPIC-O URL canonicalisation, in Next 16's `proxy`
+// convention (formerly `middleware`).
 //
 // 1. Canonicalise public GET URLs (FR-O-2/3): lowercase, and no trailing slash
 //    (except root). A non-canonical URL 301s to the canonical one so crawlers and
-//    links converge on a single address. Only GET/HEAD are redirected — a 301 on
-//    a POST (e.g. a Server Action) would drop the body — and `/api/*` is left
-//    untouched.
+//    links converge on a single address. Only GET/HEAD are redirected (a 301 on a
+//    POST/Server Action would drop the body) and `/api/*` is left untouched.
 // 2. Resolve the platform tenant (full subdomain / custom-domain lookup lands with
 //    EPIC-S; for now an explicit header or a dev fallback) onto the request so
 //    tenant-scoped queries downstream have a value.
@@ -19,7 +19,7 @@ export function canonicalPath(pathname: string): string {
   return trimmed === '' ? '/' : trimmed;
 }
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const method = request.method;
 

@@ -6,8 +6,8 @@
   "description": "The Estate Platform application — a single Next.js (App Router) app (Payload CMS mounted later at /admin/cms). Serves every user-facing surface.",
   "license": "UNLICENSED",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -23,7 +23,7 @@
     "@estate/tokens": "workspace:*",
     "@estate/ui": "workspace:*",
     "@estate/validators": "workspace:*",
-    "next": "^15.1.0",
+    "next": "^16.2.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^3.24.0"

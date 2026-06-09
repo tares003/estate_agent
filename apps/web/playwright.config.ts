@@ -17,7 +17,7 @@ export default defineConfig({
   // with a dev/preview server a developer may already have on 3000.
   use: { baseURL: 'http://localhost:3100', trace: 'retain-on-failure' },
   webServer: {
-    command: 'pnpm exec next dev -p 3100',
+    command: 'pnpm exec next dev -p 3100 --webpack',
     url: 'http://localhost:3100',
     timeout: 180_000,
     reuseExistingServer: false,
