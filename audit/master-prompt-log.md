@@ -954,3 +954,25 @@ The 8-block Payload↔Zod parity contract (`blocks.test.ts`) guards every block 
 Verified: renderer unit tests + parity (51 tests across the block files); tsc + ESLint + prettier + next build + diff guards G1/G2/G10/G11 green; payload-types regenerated with the new block interfaces.
 
 ---
+
+## Phase B27 — property_grid block: live catalogue grids on CMS pages (EPIC-D FR-D-2) (2026-06-09)
+
+Status: **complete** (on feat/EPIC-D-payload-cms-mount → PR #1)
+Main: `6320097` (RED) → `a3c9f46` (GREEN)
+
+The first **data-fetching** page-builder block — connects the page-builder to the catalogue so an editor can drop a curated property grid onto any CMS page. Block set 8 → **9**.
+
+### Architecture (the novel part)
+
+- **`property-grid-options.ts`** (pure, unit-tested + covered): the config Zod schema (heading?/saleType?/listingType?/limit?) + `propertyGridToOptions` (config → `PropertySearchOptions`; limit → pageSize clamped 1..24; heading never leaks into filters).
+- **`PropertyGridBlock.tsx`** (async server component, coverage-excluded glue): resolves the current tenant, fetches published matching properties via `withTenant` + `searchProperties`, renders the shared `PropertyCard`. It **dynamically imports** the data layer (`@estate/db`/Prisma, request tenant, `@estate/ui`) at render, so the lightweight block registry — imported by the node-env block tests — never pulls Prisma/next-headers/@estate/ui at module load. Fails soft (any fetch error / no matches → renders nothing).
+- **Registry widened**: `BlockComponent<T> = (props) => ReactNode | Promise<ReactNode>` so async blocks register alongside the sync presentational ones; `PageRenderer` renders the async block as a normal RSC child.
+- `payload/blocks/propertyGrid.ts` — filter config fields (declared `// pack: core` for G12: it's a core block whose listingType options merely enumerate the §J verticals as filters; it never gates a pack).
+
+### Verification
+
+Pure options mapping + the **9-block Payload↔config parity** contract; an **async-render test** mocks the dynamically-imported data layer and exercises the REAL `searchProperties` over a fake tx — proving the fetch→map→render path (saleType filter + limit→take, cards rendered, empty→null) **without a DB**. tsc + ESLint + prettier + `next build` + diff guards G1/G2/G10/G11 green; payload-types regenerated.
+
+Follow-up: a full on-page render e2e (Prisma+PostGIS+seed + a CMS page carrying a property_grid) — same e2e bucket as the deferred public-header render.
+
+---
