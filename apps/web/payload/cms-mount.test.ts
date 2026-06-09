@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { tenantScopedAccess } from './access/tenant.js';
+import { tenantCreateAccess, tenantScopedAccess } from './access/tenant.js';
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './cms-config.js';
 import { CmsUsers } from './collections/CmsUsers.js';
 import { Media } from './collections/Media.js';
+import { Menus } from './collections/Menus.js';
 import { Pages } from './collections/Pages.js';
 
 // Contract tests for the Payload CMS mount (EPIC-D / CLAUDE.md §9). The mount's
@@ -75,5 +76,41 @@ describe('CmsUsers collection (editor accounts)', () => {
     expect(read).toBeTypeOf('function');
     expect(read?.({ req: { user: null } } as never)).toBe(false);
     expect(read?.({ req: { user: { id: 'u1' } } } as never)).toBe(true);
+  });
+});
+
+describe('Menus collection (EPIC-D FR-D-7 navigation)', () => {
+  it('is the `menus` collection grouped under Content, titled by label', () => {
+    expect(Menus.slug).toBe('menus');
+    expect(Menus.admin?.group).toBe('Content');
+    expect(Menus.admin?.useAsTitle).toBe('label');
+  });
+
+  it('is tenant-scoped with the same access helpers as Pages/Media', () => {
+    expect(Menus.access?.read).toBe(tenantScopedAccess);
+    expect(Menus.access?.update).toBe(tenantScopedAccess);
+    expect(Menus.access?.delete).toBe(tenantScopedAccess);
+    expect(Menus.access?.create).toBe(tenantCreateAccess);
+  });
+
+  it('declares tenant, label, location and items fields', () => {
+    expect(fieldNames(Menus.fields)).toEqual(
+      expect.arrayContaining(['tenant', 'label', 'location', 'items']),
+    );
+  });
+
+  it('identifies a menu by a header/footer/mobile location select', () => {
+    const location = Menus.fields.find((f) => 'name' in f && f.name === 'location') as
+      | { type?: string; options?: unknown[] }
+      | undefined;
+    expect(location?.type).toBe('select');
+    const values = (location?.options ?? []).map((o) =>
+      typeof o === 'string' ? o : (o as { value?: string }).value,
+    );
+    expect(values).toEqual(['header', 'footer', 'mobile']);
+  });
+
+  it('has no draft/version workflow (menus are immediate-on-save)', () => {
+    expect((Menus.versions as { drafts?: unknown } | undefined)?.drafts).not.toBe(true);
   });
 });
