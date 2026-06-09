@@ -31,6 +31,12 @@ export {
 } from './enquiry-status.js';
 export { enquiryNoteCreateSchema, type EnquiryNoteCreate } from './enquiry-note.js';
 export {
+  CONTACT_TYPES,
+  enquiryConversionSchema,
+  type ContactType,
+  type EnquiryConversion,
+} from './contact-type.js';
+export {
   propertySearchSchema,
   parsePropertySearch,
   radiusToMetres,

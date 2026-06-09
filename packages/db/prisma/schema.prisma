@@ -350,16 +350,20 @@ model RepairRequest {
 /// discriminator (landlord / tenant / vendor / buyer) per the brief's open
 /// question 1 default-to-separate note; the role is captured on `type`.
 model Contact {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  name      String
-  email     String?
-  phone     String?
-  type      String
-  notes     String?
-  deletedAt DateTime? @map("deleted_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  name            String
+  email           String?
+  phone           String?
+  type            String
+  notes           String?
+  // FR-I-6: a converted enquiry stamps its id here (soft reference, like
+  // Note.authorAgentId — RLS keeps both rows tenant-isolated). Null for contacts
+  // created by other means.
+  sourceEnquiryId String?   @map("source_enquiry_id") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
