@@ -38,10 +38,16 @@ describe('SiteNav', () => {
     expect(screen.getByRole('link', { name: 'Contact' })).not.toHaveAttribute('target', '_blank');
   });
 
-  it('marks the item matching currentPath with aria-current="page"', () => {
+  it('marks the active item with aria-current AND a visible indicator (WCAG 1.4.1)', () => {
     render(<SiteNav items={DEFAULT_NAV} currentPath="/contact" />);
-    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: 'Buy' })).not.toHaveAttribute('aria-current');
+    const active = screen.getByRole('link', { name: 'Contact' });
+    const inactive = screen.getByRole('link', { name: 'Buy' });
+    expect(active).toHaveAttribute('aria-current', 'page');
+    expect(inactive).not.toHaveAttribute('aria-current');
+    // visible (non-AT) distinction: the active link carries the underline marker,
+    // the inactive one does not — information parity for sighted users.
+    expect(active.className).toContain('underline');
+    expect(inactive.className).not.toContain('underline');
   });
 
   it('renders child items as a nested list', () => {

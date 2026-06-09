@@ -6,9 +6,10 @@ import type { Access, Field, FieldHook, PayloadRequest, Where } from 'payload';
 // extension (which issues SET LOCAL app.current_tenant_id) does NOT cover
 // Payload's queries. Isolation is therefore enforced at the application layer by
 // these access functions + the tenant field, reading the x-estate-tenant header
-// the proxy resolves per request. The header's trustworthiness (hostname-derived,
-// not client-forgeable) is EPIC-S's responsibility; here we consume the resolved
-// value and FAIL CLOSED if it is missing.
+// the proxy sets per request. The proxy resolves the tenant server-side and
+// OVERWRITES any client-supplied value, so the header is not client-forgeable
+// (proxy.ts / resolveTenantId); full hostname-based resolution lands with EPIC-S.
+// Here we consume the resolved value and FAIL CLOSED if it is missing.
 //
 // Auth-collection (cms_users) tenant scoping is deferred to the EPIC-N auth
 // integration — it interacts with login, first-user bootstrap, and per-tenant
@@ -48,10 +49,13 @@ export const tenantCreateAccess: Access = ({ req }) =>
  * Field hook that stamps the request tenant onto the row at create time and
  * makes it immutable thereafter (an update keeps the stored value, ignoring any
  * client-supplied tenant). Runs in beforeValidate so the required check sees it.
+ * FAIL CLOSED: on create the tenant comes ONLY from the request — never from the
+ * client-supplied `value`. When unresolved it returns undefined, tripping the
+ * field's `required` validation rather than honouring attacker/seed input.
  */
 export const stampTenant: FieldHook = ({ req, value, operation }) => {
   if (operation === 'create') {
-    return getTenantFromReq(req) ?? value;
+    return getTenantFromReq(req) ?? undefined;
   }
   return value;
 };

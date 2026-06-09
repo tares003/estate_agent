@@ -45,18 +45,14 @@ export interface PayloadMenuDoc {
   [key: string]: unknown;
 }
 
-/** Drop null/undefined keys (Payload's empty-optional shape) so `.optional()` validates. */
-function stripNullish<T extends Record<string, unknown>>(obj: T): Partial<T> {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== null && value !== undefined) {
-      out[key] = value;
-    }
-  }
-  return out as Partial<T>;
-}
-
-/** Map one item to a nav LEAF (no children) — fail-soft + normalised. */
+/**
+ * Map one item to a nav LEAF (no children) — fail-soft + normalised + type-safe.
+ * Builds the object field-by-field with validated/coerced values (no unchecked
+ * cast): label/url must be non-empty strings, icon must be a string, roles is
+ * coerced to a string[] (non-string elements dropped), target normalises to
+ * 'same'/'new'. Empty-optionals are simply not added, so the result satisfies
+ * navItemSchema by construction.
+ */
 function toNavLeaf(item: PayloadMenuItem | null | undefined): NavItem | null {
   if (item == null || typeof item !== 'object') {
     return null;
@@ -71,14 +67,14 @@ function toNavLeaf(item: PayloadMenuItem | null | undefined): NavItem | null {
   if (typeof url !== 'string' || url.length === 0) {
     return null; // no destination -> would render a broken link
   }
-  const leaf = stripNullish({
-    label,
-    href: url,
-    target: target === 'new' ? 'new' : 'same',
-    icon,
-    roles,
-  });
-  return leaf as unknown as NavItem;
+  const leaf: NavItem = { label, href: url, target: target === 'new' ? 'new' : 'same' };
+  if (typeof icon === 'string') {
+    leaf.icon = icon;
+  }
+  if (Array.isArray(roles)) {
+    leaf.roles = roles.filter((role): role is string => typeof role === 'string');
+  }
+  return leaf;
 }
 
 /** Map one Payload menu item to a nav item, recursing children ONE level. */

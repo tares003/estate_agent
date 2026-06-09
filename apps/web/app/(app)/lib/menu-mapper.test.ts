@@ -94,6 +94,18 @@ describe('payloadMenuItemToNav', () => {
     expect(nav?.roles).toEqual(['content_editor']);
   });
 
+  it('coerces roles to a clean string[] (drops non-string elements)', () => {
+    const nav = payloadMenuItemToNav(
+      item({ roles: ['content_editor', 5, null, 'super_admin'] as never }),
+    );
+    expect(nav?.roles).toEqual(['content_editor', 'super_admin']);
+  });
+
+  it('drops a non-array roles value (never emits an invalid roles)', () => {
+    const nav = payloadMenuItemToNav(item({ roles: 'super_admin' as never }));
+    expect(nav && 'roles' in nav).toBe(false);
+  });
+
   it('recurses children exactly one level (grandchildren are ignored)', () => {
     const nav = payloadMenuItemToNav(
       item({

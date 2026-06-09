@@ -3,6 +3,15 @@ import { headers } from 'next/headers';
 /** Header the EPIC-S middleware sets from the request hostname. */
 export const TENANT_HEADER = 'x-estate-tenant';
 
+/** Header the proxy sets to the request path (for active-nav matching). */
+export const PATHNAME_HEADER = 'x-estate-pathname';
+
+/** The current request path (set by the proxy), for marking the active nav link. */
+export async function getCurrentPathname(): Promise<string | null> {
+  const requestHeaders = await headers();
+  return requestHeaders.get(PATHNAME_HEADER);
+}
+
 /**
  * Resolve the current request's platform tenant id (set by middleware from the
  * hostname). Throws if unresolved — every tenant-scoped query needs it, and a

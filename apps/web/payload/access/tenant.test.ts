@@ -79,4 +79,13 @@ describe('stampTenant field hook', () => {
     } as never);
     expect(out).toBe(TENANT_A);
   });
+
+  it('fails closed on create — never honours a client-supplied value when unresolved', () => {
+    const out = stampTenant({
+      req: reqWith({}),
+      operation: 'create',
+      value: 'client-forged-tenant',
+    } as never);
+    expect(out).toBeUndefined();
+  });
 });

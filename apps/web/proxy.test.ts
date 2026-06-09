@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { canonicalPath, proxy } from './proxy.js';
+import { DEV_TENANT_ID, canonicalPath, proxy, resolveTenantId } from './proxy.js';
 
 function get(url: string, method = 'GET'): NextRequest {
   return new NextRequest(new URL(url), { method });
@@ -62,13 +62,19 @@ describe('proxy URL canonicalisation (FR-O-2/3)', () => {
 });
 
 describe('proxy tenant resolution (EPIC-S)', () => {
-  it('passes an explicit tenant header through unchanged', () => {
-    const req = new NextRequest(new URL('https://acme.test/properties'), {
+  it('resolves the tenant server-side, ignoring a client-supplied (forgeable) header', () => {
+    // SECURITY: a client must not be able to read another tenant by forging
+    // x-estate-tenant. Resolution must never trust the inbound header.
+    expect(resolveTenantId(get('https://acme.test/properties'))).toBe(DEV_TENANT_ID);
+    const forged = new NextRequest(new URL('https://acme.test/properties'), {
       headers: { 'x-estate-tenant': '99999999-9999-9999-9999-999999999999' },
     });
-    const res = proxy(req);
+    expect(resolveTenantId(forged)).toBe(DEV_TENANT_ID);
+  });
+
+  it('does not redirect tenant-resolved requests', () => {
+    const res = proxy(get('https://acme.test/properties'));
     expect(res.status).not.toBe(301);
-    // a pass-through (NextResponse.next) is not a redirect
     expect(res.headers.get('location')).toBeNull();
   });
 });

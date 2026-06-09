@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { getMenu } from '../app/(app)/lib/cms.js';
-import { getCurrentTenantId } from '../app/(app)/lib/tenant.js';
+import { getCurrentPathname, getCurrentTenantId } from '../app/(app)/lib/tenant.js';
 import { filterPublicNav, type NavItem } from '../app/(app)/lib/menu-mapper.js';
 import { DEFAULT_NAV, SiteNav } from './SiteNav.js';
 
@@ -25,13 +25,14 @@ async function resolveHeaderItems(): Promise<NavItem[]> {
 
 export async function SiteHeader() {
   const items = await resolveHeaderItems();
+  const currentPath = (await getCurrentPathname()) ?? undefined;
   return (
     <header className="bg-surface-base border-border border-b">
       <div className="container flex items-center justify-between py-4">
         <Link href="/" className="font-display t-heading-sm text-text-primary">
           Estate
         </Link>
-        <SiteNav items={items} />
+        <SiteNav items={items} currentPath={currentPath} />
       </div>
     </header>
   );
