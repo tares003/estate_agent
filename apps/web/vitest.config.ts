@@ -37,6 +37,10 @@ export default defineConfig({
         // (constructing the clients pulls server-only/heavy deps into jsdom).
         'app/**/lib/db.ts',
         'app/**/lib/cms.ts',
+        // The async public header fetches the CMS menu (Payload Local API) — glue,
+        // verified by runtime smoke; its pure mapper (menu-mapper.ts) + SiteNav are
+        // unit-tested.
+        'components/SiteHeader.tsx',
         // The CMS editorial catch-all is thin fetch+render glue, verified by the
         // runtime smoke; its pure mapper (cms-mapper.ts) is unit-tested.
         'app/**/[[]...slug[]]/**',

@@ -8,6 +8,7 @@ import { buildConfig } from 'payload';
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './payload/cms-config.js';
 import { CmsUsers } from './payload/collections/CmsUsers.js';
 import { Media } from './payload/collections/Media.js';
+import { Menus } from './payload/collections/Menus.js';
 import { Pages } from './payload/collections/Pages.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -29,7 +30,7 @@ export default buildConfig({
     admin: CMS_ADMIN_ROUTE,
     api: CMS_API_ROUTE,
   },
-  collections: [Pages, Media, CmsUsers],
+  collections: [Pages, Media, Menus, CmsUsers],
   editor: lexicalEditor(),
   secret: process.env['PAYLOAD_SECRET'] ?? '',
   db: postgresAdapter({

@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     pages: Page;
     media: Media;
+    menus: Menu;
     cms_users: CmsUser;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -79,6 +80,7 @@ export interface Config {
   collectionsSelect: {
     pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    menus: MenusSelect<false> | MenusSelect<true>;
     cms_users: CmsUsersSelect<false> | CmsUsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -234,6 +236,83 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menus".
+ */
+export interface Menu {
+  id: number;
+  /**
+   * Owning platform tenant — set automatically from the request.
+   */
+  tenant: string;
+  label: string;
+  /**
+   * Where this menu renders. One menu per location per tenant.
+   */
+  location: 'header' | 'footer' | 'mobile';
+  /**
+   * Ordered, reorderable navigation items (FR-D-7).
+   */
+  items?:
+    | {
+        label: string;
+        url: string;
+        target: 'same' | 'new';
+        /**
+         * Optional icon name (token), not an uploaded asset.
+         */
+        icon?: string | null;
+        /**
+         * Leave empty to show to everyone; set to restrict to those staff roles.
+         */
+        roles?:
+          | (
+              | 'super_admin'
+              | 'branch_manager'
+              | 'property_manager'
+              | 'sales_agent'
+              | 'lettings_agent'
+              | 'content_editor'
+              | 'repairs_manager'
+              | 'read_only_auditor'
+            )[]
+          | null;
+        visibility: boolean;
+        children?:
+          | {
+              label: string;
+              url: string;
+              target: 'same' | 'new';
+              /**
+               * Optional icon name (token), not an uploaded asset.
+               */
+              icon?: string | null;
+              /**
+               * Leave empty to show to everyone; set to restrict to those staff roles.
+               */
+              roles?:
+                | (
+                    | 'super_admin'
+                    | 'branch_manager'
+                    | 'property_manager'
+                    | 'sales_agent'
+                    | 'lettings_agent'
+                    | 'content_editor'
+                    | 'repairs_manager'
+                    | 'read_only_auditor'
+                  )[]
+                | null;
+              visibility: boolean;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cms_users".
  */
 export interface CmsUser {
@@ -289,6 +368,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'menus';
+        value: number | Menu;
       } | null)
     | ({
         relationTo: 'cms_users';
@@ -425,6 +508,39 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menus_select".
+ */
+export interface MenusSelect<T extends boolean = true> {
+  tenant?: T;
+  label?: T;
+  location?: T;
+  items?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        target?: T;
+        icon?: T;
+        roles?: T;
+        visibility?: T;
+        children?:
+          | T
+          | {
+              label?: T;
+              url?: T;
+              target?: T;
+              icon?: T;
+              roles?: T;
+              visibility?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

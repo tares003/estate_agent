@@ -1,43 +1,18 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-/** Public marketing/catalogue shell — header + primary nav + footer around the
- * page's own <main> (EPIC-C). The skip-link in the root layout targets #main. */
+import { SiteFooter } from '../../../components/SiteFooter.js';
+import { SiteHeader } from '../../../components/SiteHeader.js';
+
+// Public marketing/catalogue shell (EPIC-C). The header nav is CMS-managed
+// (FR-D-7) via the async SiteHeader; the footer is the static SiteFooter. The
+// skip-link in the root layout targets #main. This layout is now thin glue
+// composing those tested components.
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <header className="border-b border-border bg-surface-base">
-        <div className="container flex items-center justify-between py-4">
-          <Link href="/" className="font-display t-heading-sm text-text-primary">
-            Estate
-          </Link>
-          <nav aria-label="Primary">
-            <ul className="flex gap-6">
-              <li>
-                <Link href="/properties?saleType=sale">Buy</Link>
-              </li>
-              <li>
-                <Link href="/properties?saleType=rent">Rent</Link>
-              </li>
-              <li>
-                <Link href="/valuation">Sell</Link>
-              </li>
-              <li>
-                <Link href="/contact">Contact</Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
       {children}
-      <footer className="mt-16 border-t border-border bg-surface-raised">
-        <div className="container t-body-sm text-text-secondary py-10">
-          <p>
-            © Estate Platform. Property details are indicative only; rent figures are shown PCM
-            unless stated otherwise.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

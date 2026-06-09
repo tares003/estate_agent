@@ -4,6 +4,12 @@ import { getPayload } from 'payload';
 
 import type { PageSection } from '../../../components/blocks/PageRenderer.js';
 import { payloadPageToSections, type PayloadBlock, type RichTextSerializer } from './cms-mapper.js';
+import {
+  payloadMenuToNav,
+  type MenuLocation,
+  type PayloadMenuDoc,
+  type RenderableMenu,
+} from './menu-mapper.js';
 
 // Live CMS data layer (EPIC-D B23.4). Reads published pages for the current
 // tenant from Payload via the Local API and maps them to the PageRenderer
@@ -61,4 +67,33 @@ export async function getPublishedPage(
       serializeRichText,
     ),
   };
+}
+
+/**
+ * Fetch the CMS-managed navigation menu for a location + tenant (FR-D-7), or null
+ * if none. The Local API runs PRIVILEGED, so the tenant guard MUST be an explicit
+ * where clause (same as getPublishedPage). Menus are unversioned — no _status
+ * filter. Read fresh per request so saves reflect within the 60s SLA; any future
+ * cache wrapper must keep revalidate <= 60s.
+ */
+export async function getMenu(
+  location: MenuLocation,
+  tenantId: string,
+): Promise<RenderableMenu | null> {
+  const payload = await getPayload({ config });
+  const result = await payload.find({
+    collection: 'menus',
+    where: {
+      and: [{ location: { equals: location } }, { tenant: { equals: tenantId } }],
+    },
+    limit: 1,
+    depth: 1,
+    pagination: false,
+  });
+
+  const doc = result.docs[0];
+  if (!doc) {
+    return null;
+  }
+  return payloadMenuToNav(doc as unknown as PayloadMenuDoc);
 }

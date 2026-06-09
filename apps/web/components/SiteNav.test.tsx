@@ -1,3 +1,5 @@
+// responsive-coverage: opt-out all — nav structure/landmark/a11y test; the
+// responsive header layout is the design-canvas / page-level e2e concern.
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 

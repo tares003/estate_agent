@@ -2,9 +2,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  filterPublicNav,
   navItemSchema,
   payloadMenuItemToNav,
   payloadMenuToNav,
+  type NavItem,
   type PayloadMenuItem,
 } from './menu-mapper.js';
 
@@ -45,6 +47,14 @@ describe('payloadMenuToNav', () => {
       items: [item({ label: 'Buy' }), item({ label: 'Rent' }), item({ label: 'Sell' })],
     });
     expect(menu?.items.map((i) => i.label)).toEqual(['Buy', 'Rent', 'Sell']);
+  });
+
+  it('drops malformed (null / non-object) items defensively', () => {
+    const menu = payloadMenuToNav({
+      location: 'header',
+      items: [null as never, 'oops' as never, item({ label: 'OK', url: '/ok' })],
+    });
+    expect(menu?.items.map((i) => i.label)).toEqual(['OK']);
   });
 });
 
@@ -90,7 +100,11 @@ describe('payloadMenuItemToNav', () => {
         label: 'Sell',
         url: '/valuation',
         children: [
-          item({ label: 'Valuation', url: '/valuation', children: [item({ label: 'Deep', url: '/deep' })] }),
+          item({
+            label: 'Valuation',
+            url: '/valuation',
+            children: [item({ label: 'Deep', url: '/deep' })],
+          }),
         ],
       }),
     );
@@ -108,13 +122,45 @@ describe('payloadMenuItemToNav', () => {
   });
 });
 
+describe('filterPublicNav (anonymous viewer role gate)', () => {
+  const leaf = (label: string, roles?: string[]): NavItem => ({
+    label,
+    href: `/${label.toLowerCase()}`,
+    target: 'same',
+    ...(roles ? { roles } : {}),
+  });
+
+  it('keeps items with no role gate and drops staff-only items', () => {
+    const out = filterPublicNav([leaf('Buy'), leaf('Admin', ['content_editor']), leaf('Contact')]);
+    expect(out.map((i) => i.label)).toEqual(['Buy', 'Contact']);
+  });
+
+  it('keeps an item with an empty roles array (empty = everyone)', () => {
+    expect(filterPublicNav([leaf('Buy', [])]).map((i) => i.label)).toEqual(['Buy']);
+  });
+
+  it('drops role-gated children while keeping the public parent', () => {
+    const parent: NavItem = {
+      ...leaf('Sell'),
+      children: [leaf('Public'), leaf('Staff', ['super_admin'])],
+    };
+    const [out] = filterPublicNav([parent]);
+    expect(out?.children?.map((c) => c.label)).toEqual(['Public']);
+  });
+});
+
 describe('mapper output validates against navItemSchema', () => {
   it('every produced item round-trips through the schema', () => {
     const menu = payloadMenuToNav({
       location: 'header',
       items: [
         item({ label: 'Buy', icon: null, roles: null }),
-        item({ label: 'Sell', url: '/valuation', target: 'new', children: [item({ label: 'Book', url: '/book' })] }),
+        item({
+          label: 'Sell',
+          url: '/valuation',
+          target: 'new',
+          children: [item({ label: 'Book', url: '/book' })],
+        }),
       ],
     });
     for (const navItem of menu?.items ?? []) {

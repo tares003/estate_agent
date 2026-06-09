@@ -1,3 +1,5 @@
+// responsive-coverage: opt-out all — footer content/trust-marker test; the
+// responsive footer layout is the design-canvas / page-level e2e concern.
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
