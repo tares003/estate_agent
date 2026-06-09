@@ -152,6 +152,13 @@ describe('§J relationships (master spec §J.9)', () => {
     const block = modelBlock('Agent');
     expect(block).toMatch(/branchId\s+String\??\s+@map\("branch_id"\)\s+@db\.Uuid/);
   });
+
+  it('Contact links back to the originating enquiry (FR-I-6 conversion)', () => {
+    // A nullable soft reference (like Note.authorAgentId) — a converted enquiry
+    // stamps its id here; contacts created by other means carry none.
+    const block = modelBlock('Contact');
+    expect(block).toMatch(/sourceEnquiryId\s+String\?\s+@map\("source_enquiry_id"\)\s+@db\.Uuid/);
+  });
 });
 
 describe('§J Property catalogue attributes (master spec §F)', () => {
