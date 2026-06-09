@@ -49,6 +49,16 @@ describe('proxy URL canonicalisation (FR-O-2/3)', () => {
     const res = proxy(get('https://acme.test/api/Webhook'));
     expect(res.status).not.toBe(301);
   });
+
+  it('leaves the Payload CMS surface (/admin/cms) untouched — it owns its own URLs', () => {
+    // Payload routes are case- and trailing-slash-sensitive; a SEO 301 would break
+    // admin navigation and the CMS API under /admin/cms/api.
+    const mixedCase = proxy(get('https://acme.test/admin/cms/Collections/Pages'));
+    expect(mixedCase.status).not.toBe(301);
+
+    const trailingSlash = proxy(get('https://acme.test/admin/cms/api/pages/'));
+    expect(trailingSlash.status).not.toBe(301);
+  });
 });
 
 describe('proxy tenant resolution (EPIC-S)', () => {
