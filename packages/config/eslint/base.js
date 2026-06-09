@@ -31,6 +31,17 @@ export default tseslint.config(
       'estate/design-token': 'error',
       'estate/trust-marker': 'error',
       'estate/pack-entitlement': 'error',
+      // Align with tsconfig's noUnusedParameters/noUnusedLocals, which ignore
+      // `_`-prefixed identifiers — used for intentionally-unused args (e.g. a
+      // forward-looking signature param) and ignored catch bindings.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   // G7 exemption: packages/tokens is the single source of truth where the raw
