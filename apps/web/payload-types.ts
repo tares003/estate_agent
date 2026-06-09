@@ -149,6 +149,7 @@ export interface Page {
         | StatsRowBlock
         | TestimonialsBlock
         | TwoColumnBlock
+        | PropertyGridBlock
       )[]
     | null;
   updatedAt: string;
@@ -282,6 +283,25 @@ export interface TwoColumnBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'two_column';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PropertyGridBlock".
+ */
+export interface PropertyGridBlock {
+  heading?: string | null;
+  /**
+   * Limit to sale or rent listings (leave empty for both).
+   */
+  saleType?: ('sale' | 'rent') | null;
+  listingType?: ('residential' | 'new_home' | 'commercial' | 'business_transfer' | 'care_home' | 'land') | null;
+  /**
+   * How many properties to show (default 6).
+   */
+  limit?: number | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'property_grid';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -510,6 +530,7 @@ export interface PagesSelect<T extends boolean = true> {
         stats_row?: T | StatsRowBlockSelect<T>;
         testimonials?: T | TestimonialsBlockSelect<T>;
         two_column?: T | TwoColumnBlockSelect<T>;
+        property_grid?: T | PropertyGridBlockSelect<T>;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -628,6 +649,18 @@ export interface TwoColumnBlockSelect<T extends boolean = true> {
         body?: T;
         id?: T;
       };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "PropertyGridBlock_select".
+ */
+export interface PropertyGridBlockSelect<T extends boolean = true> {
+  heading?: T;
+  saleType?: T;
+  listingType?: T;
+  limit?: T;
   id?: T;
   blockName?: T;
 }

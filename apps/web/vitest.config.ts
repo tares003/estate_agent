@@ -41,6 +41,10 @@ export default defineConfig({
         // verified by runtime smoke; its pure mapper (menu-mapper.ts) + SiteNav are
         // unit-tested.
         'components/SiteHeader.tsx',
+        // The property_grid renderer fetches the catalogue (Prisma) at render —
+        // glue, verified by build/e2e; its pure config->options mapping
+        // (property-grid-options.ts) is unit-tested.
+        'components/blocks/PropertyGridBlock.tsx',
         // The CMS editorial catch-all is thin fetch+render glue, verified by the
         // runtime smoke; its pure mapper (cms-mapper.ts) is unit-tested.
         'app/**/[[]...slug[]]/**',

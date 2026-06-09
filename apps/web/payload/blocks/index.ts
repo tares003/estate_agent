@@ -4,6 +4,7 @@ import { ctaStripBlock } from './ctaStrip.js';
 import { faqBlock } from './faq.js';
 import { heroBlock } from './hero.js';
 import { richTextBlock } from './richText.js';
+import { propertyGridBlock } from './propertyGrid.js';
 import { statsRowBlock } from './statsRow.js';
 import { testimonialsBlock } from './testimonials.js';
 import { threePillarBlock } from './threePillar.js';
@@ -13,6 +14,7 @@ export {
   ctaStripBlock,
   faqBlock,
   heroBlock,
+  propertyGridBlock,
   richTextBlock,
   statsRowBlock,
   testimonialsBlock,
@@ -32,4 +34,5 @@ export const pageBlocks: Block[] = [
   statsRowBlock,
   testimonialsBlock,
   twoColumnBlock,
+  propertyGridBlock,
 ];
