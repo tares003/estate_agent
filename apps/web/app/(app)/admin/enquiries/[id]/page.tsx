@@ -6,10 +6,15 @@ import { canTransition } from '@estate/validators';
 
 import { getDb } from '../../../lib/db.js';
 import { listEnquiryNotes, type NoteListReader } from '../../../lib/enquiry-notes.js';
+import {
+  listEnquiryStatusEvents,
+  type StatusEventReader,
+} from '../../../lib/enquiry-status-events.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { statusDisplay } from '../status-display.js';
 import { ConvertForm } from './ConvertForm.js';
 import { EnquiryNotesThread } from './EnquiryNotesThread.js';
+import { EnquiryTimeline } from './EnquiryTimeline.js';
 import { nextStatusOptions } from './next-statuses.js';
 import { NoteComposer } from './NoteComposer.js';
 import { StatusChanger } from './StatusChanger.js';
@@ -38,6 +43,7 @@ interface EnquiryDetailClient {
     findFirst(args: { where: Record<string, unknown> }): Promise<EnquiryDetailRow | null>;
   };
   note: NoteListReader['note'];
+  enquiryStatusEvent: StatusEventReader['enquiryStatusEvent'];
 }
 
 const RECEIVED = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -49,12 +55,15 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
     const tx = rawTx as unknown as EnquiryDetailClient;
     const enquiry = await tx.enquiry.findFirst({ where: { id } });
     if (!enquiry) return null;
-    const notes = await listEnquiryNotes({ note: tx.note }, id, { includeInternal: true });
-    return { enquiry, notes };
+    const [notes, events] = await Promise.all([
+      listEnquiryNotes({ note: tx.note }, id, { includeInternal: true }),
+      listEnquiryStatusEvents({ enquiryStatusEvent: tx.enquiryStatusEvent }, id),
+    ]);
+    return { enquiry, notes, events };
   });
 
   if (!data) notFound();
-  const { enquiry, notes } = data;
+  const { enquiry, notes, events } = data;
   const status = statusDisplay(enquiry.status);
 
   return (
@@ -106,6 +115,13 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
         </h2>
         <NoteComposer enquiryId={enquiry.id} />
         <EnquiryNotesThread notes={notes} />
+      </section>
+
+      <section aria-labelledby="activity-heading" className="flex flex-col gap-3">
+        <h2 id="activity-heading" className="t-heading-sm">
+          Activity
+        </h2>
+        <EnquiryTimeline events={events} />
       </section>
     </div>
   );
