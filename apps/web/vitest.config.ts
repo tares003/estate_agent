@@ -15,6 +15,7 @@ export default defineConfig({
       'components/**/*.test.{ts,tsx}',
       'payload/**/*.test.{ts,tsx}',
       'proxy.test.{ts,tsx}',
+      'tenant-host.test.{ts,tsx}',
     ],
     // Integration tests (real Postgres + PostGIS via Testcontainers) are opt-in —
     // `pnpm test:integration`; kept out of the fast, Docker-free unit run.
@@ -27,6 +28,7 @@ export default defineConfig({
         'components/**/*.{ts,tsx}',
         'payload/**/*.{ts,tsx}',
         'proxy.ts',
+        'tenant-host.ts',
       ],
       exclude: [
         'app/**/*.test.{ts,tsx}',
