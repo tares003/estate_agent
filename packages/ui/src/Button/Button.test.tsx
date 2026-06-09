@@ -4,7 +4,7 @@ import axe from 'axe-core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { Button } from './Button.js';
+import { Button, buttonClassName } from './Button.js';
 
 describe('Button', () => {
   it('renders its children as the accessible label', () => {
@@ -150,5 +150,19 @@ describe('Button', () => {
     );
     const results = await axe.run(container, axeOptions);
     expect(results.violations).toEqual([]);
+  });
+});
+
+describe('buttonClassName', () => {
+  it('defaults to the primary md button classes', () => {
+    expect(buttonClassName()).toBe('btn primary md');
+  });
+
+  it('applies the given variant and size (for a link styled as a button)', () => {
+    expect(buttonClassName({ variant: 'secondary', size: 'lg' })).toBe('btn secondary lg');
+  });
+
+  it('adds the loading class when loading', () => {
+    expect(buttonClassName({ loading: true })).toBe('btn primary md loading');
   });
 });
