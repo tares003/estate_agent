@@ -757,3 +757,17 @@ All gates green: apps/web 118 unit tests · typecheck · ESLint · diff guards G
 Token spend rough estimate: 4-reader understand workflow + 6 render modules + 14 tests + zod dep + gate run + plan capture — substantial.
 
 ---
+
+## Blocker — Payload admin mount halted on Next-version incompatibility (2026-06-08)
+
+While attempting the Payload admin-mount spike (after B21's render layer), the install surfaced a **hard peer-dependency blocker**: `@payloadcms/next@3.85.0` (the latest Payload) supports Next `>=15.2.9 <15.3.0 || >=15.3.9 <15.4.0 || >=15.4.11 <15.5.0 || >=16.2.6 <17.0.0`. The app runs **Next 15.5.19**, which is in an **unsupported gap**, and no newer Payload widens the range.
+
+Per the §6 blocker policy: the spike (the Payload deps + sharp build-flag) was **reverted cleanly** — `git checkout` restored package.json + the lockfile, the working tree is back at B21, and `next build` + the app are unaffected. The B21 render layer stands.
+
+**Resolution needs an owner decision** (a CLAUDE.md §9 stack amendment) — recorded as **D-021**:
+- **(a)** Pin Next to **15.4.x** (highest supported 15-line; minimal, but a small downgrade from 15.5), or
+- **(b)** Upgrade to **Next 16.2.6+** (forward, but a major-version jump).
+
+Whichever is chosen, the dedicated Payload-mount session must re-verify the whole app (catalogue / detail / SEO / middleware + 118 unit + the e2e suite) on the new Next line, then proceed with the mount per the B21 plan (minimal config → prove `next build` → collections + Block schemas mirroring the `components/blocks/*` renderers → wire `PageRenderer` to live CMS pages).
+
+---
