@@ -1,4 +1,5 @@
 export { decryptCredentials, encryptCredentials, type SmtpCredentials } from './credentials.js';
+export { decryptSecret, encryptSecret, isSecretEnvelope } from './secret.js';
 export {
   NodemailerMailer,
   type Mailer,

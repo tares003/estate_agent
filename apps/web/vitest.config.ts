@@ -37,6 +37,10 @@ export default defineConfig({
         // (constructing the clients pulls server-only/heavy deps into jsdom).
         'app/**/lib/db.ts',
         'app/**/lib/cms.ts',
+        // Per-tenant Mailer resolver: Payload Local API + decrypt → NodemailerMailer
+        // (glue); the crypto + field logic are unit-tested in @estate/email +
+        // payload/fields/secret-field.ts.
+        'app/**/lib/tenant-mailer.ts',
         // The async public header fetches the CMS menu (Payload Local API) — glue,
         // verified by runtime smoke; its pure mapper (menu-mapper.ts) + SiteNav are
         // unit-tested.

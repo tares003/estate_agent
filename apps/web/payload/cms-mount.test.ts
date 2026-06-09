@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { tenantCreateAccess, tenantScopedAccess } from './access/tenant.js';
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './cms-config.js';
 import { CmsUsers } from './collections/CmsUsers.js';
+import { EmailSettings } from './collections/EmailSettings.js';
 import { EmailTemplates } from './collections/EmailTemplates.js';
 import { Media } from './collections/Media.js';
 import { Menus } from './collections/Menus.js';
@@ -141,5 +142,27 @@ describe('EmailTemplates collection (EPIC-D FR-D-8)', () => {
         'variables',
       ]),
     );
+  });
+});
+
+describe('EmailSettings collection (per-tenant SMTP, B29)', () => {
+  it('is the `email_settings` collection, tenant-scoped', () => {
+    expect(EmailSettings.slug).toBe('email_settings');
+    expect(EmailSettings.access?.read).toBe(tenantScopedAccess);
+    expect(EmailSettings.access?.create).toBe(tenantCreateAccess);
+  });
+
+  it('declares the SMTP fields', () => {
+    expect(fieldNames(EmailSettings.fields)).toEqual(
+      expect.arrayContaining(['tenant', 'host', 'port', 'secure', 'user', 'pass', 'fromAddress']),
+    );
+  });
+
+  it('encrypts the password field at rest (secret field with hooks)', () => {
+    const pass = EmailSettings.fields.find((f) => 'name' in f && f.name === 'pass') as
+      | { hooks?: { beforeChange?: unknown[]; afterRead?: unknown[] } }
+      | undefined;
+    expect(pass?.hooks?.beforeChange?.length).toBeGreaterThan(0);
+    expect(pass?.hooks?.afterRead?.length).toBeGreaterThan(0);
   });
 });

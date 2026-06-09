@@ -7,6 +7,7 @@ import { buildConfig } from 'payload';
 
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './payload/cms-config.js';
 import { CmsUsers } from './payload/collections/CmsUsers.js';
+import { EmailSettings } from './payload/collections/EmailSettings.js';
 import { EmailTemplates } from './payload/collections/EmailTemplates.js';
 import { Media } from './payload/collections/Media.js';
 import { Menus } from './payload/collections/Menus.js';
@@ -31,7 +32,7 @@ export default buildConfig({
     admin: CMS_ADMIN_ROUTE,
     api: CMS_API_ROUTE,
   },
-  collections: [Pages, Media, Menus, EmailTemplates, CmsUsers],
+  collections: [Pages, Media, Menus, EmailTemplates, EmailSettings, CmsUsers],
   editor: lexicalEditor(),
   secret: process.env['PAYLOAD_SECRET'] ?? '',
   db: postgresAdapter({

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@estate/db": "workspace:*",
+    "@estate/email": "workspace:*",
     "@estate/entitlement": "workspace:*",
     "@estate/i18n": "workspace:*",
     "@estate/tokens": "workspace:*",
