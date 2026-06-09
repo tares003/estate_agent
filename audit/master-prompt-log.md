@@ -1425,3 +1425,22 @@ Replace the `DEV_STAFF_USER_ID` lookup with the **Better Auth staff session cook
 6 new tests (isStaffRole accept/reject; staffSessionFromUser valid role + the fail-safe; loadStaffSession found/not-found). `@estate/auth` 46 tests (roles.ts 100%); full app suite 400 passed; `staff-user.ts` 100% (the seam is glue, excluded — its resolution logic is the tested staff-user.ts + @estate/auth). `next build` green; tsc (auth + web) + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G10/G11 — all green. (End-to-end RBAC enforcement — e.g. a seeded `read_only_auditor` denied `enquiry.write` — needs the seeded dev user + `DEV_STAFF_USER_ID`; the fail-safe + permission logic are unit-proven.)
 
 ---
+
+## Phase B48 — EPIC-H staff users list at /admin/users (FR-H-15 list) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-users-list)
+
+The staff directory — surfaces the users + roles that now drive RBAC (B47), and makes the dev-login usable (find a user's id for `DEV_STAFF_USER_ID`).
+
+- `lib/users.ts` (read model, tested): `listUsers` over a structural client (mirrors contacts.ts) — name-ordered, clamped pagination. Tenant-scoped (RLS). 100%.
+- `admin/users/UsersTable.tsx`: semantic table (`th scope=col`) — Name / Email / **Role** (humanised, e.g. `super_admin` → "Super admin", a neutral Badge); empty state; pagination. Token-driven (G7).
+- `admin/users/page.tsx` (RSC): tenant-scoped `listUsers` via withTenant (page param parsed inline).
+- `components/admin/admin-nav.ts`: a Team section with Users.
+
+### Verification
+9 tests (list name-order + clamp/skip; table rows + humanised role + empty state + pagination; the page tenant-scoped query + page passthrough + bare entry; nav includes Users). Full app suite 407 passed; `users.ts` 100%, others meet their thresholds. `next build` compiles `/admin/users`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-15 remainder)
+Role editing, the permissions matrix, invite + "test as role" — all state-changing user management, which lands with the Better Auth staff-session work (B47 TODO).
+
+---

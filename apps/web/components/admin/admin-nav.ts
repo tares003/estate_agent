@@ -29,6 +29,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       { label: 'Audit log', href: '/admin/audit' },
     ],
   },
+  { label: 'Team', items: [{ label: 'Users', href: '/admin/users' }] },
 ];
 
 /**
