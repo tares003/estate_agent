@@ -645,3 +645,38 @@ All gates green: apps/web 96 unit tests (catalogue/detail/sitemap/robots/seo/ten
 Token spend rough estimate: seo helpers + view-model extension + metadata on two routes + JSON-LD + sitemap + robots + ~16 tests + gate run — substantial.
 
 ---
+
+## Phase B19 — EPIC-O URL canonicalisation middleware (FR-O-2/3) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `1a98c9d` → `fc86c53` (RED) → `7f12c63` (GREEN)
+Tests added: 8 (apps/web 104 unit total)
+
+A clean, certain, infra-free wave completing the **URL-canonicalisation** half of EPIC-O (FR-O-2/3), complementing B18's metadata/JSON-LD. Chosen over the page-level e2e — which is now **de-risked but still a large harness** (see "e2e readiness" below) best done as its own session.
+
+### Shipped
+
+- **`middleware.ts`** now canonicalises public **GET/HEAD** URLs: an uppercase path or a trailing slash **301**-redirects to the lowercase, slash-less canonical (query preserved) — so links and crawlers converge on one address (FR-O-2/3). Non-GET requests (a 301 would drop a Server-Action body) and `/api/*` are left untouched; EPIC-S tenant resolution is unchanged. `canonicalPath` is exported + unit-tested.
+- The vitest `include`/coverage globs now pick up the apps/web-root `middleware.{ts,test.ts}`.
+
+### e2e readiness (for the next session)
+
+Confirmed the page-level Playwright e2e is feasible and scoped the remaining work: **`prisma generate` succeeds** (v6.19.3 → the app can query a real DB), **chromium browsers are present** (1223). Still needed: `@playwright/test` + `@axe-core/playwright` (devDeps) and a harness — a fixed-port Postgres+PostGIS container (globalSetup: db push + migrations + seed under the dev tenant) feeding a `next dev` webServer, then specs running axe (a11y) + responsive over /properties + detail. A dedicated session.
+
+### Deferred (still)
+
+- FR-O-11/12 (managed redirects table + slug-change 301s) — need EPIC-J.
+
+### Verification
+
+All gates green: apps/web 104 unit tests · typecheck · ESLint · diff guards G1/G2/G10/G11 · `next build` (middleware 34.4 kB) · prettier. middleware.ts 100% line / 90% branch (domain scope).
+
+### Next
+
+- **Page-level Playwright e2e** (de-risked above) — its own session.
+- **EPIC-D Payload CMS** mount.
+- Wire property **images** into detail + SEO (D-019).
+
+Token spend rough estimate: middleware canonicalisation + 8 tests + vitest glob + gate run — modest.
+
+---
