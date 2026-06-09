@@ -998,3 +998,27 @@ Render engine 8 tests @ 100% coverage; collection contract; repo-wide test + lin
 - The admin "send test" button + Lexical-body→HTML serialisation at send time (reuse `convertLexicalToHTML`) + per-tenant **SMTP credential storage** (no tenant-settings store exists yet — `@estate/email` already has the encrypt/decrypt + Mailer; it needs a place to persist per-tenant creds). The send PATH is built + tested (via the injected Mailer); only the credential plumbing is deferred.
 
 ---
+
+## Phase B29 — per-tenant SMTP settings (completes FR-D-8 send path) (2026-06-09)
+
+Status: **complete** (branch feat/tenant-smtp-settings → PR #3; off main after PR #2 merged)
+Main: `4bf302c` (RED) → `4da1407` (GREEN secret) → `74a49aa` (RED) → `9b1e050` (GREEN field) → `22a1b38` (collection + resolver)
+
+> PR #2 (B28 email templates) **merged to main** (`4d587c2`) on owner authorisation; this phase continues on a fresh branch.
+
+Per-tenant SMTP configuration, encrypted at rest — the storage the FR-D-8 send-test needed.
+
+- **`@estate/email` secret primitive** (`secret.ts`, 100% covered): `encryptSecret`/`decryptSecret` (string AES-256-GCM envelope) + `isSecretEnvelope`. `credentials.ts` now **delegates** to it (DRY; its tests still pass).
+- **Reusable `secretField`** (`apps/web/payload/fields/secret-field.ts`): a Payload text field that encrypts its value at rest on write, masks it on read, and never re-encrypts an unchanged (masked) resubmission. Pure write/read logic + `emailEncryptionKey` (env, fail-closed) unit-tested.
+- **`email_settings` collection** (tenant-scoped): host/port/secure/user/**pass (secretField)**/fromAddress/replyTo.
+- **`getTenantMailer(tenantId)`** resolver: reads the raw ciphertext via `context: { decryptSecrets: true }`, decrypts server-side, constructs the per-tenant `NodemailerMailer` — wiring the FR-D-8 send path end-to-end.
+
+### Verification
+
+100%-covered crypto primitive + secret-field logic; collection contract; typecheck + repo lint + prettier + `next build` + diff guards G1/G2/G10/G11 — all green. **Runtime smoke** (Docker Postgres + next dev + `EMAIL_ENCRYPTION_KEY`): the password is stored as **ciphertext** (len 58, not the plaintext) and the API returns the **mask `••••••••`** — no plaintext leak.
+
+### Follow-up
+
+- The admin **"send test" button** (Payload custom UI / endpoint) that calls `renderTemplate` + `getTenantMailer` + `sendTemplatedEmail` — the building blocks all exist + are tested; only the admin-UI wiring remains. Operator (platform-level) SMTP via env is separate (master spec §S).
+
+---
