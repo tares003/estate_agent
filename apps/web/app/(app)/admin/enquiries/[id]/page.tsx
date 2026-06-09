@@ -2,13 +2,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { withTenant } from '@estate/db';
 import { Badge } from '@estate/ui';
+import { canTransition } from '@estate/validators';
 
 import { getDb } from '../../../lib/db.js';
 import { listEnquiryNotes, type NoteListReader } from '../../../lib/enquiry-notes.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { statusDisplay } from '../status-display.js';
+import { ConvertForm } from './ConvertForm.js';
 import { EnquiryNotesThread } from './EnquiryNotesThread.js';
 import { nextStatusOptions } from './next-statuses.js';
+import { NoteComposer } from './NoteComposer.js';
 import { StatusChanger } from './StatusChanger.js';
 
 // EPIC-H enquiry detail (FR-H-3) — a single enquiry: its summary, the status
@@ -88,10 +91,20 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
         <StatusChanger enquiryId={enquiry.id} options={nextStatusOptions(enquiry.status)} />
       </section>
 
+      {canTransition(enquiry.status, 'converted') ? (
+        <section aria-labelledby="convert-heading" className="flex flex-col gap-3">
+          <h2 id="convert-heading" className="t-heading-sm">
+            Convert
+          </h2>
+          <ConvertForm enquiryId={enquiry.id} />
+        </section>
+      ) : null}
+
       <section aria-labelledby="notes-heading" className="flex flex-col gap-3">
         <h2 id="notes-heading" className="t-heading-sm">
           Notes
         </h2>
+        <NoteComposer enquiryId={enquiry.id} />
         <EnquiryNotesThread notes={notes} />
       </section>
     </div>

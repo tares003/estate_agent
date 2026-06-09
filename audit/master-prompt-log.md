@@ -1256,3 +1256,21 @@ The enquiry **detail page** at `/admin/enquiries/[id]` — the first surface tha
 The note composer + convert form on this page (next PR); the activity timeline (email/SMS/call-log composers); the slide-over presentation (intercepting route) over the queue; the live-update via action-side revalidatePath.
 
 ---
+
+## Phase B39 — EPIC-H note composer + convert form on enquiry detail (FR-H-3 / FR-I-6) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-enquiry-actions)
+
+The detail page now wires the remaining two EPIC-I actions — adding a note and converting an enquiry. With this, all three CRM write actions (status, note, convert) are usable from the admin UI; the enquiry lifecycle is operable end-to-end.
+
+- `[id]/NoteComposer.tsx` (client): `useActionState(addEnquiryNote)`. A note is staff-internal by default; ticking "Visible to the client" submits `isInternal=false` (the action treats only an explicit `false` as client-visible). On success it remounts the form (clearing it) and refreshes so the new note appears in the thread.
+- `[id]/ConvertForm.tsx` (client): `useActionState(convertEnquiry)` — the staff member picks the contact type (Buyer/Tenant/Vendor/Landlord), refreshes on success, and confirms. The page renders it only when `canTransition(status, "converted")`; the action re-checks server-side.
+- `[id]/page.tsx`: composer added to the Notes section; a Convert section shown only when the enquiry can legally reach `converted`.
+
+### Verification
+9 new tests (composer fields + the internal-default toggle, submit+refresh, error-no-refresh; convert offering the four types, convert+refresh+confirm, error-no-refresh; the page showing the composer always and the convert form only when convertible). Full app suite 350 passed; `NoteComposer`/`ConvertForm` 100%, page meets its scope threshold. `next build` green; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### EPIC-H + EPIC-I status
+The CRM is operable end-to-end in the admin: queue (B37) → detail (B38) → change status / add note / convert (B38–B39), all RBAC-gated + audited (G4) at the action layer. Remaining EPIC-I: assignment (FR-I-3, needs EPIC-N roster), SLA (FR-I-4, needs a status-event timeline), bulk ops (FR-I-8), saved views (FR-I-9). Remaining EPIC-H: the full KPI dashboard, every other admin surface, the slide-over presentation, command palette, and the full-page responsive + axe Playwright pass.
+
+---
