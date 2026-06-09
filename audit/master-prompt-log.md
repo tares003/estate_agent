@@ -1218,3 +1218,22 @@ The first EPIC-H slice — the **tenant admin shell**: the chrome every `/admin`
 The enquiry queue page (FR-H-3 list) + the detail slide-over wiring the status/note/convert actions (next PRs); the full KPI dashboard (FR-H-1); the collapsing-rail + hamburger-drawer responsive behaviour; breadcrumbs + global search + notifications + command palette (FR-H-21); every other admin surface.
 
 ---
+
+## Phase B37 — EPIC-H enquiry queue page (FR-H-3 list) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-enquiry-queue)
+
+The CRM **lead queue** at `/admin/enquiries` — the first real admin surface, rendering the EPIC-I `listEnquiries` read model (B32) inside the admin shell (B36).
+
+- `app/(app)/admin/enquiries/status-display.ts` (pure, tested): maps each enquiry status to a semantic Badge tone + label (no dedicated status colour token exists for enquiries — the `--colour-status-*` set is property market_status), and the age band to an SLA-urgency tone (green to success/"On track", amber to warning/"Due soon", red to danger/"Overdue"). Unknown status falls back gracefully. 100%.
+- `app/(app)/admin/enquiries/queue-params.ts` (pure, tested): `parseEnquiryQueueParams` (URL to read-model options; drops invalid status / non-oldest sort / page 1; first-value on repeats) + `enquiryQueueQuery` (options to query string, page override for pagination). The URL is the single source of truth. 100%.
+- `app/(app)/admin/enquiries/EnquiryQueueTable.tsx`: the queue table — a server-rendered GET filter form (status + sort, no JS, submitting drops `page` so it resets to 1), a semantic table (`th scope=col` so every cell announces its header), status + response-age Badges, an empty state, and filter-preserving pagination. Token-driven (G7).
+- `app/(app)/admin/enquiries/page.tsx` (RSC): resolves the tenant, runs `listEnquiries` inside the tenant RLS scope (`withTenant`), renders the table. Thin composition.
+
+### Verification
+17 tests (status/age tone+label matrix; URL parse/serialise incl. invalid-drop + repeats; table rows/badges/empty-state/pagination; the page tenant-scoped query incl. the default archived-hidden where, the status-filter passthrough, and the bare no-params entry). Full app suite 330 passed; `queue-params`/`status-display` 100%, page meets its scope threshold. `next build` compiles `/admin/enquiries`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-3 remainder)
+The enquiry detail slide-over wiring the status/note/convert actions (next PR); multi-select + bulk-action bar (FR-I-8); density toggle; column-visibility; saved views (FR-I-9); the stack-to-cards responsive layout (Playwright pass).
+
+---
