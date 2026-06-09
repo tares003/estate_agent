@@ -516,3 +516,35 @@ All gates green: @estate/validators 83 tests (100% cov) · apps/web 71 tests (ca
 Token spend rough estimate: understand workflow + validator + repository extension + filter bar + route + search-params + ~30 tests + 4-lens review + fixes + full gate run — substantial.
 
 ---
+
+## Phase B15 — EPIC-F text location filter (town + postcode) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `9db3a65` → `71d76b6` (RED) → `792d6aa` (GREEN)
+Tests added: ~7 (@estate/validators 84 total; apps/web 73 total)
+
+A focused extension of the B14 filter layer: the catalogue's free-text **location** filter (master spec §C.10 "Cities/Location", §K.1 "location, postcode"), reusing the B14 parse → where → UI → chip pattern (already adversarially reviewed in B14).
+
+### Shipped
+
+- **`propertySearchSchema.location`** — a trimmed, length-capped (≤100), fail-soft free-text field (blank / over-long → dropped). Serialised first in the query string.
+- **`searchProperties`** — a `location` matches `{ OR: [ town contains (case-insensitive), postcode startsWith (upper) ] }`, so "Didsbury" (town) and "M20" (postcode prefix) both work; ANDed with the other filters.
+- **Filter bar** — leads with a `Location` text input (`TextField`, native, pre-filled). **`search-params.ts`** serialises `location` and renders an "In &lt;location&gt;" removable chip.
+
+### Scope note
+
+This is the **text** location filter. Geographic **radius** search (PostGIS `ST_DWithin` on the `geog` column from migration 0004) is deliberately deferred: it needs PostGIS (absent in pglite), Testcontainers (Docker unavailable here), and a **geocoding source** decision (location text → coordinates) — none verifiable in this environment, so it is not shipped blind. The location input UI built here is what radius will reuse.
+
+### Verification
+
+All gates green: @estate/validators 84 tests (100% cov) · apps/web 73 tests (catalogue route 98.9%/94.6% branch; all scope thresholds met) · typecheck · ESLint (incl. G12) · diff guards G1/G2/G10/G11 · `next build` (/properties 114 kB First Load JS) · prettier.
+
+### Next
+
+- EPIC-F **radius/PostGIS** search — once a geocoding source is chosen and a PostGIS test path (Testcontainers/Docker) is available.
+- Page-level **Playwright e2e** (needs a running Postgres).
+- EPIC-C vertical landings + the **EPIC-D Payload CMS** mount.
+
+Token spend rough estimate: validator field + where OR + filter input + chip + ~7 tests + full gate run — modest (reused B14 patterns).
+
+---
