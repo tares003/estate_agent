@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withPayload } from '@payloadcms/next/withPayload';
 
 const config: NextConfig = {
   reactStrictMode: true,
@@ -18,7 +19,7 @@ const config: NextConfig = {
   //
   // Next 16 defaults to Turbopack, so the app builds/runs with `--webpack` (see the
   // package.json scripts): this webpack config is honoured, and Payload's
-  // `withPayload` (which injects a webpack config) will compose here too (CLAUDE.md §9).
+  // `withPayload` (which injects a webpack config) composes over it (CLAUDE.md §9).
   webpack(config) {
     config.resolve ??= {};
     config.resolve.extensionAlias = {
@@ -29,4 +30,6 @@ const config: NextConfig = {
   },
 };
 
-export default config;
+// withPayload mounts the CMS: it sets the `@payload-config` alias, externalises
+// Payload's server-only packages, and wraps the webpack config above.
+export default withPayload(config);

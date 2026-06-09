@@ -10,20 +10,36 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./test-setup.ts'],
-    include: ['app/**/*.test.{ts,tsx}', 'components/**/*.test.{ts,tsx}', 'proxy.test.{ts,tsx}'],
+    include: [
+      'app/**/*.test.{ts,tsx}',
+      'components/**/*.test.{ts,tsx}',
+      'payload/**/*.test.{ts,tsx}',
+      'proxy.test.{ts,tsx}',
+    ],
     // Integration tests (real Postgres + PostGIS via Testcontainers) are opt-in —
     // `pnpm test:integration`; kept out of the fast, Docker-free unit run.
     exclude: ['**/node_modules/**', '**/dist/**', '**/*.integration.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'lcov'],
-      include: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'proxy.ts'],
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'payload/**/*.{ts,tsx}',
+        'proxy.ts',
+      ],
       exclude: [
         'app/**/*.test.{ts,tsx}',
+        'payload/**/*.test.{ts,tsx}',
         'app/**/layout.tsx',
         // Request/connection glue (Prisma client construction) — exercised via
         // integration/e2e, not unit tests (constructing Prisma overflows jsdom).
         'app/lib/db.ts',
+        // The Payload mount's framework glue (route group + handlers) is verified
+        // by `next build` + a runtime smoke, not unit coverage — same rationale as
+        // layout.tsx / db.ts above. The testable config (collections, cms-config)
+        // stays in coverage via the cms-mount contract test.
+        'app/(payload)/**',
         '**/*.config.*',
       ],
     },
