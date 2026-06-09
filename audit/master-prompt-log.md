@@ -1051,3 +1051,31 @@ Either deserves an ADR + a focused, well-smoked phase (incl. a cross-tenant nega
 13 unit tests @ 100% lines; typecheck + repo lint + prettier + diff guards G1/G2/G10/G11 — all green. Proxy + access flow untouched.
 
 ---
+
+## Phase B30b — proxy resolves tenant by hostname (EPIC-S FR-S-1 wiring) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-S-proxy-resolution → PR #5; off main after PR #4 merged)
+Main: `93ddfe8` (RED) → `602117a` (GREEN)
+
+> PR #4 (B30 resolution core) **merged to main** (`670bbb3`). This wires it live.
+
+Replaces the proxy's `DEV_TENANT_ID` stub with **real hostname→tenant resolution** (Option A). Verified that **Next 16's proxy always runs on the Node.js runtime**, so the per-request lookup can use Prisma directly — keeping the single resolution point (the proxy sets `x-estate-tenant`, which both the app and Payload access functions already read; zero change to either consumer).
+
+- The proxy resolves the request host → active tenant id via `createTenantRegistry(getDb())` + `resolveTenantIdByHost` (from B30), **cached per host (60s TTL)**.
+- **Security**: the inbound `x-estate-tenant` is always stripped; only the server-resolved value is set — the forgery hole is closed AND routing is now by real subdomain / custom domain.
+- Unknown / suspended hosts → no tenant (fail closed). Non-tenant hosts in dev (localhost apex) → the dev tenant, so dev + the e2e keep working. `PLATFORM_BASE_DOMAIN` configures the base.
+
+### Verification — FR-S-2 cross-tenant, with REAL resolution
+
+Runtime smoke (Docker Postgres + `prisma db push` + **2 seeded tenants** + `next dev` with `PLATFORM_BASE_DOMAIN=estateplatform.test`):
+- `acme.estateplatform.test` resolved to acme via a real **Prisma query in the Node middleware**; a page created under that host stored `tenant=acme`.
+- Reading as `other.estateplatform.test` → **0 pages** (acme's page invisible).
+- `ghost.estateplatform.test` (unknown) → **0** (fail closed).
+
+`next build` bundles Prisma for the proxy; 260 unit tests (proxy: forgery-strip, host-resolve, dev-fallback, pathname); tsc + repo lint + prettier + diff guards G1/G2/G10/G11 — all green.
+
+### Note
+
+EPIC-S the EPIC (provisioning, lifecycle, custom-domain wizard, TLS auto-issue, billing-metering, usage rollup) remains its own large body of work; FR-S-1 hostname resolution + FR-S-2 isolation are now done end-to-end.
+
+---
