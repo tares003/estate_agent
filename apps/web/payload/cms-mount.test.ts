@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { tenantCreateAccess, tenantScopedAccess } from './access/tenant.js';
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './cms-config.js';
 import { CmsUsers } from './collections/CmsUsers.js';
+import { EmailTemplates } from './collections/EmailTemplates.js';
 import { Media } from './collections/Media.js';
 import { Menus } from './collections/Menus.js';
 import { Pages } from './collections/Pages.js';
@@ -112,5 +113,33 @@ describe('Menus collection (EPIC-D FR-D-7 navigation)', () => {
 
   it('has no draft/version workflow (menus are immediate-on-save)', () => {
     expect((Menus.versions as { drafts?: unknown } | undefined)?.drafts).not.toBe(true);
+  });
+});
+
+describe('EmailTemplates collection (EPIC-D FR-D-8)', () => {
+  it('is the `email_templates` collection titled by name', () => {
+    expect(EmailTemplates.slug).toBe('email_templates');
+    expect(EmailTemplates.admin?.useAsTitle).toBe('name');
+  });
+
+  it('is tenant-scoped with the same access helpers as the other content collections', () => {
+    expect(EmailTemplates.access?.read).toBe(tenantScopedAccess);
+    expect(EmailTemplates.access?.update).toBe(tenantScopedAccess);
+    expect(EmailTemplates.access?.delete).toBe(tenantScopedAccess);
+    expect(EmailTemplates.access?.create).toBe(tenantCreateAccess);
+  });
+
+  it('declares key, name, subject, preheader, body and variables fields', () => {
+    expect(fieldNames(EmailTemplates.fields)).toEqual(
+      expect.arrayContaining([
+        'tenant',
+        'key',
+        'name',
+        'subject',
+        'preheader',
+        'body',
+        'variables',
+      ]),
+    );
   });
 });
