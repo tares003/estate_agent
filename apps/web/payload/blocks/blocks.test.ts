@@ -6,6 +6,7 @@ import type { ZodTypeAny } from 'zod';
 import { ctaStripBlockSchema } from '../../components/blocks/CtaStripBlock.js';
 import { faqBlockSchema } from '../../components/blocks/FaqBlock.js';
 import { heroBlockSchema } from '../../components/blocks/HeroBlock.js';
+import { propertyGridBlockSchema } from '../../components/blocks/property-grid-options.js';
 import { statsRowBlockSchema } from '../../components/blocks/StatsRowBlock.js';
 import { testimonialsBlockSchema } from '../../components/blocks/TestimonialsBlock.js';
 import { threePillarBlockSchema } from '../../components/blocks/ThreePillarBlock.js';
@@ -16,6 +17,7 @@ import { ctaStripBlock } from './ctaStrip.js';
 import { faqBlock } from './faq.js';
 import { heroBlock } from './hero.js';
 import { pageBlocks } from './index.js';
+import { propertyGridBlock } from './propertyGrid.js';
 import { richTextBlock } from './richText.js';
 import { statsRowBlock } from './statsRow.js';
 import { testimonialsBlock } from './testimonials.js';
@@ -43,6 +45,9 @@ const DIRECT: { block: Block; schema: { shape: Record<string, ZodTypeAny> }; typ
   { block: statsRowBlock, schema: statsRowBlockSchema, type: 'stats_row' },
   { block: testimonialsBlock, schema: testimonialsBlockSchema, type: 'testimonials' },
   { block: twoColumnBlock, schema: twoColumnBlockSchema, type: 'two_column' },
+  // property_grid's data is filter CONFIG; the renderer fetches. The config still
+  // mirrors the Payload fields 1:1, so it belongs in the parity contract.
+  { block: propertyGridBlock, schema: propertyGridBlockSchema, type: 'property_grid' },
 ];
 
 for (const { block, schema, type } of DIRECT) {
