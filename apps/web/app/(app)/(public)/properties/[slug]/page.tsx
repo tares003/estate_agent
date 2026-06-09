@@ -138,6 +138,15 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
         <aside aria-label="Enquire about this property">
           <EnquiryForm propertyId={property.id} propertyTitle={title} />
+          <p className="t-body-sm text-text-secondary mt-4">
+            Prefer to see it in person?{' '}
+            <a
+              href={`/properties/${property.slug}/viewing`}
+              className="text-brand-primary underline underline-offset-4"
+            >
+              Book a viewing
+            </a>
+          </p>
         </aside>
       </div>
     </main>

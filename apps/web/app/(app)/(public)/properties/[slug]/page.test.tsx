@@ -80,6 +80,12 @@ describe('PropertyDetailPage', () => {
     const form = screen.getByTestId('enquiry-form');
     expect(form).toHaveAttribute('data-property-id', '11111111-1111-1111-1111-111111111111');
     expect(form).toHaveTextContent('Edwardian semi · 4 bed');
+
+    // a "Book a viewing" link to the per-property viewing route
+    expect(screen.getByRole('link', { name: 'Book a viewing' })).toHaveAttribute(
+      'href',
+      '/properties/palatine-road-m20/viewing',
+    );
   });
 
   it('renders a minimal property with no description or stats', async () => {

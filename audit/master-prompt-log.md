@@ -1499,3 +1499,22 @@ The public **"Contact us"** flow — fixes the dead `/contact` link the site nav
 Buyer enquiry (property detail) · valuation (/valuation) · general contact (/contact) all produce tenant-scoped, consented, audited enquiries in the CRM queue (FR-I-1). Remaining public forms — viewing request (needs a per-property sub-route to avoid a two-forms id collision) + repair intake (EPIC-G) — are the next public-side slices.
 
 ---
+
+## Phase B52 — EPIC-F viewing request flow at /properties/[slug]/viewing (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-F-viewing-form)
+
+The public **"Book a viewing"** flow — the fourth and final public enquiry form. A **per-property sub-route** so its field ids never collide with the property-detail enquiry form (the reason it isn't a second form on the detail page). Feeds the CRM queue (FR-I-1).
+
+- `[slug]/viewing/actions.ts` — `submitViewing`: parse `viewingRequestSchema` → **verify Turnstile before any write (G8)** → `withTenant`: `recordConsent` (verbatim text — G5) + create a **viewing-channel enquiry against the property** (`propertyId` + `lead_type = viewing_request` via bracket — G6) with the preferred/alternative dates composed into the message + `audit('enquiry.created')` (G4). Tenant-scoped (RLS).
+- `[slug]/viewing/ViewingForm.tsx` — client `useActionState` form (name / email / phone / preferred + alternative date inputs / message? + hidden `propertyId` + verbatim consent + Turnstile).
+- `[slug]/viewing/page.tsx` — fetches the property by slug (tenant-scoped, 404 if unknown), renders the form; canonical + **noindex** metadata (the form page is thin/duplicative).
+- `[slug]/page.tsx` — a **"Book a viewing"** link added to the detail page for discoverability.
+
+### Verification
+9 viewing tests + 1 detail-page assertion (action: records consent + the viewing enquiry against the property + audit; rejects invalid before any write; **fails closed on Turnstile**; form fields incl. property + dates + verbatim consent + field-linked errors; page renders the form + 404s an unknown slug + canonical/noindex metadata; the detail page links to the viewing route). Full app suite 442 passed. `next build` compiles `/properties/[slug]/viewing`; tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G4/G5/G10/G11 — all green.
+
+### Public-form coverage COMPLETE
+All four public enquiry channels now produce tenant-scoped, consented, audited enquiries in the CRM queue with the correct `lead_type`: buyer enquiry (property detail), **valuation** (/valuation), **general contact** (/contact), **viewing** (/properties/[slug]/viewing). The remaining public form is repair intake (EPIC-G).
+
+---
