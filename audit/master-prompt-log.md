@@ -1153,3 +1153,24 @@ FR-I-5 — threaded notes on an enquiry with an **is-internal** flag controlling
 5 note-action tests (internal-by-default + audit; client-visible when `isInternal=false`; empty-note rejected before any write; not-found writes nothing; **RBAC-denied before `withTenant`**). Full app suite 289 passed; `enquiry-notes.ts` 100%, `note-actions.ts` 98.6% (> scope threshold), validators `enquiry-note.ts` 100%, db schema-shape 41 pass. Runtime smoke: **`prisma db push` against Docker PostGIS 16 applied the migration** — `notes.is_internal boolean NOT NULL DEFAULT true` confirmed. tsc + `next build` + repo lint (G6 clean) + prettier + diff guards G1/G2/G10/G11 — all green.
 
 ---
+
+## Phase B34 — EPIC-I CRM: enquiry pipeline report (FR-I-10) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-I-reports)
+
+FR-I-10 / master spec §I.5 — the first built-in CRM report: the **enquiry conversion funnel + by-source breakdown**. A pure aggregation read model — no schema change, no EPIC-N dependency, counts only (no personal data leaves the module).
+
+### `apps/web/app/(app)/lib/enquiry-reports.ts`
+- `buildReportWhere({ from?, to? })` — the shared `createdAt` date-range filter every report uses (empty when unbounded).
+- `summarisePipeline(byStatus)` — **pure** funnel: `total` (all statuses, incl. archived — closed-out enquiries are kept for reporting per §I.3), `contacted` (reached contact or beyond), `converted`, and a **zero-division-safe `conversionRate`**.
+- `enquiryPipelineReport(db, range)` — counts each of the eight statuses (date-scoped) over a STRUCTURAL client, then derives the funnel with no extra queries.
+- `enquiriesBySource(db, range)` + `normaliseSourceCounts` — the §I.5 "leads by source" breakdown via `groupBy(["sourceUrl"])`, a null source labelled `(direct)`. (Named canonically — `enquiriesBySource`, never `leads*` — G6.)
+- DB-free over a structural Prisma client (mirrors `enquiries.ts`); the live query runs tenant-scoped via `withTenant`.
+
+### Verification
+7 tests (date-range build incl. each bound; funnel maths + the contacted set + zero-division; source normalisation incl. the `(direct)` fallback; per-status counting is date-scoped; groupBy is date-scoped + ordered). Full app suite 296 passed; `enquiry-reports.ts` meets its scope threshold (G2). tsc + repo lint (**G6 canonical naming clean**) + prettier + diff guards G1/G2/G10/G11 — all green.
+
+### Deferred (FR-I-10 remainder)
+Leads-by-`lead_type`-over-time, average-time-to-first-contact (needs a contacted-at timestamp / status-event history), outstanding-follow-ups (needs `follow_up_date`), days-on-market (from PropertyStatusEvent), branch/agent filters (need EPIC-N), CSV/Excel/PDF export, the custom report builder, and the report page UI (needs the EPIC-H admin shell).
+
+---
