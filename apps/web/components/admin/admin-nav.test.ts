@@ -7,6 +7,7 @@ describe('ADMIN_NAV', () => {
     const hrefs = ADMIN_NAV.flatMap((section) => section.items.map((item) => item.href));
     expect(hrefs).toContain('/admin');
     expect(hrefs).toContain('/admin/enquiries');
+    expect(hrefs).toContain('/admin/contacts');
   });
 
   it('every item has a non-empty label and an /admin-rooted href', () => {
