@@ -1350,3 +1350,21 @@ db: 5 new tests (schema-shape; 0007 RLS assertions; pglite isolation — admits 
 A `listEnquiryStatusEvents` read model + render the timeline on the enquiry detail page (FR-H-3 activity feed); then SLA (FR-I-4) + time-to-first-contact can compute from this.
 
 ---
+
+## Phase B44 — EPIC-H enquiry activity timeline on the detail page (FR-H-3) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-enquiry-timeline)
+
+Surfaces the status-event timeline (B43) on the enquiry detail page — the FR-H-3 activity feed. Completes the timeline feature (the table is written by both actions; now it is read + shown).
+
+- `lib/enquiry-status-events.ts` (read model, tested): `listEnquiryStatusEvents` over a structural client (mirrors enquiry-notes.ts), newest-first. 100%.
+- `[id]/EnquiryTimeline.tsx` (presentational): each transition as `from → to` (status labels via `statusDisplay`, the new status a Badge) + a fixed-locale timestamp; the first-ever event (no prior status) shows just the new status; empty state. Token-driven (G7).
+- `[id]/page.tsx`: fetches the events in the same `withTenant` read (Promise.all with notes) and renders an Activity section.
+
+### Verification
+6 tests (read model newest-first + where; timeline from→to labels + empty state; the page rendering the Activity region from the tenant-scoped read). Full app suite 379 passed; `enquiry-status-events` 100%, others meet their thresholds. `next build` green; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### CRM status after this continuation
+Enquiry lifecycle is fully operable + observable in the admin: queue → detail (summary, status changer, convert, notes, **activity timeline**) → contacts directory → pipeline report. Every write RBAC-gated + audited + timelined, tenant-isolated (RLS). Remaining: SLA (FR-I-4, now computable from the timeline) + time-to-first-contact reporting; assignment (FR-I-3) / saved views (FR-I-9) / real RBAC need EPIC-N (staff sessions/roster).
+
+---
