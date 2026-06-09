@@ -11,6 +11,13 @@ dist/
 build/
 .turbo/
 
+# ─── Payload CMS (apps/web) ────────────────────────────────────
+# Local-filesystem media uploads (CLAUDE.md §9 storage default) — never committed.
+apps/web/media/
+# Generated GraphQL schema. `payload-types.ts` IS committed (CLAUDE.md §9:
+# "payload generate:types checked in").
+apps/web/payload-schema.graphql
+
 # ─── Python / Django ───────────────────────────────────────────
 __pycache__/
 *.py[cod]
@@ -53,3 +60,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.shared.json
+
+# Agent runtime lock files (never commit)
+.claude/*.lock

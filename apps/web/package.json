@@ -6,15 +6,18 @@
   "description": "The Estate Platform application — a single Next.js (App Router) app (Payload CMS mounted later at /admin/cms). Serves every user-facing surface.",
   "license": "UNLICENSED",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "payload": "payload",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
     "@estate/db": "workspace:*",
@@ -23,9 +26,15 @@
     "@estate/tokens": "workspace:*",
     "@estate/ui": "workspace:*",
     "@estate/validators": "workspace:*",
-    "next": "^15.1.0",
+    "@payloadcms/db-postgres": "3.85.0",
+    "@payloadcms/next": "3.85.0",
+    "@payloadcms/richtext-lexical": "3.85.0",
+    "graphql": "^16.14.1",
+    "next": "^16.2.6",
+    "payload": "3.85.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sharp": "^0.33.5",
     "zod": "^3.24.0"
   },
   "devDependencies": {

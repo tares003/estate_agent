@@ -8,6 +8,9 @@ coverage/
 pnpm-lock.yaml
 staticfiles/
 mediafiles/
+next-env.d.ts
+# Payload-generated types (checked in per CLAUDE.md §9; never hand-formatted).
+apps/web/payload-types.ts
 
 # Design canvas is the visual source of truth — ported verbatim, not reformatted.
 design/canvas/

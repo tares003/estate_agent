@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { canonicalPath, middleware } from './middleware.js';
+import { DEV_TENANT_ID, canonicalPath, proxy, resolveTenantId } from './proxy.js';
 
 function get(url: string, method = 'GET'): NextRequest {
   return new NextRequest(new URL(url), { method });
@@ -16,49 +16,65 @@ describe('canonicalPath', () => {
   });
 });
 
-describe('middleware URL canonicalisation (FR-O-2/3)', () => {
+describe('proxy URL canonicalisation (FR-O-2/3)', () => {
   it('301-redirects an uppercase path to lowercase', () => {
-    const res = middleware(get('https://acme.test/Properties/Palatine-Road'));
+    const res = proxy(get('https://acme.test/Properties/Palatine-Road'));
     expect(res.status).toBe(301);
     expect(res.headers.get('location')).toBe('https://acme.test/properties/palatine-road');
   });
 
   it('301-redirects a trailing-slash path to the slash-less canonical, preserving the query', () => {
-    const res = middleware(get('https://acme.test/properties/?saleType=rent'));
+    const res = proxy(get('https://acme.test/properties/?saleType=rent'));
     expect(res.status).toBe(301);
     expect(res.headers.get('location')).toBe('https://acme.test/properties?saleType=rent');
   });
 
   it('does not redirect an already-canonical path (passes through)', () => {
-    const res = middleware(get('https://acme.test/properties'));
+    const res = proxy(get('https://acme.test/properties'));
     expect(res.status).not.toBe(301);
     expect(res.headers.get('location')).toBeNull();
   });
 
   it('leaves the root path alone', () => {
-    const res = middleware(get('https://acme.test/'));
+    const res = proxy(get('https://acme.test/'));
     expect(res.status).not.toBe(301);
   });
 
   it('never redirects a non-GET request (a 301 would drop the body)', () => {
-    const res = middleware(get('https://acme.test/Properties/Palatine-Road', 'POST'));
+    const res = proxy(get('https://acme.test/Properties/Palatine-Road', 'POST'));
     expect(res.status).not.toBe(301);
   });
 
   it('leaves /api/* paths untouched (no SEO redirect on the API surface)', () => {
-    const res = middleware(get('https://acme.test/api/Webhook'));
+    const res = proxy(get('https://acme.test/api/Webhook'));
     expect(res.status).not.toBe(301);
+  });
+
+  it('leaves the Payload CMS surface (/admin/cms) untouched — it owns its own URLs', () => {
+    // Payload routes are case- and trailing-slash-sensitive; a SEO 301 would break
+    // admin navigation and the CMS API under /admin/cms/api.
+    const mixedCase = proxy(get('https://acme.test/admin/cms/Collections/Pages'));
+    expect(mixedCase.status).not.toBe(301);
+
+    const trailingSlash = proxy(get('https://acme.test/admin/cms/api/pages/'));
+    expect(trailingSlash.status).not.toBe(301);
   });
 });
 
-describe('middleware tenant resolution (EPIC-S)', () => {
-  it('passes an explicit tenant header through unchanged', () => {
-    const req = new NextRequest(new URL('https://acme.test/properties'), {
+describe('proxy tenant resolution (EPIC-S)', () => {
+  it('resolves the tenant server-side, ignoring a client-supplied (forgeable) header', () => {
+    // SECURITY: a client must not be able to read another tenant by forging
+    // x-estate-tenant. Resolution must never trust the inbound header.
+    expect(resolveTenantId(get('https://acme.test/properties'))).toBe(DEV_TENANT_ID);
+    const forged = new NextRequest(new URL('https://acme.test/properties'), {
       headers: { 'x-estate-tenant': '99999999-9999-9999-9999-999999999999' },
     });
-    const res = middleware(req);
+    expect(resolveTenantId(forged)).toBe(DEV_TENANT_ID);
+  });
+
+  it('does not redirect tenant-resolved requests', () => {
+    const res = proxy(get('https://acme.test/properties'));
     expect(res.status).not.toBe(301);
-    // a pass-through (NextResponse.next) is not a redirect
     expect(res.headers.get('location')).toBeNull();
   });
 });
