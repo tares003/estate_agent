@@ -887,3 +887,39 @@ The CMS mount (B23.1) is now a working page-builder: editors author typed sectio
 - Carried: D-019 (property images), D-020 (`LinkButton`).
 
 ---
+
+## Phase B24 — CMS-managed navigation menus (EPIC-D FR-D-7) (2026-06-09)
+
+Status: **complete** (on feat/EPIC-D-payload-cms-mount → PR #1)
+Main commits: `a44e1b1` (RED) → `4636b58` (GREEN) → `19eefa0` (eslint chore) → `637dbbe` (review fixes)
+
+The public header nav was hardcoded; it is now CMS-managed per tenant. Built ultracode-style: a 4-reader **understand workflow** produced the spec, TDD RED→GREEN implementation, a runtime smoke, then a **15-agent adversarial review workflow** (4 dimensions × find→refute-verify) that surfaced 5 real findings — all fixed.
+
+### Shipped
+
+- **`menus` collection** — tenant-scoped (reuses B23.3 helpers), `location` select (header/footer/mobile), reorderable `items` array nested one level (`children`), per-item `target`/`icon`/`roles`/`visibility`. Unversioned (immediate-on-save, 60s SLA). Registered in payload.config; payload-types regenerated.
+- **Pure `menu-mapper.ts`** — `payloadMenuToNav` (order preserved, invisible/invalid dropped, target normalised, children capped at one level, roles coerced to a clean string[]) + `filterPublicNav` (hides role-gated/staff-only items from anonymous viewers, both levels). No Payload imports → node-env unit-tested with a navItemSchema round-trip.
+- **`getMenu(location, tenantId)`** — Local API, explicit tenant filter (privileged-bypass guard).
+- **`SiteNav`** (presentational: a11y Primary landmark, aria-current + visible active underline, new-tab rel=noopener, nested children, index-safe keys), **`SiteFooter`** (extracted trust note), **`SiteHeader`** (async glue: fetch → filterPublicNav → fallback to defaults). Public layout is now thin glue.
+
+### Adversarial review — 5 confirmed, all fixed (`637dbbe`)
+
+1. **HIGH (security)** — the proxy forwarded the client-supplied `x-estate-tenant` header unchanged, so a forged header let an anonymous client read another tenant's published pages + header menu (the privileged Local-API reads scope on it). **Fixed**: `resolveTenantId` resolves server-side and the proxy OVERWRITES any inbound value; a forged header is never honoured. This closed a real cross-tenant content-disclosure hole that B23.4 + B24 had activated on the public surface. (Full hostname→tenant resolution remains the EPIC-S follow-on; the forgery is closed now.)
+2. **a11y** — active nav item had no visible indicator (aria-current only) and currentPath was never wired. **Fixed**: token-driven active underline (WCAG 1.4.1/1.3.1); proxy exposes `x-estate-pathname`, SiteHeader passes it as currentPath.
+3. **security (low)** — `stampTenant` fell back to client input on create → now fails closed.
+4. **low** — duplicate React keys on duplicate label+href → key on href+index.
+5. **low** — unchecked `as NavItem` cast → `toNavLeaf` builds a typed leaf, coercing roles/icon.
+- Supporting: ESLint `argsIgnorePattern: ^_` (match tsc), `19eefa0`.
+
+### Verification
+
+162→**197 unit tests**; tsc + ESLint (repo-wide) + prettier + `next build --webpack` + diff guards G1/G2/G10/G11 — all green. Understand + review both ran as Workflows. Runtime smoke (Docker Postgres + next dev): header menu for tenant A round-trips all item shapes via REST; tenant B reads 0 (isolation).
+
+### Follow-ups
+
+- **EPIC-S**: hostname→tenant resolution in the proxy (replaces the dev-tenant stub; the forgery hole is already closed).
+- Footer/mobile-drawer render (EPIC-L shell) — reuses getMenu/mapper at location footer/mobile.
+- CMS published pages → sitemap (FR-D-4); admin authoring e2e (FR-D-7 mapped target); `cms_users` tenant scoping (EPIC-N); audit hooks across all CMS collections; remaining V1 block types.
+- Carried: D-019 (property images), D-020 (`LinkButton`).
+
+---
