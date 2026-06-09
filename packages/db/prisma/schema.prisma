@@ -434,6 +434,7 @@ model Note {
   entityType    String   @map("entity_type")
   entityId      String   @map("entity_id") @db.Uuid
   body          String
+  isInternal    Boolean  @default(true) @map("is_internal")
   authorAgentId String?  @map("author_agent_id") @db.Uuid
   createdAt     DateTime @default(now()) @map("created_at")
 

@@ -29,6 +29,7 @@ export {
   type EnquiryStatusUpdate,
   type LostReason,
 } from './enquiry-status.js';
+export { enquiryNoteCreateSchema, type EnquiryNoteCreate } from './enquiry-note.js';
 export {
   propertySearchSchema,
   parsePropertySearch,
