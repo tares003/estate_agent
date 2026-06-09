@@ -923,3 +923,16 @@ The public header nav was hardcoded; it is now CMS-managed per tenant. Built ult
 - Carried: D-019 (property images), D-020 (`LinkButton`).
 
 ---
+
+## Phase B25 — published CMS pages in the sitemap (EPIC-D FR-D-4) (2026-06-09)
+
+Status: **complete** (on feat/EPIC-D-payload-cms-mount → PR #1)
+Main: `c4d33f1` (RED) → `944ba5e` (GREEN)
+
+Closes the FR-D-4 acceptance criterion "draft pages do not appear in the sitemap until published". `listPublishedPages(tenantId)` (Local API, explicit tenant + `_status: published` filter) feeds `app/(app)/sitemap.ts`, which now emits a sitemap entry per published page (`/{slug}`, last-modified) alongside properties + static routes.
+
+Verified: sitemap unit tests (published pages appear, tenant-scoped); runtime smoke (Docker Postgres + next dev) — the published filter returned only the published page and excluded the draft (which existed as `_status: draft`); tsc + ESLint + prettier + next build + diff guards G1/G2/G10/G11 all green.
+
+Follow-up: a sitemap *index* + child sitemaps once more public surfaces exist (news, area guides, team).
+
+---
