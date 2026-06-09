@@ -115,6 +115,13 @@ describe('§J satellite — Note polymorphic annotation (master spec §J.5)', ()
     expect(block).toMatch(/authorAgentId\s+String\?\s+@map\("author_agent_id"\)\s+@db\.Uuid/);
   });
 
+  it('carries an is-internal flag (FR-I-5) defaulting to internal', () => {
+    // A note is private to staff unless explicitly marked client-visible; the
+    // flag controls whether it surfaces in client-facing communications.
+    const block = modelBlock('Note');
+    expect(block).toMatch(/isInternal\s+Boolean\s+@default\(true\)\s+@map\("is_internal"\)/);
+  });
+
   it('indexes the polymorphic target so an entity timeline is cheap to fetch', () => {
     const block = modelBlock('Note');
     expect(block).toContain('@@index([tenantId, entityType, entityId])');

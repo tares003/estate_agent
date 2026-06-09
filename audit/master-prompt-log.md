@@ -1129,3 +1129,27 @@ The first EPIC-I (CRM) slice: the **enquiry status workflow** — the domain rul
 Admin enquiries page UI + queue + slide-over (needs EPIC-H shell); assignment (FR-I-3); SLA timers (FR-I-4); notes / composer (FR-I-5); conversion (FR-I-6); bulk actions (FR-I-8); saved views (FR-I-9); reports (FR-I-10); notify-on-transition.
 
 ---
+
+## Phase B33 — EPIC-I CRM: threaded enquiry notes (FR-I-5) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-I-notes)
+
+FR-I-5 — threaded notes on an enquiry with an **is-internal** flag controlling visibility in client-facing communications.
+
+### B33.1 — `Note.isInternal` column (`packages/db`)
+- Added `isInternal Boolean @default(true) @map("is_internal")` to the polymorphic `Note` model — a note is **staff-private by default**, surfacing in client-facing comms only when explicitly made client-visible. RLS already covers `notes` (row-level, so the new column needs no policy change). Schema-shape test asserts the field; `prisma generate` regenerated the client.
+
+### B33.2 — `enquiryNoteCreateSchema` (`packages/validators`)
+- Zod: `{ enquiryId uuid, body trimmed non-empty (max 5000), isInternal boolean default true }`. 100% coverage.
+
+### B33.3 — note thread read model (`apps/web/app/(app)/lib/enquiry-notes.ts`)
+- DB-free over a structural client (mirrors `enquiries.ts`): `buildEnquiryNotesWhere` scopes to the enquiry (`entityType:"enquiry"`) and **drops internal notes for a client-facing view**; `listEnquiryNotes` returns the thread newest-first. Live query runs tenant-scoped via `withTenant`. 100% coverage.
+
+### B33.4 — `addEnquiryNote` action + seam (`apps/web/app/(app)/admin/enquiries/note-actions.ts`)
+- `addEnquiryNote(prev, formData)`: parse (client-visible only when the form sends `isInternal=false`) → **RBAC gate `enquiry.write` (fail-closed before any read/write)** → `withTenant` → tenant-scoped enquiry-existence check → `note.create` (tenant_id set for RLS WITH CHECK) → **`audit(tx, { action: "enquiry.note_added", diff: { note: { id, isInternal } } })` in the same transaction (G4)**.
+- Extended the staff-session seam with `getStaffUserId()` (UUID for FK columns like `Note.authorAgentId`); **DEV STUB returns null** until EPIC-N wires the Better Auth session — the audit `actor` carries the who in the meantime.
+
+### Verification
+5 note-action tests (internal-by-default + audit; client-visible when `isInternal=false`; empty-note rejected before any write; not-found writes nothing; **RBAC-denied before `withTenant`**). Full app suite 289 passed; `enquiry-notes.ts` 100%, `note-actions.ts` 98.6% (> scope threshold), validators `enquiry-note.ts` 100%, db schema-shape 41 pass. Runtime smoke: **`prisma db push` against Docker PostGIS 16 applied the migration** — `notes.is_internal boolean NOT NULL DEFAULT true` confirmed. tsc + `next build` + repo lint (G6 clean) + prettier + diff guards G1/G2/G10/G11 — all green.
+
+---

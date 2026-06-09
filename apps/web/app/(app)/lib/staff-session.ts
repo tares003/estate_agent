@@ -9,6 +9,9 @@ import { requirePermission, type Permission, type StaffRole } from '@estate/auth
 // TODO(EPIC-N): resolve these from the Better Auth session cookie.
 const DEV_STAFF_ROLE: StaffRole = 'super_admin';
 const DEV_STAFF_ACTOR = 'agent:dev-staff';
+// No real staff user row exists until EPIC-N, so FK-bearing columns
+// (e.g. Note.authorAgentId) are left null — the audit actor carries the who.
+const DEV_STAFF_USER_ID: string | null = null;
 
 /** The current staff member's RBAC role. */
 export async function getStaffRole(): Promise<StaffRole> {
@@ -18,6 +21,11 @@ export async function getStaffRole(): Promise<StaffRole> {
 /** The current staff member's audit actor string (`agent:<slug>`). */
 export async function getStaffActor(): Promise<string> {
   return DEV_STAFF_ACTOR;
+}
+
+/** The current staff member's user id (UUID) for FK columns; null until EPIC-N. */
+export async function getStaffUserId(): Promise<string | null> {
+  return DEV_STAFF_USER_ID;
 }
 
 /** RBAC gate: throws `PermissionError` if the current staff role lacks `permission`. */
