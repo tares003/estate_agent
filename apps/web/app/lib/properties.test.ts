@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   getPropertyBySlug,
+  listPropertiesForSitemap,
   searchProperties,
   searchPropertiesNear,
   toCardProps,
@@ -20,6 +21,9 @@ const saleRow: PropertyRow = {
   bedrooms: 4,
   bathrooms: 2,
   receptions: 2,
+  town: 'Manchester',
+  latitude: 53.41,
+  longitude: -2.23,
 };
 
 const rentRow: PropertyRow = {
@@ -249,6 +253,14 @@ describe('getPropertyBySlug', () => {
       price: '£525,000',
       description: 'A fine Edwardian semi.',
       receptions: 2,
+      // SEO raw fields
+      displayAddress: 'Palatine Road, Didsbury',
+      town: 'Manchester',
+      postcode: 'M20',
+      latitude: 53.41,
+      longitude: -2.23,
+      priceValue: 525000, // 52,500,000 pence → £525,000
+      marketStatus: 'for_sale',
     });
   });
 
@@ -263,5 +275,19 @@ describe('getPropertyBySlug', () => {
   it('returns null when no published property matches the slug', async () => {
     const findFirst = vi.fn().mockResolvedValue(null);
     expect(await getPropertyBySlug({ property: { findFirst } }, 'does-not-exist')).toBeNull();
+  });
+});
+
+describe('listPropertiesForSitemap', () => {
+  it('selects published, non-deleted slugs + last-modified, newest-modified first', async () => {
+    const rows = [{ slug: 'a', updatedAt: new Date('2026-01-02') }];
+    const findMany = vi.fn().mockResolvedValue(rows);
+    const result = await listPropertiesForSitemap({ property: { findMany } });
+    expect(findMany).toHaveBeenCalledWith({
+      where: { publishedAt: { not: null }, deletedAt: null },
+      orderBy: { updatedAt: 'desc' },
+      select: { slug: true, updatedAt: true },
+    });
+    expect(result).toEqual(rows);
   });
 });

@@ -4,7 +4,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 
-vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
+vi.mock('../../lib/tenant.js', () => ({
+  getCurrentTenantId: async () => 'tenant-1',
+  getRequestOrigin: async () => 'https://acme.test',
+}));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findMany = vi.fn();
@@ -17,7 +20,7 @@ vi.mock('@estate/db', () => ({
     fn({ property: { findMany, count }, $queryRawUnsafe: queryRawUnsafe }),
 }));
 
-const { default: CataloguePage } = await import('./page.js');
+const { default: CataloguePage, generateMetadata } = await import('./page.js');
 
 const row = {
   id: 'p1',
@@ -182,5 +185,13 @@ describe('CataloguePage', () => {
     expect(rawCall?.slice(1)).toContain(4000); // 4 km → 4000 m
     const chips = screen.getByRole('list', { name: 'Active filters' });
     expect(within(chips).getByText('Within 4 km')).toBeInTheDocument();
+  });
+
+  it('generateMetadata emits canonical, OG and Twitter for the catalogue (FR-O-4)', async () => {
+    const meta = await generateMetadata();
+    expect(meta.title).toBe('Property search');
+    expect(meta.alternates?.canonical).toBe('https://acme.test/properties');
+    expect(meta.openGraph?.url).toBe('https://acme.test/properties');
+    expect(meta.twitter).toMatchObject({ card: 'summary_large_image' });
   });
 });

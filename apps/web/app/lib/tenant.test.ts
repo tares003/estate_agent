@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const get = vi.fn();
 vi.mock('next/headers', () => ({ headers: async () => ({ get }) }));
 
-const { getCurrentTenantId, getRequestIp } = await import('./tenant.js');
+const { getCurrentTenantId, getRequestIp, getRequestOrigin } = await import('./tenant.js');
 
 /** Drive the mocked `headers().get(name)` from a header map. */
 function headerMap(map: Record<string, string | null>): void {
@@ -36,5 +36,17 @@ describe('getRequestIp', () => {
   it('returns null when no originating IP header is present', async () => {
     headerMap({});
     expect(await getRequestIp()).toBeNull();
+  });
+});
+
+describe('getRequestOrigin', () => {
+  it('builds the origin from the forwarded host + proto', async () => {
+    headerMap({ 'x-forwarded-host': 'acme.estateplatform.co.uk', 'x-forwarded-proto': 'https' });
+    expect(await getRequestOrigin()).toBe('https://acme.estateplatform.co.uk');
+  });
+
+  it('falls back to the Host header and https', async () => {
+    headerMap({ host: 'acme.test' });
+    expect(await getRequestOrigin()).toBe('https://acme.test');
   });
 });

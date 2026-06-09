@@ -4,7 +4,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-vi.mock('../../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
+vi.mock('../../../lib/tenant.js', () => ({
+  getCurrentTenantId: async () => 'tenant-1',
+  getRequestOrigin: async () => 'https://acme.test',
+}));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findFirst = vi.fn();
@@ -26,7 +29,7 @@ vi.mock('./EnquiryForm.js', () => ({
   ),
 }));
 
-const { default: PropertyDetailPage } = await import('./page.js');
+const { default: PropertyDetailPage, generateMetadata } = await import('./page.js');
 
 const saleRow = {
   id: '11111111-1111-1111-1111-111111111111',
@@ -49,11 +52,23 @@ describe('PropertyDetailPage', () => {
   it('renders the property detail and wires the enquiry form to the property id', async () => {
     findFirst.mockResolvedValue(saleRow);
 
-    render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
+    const { container } = render(
+      await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }),
+    );
 
     expect(findFirst).toHaveBeenCalledWith({
       where: { slug: 'palatine-road-m20', publishedAt: { not: null }, deletedAt: null },
     });
+
+    // EPIC-O structured data: a RealEstateListing + a BreadcrumbList (FR-O-5/6).
+    const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
+    expect(ldScripts).toHaveLength(2);
+    const listing = JSON.parse(ldScripts[0]?.textContent ?? '{}');
+    expect(listing['@type']).toBe('RealEstateListing');
+    expect(listing.name).toBe('Edwardian semi · 4 bed');
+    expect(listing.url).toBe('https://acme.test/properties/palatine-road-m20');
+    expect(listing.offers).toMatchObject({ price: 525000, priceCurrency: 'GBP' });
+    expect(JSON.parse(ldScripts[1]?.textContent ?? '{}')['@type']).toBe('BreadcrumbList');
     expect(
       screen.getByRole('heading', { level: 1, name: 'Edwardian semi · 4 bed' }),
     ).toBeInTheDocument();
@@ -99,5 +114,27 @@ describe('PropertyDetailPage', () => {
     await expect(
       PropertyDetailPage({ params: Promise.resolve({ slug: 'ghost' }) }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  describe('generateMetadata', () => {
+    it('emits a canonical, OG and Twitter metadata set (FR-O-4)', async () => {
+      findFirst.mockResolvedValue(saleRow);
+
+      const meta = await generateMetadata({
+        params: Promise.resolve({ slug: 'palatine-road-m20' }),
+      });
+
+      expect(meta.title).toBe('Edwardian semi · 4 bed');
+      expect(meta.alternates?.canonical).toBe('https://acme.test/properties/palatine-road-m20');
+      expect(meta.openGraph?.url).toBe('https://acme.test/properties/palatine-road-m20');
+      expect(meta.twitter).toMatchObject({ card: 'summary_large_image' });
+      expect((meta.description ?? '').length).toBeLessThanOrEqual(160);
+    });
+
+    it('returns a not-found title when the slug is unknown', async () => {
+      findFirst.mockResolvedValue(null);
+      const meta = await generateMetadata({ params: Promise.resolve({ slug: 'ghost' }) });
+      expect(meta.title).toBe('Property not found');
+    });
   });
 });
