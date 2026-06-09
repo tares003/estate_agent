@@ -1518,3 +1518,21 @@ The public **"Book a viewing"** flow — the fourth and final public enquiry for
 All four public enquiry channels now produce tenant-scoped, consented, audited enquiries in the CRM queue with the correct `lead_type`: buyer enquiry (property detail), **valuation** (/valuation), **general contact** (/contact), **viewing** (/properties/[slug]/viewing). The remaining public form is repair intake (EPIC-G).
 
 ---
+
+## Phase B53 — EPIC-H admin property detail page (FR-H-2) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-H-property-detail) — first property-editor slice
+
+The first slice of the property editor (FR-H-2 write): the read shell + the navigation into it. The admin catalogue rows now link to a per-listing detail page showing the listing's current values (drafts included).
+
+- `lib/admin-properties.ts`: `getAdminProperty(db, id)` + `AdminPropertyDetail` (richer fields — beds/baths/receptions/description/postcode; `{ id, deletedAt: null }`, so drafts are included). 100%.
+- `admin/properties/[id]/page.tsx` (RSC): tenant-scoped `getAdminProperty` via withTenant, **404 if unknown**; shows the address + Published/Draft badge, the price with its qualifier + frequency (G8), the detail stats (omitting absent ones), and the description. Read-only; the editable form is the next slice.
+- `admin/properties/AdminPropertiesTable.tsx`: the address now links to `/admin/properties/[id]`.
+
+### Verification
+5 tests (getAdminProperty by-id incl. drafts + not-found; the page rendering the detail + the published/rent/absent-stats branches + the not-found path + the tenant-scoped by-id read; the list row links to the detail). Full app suite 447 passed; `admin-properties.ts` 100%, page meets its scope threshold. `next build` compiles `/admin/properties/[id]`; tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Next (B54)
+The editable "core details" form on this page — an `updateProperty` Server Action (RBAC `property.write`, transition-safe market_status, audited). The image manager + remaining tabs follow (the image tab needs the object-storage decision).
+
+---
