@@ -36,8 +36,8 @@ describe('TestimonialsBlock', () => {
     expect(
       testimonialsBlockSchema.safeParse({ testimonials: [{ quote: 'q', author: 'a' }] }).success,
     ).toBe(true);
-    expect(
-      testimonialsBlockSchema.safeParse({ testimonials: [{ quote: 'q' }] }).success,
-    ).toBe(false);
+    expect(testimonialsBlockSchema.safeParse({ testimonials: [{ quote: 'q' }] }).success).toBe(
+      false,
+    );
   });
 });

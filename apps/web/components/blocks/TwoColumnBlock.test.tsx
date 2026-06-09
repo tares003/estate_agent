@@ -25,9 +25,7 @@ describe('TwoColumnBlock', () => {
 
   it('renders a column without a title', () => {
     render(
-      <TwoColumnBlock
-        data={{ columns: [{ body: 'Left only.' }, { body: 'Right only.' }] }}
-      />,
+      <TwoColumnBlock data={{ columns: [{ body: 'Left only.' }, { body: 'Right only.' }] }} />,
     );
     expect(screen.getByText('Left only.')).toBeInTheDocument();
     expect(screen.getByText('Right only.')).toBeInTheDocument();

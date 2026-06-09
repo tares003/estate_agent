@@ -139,7 +139,18 @@ export interface Page {
   /**
    * Ordered page sections (FR-D-1/3) — add, remove and reorder without engineering.
    */
-  sections?: (HeroBlock | RichTextBlock | CtaStripBlock | FaqBlock)[] | null;
+  sections?:
+    | (
+        | HeroBlock
+        | RichTextBlock
+        | CtaStripBlock
+        | FaqBlock
+        | ThreePillarBlock
+        | StatsRowBlock
+        | TestimonialsBlock
+        | TwoColumnBlock
+      )[]
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -210,6 +221,67 @@ export interface FaqBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'faq';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ThreePillarBlock".
+ */
+export interface ThreePillarBlock {
+  heading?: string | null;
+  pillars: {
+    title: string;
+    body: string;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'three_pillar';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatsRowBlock".
+ */
+export interface StatsRowBlock {
+  heading?: string | null;
+  stats: {
+    value: string;
+    label: string;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'stats_row';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TestimonialsBlock".
+ */
+export interface TestimonialsBlock {
+  heading?: string | null;
+  testimonials: {
+    quote: string;
+    author: string;
+    role?: string | null;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'testimonials';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TwoColumnBlock".
+ */
+export interface TwoColumnBlock {
+  heading?: string | null;
+  columns: {
+    title?: string | null;
+    body: string;
+    id?: string | null;
+  }[];
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'two_column';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -434,6 +506,10 @@ export interface PagesSelect<T extends boolean = true> {
         rich_text?: T | RichTextBlockSelect<T>;
         cta_strip?: T | CtaStripBlockSelect<T>;
         faq?: T | FaqBlockSelect<T>;
+        three_pillar?: T | ThreePillarBlockSelect<T>;
+        stats_row?: T | StatsRowBlockSelect<T>;
+        testimonials?: T | TestimonialsBlockSelect<T>;
+        two_column?: T | TwoColumnBlockSelect<T>;
       };
   updatedAt?: T;
   createdAt?: T;
@@ -485,6 +561,71 @@ export interface FaqBlockSelect<T extends boolean = true> {
     | {
         question?: T;
         answer?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ThreePillarBlock_select".
+ */
+export interface ThreePillarBlockSelect<T extends boolean = true> {
+  heading?: T;
+  pillars?:
+    | T
+    | {
+        title?: T;
+        body?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatsRowBlock_select".
+ */
+export interface StatsRowBlockSelect<T extends boolean = true> {
+  heading?: T;
+  stats?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TestimonialsBlock_select".
+ */
+export interface TestimonialsBlockSelect<T extends boolean = true> {
+  heading?: T;
+  testimonials?:
+    | T
+    | {
+        quote?: T;
+        author?: T;
+        role?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TwoColumnBlock_select".
+ */
+export interface TwoColumnBlockSelect<T extends boolean = true> {
+  heading?: T;
+  columns?:
+    | T
+    | {
+        title?: T;
+        body?: T;
         id?: T;
       };
   id?: T;

@@ -4,6 +4,10 @@ import { HeroBlock, heroBlockSchema } from './HeroBlock.js';
 import { RichTextBlock, richTextBlockSchema } from './RichTextBlock.js';
 import { CtaStripBlock, ctaStripBlockSchema } from './CtaStripBlock.js';
 import { FaqBlock, faqBlockSchema } from './FaqBlock.js';
+import { ThreePillarBlock, threePillarBlockSchema } from './ThreePillarBlock.js';
+import { StatsRowBlock, statsRowBlockSchema } from './StatsRowBlock.js';
+import { TestimonialsBlock, testimonialsBlockSchema } from './TestimonialsBlock.js';
+import { TwoColumnBlock, twoColumnBlockSchema } from './TwoColumnBlock.js';
 
 // The EPIC-D section-type registry (FR-D-1/2): maps a section `type` to its data
 // schema + renderer. The page renderer validates each section's stored data
@@ -30,6 +34,10 @@ export const BLOCK_REGISTRY: Readonly<Record<string, RegisteredBlock>> = {
   rich_text: defineBlock(richTextBlockSchema, RichTextBlock),
   cta_strip: defineBlock(ctaStripBlockSchema, CtaStripBlock),
   faq: defineBlock(faqBlockSchema, FaqBlock),
+  three_pillar: defineBlock(threePillarBlockSchema, ThreePillarBlock),
+  stats_row: defineBlock(statsRowBlockSchema, StatsRowBlock),
+  testimonials: defineBlock(testimonialsBlockSchema, TestimonialsBlock),
+  two_column: defineBlock(twoColumnBlockSchema, TwoColumnBlock),
 };
 
 /** The section types the render layer currently supports. */
