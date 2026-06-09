@@ -1,35 +1,47 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-// EPIC-S tenant resolution + EPIC-O URL canonicalisation, in Next 16's `proxy`
-// convention (formerly `middleware`).
-//
-// 1. Canonicalise public GET URLs (FR-O-2/3): lowercase, and no trailing slash
-//    (except root). A non-canonical URL 301s to the canonical one so crawlers and
-//    links converge on a single address. Only GET/HEAD are redirected (a 301 on a
-//    POST/Server Action would drop the body); `/api/*` and the Payload CMS surface
-//    (`/admin/cms`) are left untouched — both own case- and slash-sensitive URLs a
-//    SEO redirect would break (the CMS admin SPA + its API under /admin/cms/api).
-// 2. Resolve the platform tenant SERVER-SIDE and stamp it onto the request so
-//    tenant-scoped queries downstream have a trustworthy value. SECURITY: the
-//    tenant is NEVER taken from the inbound `x-estate-tenant` header — that is
-//    client-supplied and forgeable, and downstream privileged reads (getMenu /
-//    getPublishedPage) scope on it, so honouring a forged value would leak another
-//    tenant's content. Full hostname (subdomain / custom-domain) resolution lands
-//    with EPIC-S; until then every request resolves to the dev tenant.
-export const DEV_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+import { getDb } from './app/(app)/lib/db.js';
+import { createTenantRegistry, resolveTenantIdByHost } from './tenant-host.js';
 
-/** The header carrying the resolved tenant id to Server Components / actions. */
+// EPIC-S tenant resolution + EPIC-O URL canonicalisation, in Next 16's `proxy`
+// convention (which always runs on the Node.js runtime — so the per-request
+// tenant lookup can use Prisma).
+//
+// 1. Canonicalise public GET URLs (FR-O-2/3): lowercase, no trailing slash
+//    (except root). `/api/*` and `/admin/cms` own their URLs and are skipped.
+// 2. Resolve the platform tenant from the request HOSTNAME (FR-S-1): the
+//    `<slug>.<base>` subdomain or a custom domain → the active tenant id, cached.
+//    SECURITY: the inbound `x-estate-tenant` header is always stripped and never
+//    trusted; only a server-resolved value is set (downstream privileged reads
+//    scope on it). Unknown/suspended hosts resolve to no tenant (fail closed);
+//    in dev, non-tenant hosts fall back to the dev tenant.
+export const DEV_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 export const TENANT_HEADER = 'x-estate-tenant';
-/** The header exposing the request path so server components can mark the active nav link. */
 export const PATHNAME_HEADER = 'x-estate-pathname';
 
-/**
- * Resolve the platform tenant for a request. Authoritative + server-side: it does
- * NOT read the inbound header (forgeable). TODO(EPIC-S): subdomain / custom-domain
- * hostname lookup; for now every request is the dev tenant.
- */
-export function resolveTenantId(_request: NextRequest): string {
-  return DEV_TENANT_ID;
+/** Platform base domain; the dev default keeps `localhost` an apex (→ dev tenant). */
+const BASE_DOMAIN = process.env['PLATFORM_BASE_DOMAIN'] ?? 'localhost';
+/** Fall back to the dev tenant for non-tenant hosts outside production. */
+const DEV_FALLBACK = process.env['NODE_ENV'] !== 'production';
+const CACHE_TTL_MS = 60_000;
+
+/** Per-host resolution cache (the proxy runs on every request; one long-lived process). */
+const tenantCache = new Map<string, { id: string | null; expires: number }>();
+
+function requestHost(request: NextRequest): string {
+  return request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '';
+}
+
+/** Resolve a host to its active tenant id (cached); null for apex/operator/unknown. */
+async function resolveTenant(host: string): Promise<string | null> {
+  const now = Date.now();
+  const cached = tenantCache.get(host);
+  if (cached && cached.expires > now) {
+    return cached.id;
+  }
+  const id = await resolveTenantIdByHost(host, BASE_DOMAIN, createTenantRegistry(getDb()));
+  tenantCache.set(host, { id, expires: now + CACHE_TTL_MS });
+  return id;
 }
 
 /** Path prefixes that own their own URL shape and must skip SEO canonicalisation. */
@@ -44,7 +56,7 @@ export function canonicalPath(pathname: string): string {
   return trimmed === '' ? '/' : trimmed;
 }
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const method = request.method;
 
@@ -58,9 +70,13 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   const requestHeaders = new Headers(request.headers);
-  // `set` overwrites any client-supplied value — a forged inbound tenant header is
-  // never honoured (see resolveTenantId).
-  requestHeaders.set(TENANT_HEADER, resolveTenantId(request));
+  // Never trust a client-supplied tenant header — strip it, set only the resolved value.
+  requestHeaders.delete(TENANT_HEADER);
+  const resolved =
+    (await resolveTenant(requestHost(request))) ?? (DEV_FALLBACK ? DEV_TENANT_ID : null);
+  if (resolved) {
+    requestHeaders.set(TENANT_HEADER, resolved);
+  }
   requestHeaders.set(PATHNAME_HEADER, pathname);
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
