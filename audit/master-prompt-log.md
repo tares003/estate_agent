@@ -1237,3 +1237,22 @@ The CRM **lead queue** at `/admin/enquiries` — the first real admin surface, r
 The enquiry detail slide-over wiring the status/note/convert actions (next PR); multi-select + bulk-action bar (FR-I-8); density toggle; column-visibility; saved views (FR-I-9); the stack-to-cards responsive layout (Playwright pass).
 
 ---
+
+## Phase B38 — EPIC-H enquiry detail page + status changer (FR-H-3) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-enquiry-detail)
+
+The enquiry **detail page** at `/admin/enquiries/[id]` — the first surface that *acts* on an enquiry. Wires the EPIC-I status workflow action (B32) into the admin UI; the note composer + convert follow.
+
+- `[id]/next-statuses.ts` (pure, tested): `nextStatusOptions(current)` — the legal next statuses (the domain allow-list) with labels; `LOST_REASON_OPTIONS` — the canonical lost reasons, labelled. 100%.
+- `[id]/EnquiryNotesThread.tsx`: the note thread (read) — each note with an Internal / Client-visible Badge + a fixed-locale timestamp; empty state. Token-driven (G7).
+- `[id]/StatusChanger.tsx` (client): `useActionState(updateEnquiryStatus)` — the select offers only the legal transitions, a reason is required when moving to `lost`, failed submits surface the action field errors, and on success it `router.refresh()`es so the badge updates live (the action stays pure — returns state, no redirect/revalidate).
+- `[id]/page.tsx` (RSC): resolves the tenant, reads the enquiry + its notes inside the tenant RLS scope, `notFound()`s an enquiry that is not the tenant's, and composes summary + status changer + thread. Reads only safe columns (no `leadType` identifier — G6).
+
+### Verification
+13 tests (next-status/lost-reason options; thread content + visibility badges + empty state; the changer offering legal options, revealing the reason only for `lost`, submitting + refreshing on success, surfacing errors without refresh, and the terminal message; the page composition + the tenant-scoped reads + the not-found path). Full app suite 343 passed; `next-statuses` 100%, others meet their scope thresholds. `next build` compiles `/admin/enquiries/[id]`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-3 remainder)
+The note composer + convert form on this page (next PR); the activity timeline (email/SMS/call-log composers); the slide-over presentation (intercepting route) over the queue; the live-update via action-side revalidatePath.
+
+---
