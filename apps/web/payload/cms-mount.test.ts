@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
+import { tenantScopedAccess } from './access/tenant.js';
 import { CMS_ADMIN_ROUTE, CMS_API_ROUTE, CMS_DB_SCHEMA } from './cms-config.js';
 import { CmsUsers } from './collections/CmsUsers.js';
 import { Media } from './collections/Media.js';
@@ -44,8 +45,8 @@ describe('Pages collection (EPIC-D managed pages)', () => {
     expect(fieldNames(Pages.fields)).toEqual(expect.arrayContaining(['title', 'slug']));
   });
 
-  it('reads publicly (the public site renders published pages)', () => {
-    expect(Pages.access?.read?.({} as never)).toBe(true);
+  it('scopes reads to the current tenant (no cross-tenant content leak)', () => {
+    expect(Pages.access?.read).toBe(tenantScopedAccess);
   });
 });
 
@@ -56,8 +57,8 @@ describe('Media collection', () => {
     expect(typeof upload.staticDir).toBe('string');
   });
 
-  it('reads publicly (media is served on the public site)', () => {
-    expect(Media.access?.read?.({} as never)).toBe(true);
+  it('scopes reads to the current tenant', () => {
+    expect(Media.access?.read).toBe(tenantScopedAccess);
   });
 });
 
