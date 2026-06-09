@@ -1407,3 +1407,21 @@ Every cleanly-independent CRM/admin slice is now shipped. The remaining EPIC-I/E
 EPIC-I backend (status/notes/reports/conversion) → EPIC-H admin UI (shell/queue/detail/actions/contacts) → CTA bugfix → reports page → status-event timeline (data + UI) → audit-log viewer → dashboard KPIs. The CRM is operable + observable end-to-end, every write RBAC-gated + audited + timelined + tenant-isolated. Test suite 252 → 396.
 
 ---
+
+## Phase B47 — EPIC-N: DB-backed staff-session resolution + dev-login override (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-N-staff-session) — first EPIC-N slice
+
+Begins replacing the hardcoded `super_admin` staff stub with a real, role-aware session resolved from the `users` table. This turns the RBAC gate that every admin action already calls (`requireStaffPermission`) into something that enforces a *real* stored role.
+
+- `@estate/auth`: `isStaffRole(value)` type guard (validates against the canonical `STAFF_ROLES`). 100%.
+- `apps/web/app/(app)/lib/staff-user.ts` (resolution core, tested): `staffSessionFromUser` — maps a user row → `{ userId, role, actor }`, **failing safe to `read_only_auditor` (least privilege) for any unrecognised role** so a corrupt/unknown role can never escalate; `loadStaffSession` — the tenant-scoped lookup (structural client, RLS-isolated). 100%.
+- `staff-session.ts` seam (glue, rewired): `getStaffSession` (React `cache`, per-request) resolves order — (1) **`DEV_STAFF_USER_ID`** names a real staff user → loaded tenant-scoped, their stored role used (the **dev-login** until Better Auth lands); (2) the super-admin **dev fallback** so local dev keeps working. `getStaffRole`/`getStaffActor`/`getStaffUserId`/`requireStaffPermission` all derive from it. The actions are unchanged.
+
+### TODO(EPIC-N) — flagged for direction
+Replace the `DEV_STAFF_USER_ID` lookup with the **Better Auth staff session cookie** (it carries the staff user + tenant). The sign-in flow itself — OAuth (Microsoft/Google/Apple), magic-link (portals), WebAuthn (2FA) — needs **provider credentials** and so cannot be verified headless here; it is the next decision point.
+
+### Verification
+6 new tests (isStaffRole accept/reject; staffSessionFromUser valid role + the fail-safe; loadStaffSession found/not-found). `@estate/auth` 46 tests (roles.ts 100%); full app suite 400 passed; `staff-user.ts` 100% (the seam is glue, excluded — its resolution logic is the tested staff-user.ts + @estate/auth). `next build` green; tsc (auth + web) + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G10/G11 — all green. (End-to-end RBAC enforcement — e.g. a seeded `read_only_auditor` denied `enquiry.write` — needs the seeded dev user + `DEV_STAFF_USER_ID`; the fail-safe + permission logic are unit-proven.)
+
+---

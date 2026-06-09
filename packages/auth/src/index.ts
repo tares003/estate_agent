@@ -15,6 +15,7 @@ export {
   ROLES,
   STAFF_ROLES,
   hasPermission,
+  isStaffRole,
   requirePermission,
   type Permission,
   type RoleDefinition,

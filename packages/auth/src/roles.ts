@@ -264,3 +264,8 @@ export function requirePermission(role: StaffRole, permission: Permission): void
     throw new PermissionError(role, permission);
   }
 }
+
+/** Pure type guard: is `value` one of the canonical {@link STAFF_ROLES}? */
+export function isStaffRole(value: string): value is StaffRole {
+  return (STAFF_ROLES as readonly string[]).includes(value);
+}
