@@ -12,11 +12,21 @@ const notFound = vi.fn(() => {
 });
 vi.mock('next/navigation', () => ({ notFound: () => notFound() }));
 
-// The status changer is a client component (useActionState/useRouter); stub it so
+// The action forms are client components (useActionState/useRouter); stub them so
 // the RSC page test focuses on composition + the tenant-scoped reads.
 vi.mock('./StatusChanger.js', () => ({
   StatusChanger: ({ enquiryId }: { enquiryId: string }) => (
     <div data-testid="status-changer">{enquiryId}</div>
+  ),
+}));
+vi.mock('./NoteComposer.js', () => ({
+  NoteComposer: ({ enquiryId }: { enquiryId: string }) => (
+    <div data-testid="note-composer">{enquiryId}</div>
+  ),
+}));
+vi.mock('./ConvertForm.js', () => ({
+  ConvertForm: ({ enquiryId }: { enquiryId: string }) => (
+    <div data-testid="convert-form">{enquiryId}</div>
   ),
 }));
 
@@ -66,7 +76,16 @@ describe('EnquiryDetailPage', () => {
     expect(screen.getByText('Interested in the Didsbury semi.')).toBeInTheDocument();
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByTestId('status-changer')).toHaveTextContent('e1');
+    expect(screen.getByTestId('note-composer')).toHaveTextContent('e1');
     expect(screen.getByText('Left a voicemail.')).toBeInTheDocument();
+    // a `new` enquiry cannot yet be converted, so no convert form is offered
+    expect(screen.queryByTestId('convert-form')).not.toBeInTheDocument();
+  });
+
+  it('offers the convert form once the enquiry can reach converted', async () => {
+    findFirst.mockResolvedValue({ ...enquiry, status: 'contacted' });
+    render(await EnquiryDetailPage(props()));
+    expect(screen.getByTestId('convert-form')).toHaveTextContent('e1');
   });
 
   it('reads the enquiry + notes tenant-scoped and 404s a missing enquiry', async () => {
