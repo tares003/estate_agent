@@ -21,6 +21,9 @@ export interface PropertyRow {
   bathrooms: number | null;
   receptions: number | null;
   description?: string | null;
+  town?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface PropertyListReader {
@@ -41,12 +44,23 @@ export interface PropertyDetailReader {
   };
 }
 
-/** Property detail view model — card props plus the detail-only fields. */
+/**
+ * Property detail view model — card props plus the detail-only fields and the
+ * raw fields the SEO structured data needs (it satisfies seo.ts' PropertyForSeo).
+ */
 export interface PropertyDetail extends PropertyCardProps {
   id: string;
   slug: string;
   description: string | null;
   receptions: number | null;
+  displayAddress: string;
+  town: string | null;
+  postcode: string;
+  latitude: number | null;
+  longitude: number | null;
+  /** Asking price in whole pounds (GBP) for JSON-LD offers; null for POA. */
+  priceValue: number | null;
+  marketStatus: string;
 }
 
 /** The catalogue filter / sort / pagination inputs (master spec §C.10 / §K.1). */
@@ -274,5 +288,34 @@ export async function getPropertyBySlug(
     slug: row.slug,
     description: row.description ?? null,
     receptions: row.receptions,
+    displayAddress: row.displayAddress,
+    town: row.town ?? null,
+    postcode: row.postcode,
+    latitude: row.latitude ?? null,
+    longitude: row.longitude ?? null,
+    priceValue: row.price != null ? row.price / 100 : null,
+    marketStatus: row.marketStatus,
   };
+}
+
+/** Minimal reader for the sitemap (slug + last-modified per published property). */
+export interface PropertySitemapReader {
+  property: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      select?: Record<string, boolean>;
+    }): Promise<Array<{ slug: string; updatedAt: Date }>>;
+  };
+}
+
+/** Published, non-deleted properties for the sitemap (FR-O-8), newest-modified first. */
+export async function listPropertiesForSitemap(
+  db: PropertySitemapReader,
+): Promise<Array<{ slug: string; updatedAt: Date }>> {
+  return db.property.findMany({
+    where: { publishedAt: { not: null }, deletedAt: null },
+    orderBy: { updatedAt: 'desc' },
+    select: { slug: true, updatedAt: true },
+  });
 }

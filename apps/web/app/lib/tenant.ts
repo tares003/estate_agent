@@ -18,6 +18,20 @@ export async function getCurrentTenantId(): Promise<string> {
 }
 
 /**
+ * The absolute origin (`https://host`) for the current request, for canonical /
+ * Open-Graph / sitemap URLs (EPIC-O). Multi-tenant, so it derives from the
+ * request host (honouring the proxy's forwarded host/proto) rather than a fixed
+ * env — each tenant's domain canonicalises to itself.
+ */
+export async function getRequestOrigin(): Promise<string> {
+  const requestHeaders = await headers();
+  const host =
+    requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? 'localhost:3000';
+  const proto = requestHeaders.get('x-forwarded-proto') ?? 'https';
+  return `${proto}://${host}`;
+}
+
+/**
  * Best-effort originating IP for the current request, for audit + GDPR-consent
  * provenance (master spec §S.7). Reads the standard proxy headers in priority
  * order; the first hop of `x-forwarded-for` is the real client. Returns null when

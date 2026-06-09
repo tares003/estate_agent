@@ -1,14 +1,55 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { withTenant } from '@estate/db';
 import { getDb } from '../../../lib/db.js';
-import { getPropertyBySlug, type PropertyDetailReader } from '../../../lib/properties.js';
-import { getCurrentTenantId } from '../../../lib/tenant.js';
+import {
+  getPropertyBySlug,
+  type PropertyDetail,
+  type PropertyDetailReader,
+} from '../../../lib/properties.js';
+import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
+import { breadcrumbJsonLd, propertyListingJsonLd, truncate } from '../../../lib/seo.js';
 import { EnquiryForm } from './EnquiryForm.js';
 
 export const dynamic = 'force-dynamic';
 
 interface PropertyDetailPageProps {
   params: Promise<{ slug: string }>;
+}
+
+/**
+ * Load the property once per request — `generateMetadata` and the page component
+ * both call this, and React's `cache` dedupes the tenant-scoped query.
+ */
+const loadProperty = cache(async (slug: string): Promise<PropertyDetail | null> => {
+  const tenantId = await getCurrentTenantId();
+  return withTenant(getDb(), tenantId, (tx) =>
+    getPropertyBySlug(tx as unknown as PropertyDetailReader, slug),
+  );
+});
+
+/** EPIC-O metadata (FR-O-4): title ≤60, description ≤160, canonical, OG, Twitter. */
+export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const property = await loadProperty(slug);
+  if (!property) return { title: 'Property not found' };
+
+  const origin = await getRequestOrigin();
+  const url = `${origin}/properties/${property.slug}`;
+  const title = truncate(property.title, 60);
+  const description = truncate(
+    property.description ?? `${property.title} — ${property.address}.`,
+    160,
+  );
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
+  };
 }
 
 /** One key fact rendered in the spec list, when the value is present. */
@@ -25,10 +66,7 @@ interface Fact {
  */
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const { slug } = await params;
-  const tenantId = await getCurrentTenantId();
-  const property = await withTenant(getDb(), tenantId, (tx) =>
-    getPropertyBySlug(tx as unknown as PropertyDetailReader, slug),
-  );
+  const property = await loadProperty(slug);
 
   if (!property) {
     notFound();
@@ -43,8 +81,29 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   if (property.bathrooms != null) facts.push({ label: 'Bathrooms', value: property.bathrooms });
   if (property.receptions != null) facts.push({ label: 'Receptions', value: property.receptions });
 
+  // EPIC-O structured data (FR-O-5 RealEstateListing + FR-O-6 BreadcrumbList).
+  const origin = await getRequestOrigin();
+  const url = `${origin}/properties/${property.slug}`;
+  const jsonLd = [
+    propertyListingJsonLd(property, url),
+    breadcrumbJsonLd([
+      { name: 'Home', url: `${origin}/` },
+      { name: 'Properties', url: `${origin}/properties` },
+      { name: title, url },
+    ]),
+  ];
+
   return (
     <main id="main" className="container py-12">
+      {jsonLd.map((ld, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          // Structured data is server-rendered, non-interactive JSON (no user input
+          // is interpolated unescaped beyond the property's own text).
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+        />
+      ))}
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.6fr_1fr]">
         <article>
           <header className="flex flex-col gap-2">

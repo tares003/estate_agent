@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { withTenant } from '@estate/db';
 import { PropertyCard } from '@estate/ui';
 import { parsePropertySearch, radiusToMetres, type PropertySearch } from '@estate/validators';
@@ -10,11 +11,27 @@ import {
   type PropertySearchOptions,
   type PropertySearchResult,
 } from '../../lib/properties.js';
-import { getCurrentTenantId } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestOrigin } from '../../lib/tenant.js';
 import { PropertyFilters } from './PropertyFilters.js';
 import { activeChips, toSearchQuery } from './search-params.js';
 
 export const dynamic = 'force-dynamic';
+
+/** EPIC-O metadata for the catalogue (FR-O-4). */
+export async function generateMetadata(): Promise<Metadata> {
+  const origin = await getRequestOrigin();
+  const url = `${origin}/properties`;
+  const title = 'Property search';
+  const description =
+    'Browse properties for sale and to rent — filter by location, price, bedrooms, and search by radius.';
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, url, type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
+  };
+}
 
 interface CataloguePageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
