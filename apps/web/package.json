@@ -16,7 +16,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "payload": "payload",
-    "generate:types": "payload generate:types"
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
     "@estate/db": "workspace:*",
