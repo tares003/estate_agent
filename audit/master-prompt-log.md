@@ -1481,3 +1481,21 @@ The public **"Get a free valuation"** flow — fixes the dead homepage CTA from 
 A dedicated `valuation_requests` domain record (the enquiry is the unifying record for now); the valuations admin inbox (now that the form produces data); a property-type select + address autocomplete.
 
 ---
+
+## Phase B51 — EPIC-C general contact flow at /contact (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-C-contact-form)
+
+The public **"Contact us"** flow — fixes the dead `/contact` link the site nav already pointed at, completes another public form, and feeds the CRM queue. Mirrors the valuation flow (B50); reuses `buyerEnquirySchema` (phone + propertyId optional).
+
+- `(public)/contact/actions.ts` — `submitContact`: parse `buyerEnquirySchema` → **verify Turnstile before any write (G8)** → `withTenant`: `recordConsent` (scope `contact_form`, verbatim text — G5) + create a **general-contact-channel enquiry** (`lead_type = general_contact`, set via bracket access — G6) + `audit('enquiry.created')` (G4). Tenant-scoped (RLS).
+- `(public)/contact/ContactForm.tsx` — client `useActionState` form (name / email / phone? / message + verbatim consent + Turnstile); success/error states.
+- `(public)/contact/page.tsx` — public page + canonical SEO metadata.
+
+### Verification
+8 tests (action: records consent + the contact enquiry + audit; rejects invalid before any write; **fails closed when Turnstile does not verify**; form: fields + verbatim consent + success + field-linked errors; page: shell + canonical metadata). Full app suite 433 passed. `next build` compiles `/contact`; tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G4/G5/G10/G11 — all green.
+
+### Public form coverage now
+Buyer enquiry (property detail) · valuation (/valuation) · general contact (/contact) all produce tenant-scoped, consented, audited enquiries in the CRM queue (FR-I-1). Remaining public forms — viewing request (needs a per-property sub-route to avoid a two-forms id collision) + repair intake (EPIC-G) — are the next public-side slices.
+
+---
