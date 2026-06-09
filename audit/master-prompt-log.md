@@ -1388,3 +1388,22 @@ Makes the audit trail visible — every state-changing action across the CRM (st
 The user-agent column / per-entry detail drawer, richer filters (actor / action / date range), and a diff pretty-printer.
 
 ---
+
+## Phase B46 — EPIC-H dashboard KPIs: a real admin home (FR-H-1) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-dashboard-kpis)
+
+Upgraded the placeholder dashboard at `/admin` into a real one — live at-a-glance KPIs + quick access to every live surface.
+
+- `admin/page.tsx` is now an async RSC: runs `enquiryPipelineReport` (B34) tenant-scoped via `withTenant`, renders KPI tiles (Total enquiries / Converted / Conversion rate) under an "At a glance" region, plus a "Quick access" grid linking to Enquiries / Contacts / Reports / Audit log. Token-driven (G7).
+
+### Verification
+2 tests (live KPIs incl. the computed conversion rate from the tenant-scoped read; quick-access links to the live surfaces). Full app suite 396 passed; the page meets its scope threshold. `next build` green; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Dependency wall reached
+Every cleanly-independent CRM/admin slice is now shipped. The remaining EPIC-I/EPIC-H work needs either: EPIC-N (staff sessions / agent roster / per-user state) for assignment (FR-I-3), saved views (FR-I-9) and real RBAC behind the staff-session seam; a new priority + SLA-config concept for SLA (FR-I-4); or other epics' backends for the remaining admin surfaces (properties / calendar / repairs). EPIC-N's OAuth/WebAuthn pieces are not verifiable headless (need real provider credentials), so the next epic warrants a direction check.
+
+### Session arc (this continuation, PRs #7–#21)
+EPIC-I backend (status/notes/reports/conversion) → EPIC-H admin UI (shell/queue/detail/actions/contacts) → CTA bugfix → reports page → status-event timeline (data + UI) → audit-log viewer → dashboard KPIs. The CRM is operable + observable end-to-end, every write RBAC-gated + audited + timelined + tenant-isolated. Test suite 252 → 396.
+
+---
