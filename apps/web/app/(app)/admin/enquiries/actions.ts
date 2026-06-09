@@ -5,13 +5,14 @@ import { audit, withTenant, type AuditWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
-import { getStaffActor, requireStaffPermission } from '../../lib/staff-session.js';
+import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 
 // EPIC-I CRM (FR-I-2/7): a staff member moves an enquiry through the status
 // workflow. RBAC-gated on `enquiry.write` (fail-closed before any read/write); the
 // transition is validated against the allow-list (illegal moves write nothing);
-// the change + reason (when `lost`) are recorded in an `audit_logs` row inside the
+// the change + reason (when `lost`) are recorded in an `audit_logs` row AND an
+// append-only `enquiry_status_events` timeline row (master spec §I.3), inside the
 // same tenant-scoped transaction (G4). Drives a form via `useActionState`.
 
 /** The tenant-scoped client surface this action reads/writes through. */
@@ -24,6 +25,9 @@ interface EnquiryStatusClient extends AuditWriter {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
     }): Promise<unknown>;
+  };
+  enquiryStatusEvent: {
+    create(args: { data: Record<string, unknown> }): Promise<unknown>;
   };
 }
 
@@ -69,6 +73,7 @@ export async function updateEnquiryStatus(
   }
 
   const actor = await getStaffActor();
+  const changedByAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
 
@@ -88,6 +93,9 @@ export async function updateEnquiryStatus(
       return;
     }
     await tx.enquiry.update({ where: { id: enquiryId }, data: { status: to } });
+    await tx.enquiryStatusEvent.create({
+      data: { tenantId, enquiryId, fromStatus: from, toStatus: to, changedByAgentId },
+    });
     await audit(tx, {
       tenantId,
       actor,

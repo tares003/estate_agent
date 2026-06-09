@@ -5,7 +5,7 @@ import { audit, withTenant, type AuditWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
-import { getStaffActor, requireStaffPermission } from '../../lib/staff-session.js';
+import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 
 // EPIC-I CRM (FR-I-6): converting an enquiry produces a Contact record (one of the
@@ -34,6 +34,9 @@ interface EnquiryConversionClient extends AuditWriter {
   };
   contact: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+  };
+  enquiryStatusEvent: {
+    create(args: { data: Record<string, unknown> }): Promise<unknown>;
   };
 }
 
@@ -78,6 +81,7 @@ export async function convertEnquiry(
   }
 
   const actor = await getStaffActor();
+  const changedByAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
 
@@ -107,6 +111,9 @@ export async function convertEnquiry(
       },
     });
     await tx.enquiry.update({ where: { id: enquiryId }, data: { status: 'converted' } });
+    await tx.enquiryStatusEvent.create({
+      data: { tenantId, enquiryId, fromStatus: from, toStatus: 'converted', changedByAgentId },
+    });
     await audit(tx, {
       tenantId,
       actor,
