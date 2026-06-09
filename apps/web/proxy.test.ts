@@ -1,10 +1,26 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { DEV_TENANT_ID, canonicalPath, proxy, resolveTenantId } from './proxy.js';
 
-function get(url: string, method = 'GET'): NextRequest {
-  return new NextRequest(new URL(url), { method });
+// The proxy resolves the tenant via Prisma at request time; mock getDb so no real
+// DB is touched. findFirst returns the configured row (by the `where` it is given).
+const findFirst = vi.fn<
+  (args: { where: Record<string, unknown> }) => Promise<{ id: string } | null>
+>(async () => null);
+vi.mock('./app/(app)/lib/db.js', () => ({
+  getDb: () => ({ platformTenant: { findFirst } }),
+}));
+
+const { DEV_TENANT_ID, TENANT_HEADER, PATHNAME_HEADER, canonicalPath, proxy } =
+  await import('./proxy.js');
+
+function get(url: string, method = 'GET', headers?: Record<string, string>): NextRequest {
+  return new NextRequest(new URL(url), headers ? { method, headers } : { method });
+}
+
+/** The value the proxy forwarded for a request header (NextResponse.next override). */
+function forwarded(res: Awaited<ReturnType<typeof proxy>>, name: string): string | null {
+  return res.headers.get(`x-middleware-request-${name}`);
 }
 
 describe('canonicalPath', () => {
@@ -17,64 +33,73 @@ describe('canonicalPath', () => {
 });
 
 describe('proxy URL canonicalisation (FR-O-2/3)', () => {
-  it('301-redirects an uppercase path to lowercase', () => {
-    const res = proxy(get('https://acme.test/Properties/Palatine-Road'));
+  it('301-redirects an uppercase path to lowercase', async () => {
+    const res = await proxy(get('https://acme.test/Properties/Palatine-Road'));
     expect(res.status).toBe(301);
     expect(res.headers.get('location')).toBe('https://acme.test/properties/palatine-road');
   });
 
-  it('301-redirects a trailing-slash path to the slash-less canonical, preserving the query', () => {
-    const res = proxy(get('https://acme.test/properties/?saleType=rent'));
+  it('301-redirects a trailing-slash path to the slash-less canonical, preserving the query', async () => {
+    const res = await proxy(get('https://acme.test/properties/?saleType=rent'));
     expect(res.status).toBe(301);
     expect(res.headers.get('location')).toBe('https://acme.test/properties?saleType=rent');
   });
 
-  it('does not redirect an already-canonical path (passes through)', () => {
-    const res = proxy(get('https://acme.test/properties'));
+  it('does not redirect an already-canonical path (passes through)', async () => {
+    const res = await proxy(get('https://acme.test/properties'));
     expect(res.status).not.toBe(301);
     expect(res.headers.get('location')).toBeNull();
   });
 
-  it('leaves the root path alone', () => {
-    const res = proxy(get('https://acme.test/'));
+  it('leaves the root path alone', async () => {
+    const res = await proxy(get('https://acme.test/'));
     expect(res.status).not.toBe(301);
   });
 
-  it('never redirects a non-GET request (a 301 would drop the body)', () => {
-    const res = proxy(get('https://acme.test/Properties/Palatine-Road', 'POST'));
+  it('never redirects a non-GET request (a 301 would drop the body)', async () => {
+    const res = await proxy(get('https://acme.test/Properties/Palatine-Road', 'POST'));
     expect(res.status).not.toBe(301);
   });
 
-  it('leaves /api/* paths untouched (no SEO redirect on the API surface)', () => {
-    const res = proxy(get('https://acme.test/api/Webhook'));
+  it('leaves /api/* paths untouched (no SEO redirect on the API surface)', async () => {
+    const res = await proxy(get('https://acme.test/api/Webhook'));
     expect(res.status).not.toBe(301);
   });
 
-  it('leaves the Payload CMS surface (/admin/cms) untouched — it owns its own URLs', () => {
-    // Payload routes are case- and trailing-slash-sensitive; a SEO 301 would break
-    // admin navigation and the CMS API under /admin/cms/api.
-    const mixedCase = proxy(get('https://acme.test/admin/cms/Collections/Pages'));
+  it('leaves the Payload CMS surface (/admin/cms) untouched — it owns its own URLs', async () => {
+    const mixedCase = await proxy(get('https://acme.test/admin/cms/Collections/Pages'));
     expect(mixedCase.status).not.toBe(301);
-
-    const trailingSlash = proxy(get('https://acme.test/admin/cms/api/pages/'));
+    const trailingSlash = await proxy(get('https://acme.test/admin/cms/api/pages/'));
     expect(trailingSlash.status).not.toBe(301);
   });
 });
 
-describe('proxy tenant resolution (EPIC-S)', () => {
-  it('resolves the tenant server-side, ignoring a client-supplied (forgeable) header', () => {
-    // SECURITY: a client must not be able to read another tenant by forging
-    // x-estate-tenant. Resolution must never trust the inbound header.
-    expect(resolveTenantId(get('https://acme.test/properties'))).toBe(DEV_TENANT_ID);
-    const forged = new NextRequest(new URL('https://acme.test/properties'), {
-      headers: { 'x-estate-tenant': '99999999-9999-9999-9999-999999999999' },
-    });
-    expect(resolveTenantId(forged)).toBe(DEV_TENANT_ID);
+describe('proxy tenant resolution (EPIC-S FR-S-1)', () => {
+  it('forwards the host-resolved tenant and strips any forged inbound header', async () => {
+    findFirst.mockImplementation(async ({ where }) =>
+      where['customDomain'] === 'resolved-tenant.example' ? { id: 'tenant-acme' } : null,
+    );
+    const res = await proxy(
+      // localhost base in tests → this custom domain triggers a registry lookup.
+      // A fresh host avoids the module-level resolution cache from earlier tests.
+      get('https://resolved-tenant.example/properties', 'GET', {
+        host: 'resolved-tenant.example',
+        'x-estate-tenant': '99999999-9999-9999-9999-999999999999',
+      }),
+    );
+    expect(forwarded(res, TENANT_HEADER)).toBe('tenant-acme');
+    expect(forwarded(res, TENANT_HEADER)).not.toBe('99999999-9999-9999-9999-999999999999');
   });
 
-  it('does not redirect tenant-resolved requests', () => {
-    const res = proxy(get('https://acme.test/properties'));
-    expect(res.status).not.toBe(301);
-    expect(res.headers.get('location')).toBeNull();
+  it('falls back to the dev tenant for a non-tenant host (localhost apex) without a DB query', async () => {
+    findFirst.mockClear();
+    const res = await proxy(get('http://localhost:3000/properties'));
+    expect(forwarded(res, TENANT_HEADER)).toBe(DEV_TENANT_ID);
+    expect(findFirst).not.toHaveBeenCalled(); // apex short-circuits before the registry
+  });
+
+  it('exposes the request path for active-nav matching', async () => {
+    const res = await proxy(get('http://localhost:3000/properties'));
+    expect(forwarded(res, PATHNAME_HEADER)).toBe('/properties');
   });
 });
