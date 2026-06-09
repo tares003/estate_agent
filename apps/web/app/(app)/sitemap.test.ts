@@ -12,9 +12,18 @@ vi.mock('@estate/db', () => ({
     fn({ property: { findMany } }),
 }));
 
+const listPublishedPages = vi.fn();
+vi.mock('./lib/cms.js', () => ({
+  listPublishedPages: (...args: unknown[]) => listPublishedPages(...args),
+}));
+
 const { default: sitemap } = await import('./sitemap.js');
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  findMany.mockResolvedValue([]);
+  listPublishedPages.mockResolvedValue([]);
+});
 
 describe('sitemap', () => {
   it('lists the static routes plus published properties with last-modified', async () => {
@@ -37,5 +46,23 @@ describe('sitemap', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { publishedAt: { not: null }, deletedAt: null } }),
     );
+  });
+
+  it('lists published CMS pages for the tenant (FR-D-4)', async () => {
+    listPublishedPages.mockResolvedValue([
+      { slug: 'about', updatedAt: new Date('2026-02-03') },
+      { slug: 'selling/guide', updatedAt: new Date('2026-02-04') },
+    ]);
+
+    const entries = await sitemap();
+    const urls = entries.map((e) => e.url);
+
+    expect(urls).toContain('https://acme.test/about');
+    expect(urls).toContain('https://acme.test/selling/guide');
+    expect(entries.find((e) => e.url.endsWith('/about'))?.lastModified).toEqual(
+      new Date('2026-02-03'),
+    );
+    // scoped to the resolved tenant
+    expect(listPublishedPages).toHaveBeenCalledWith('tenant-1');
   });
 });
