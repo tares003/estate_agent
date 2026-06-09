@@ -70,6 +70,7 @@ export interface Config {
     pages: Page;
     media: Media;
     menus: Menu;
+    email_templates: EmailTemplate;
     cms_users: CmsUser;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -81,6 +82,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     menus: MenusSelect<false> | MenusSelect<true>;
+    email_templates: EmailTemplatesSelect<false> | EmailTemplatesSelect<true>;
     cms_users: CmsUsersSelect<false> | CmsUsersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -405,6 +407,60 @@ export interface Menu {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email_templates".
+ */
+export interface EmailTemplate {
+  id: number;
+  /**
+   * Owning platform tenant — set automatically from the request.
+   */
+  tenant: string;
+  /**
+   * Stable identifier the sending code looks up, e.g. "welcome".
+   */
+  key: string;
+  name: string;
+  /**
+   * Email subject. Supports {{variables}}.
+   */
+  subject: string;
+  /**
+   * Hidden inbox-preview text. Supports {{variables}}.
+   */
+  preheader?: string | null;
+  /**
+   * Structured email body. Supports {{variables}} in text.
+   */
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * The {{variables}} this template declares.
+   */
+  variables?:
+    | {
+        name: string;
+        description?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cms_users".
  */
 export interface CmsUser {
@@ -464,6 +520,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'menus';
         value: number | Menu;
+      } | null)
+    | ({
+        relationTo: 'email_templates';
+        value: number | EmailTemplate;
       } | null)
     | ({
         relationTo: 'cms_users';
@@ -711,6 +771,27 @@ export interface MenusSelect<T extends boolean = true> {
               visibility?: T;
               id?: T;
             };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email_templates_select".
+ */
+export interface EmailTemplatesSelect<T extends boolean = true> {
+  tenant?: T;
+  key?: T;
+  name?: T;
+  subject?: T;
+  preheader?: T;
+  body?: T;
+  variables?:
+    | T
+    | {
+        name?: T;
+        description?: T;
         id?: T;
       };
   updatedAt?: T;
