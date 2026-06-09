@@ -680,3 +680,41 @@ All gates green: apps/web 104 unit tests · typecheck · ESLint · diff guards G
 Token spend rough estimate: middleware canonicalisation + 8 tests + vitest glob + gate run — modest.
 
 ---
+
+## Phase B20 — Page-level Playwright e2e (real browser + real Postgres) (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `1bc88ec` → `527ac34`
+Tests added: 4 e2e specs (opt-in; unit suite unchanged at 104)
+
+The page-level end-to-end pass deferred since B8 — finally built now that Docker is available. It exercises the whole public stack in a **real Chromium** against the **real Next app over real PostgreSQL 16 + PostGIS**, with **axe** accessibility checks.
+
+### Shipped (`apps/web`)
+
+- Deps: `@playwright/test` + `@axe-core/playwright` (workspace-resolved 1.60.0 / 4.11.3 — reuses the cached chromium-1223, no download). `test:e2e` script.
+- **`e2e/global-setup.ts`** — Ryuk-disabled, fixed-name (`estate-e2e-pg`) + fixed-port (5433) `postgis/postgis:16-3.4` so the DATABASE_URL is deterministic for the webServer; runs `prisma db push` + `prisma generate`, applies migrations 0001-0006, and seeds two published properties under the **dev tenant** the middleware resolves to. **`global-teardown.ts`** removes the container by name.
+- **`playwright.config.ts`** — `next dev -p 3100` (own port, never collides with a dev/preview server on 3000) pointed at the e2e DB; Chromium project; generous timeouts (next dev compiles on first hit).
+- **`e2e/catalogue.spec.ts`** — catalogue lists seeded properties; rent filter narrows + updates the heading; property detail shows content + RealEstateListing JSON-LD + the enquiry form; an uppercase URL **301**s to lowercase. Each page passes an **axe WCAG 2.2 AA** scan (no serious/critical; `.badge` excluded pending D-010).
+
+### Result
+
+`pnpm --filter @estate/web test:e2e` → **4/4 pass (~35s)** end-to-end. This is the first full-stack verification: middleware (tenant + canonicalisation), catalogue (filter → Prisma → RLS), detail (getPropertyBySlug + SEO JSON-LD), and a11y — all in a real browser. axe surfaced **no** serious/critical violations beyond the known, excluded D-010.
+
+### Notes
+
+- Opt-in (requires Docker), excluded from the Docker-free unit run; the e2e specs are `.spec.ts` under `e2e/`, so neither vitest nor G11 pick them up.
+- Lighthouse/perf-budget (FR-O-10 / G3) is a separate runtime gate — not in this pass.
+
+### Verification
+
+All gates green: apps/web 104 unit tests + 4 e2e · typecheck · ESLint · diff guards G1/G2/G10/G11 · `next build` · prettier.
+
+### Next
+
+- **EPIC-D Payload CMS** mount (editorial backbone; heavy deps + build integration).
+- Wire property **images** into detail + SEO (D-019) — then extend the e2e to cover the gallery.
+- Lighthouse CI (G3 / FR-O-10) for the public routes.
+
+Token spend rough estimate: Playwright + axe harness (container/webServer orchestration) + 4 specs + port-conflict fix + gate run — substantial.
+
+---
