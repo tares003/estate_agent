@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Badge } from '@estate/ui';
 
 import type { AdminPropertyResult } from '../../lib/admin-properties.js';
@@ -62,7 +63,12 @@ export function AdminPropertiesTable({ result }: { result: AdminPropertyResult }
               return (
                 <tr key={property.id} className="border-divider border-b align-top">
                   <td className="py-3 pr-4">
-                    <span className="t-body-md block">{property.displayAddress}</span>
+                    <Link
+                      href={`/admin/properties/${property.id}`}
+                      className="t-body-md text-brand-primary block"
+                    >
+                      {property.displayAddress}
+                    </Link>
                     {property.title ? (
                       <span className="t-body-sm text-text-secondary">{property.title}</span>
                     ) : null}
