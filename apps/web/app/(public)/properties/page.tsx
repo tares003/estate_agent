@@ -1,11 +1,14 @@
 import { withTenant } from '@estate/db';
 import { PropertyCard } from '@estate/ui';
-import { parsePropertySearch, type PropertySearch } from '@estate/validators';
+import { parsePropertySearch, radiusToMetres, type PropertySearch } from '@estate/validators';
 import { getDb } from '../../lib/db.js';
 import {
   searchProperties,
+  searchPropertiesNear,
   type PropertyListReader,
+  type PropertyRawClient,
   type PropertySearchOptions,
+  type PropertySearchResult,
 } from '../../lib/properties.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
 import { PropertyFilters } from './PropertyFilters.js';
@@ -42,9 +45,20 @@ function toOptions(search: PropertySearch): PropertySearchOptions {
 export default async function CataloguePage({ searchParams }: CataloguePageProps) {
   const search = parsePropertySearch((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
-  const result = await withTenant(getDb(), tenantId, (tx) =>
-    searchProperties(tx as unknown as PropertyListReader, toOptions(search)),
-  );
+  const { lat, lng, radius, unit } = search;
+  const result = await withTenant(getDb(), tenantId, (tx): Promise<PropertySearchResult> => {
+    // A centre point + radius switches to the PostGIS distance query (nearest-first);
+    // otherwise the standard Prisma filter/sort query runs.
+    if (lat != null && lng != null && radius != null) {
+      return searchPropertiesNear(tx as unknown as PropertyRawClient, {
+        ...toOptions(search),
+        lat,
+        lng,
+        radiusMetres: radiusToMetres(radius, unit),
+      });
+    }
+    return searchProperties(tx as unknown as PropertyListReader, toOptions(search));
+  });
 
   const { items, total, page, totalPages } = result;
   const chips = activeChips(search);

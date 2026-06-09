@@ -22,10 +22,13 @@ export {
 export {
   propertySearchSchema,
   parsePropertySearch,
+  radiusToMetres,
   PROPERTY_SORTS,
   LISTING_TYPES,
+  RADIUS_UNITS,
   DEFAULT_PAGE_SIZE,
   type PropertySearch,
   type PropertySort,
   type ListingTypeFilter,
+  type RadiusUnit,
 } from './property-search.js';

@@ -40,6 +40,18 @@ export type ListingTypeFilter = (typeof LISTING_TYPES)[number];
 /** Default results-per-page (master spec §H.19 says configurable; this is the V1 default). */
 export const DEFAULT_PAGE_SIZE = 24;
 
+/** Radius-search distance units. Default is miles (UK property convention; §K.1 radius). */
+export const RADIUS_UNITS = ['mi', 'km'] as const;
+export type RadiusUnit = (typeof RADIUS_UNITS)[number];
+
+/** Metres per unit. Miles uses the international mile (1609.344 m). */
+const METRES_PER_UNIT: Record<RadiusUnit, number> = { mi: 1609.344, km: 1000 };
+
+/** Convert a radius in the chosen unit to whole metres for `ST_DWithin`. */
+export function radiusToMetres(radius: number, unit: RadiusUnit): number {
+  return Math.round(radius * METRES_PER_UNIT[unit]);
+}
+
 /** Map an empty string / null to undefined so a present-but-blank param is "no filter". */
 const blankToUndefined = (value: unknown): unknown =>
   value === '' || value === null ? undefined : value;
@@ -66,6 +78,16 @@ const optionalText = z.preprocess(
   z.string().trim().min(1).max(100).optional().catch(undefined),
 );
 
+/** An optional WGS84 coordinate parsed from the URL, bounded to [min, max]; invalid dropped. */
+const optionalCoord = (min: number, max: number) =>
+  z.preprocess(blankToUndefined, z.coerce.number().min(min).max(max).optional().catch(undefined));
+
+/** An optional positive radius (in the chosen unit), capped at 100; invalid dropped. */
+const optionalRadius = z.preprocess(
+  blankToUndefined,
+  z.coerce.number().positive().max(100).optional().catch(undefined),
+);
+
 /** An optional enum value; anything not in the set is dropped (treated as "no filter"). */
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess(blankToUndefined, z.enum(values).optional().catch(undefined));
@@ -78,6 +100,12 @@ export const propertySearchSchema = z.object({
   priceMax: optionalPounds,
   bedroomsMin: optionalCount,
   bathroomsMin: optionalCount,
+  // Radius search (§K.1): a centre point (lat/lng, e.g. from browser geolocation)
+  // + a radius. All three are needed to activate it; unit defaults to miles (UK).
+  lat: optionalCoord(-90, 90),
+  lng: optionalCoord(-180, 180),
+  radius: optionalRadius,
+  unit: z.preprocess(blankToUndefined, z.enum(RADIUS_UNITS).catch('mi').default('mi')),
   sort: z.preprocess(blankToUndefined, z.enum(PROPERTY_SORTS).catch('newest').default('newest')),
   // Capped so an absurd ?page=1e9 can't drive an unbounded OFFSET scan (fails soft to 1).
   page: z.preprocess(

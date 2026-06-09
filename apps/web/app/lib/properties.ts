@@ -165,6 +165,100 @@ export async function searchProperties(
   };
 }
 
+/**
+ * Minimal raw-SQL surface for the PostGIS radius path. `ST_DWithin` / the `geog`
+ * column can't be expressed through Prisma's query API, so the radius search runs
+ * a parameterised raw query. The real Prisma tx (`$queryRawUnsafe`) satisfies this
+ * in production; a thin `pg` adapter satisfies it in the integration test — so this
+ * module stays DB-free and unit-testable with a fake.
+ */
+export interface PropertyRawClient {
+  $queryRawUnsafe<T = unknown>(sql: string, ...values: unknown[]): Promise<T>;
+}
+
+/** Radius-search inputs: the core filters plus a centre point + radius in metres. */
+export interface NearSearchOptions extends PropertySearchOptions {
+  lat: number;
+  lng: number;
+  radiusMetres: number;
+}
+
+/** Columns the radius query selects, aliased to PropertyRow's camelCase shape. */
+const RADIUS_SELECT =
+  'id, slug, display_address AS "displayAddress", postcode, title, ' +
+  'sale_type AS "saleType", market_status AS "marketStatus", price, bedrooms, bathrooms, receptions';
+
+/**
+ * Geographic radius search (master spec §K.1 "search radius"). Returns published,
+ * non-deleted, geocoded properties within `radiusMetres` of (lat, lng), ordered
+ * nearest-first, combined with the same filters as {@link searchProperties}.
+ *
+ * Built as a parameterised raw query: only `$N` placeholders go into the SQL
+ * string, every value is bound (no interpolation), so there is no injection
+ * surface. RLS still scopes the rows to the tenant (the query runs inside
+ * withTenant). The query itself is verified against real PostGIS in the
+ * Testcontainers integration suite; this builder is unit-tested with a fake client.
+ */
+export async function searchPropertiesNear(
+  client: PropertyRawClient,
+  options: NearSearchOptions,
+): Promise<PropertySearchResult> {
+  const values: unknown[] = [];
+  /** Bind a value and return its `$N` placeholder. */
+  const bind = (value: unknown): string => {
+    values.push(value);
+    return `$${values.length}`;
+  };
+
+  // Centre point — reused by the WHERE (ST_DWithin) and the ORDER BY (distance).
+  const point = `ST_SetSRID(ST_MakePoint(${bind(options.lng)}, ${bind(options.lat)}), 4326)::geography`;
+
+  const conditions = [
+    'published_at IS NOT NULL',
+    'deleted_at IS NULL',
+    'geog IS NOT NULL',
+    `ST_DWithin(geog, ${point}, ${bind(options.radiusMetres)})`,
+  ];
+  if (options.saleType) conditions.push(`sale_type = ${bind(options.saleType)}::sale_type`);
+  if (options.listingType) {
+    conditions.push(`listing_type = ${bind(options.listingType)}::listing_type`);
+  }
+  if (options.priceMin != null) conditions.push(`price >= ${bind(options.priceMin)}`);
+  if (options.priceMax != null) conditions.push(`price <= ${bind(options.priceMax)}`);
+  if (options.bedroomsMin != null) conditions.push(`bedrooms >= ${bind(options.bedroomsMin)}`);
+  if (options.bathroomsMin != null) conditions.push(`bathrooms >= ${bind(options.bathroomsMin)}`);
+  if (options.location) {
+    conditions.push(
+      `(town ILIKE ${bind(`%${options.location}%`)} OR postcode LIKE ${bind(`${options.location.toUpperCase()}%`)})`,
+    );
+  }
+  const whereSql = conditions.join(' AND ');
+  const whereValues = [...values]; // snapshot before the page params (count omits them)
+
+  const pageSize = clamp(options.pageSize ?? DEFAULT_PAGE_SIZE, 1, 60);
+  const page = Math.max(1, options.page ?? 1);
+  const skip = (page - 1) * pageSize;
+
+  const rowsSql =
+    `SELECT ${RADIUS_SELECT} FROM properties WHERE ${whereSql} ` +
+    `ORDER BY geog <-> ${point} LIMIT ${bind(pageSize)} OFFSET ${bind(skip)}`;
+  const countSql = `SELECT count(*)::int AS count FROM properties WHERE ${whereSql}`;
+
+  const [rows, countRows] = await Promise.all([
+    client.$queryRawUnsafe<PropertyRow[]>(rowsSql, ...values),
+    client.$queryRawUnsafe<Array<{ count: number }>>(countSql, ...whereValues),
+  ]);
+  const total = Number(countRows[0]?.count ?? 0);
+
+  return {
+    items: rows.map(toCardProps),
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
 /** Fetch a single published property by slug (RLS scopes the query to the tenant). */
 export async function getPropertyBySlug(
   db: PropertyDetailReader,

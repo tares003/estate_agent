@@ -1,5 +1,6 @@
 import { Button, NumberField, Select, TextField, type SelectOption } from '@estate/ui';
 import { LISTING_TYPES, type PropertySearch } from '@estate/validators';
+import { NearMeButton } from './NearMeButton.js';
 import { LISTING_TYPE_LABELS } from './search-params.js';
 
 /**
@@ -29,6 +30,16 @@ const SORT_OPTIONS: SelectOption[] = [
   { value: 'oldest', label: 'Oldest first' },
   { value: 'price_asc', label: 'Price (low to high)' },
   { value: 'price_desc', label: 'Price (high to low)' },
+];
+
+const RADIUS_OPTIONS: SelectOption[] = [
+  { value: '', label: 'Any distance' },
+  ...[1, 3, 5, 10, 15].map((n) => ({ value: String(n), label: String(n) })),
+];
+
+const UNIT_OPTIONS: SelectOption[] = [
+  { value: 'mi', label: 'Miles' },
+  { value: 'km', label: 'Km' },
 ];
 
 /** "Any … / 1+ / 2+ / …" options for a minimum bedroom/bathroom count. */
@@ -101,8 +112,21 @@ export function PropertyFilters({ current }: PropertyFiltersProps) {
         step={1000}
         defaultValue={current.priceMax}
       />
+      <Select
+        name="radius"
+        label="Distance"
+        options={RADIUS_OPTIONS}
+        defaultValue={current.radius != null ? String(current.radius) : ''}
+      />
+      <Select name="unit" label="Unit" options={UNIT_OPTIONS} defaultValue={current.unit} />
       <Select name="sort" label="Order by" options={SORT_OPTIONS} defaultValue={current.sort} />
-      <div className="flex items-end">
+
+      {/* Coordinates for radius search — populated by "Search near me" (browser geolocation). */}
+      <input type="hidden" name="lat" defaultValue={current.lat ?? ''} />
+      <input type="hidden" name="lng" defaultValue={current.lng ?? ''} />
+
+      <div className="flex items-end gap-2">
+        <NearMeButton />
         <Button type="submit" className="w-full">
           Apply filters
         </Button>

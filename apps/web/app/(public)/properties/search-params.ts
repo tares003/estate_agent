@@ -31,26 +31,35 @@ const KEYS: ReadonlyArray<keyof PropertySearch> = [
   'priceMax',
   'bedroomsMin',
   'bathroomsMin',
+  'lat',
+  'lng',
+  'radius',
+  'unit',
   'sort',
   'page',
 ];
 
 /**
- * Serialise the active filters to a `/properties` query string (leading `?`, or
- * `''` when nothing is active). Defaults are omitted (sort=newest, page=1) so the
- * canonical "no filters" URL is just `/properties`. `overrides` are applied last
- * (e.g. `{ page: 2 }` for a pagination link, `{ saleType: undefined }` to clear).
+ * Overrides for {@link toSearchQuery}. Unlike `Partial<PropertySearch>` (which,
+ * under exactOptionalPropertyTypes, forbids an explicit `undefined`), each key may
+ * be set to `undefined` to clear that filter from the produced query.
  */
-export function toSearchQuery(
-  search: PropertySearch,
-  overrides: Partial<PropertySearch> = {},
-): string {
+type SearchOverrides = { [K in keyof PropertySearch]?: PropertySearch[K] | undefined };
+
+/**
+ * Serialise the active filters to a `/properties` query string (leading `?`, or
+ * `''` when nothing is active). Defaults are omitted (sort=newest, unit=mi, page=1)
+ * so the canonical "no filters" URL is just `/properties`. `overrides` are applied
+ * last (e.g. `{ page: 2 }` for a pagination link, `{ saleType: undefined }` to clear).
+ */
+export function toSearchQuery(search: PropertySearch, overrides: SearchOverrides = {}): string {
   const merged = { ...search, ...overrides };
   const params = new URLSearchParams();
   for (const key of KEYS) {
     const value = merged[key];
     if (value === undefined) continue;
     if (key === 'sort' && value === 'newest') continue;
+    if (key === 'unit' && value === 'mi') continue; // miles is the default unit
     if (key === 'page' && value === 1) continue;
     params.set(key, String(value));
   }
@@ -77,6 +86,21 @@ export function activeChips(search: PropertySearch): FilterChip[] {
   };
 
   if (search.location) add('location', `In ${search.location}`);
+  // Radius is one chip covering the whole geo search — removing it clears the
+  // centre point + radius + unit together.
+  if (search.lat != null && search.lng != null && search.radius != null) {
+    chips.push({
+      key: 'radius',
+      label: `Within ${search.radius} ${search.unit}`,
+      removeQuery: toSearchQuery(search, {
+        lat: undefined,
+        lng: undefined,
+        radius: undefined,
+        unit: undefined,
+        page: 1,
+      }),
+    });
+  }
   if (search.saleType) add('saleType', search.saleType === 'sale' ? 'For sale' : 'To rent');
   if (search.listingType && LISTING_TYPES.includes(search.listingType)) {
     add('listingType', LISTING_TYPE_LABELS[search.listingType]);
