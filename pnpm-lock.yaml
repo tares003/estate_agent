@@ -48,9 +48,15 @@ importers:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
     devDependencies:
+      '@axe-core/playwright':
+        specifier: ^4.10.0
+        version: 4.11.3(playwright-core@1.60.0)
       '@estate/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.60.0
       '@testcontainers/postgresql':
         specifier: ^10.13.0
         version: 10.28.0
