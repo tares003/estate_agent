@@ -1274,3 +1274,23 @@ The detail page now wires the remaining two EPIC-I actions — adding a note and
 The CRM is operable end-to-end in the admin: queue (B37) → detail (B38) → change status / add note / convert (B38–B39), all RBAC-gated + audited (G4) at the action layer. Remaining EPIC-I: assignment (FR-I-3, needs EPIC-N roster), SLA (FR-I-4, needs a status-event timeline), bulk ops (FR-I-8), saved views (FR-I-9). Remaining EPIC-H: the full KPI dashboard, every other admin surface, the slide-over presentation, command palette, and the full-page responsive + axe Playwright pass.
 
 ---
+
+## Phase B40 — EPIC-H contacts directory (FR-H-7 list) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-contacts-list)
+
+The contact directory at `/admin/contacts` — closes the conversion loop: converting an enquiry (B35/B39) now produces a contact you can *see*.
+
+- `lib/contacts.ts` (read model, tested): `listContacts` over a structural client (mirrors enquiries.ts) — soft-deleted contacts hidden (`deletedAt: null`), optional type filter, newest-first, clamped pagination. 100%.
+- `admin/contacts/contacts-params.ts` (pure, tested): `parseContactListParams` / `contactListQuery` — URL is the single source of truth for the type filter + page. 100%.
+- `admin/contacts/ContactsTable.tsx`: the directory table — server-rendered GET type filter (no JS), semantic table (`th scope=col`), neutral type Badge (the party type is a label, not an urgency), dash for missing email/phone, empty state, filter-preserving pagination. Token-driven (G7).
+- `admin/contacts/page.tsx` (RSC): tenant-scoped `listContacts` via withTenant; thin composition.
+- `components/admin/admin-nav.ts`: added Contacts to the CRM nav section.
+
+### Verification
+15 tests (contact where/list incl. soft-delete-hide + type filter + clamp; URL parse/serialise; table rows/type-badge/dash/empty/pagination; the page's tenant-scoped query + the type passthrough + bare entry; nav includes Contacts). Full app suite 365 passed; `contacts`/`contacts-params` 100%, others meet their thresholds. `next build` compiles `/admin/contacts`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-7 remainder)
+Per-type tabs (landlord/tenant/vendor/buyer), duplicate detection + merge, compliance items with auto-expiry alerts, the contact detail/edit surface, and a link from the converted enquiry to its contact.
+
+---
