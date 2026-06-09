@@ -611,3 +611,37 @@ The geographic radius search (master spec §K.1 "search radius"), now buildable 
 Token spend rough estimate: validator + radius raw-query builder + geolocation UI + filter wiring + ~13 unit tests + apps/web integration harness + real-PostGIS integration test + gate run — substantial.
 
 ---
+
+## Phase B18 — EPIC-O SEO on the property routes (2026-06-08)
+
+Status: **complete** (pushed to `main`)
+Main: `c9be2cf` → `4c02ca2` (RED) → `dcf3b0e` (GREEN)
+Tests added: ~16 (apps/web 96 unit total)
+
+The EPIC-O emission layer (master spec §O) for the catalogue + detail surfaces — a clean, fully-verifiable wave (no heavy deps, no DB-at-build risk), chosen over the heavier Payload/e2e waves which warrant their own focused sessions.
+
+### Shipped
+
+- **`app/lib/seo.ts`** — pure builders: `propertyListingJsonLd` (**RealEstateListing**, FR-O-5: name/description/url/PostalAddress/geo/beds/baths/offers, offer availability derived from `market_status`), `breadcrumbJsonLd` (**BreadcrumbList**, FR-O-6), `truncate` (the ≤60/≤160 metadata discipline).
+- **`getRequestOrigin`** (host-based canonical origin — multi-tenant, no fixed env). `getPropertyBySlug` now carries the SEO raw fields (town / lat / lng / `priceValue` in GBP / market_status); **`listPropertiesForSitemap`**.
+- **`generateMetadata`** on the detail + catalogue routes (**FR-O-4**: title/description/canonical/OG/Twitter; the detail route shares a single per-request fetch via React `cache`). The detail page renders the RealEstateListing + BreadcrumbList **JSON-LD** scripts.
+- **`app/sitemap.ts`** (**FR-O-8**: static routes + every published property + `lastmod`, per-tenant) and **`app/robots.ts`** (**FR-O-9**: disallow `/admin` `/account` `/api/` `/preview/` + sitemap reference).
+
+### Decisions / findings
+
+- Open questions resolved: sold/let kept **indexed** (Q1 recommendation); OG/JSON-LD **image omitted** until property images are wired (Q3) — logged as **D-019**.
+- **Deferred** (later epics): URL casing/trailing-slash + the redirects table (FR-O-1/2/3/11/12 — needs EPIC-J), per-entity JSON-LD for not-yet-built surfaces (FR-O-7), image alt-text (FR-O-13).
+
+### Verification
+
+All gates green: apps/web 96 unit tests (catalogue/detail/sitemap/robots/seo/tenant all ≥ scope thresholds; funcs 100%) · typecheck · ESLint · diff guards G1/G2/G10/G11 · `next build` (/properties 114 kB; /sitemap.xml + /robots.txt routes generated) · prettier. Schema.org Rich-Results validation is the documented FR-O-5 acceptance step (external).
+
+### Next
+
+- **EPIC-D Payload CMS** mount (the editorial backbone — its own focused session: heavy deps + Next build integration).
+- Page-level **Playwright e2e** (now possible with a real Postgres).
+- Wire property **images** into the detail + SEO (D-019).
+
+Token spend rough estimate: seo helpers + view-model extension + metadata on two routes + JSON-LD + sitemap + robots + ~16 tests + gate run — substantial.
+
+---
