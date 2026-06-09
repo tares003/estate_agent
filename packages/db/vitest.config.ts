@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Integration tests (real Postgres + PostGIS via Testcontainers) are opt-in —
+    // run with `pnpm test:integration`; kept out of the fast, Docker-free unit run.
+    exclude: ['**/node_modules/**', '**/dist/**', 'src/**/*.integration.test.ts'],
     // PrismaClient validates the datasource env at construction; tests never
     // connect (they inject fakes or use pglite), so a dummy URL is enough.
     env: { DATABASE_URL: 'postgresql://user:pass@localhost:5432/estate_test?schema=public' },
