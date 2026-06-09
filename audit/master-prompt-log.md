@@ -771,3 +771,35 @@ Per the §6 blocker policy: the spike (the Payload deps + sharp build-flag) was 
 Whichever is chosen, the dedicated Payload-mount session must re-verify the whole app (catalogue / detail / SEO / middleware + 118 unit + the e2e suite) on the new Next line, then proceed with the mount per the B21 plan (minimal config → prove `next build` → collections + Block schemas mirroring the `components/blocks/*` renderers → wire `PageRenderer` to live CMS pages).
 
 ---
+
+## Phase B22 — Next 16 upgrade (resolves D-021; unblocks the Payload mount) (2026-06-09)
+
+Status: **complete** (pushed to `main`)
+Main: `345cc37` (build) + docs commit
+Owner decision: **(b) Upgrade to Next 16.2.6+** — chosen over the 15.4.x downgrade because it moves forward onto the supported Next line rather than backward off 15.5.
+
+The B21 blocker (D-021) is resolved. Payload 3.x supports Next `>=16.2.6 <17`, so the framework is now compatible with the planned CMS mount.
+
+### Changes
+
+- **`apps/web/package.json`** — `next` `15.5.19` → `^16.2.6` (resolved **16.2.7**). Dev/build scripts gain **`--webpack`**.
+- **Bundler — webpack, not Turbopack.** Next 16 defaults to Turbopack, which **errors** on the app's existing webpack config (the `.js`→`.ts`/`.tsx` `extensionAlias` the workspace packages need, plus the slot Payload's `withPayload` injects a webpack config into). Building/serving with `--webpack` (dev, build, and the Playwright `webServer`) keeps the extensionAlias honoured and leaves the seam for `withPayload` to compose — the deliberate choice for the upcoming mount.
+- **`middleware.ts` → `proxy.ts`** — Next 16 renamed the route-interception convention. File renamed (git tracks it as a rename), exported `middleware` → `proxy`; the test (`middleware.test.ts` → `proxy.test.ts`) and the vitest globs/coverage-include updated. Build now reports `ƒ Proxy (Middleware)` with no deprecation warning.
+- **`next.config.ts`** — webpack `extensionAlias` retained; comment notes the Next-16 `--webpack` rationale + `withPayload` composition.
+- **`.prettierignore`** — `next-env.d.ts` added (Next 16 regenerates it on every build).
+- **CLAUDE.md §9** Framework row amended to Next **16** (pinned `^16.2.6` for Payload compat; webpack bundler; `proxy.ts` convention) — the required stack amendment.
+
+### Verification (whole app re-verified on Next 16.2.7)
+
+- `next build --webpack` — compiles clean.
+- **118 unit tests** (22 files) pass — incl. the renamed `proxy.test.ts` (8).
+- `tsc --noEmit` clean · ESLint clean · prettier clean.
+- **4 page-level e2e specs** (catalogue / detail / filter / canonical) pass on **real Chromium + Postgres+PostGIS** (Testcontainers), axe a11y included.
+- Diff guards green.
+
+### Next
+
+- **B23 — the Payload CMS admin mount itself** (now unblocked). Per the B21 plan: minimal `payload.config.ts` + `(payload)` route group at `app/admin/cms/` → prove `next build --webpack` with `withPayload` composed over the existing `next.config.ts` → V1 collections + Block schemas mirroring `components/blocks/*` → per-tenant access scoping (`x-estate-tenant` → RLS GUC) → wire `PageRenderer` to live CMS pages.
+- Carried deferrals: D-019 (property images → detail+SEO), D-020 (`LinkButton` in `@estate/ui`).
+
+---

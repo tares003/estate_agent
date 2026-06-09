@@ -187,7 +187,7 @@ Every surface ships from the same Next.js + Payload application. The "owning sta
 | Layer | Choice |
 |---|---|
 | **Runtime** | Node.js LTS (currently 22.x) |
-| **Framework** | Next.js (App Router) with TypeScript — strict mode, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` |
+| **Framework** | Next.js **16** (App Router) with TypeScript — strict mode, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`. Pinned to `^16.2.6` for Payload CMS 3.x compatibility (Payload's Next peer range excludes 15.5.x — amended from 15.x; see audit D-021). Built/served with the **webpack** bundler (`next build/dev --webpack`); Turbopack is opted out because Payload's `withPayload` injects a webpack config. The route-interception file uses Next 16's `proxy.ts` convention (formerly `middleware.ts`). |
 | **CMS** | Payload CMS 3.x (currently 3.85.0) — mounted INSIDE the Next.js app at `/admin/cms`. Code-first config (collections, fields, access control in TS files). Blocks field type for page-builder. Lexical for rich text. |
 | **Data fetching / mutations** | React Server Components for reads; Server Actions for mutations; tRPC for complex client-side interactive queries (TBD per ADR-0002 — Server Actions only, vs Server Actions + tRPC) |
 | **UI / styling** | CSS custom properties from `design/canvas/tokens.css` ported verbatim into `packages/tokens`; Tailwind CSS as the utility layer (configured to use the token CSS variables); no raw hex / px / ms per CI guard G7 |
