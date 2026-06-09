@@ -6,6 +6,7 @@ import {
   ROLES,
   STAFF_ROLES,
   hasPermission,
+  isStaffRole,
   requirePermission,
   type Permission,
   type StaffRole,
@@ -155,5 +156,18 @@ describe('requirePermission', () => {
       expect(permissionError.message).toContain('content_editor');
       expect(permissionError.message).toContain('property.write');
     }
+  });
+});
+
+describe('isStaffRole', () => {
+  it('accepts every canonical staff role', () => {
+    for (const role of STAFF_ROLES) {
+      expect(isStaffRole(role)).toBe(true);
+    }
+  });
+
+  it('rejects an unknown role (so callers can fail safe)', () => {
+    expect(isStaffRole('wizard')).toBe(false);
+    expect(isStaffRole('')).toBe(false);
   });
 });
