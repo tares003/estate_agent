@@ -718,3 +718,42 @@ All gates green: apps/web 104 unit tests + 4 e2e · typecheck · ESLint · diff 
 Token spend rough estimate: Playwright + axe harness (container/webServer orchestration) + 4 specs + port-conflict fix + gate run — substantial.
 
 ---
+
+## Phase B21 — EPIC-D page-builder render layer (+ Payload mount plan) (2026-06-08)
+
+Status: **complete** (render layer pushed to `main`; Payload admin mount planned + deferred)
+Main: `fd3a4ac` → `7ce1c72` (RED) → `8664245` (GREEN)
+Tests added: 14 (apps/web 118 unit total)
+
+EPIC-D (the configurable page-builder, master spec §D) split the way CLAUDE.md §9 itself splits it — **block schemas (`payload/blocks/*`, with the Payload mount) vs renderers (`components/blocks/*`)**. This wave ships the **render half** (low-risk, fully testable) and **defers the Payload admin mount** (build-integration-risky) to its own focused session, backed by a de-risked plan from a 4-reader understand workflow.
+
+### Shipped — the render layer
+
+- **`apps/web/components/blocks/*`** — token-driven renderers for the V1 block set: `hero`, `rich_text`, `cta_strip`, `faq` (native `<details>` accordion). Each block file owns a **Zod schema** = the section's stored data shape (the single source the renderer consumes and the future Payload Block config mirrors).
+- **`registry.ts`** — `BLOCK_REGISTRY` mapping section `type` → `{ schema, Component }` (typed via a `defineBlock` helper). **`PageRenderer.tsx`** renders a page's ordered sections, **validating each section's data against its schema** and **fail-soft skipping** unknown types / invalid data (FR-D-1) — one bad section never breaks the page.
+- CTAs render as accessible **anchors**, not `<Button>`-in-`<a>` (which nests interactive controls) → **D-020** logged (no link-styled button in `@estate/ui` yet). Added `zod` as a direct apps/web dep.
+- **100% coverage** on every block + registry + PageRenderer.
+
+### Payload admin mount — de-risked plan (deferred to a dedicated session)
+
+The understand workflow (spec/dev-brief, design-brief/block-inventory, app-integration, and Payload-3+Next-15 mount mechanics with web access) produced the full plan. Key **build-gate risks** that make it deserve its own session:
+- **Next version pinning** — Payload 3.x supports only specific Next patches (15.2.9+/15.3.9+/15.4.11+/16.2.6+); the app is on 15.5.19 (likely OK, must verify).
+- **ESM `withPayload`** must compose with the app's custom `next.config.ts` (the `extensionAlias` webpack resolver + `transpilePackages`) without clobbering it; `serverExternalPackages` for pg/sharp/drizzle.
+- **`exactOptionalPropertyTypes`** (strict tsconfig) vs Payload's generated config/types.
+- **Custom `/admin/cms` location** needs the `(payload)` route group under `app/admin/cms/` + `routes.admin` + `importMap.baseDir`.
+- **Per-tenant access scoping** — Payload access functions must read `x-estate-tenant` and apply the RLS GUC (or operator role bypass) for every collection, else cross-tenant content leak.
+- Deps: `payload` `@payloadcms/next` `@payloadcms/db-postgres` `@payloadcms/richtext-lexical` `sharp` (~3.85.x). V1 collections: pages/page_sections, menus/menu_items, email_templates, media, blog_*, area_guides, testimonials, faqs, settings, redirects. 21 section types in FR-D-2.
+
+### Verification
+
+All gates green: apps/web 118 unit tests · typecheck · ESLint · diff guards G1/G2/G10/G11 (G11: the 5 block tests opt-out, responsive covered by canvas/e2e) · `next build` · prettier.
+
+### Next
+
+- **Payload admin mount** — its own session, plan above (spike a minimal mount → prove `next build` → collections + Block schemas mirroring the renderers → wire PageRenderer to live CMS data).
+- Remaining V1 blocks (three_pillar, stats_row, property_carousel, etc.) as the page-builder grows.
+- Wire property images (D-019); add a `LinkButton` (D-020).
+
+Token spend rough estimate: 4-reader understand workflow + 6 render modules + 14 tests + zod dep + gate run + plan capture — substantial.
+
+---
