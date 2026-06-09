@@ -1198,3 +1198,23 @@ FR-I-6 — converting a qualified enquiry produces a **Contact record** (Buyer /
 The convert UI (type picker, EPIC-H shell); de-duplicating against existing contacts; the converted contact appearing in the Contacts admin list; portal invite on conversion.
 
 ---
+
+## Phase B36 — EPIC-H admin shell: chrome + dashboard home (2026-06-09)
+
+Status: **first slice complete** (branch feat/EPIC-H-admin-shell)
+
+The first EPIC-H slice — the **tenant admin shell**: the chrome every `/admin` surface renders inside, plus the v1 dashboard landing. This turns the EPIC-I CRM backend (PRs #7–#10) into something navigable; the enquiry queue + slide-over follow.
+
+- `components/admin/admin-nav.ts` (pure, tested): `ADMIN_NAV` (Overview/Dashboard + CRM/Enquiries — only live routes, no dead links; grows per epic) + `isAdminNavItemActive` (Dashboard root matches exactly; sections match their nested routes, e.g. `/admin/enquiries/<id>`).
+- `components/admin/AdminSidebar.tsx`: the labelled `<nav aria-label="Admin">` rail — sectioned links, **aria-current + a visible weight change** on the active item (WCAG 1.4.1/1.3.1 parity, mirrors `SiteNav`). Token-driven (G7).
+- `components/admin/AdminShell.tsx`: the chrome — sidebar + topbar (page title + signed-in account) + the content region that **owns the `main#main` landmark** (the (app) skip-link targets it). Stacks below `md` (full collapsing-drawer is a follow-up).
+- `app/(app)/admin/layout.tsx` (glue): resolves the active path (proxy `x-estate-pathname` header) + the account (`getStaffActor` seam) and wraps children in the shell.
+- `app/(app)/admin/page.tsx`: the v1 dashboard landing — heading + quick-access cards to the live surfaces (the full role-adaptive KPI dashboard, FR-H-1, is deferred).
+
+### Verification
+11 component/page tests (nav active-state matrix; sidebar landmark + active aria-current; shell composition incl. the `main` landmark + account; dashboard quick-link). Full app suite 312 passed; `AdminShell`/`AdminSidebar` 100%, `admin-nav`/`admin/page` covered. `next build` compiles the `/admin` route; tsc + repo lint + prettier + diff guards G1/G2/G7/G9/G10/G11 — all green (G11 saw the component responsive opt-outs; full-page responsive + axe is the deferred admin-routes Playwright pass).
+
+### Deferred (EPIC-H remainder)
+The enquiry queue page (FR-H-3 list) + the detail slide-over wiring the status/note/convert actions (next PRs); the full KPI dashboard (FR-H-1); the collapsing-rail + hamburger-drawer responsive behaviour; breadcrumbs + global search + notifications + command palette (FR-H-21); every other admin surface.
+
+---
