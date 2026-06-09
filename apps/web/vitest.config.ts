@@ -32,9 +32,14 @@ export default defineConfig({
         'app/**/*.test.{ts,tsx}',
         'payload/**/*.test.{ts,tsx}',
         'app/**/layout.tsx',
-        // Request/connection glue (Prisma client construction) — exercised via
-        // integration/e2e, not unit tests (constructing Prisma overflows jsdom).
-        'app/lib/db.ts',
+        // Request/connection glue (Prisma + Payload client construction) —
+        // exercised via integration/e2e + runtime smoke, not unit tests
+        // (constructing the clients pulls server-only/heavy deps into jsdom).
+        'app/**/lib/db.ts',
+        'app/**/lib/cms.ts',
+        // The CMS editorial catch-all is thin fetch+render glue, verified by the
+        // runtime smoke; its pure mapper (cms-mapper.ts) is unit-tested.
+        'app/**/[[]...slug[]]/**',
         // The Payload mount's framework glue (route group + handlers) is verified
         // by `next build` + a runtime smoke, not unit coverage — same rationale as
         // layout.tsx / db.ts above. The testable config (collections, cms-config)
