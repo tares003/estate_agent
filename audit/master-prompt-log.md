@@ -1444,3 +1444,22 @@ The staff directory — surfaces the users + roles that now drive RBAC (B47), an
 Role editing, the permissions matrix, invite + "test as role" — all state-changing user management, which lands with the Better Auth staff-session work (B47 TODO).
 
 ---
+
+## Phase B49 — EPIC-H admin properties list at /admin/properties (FR-H-2 list) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-properties-list)
+
+The admin catalogue — and unlike the public catalogue (published-only), it shows **every listing including unpublished drafts**, so staff can manage work-in-progress.
+
+- `lib/admin-properties.ts` (read model, tested): `listAdminProperties` over a structural client — `{ deletedAt: null }` (drafts included, no published filter), newest-first, clamped pagination. Tenant-scoped (RLS). 100%.
+- `admin/properties/AdminPropertiesTable.tsx`: semantic table (`th scope=col`) — Address (+ title) / Type / **Price (with its qualifier + rent frequency)** / Status (humanised market_status) / **Visibility** (Published vs Draft Badge — the signal the public catalogue hides). Reuses the EPIC-F `format.ts` trust-marker helpers (every price carries `priceQualifier` + `rentFrequency`, G8); the figure is destructured to a local so the marker is adjacent.
+- `admin/properties/page.tsx` (RSC): tenant-scoped `listAdminProperties` via withTenant.
+- `components/admin/admin-nav.ts`: a Catalogue section with Properties.
+
+### Verification
+9 tests (list drafts-included + clamp/skip; table humanised type/status + £ price + Published/Draft + POA + pagination; the page tenant-scoped query (drafts where) + page passthrough + bare entry; nav includes Properties). Full app suite 416 passed; `admin-properties.ts` 100%, others meet their thresholds. `next build` compiles `/admin/properties`; tsc + repo lint (**G6/G7/G8 clean** — fixed a G8 trust-marker flag by destructuring the price + reusing the qualifier/frequency helpers) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-2 remainder)
+The nine-tab property editor, the image manager (drag-drop reorder), bulk actions, and richer filters (status / branch / sale type) — all state-changing property management.
+
+---
