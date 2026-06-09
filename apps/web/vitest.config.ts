@@ -39,6 +39,10 @@ export default defineConfig({
         // (constructing the clients pulls server-only/heavy deps into jsdom).
         'app/**/lib/db.ts',
         'app/**/lib/cms.ts',
+        // Staff-session seam: a dev stub today, wired to Better Auth in EPIC-N
+        // (reads the session). Glue — callers mock it; the RBAC logic lives in
+        // @estate/auth.
+        'app/**/lib/staff-session.ts',
         // Per-tenant Mailer resolver: Payload Local API + decrypt → NodemailerMailer
         // (glue); the crypto + field logic are unit-tested in @estate/email +
         // payload/fields/secret-field.ts.

@@ -20,6 +20,16 @@ export {
   type RepairUrgency,
 } from './repair-request.js';
 export {
+  ENQUIRY_STATUSES,
+  ENQUIRY_STATUS_TRANSITIONS,
+  LOST_REASONS,
+  canTransition,
+  enquiryStatusUpdateSchema,
+  type EnquiryStatus,
+  type EnquiryStatusUpdate,
+  type LostReason,
+} from './enquiry-status.js';
+export {
   propertySearchSchema,
   parsePropertySearch,
   radiusToMetres,

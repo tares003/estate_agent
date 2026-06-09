@@ -20,6 +20,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@estate/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@estate/db':
         specifier: workspace:*
         version: link:../../packages/db

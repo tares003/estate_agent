@@ -20,6 +20,7 @@
     "generate:importmap": "payload generate:importmap"
   },
   "dependencies": {
+    "@estate/auth": "workspace:*",
     "@estate/db": "workspace:*",
     "@estate/email": "workspace:*",
     "@estate/entitlement": "workspace:*",
