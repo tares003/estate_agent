@@ -6,6 +6,10 @@ import type { ZodTypeAny } from 'zod';
 import { ctaStripBlockSchema } from '../../components/blocks/CtaStripBlock.js';
 import { faqBlockSchema } from '../../components/blocks/FaqBlock.js';
 import { heroBlockSchema } from '../../components/blocks/HeroBlock.js';
+import { statsRowBlockSchema } from '../../components/blocks/StatsRowBlock.js';
+import { testimonialsBlockSchema } from '../../components/blocks/TestimonialsBlock.js';
+import { threePillarBlockSchema } from '../../components/blocks/ThreePillarBlock.js';
+import { twoColumnBlockSchema } from '../../components/blocks/TwoColumnBlock.js';
 import { BLOCK_REGISTRY } from '../../components/blocks/registry.js';
 import { Pages } from '../collections/Pages.js';
 import { ctaStripBlock } from './ctaStrip.js';
@@ -13,6 +17,10 @@ import { faqBlock } from './faq.js';
 import { heroBlock } from './hero.js';
 import { pageBlocks } from './index.js';
 import { richTextBlock } from './richText.js';
+import { statsRowBlock } from './statsRow.js';
+import { testimonialsBlock } from './testimonials.js';
+import { threePillarBlock } from './threePillar.js';
+import { twoColumnBlock } from './twoColumn.js';
 
 // EPIC-D parity contract (FR-D-1/2): the Payload Blocks (CMS authoring schema)
 // must mirror the renderer Zod schemas one-for-one, so stored block data always
@@ -31,6 +39,10 @@ const DIRECT: { block: Block; schema: { shape: Record<string, ZodTypeAny> }; typ
   { block: heroBlock, schema: heroBlockSchema, type: 'hero' },
   { block: ctaStripBlock, schema: ctaStripBlockSchema, type: 'cta_strip' },
   { block: faqBlock, schema: faqBlockSchema, type: 'faq' },
+  { block: threePillarBlock, schema: threePillarBlockSchema, type: 'three_pillar' },
+  { block: statsRowBlock, schema: statsRowBlockSchema, type: 'stats_row' },
+  { block: testimonialsBlock, schema: testimonialsBlockSchema, type: 'testimonials' },
+  { block: twoColumnBlock, schema: twoColumnBlockSchema, type: 'two_column' },
 ];
 
 for (const { block, schema, type } of DIRECT) {
