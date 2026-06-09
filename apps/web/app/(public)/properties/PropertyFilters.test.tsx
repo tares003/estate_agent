@@ -16,6 +16,7 @@ describe('PropertyFilters', () => {
     expect(form).toHaveAttribute('method', 'get');
     expect(form).toHaveAttribute('action', '/properties');
 
+    expect(screen.getByLabelText('Location')).toBeInTheDocument();
     expect(screen.getByLabelText('Buy or rent')).toBeInTheDocument();
     expect(screen.getByLabelText('Property type')).toBeInTheDocument();
     expect(screen.getByLabelText('Bedrooms')).toBeInTheDocument();
@@ -30,6 +31,7 @@ describe('PropertyFilters', () => {
     render(
       <PropertyFilters
         current={{
+          location: 'M20',
           saleType: 'rent',
           listingType: 'residential',
           bedroomsMin: 2,
@@ -40,6 +42,7 @@ describe('PropertyFilters', () => {
       />,
     );
 
+    expect(screen.getByLabelText('Location')).toHaveValue('M20');
     expect(screen.getByLabelText('Buy or rent')).toHaveValue('rent');
     expect(screen.getByLabelText('Property type')).toHaveValue('residential');
     expect(screen.getByLabelText('Bedrooms')).toHaveValue('2');
@@ -50,6 +53,7 @@ describe('PropertyFilters', () => {
   it('controls carry the URL param names used by the query string', () => {
     const { container } = render(<PropertyFilters current={empty} />);
     for (const name of [
+      'location',
       'saleType',
       'listingType',
       'bedroomsMin',

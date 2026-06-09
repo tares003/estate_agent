@@ -112,6 +112,22 @@ describe('searchProperties', () => {
     );
   });
 
+  it('matches a location against the town (insensitive) OR a postcode prefix', async () => {
+    const { db, findMany } = reader([]);
+    await searchProperties(db, { location: 'Didsbury' });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          ...BASE_WHERE,
+          OR: [
+            { town: { contains: 'Didsbury', mode: 'insensitive' } },
+            { postcode: { startsWith: 'DIDSBURY' } },
+          ],
+        },
+      }),
+    );
+  });
+
   it('only adds a price clause for the bounds provided', async () => {
     const { db, findMany } = reader([]);
     await searchProperties(db, { priceMax: 300_000 });

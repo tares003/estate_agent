@@ -87,6 +87,7 @@ describe('CataloguePage', () => {
     render(
       await CataloguePage(
         params({
+          location: 'Didsbury',
           saleType: 'rent',
           listingType: 'residential',
           priceMin: '100000',
@@ -107,9 +108,16 @@ describe('CataloguePage', () => {
           price: { gte: 10_000_000, lte: 50_000_000 },
           bedrooms: { gte: 2 },
           bathrooms: { gte: 1 },
+          OR: [
+            { town: { contains: 'Didsbury', mode: 'insensitive' } },
+            { postcode: { startsWith: 'DIDSBURY' } },
+          ],
         },
       }),
     );
+    // the location chip renders end-to-end
+    const chips = screen.getByRole('list', { name: 'Active filters' });
+    expect(within(chips).getByText('In Didsbury')).toBeInTheDocument();
   });
 
   it('renders removable chips for the active filters', async () => {

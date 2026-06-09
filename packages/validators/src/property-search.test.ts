@@ -29,6 +29,13 @@ describe('propertySearchSchema / parsePropertySearch', () => {
     });
   });
 
+  it('trims a location and drops a blank or over-long one', () => {
+    expect(parsePropertySearch({ location: '  Didsbury  ' }).location).toBe('Didsbury');
+    expect(parsePropertySearch({ location: '   ' }).location).toBeUndefined();
+    expect(parsePropertySearch({ location: '' }).location).toBeUndefined();
+    expect(parsePropertySearch({ location: 'x'.repeat(101) }).location).toBeUndefined();
+  });
+
   it('drops unknown enum values rather than erroring (fail-soft)', () => {
     const result = parsePropertySearch({
       saleType: 'lease',

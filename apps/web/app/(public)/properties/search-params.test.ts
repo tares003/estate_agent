@@ -15,6 +15,12 @@ describe('toSearchQuery', () => {
     expect(toSearchQuery({ ...base, page: 2 })).toBe('?page=2');
   });
 
+  it('serialises location first', () => {
+    expect(toSearchQuery({ ...base, location: 'M20', saleType: 'sale' })).toBe(
+      '?location=M20&saleType=sale',
+    );
+  });
+
   it('serialises active filters in a stable key order', () => {
     const q = toSearchQuery({
       ...base,
@@ -47,6 +53,7 @@ describe('activeChips', () => {
   it('builds a chip per active filter with a remove query that resets to page 1', () => {
     const chips = activeChips({
       ...base,
+      location: 'Didsbury',
       saleType: 'rent',
       listingType: 'new_home',
       priceMin: 100000,
@@ -56,6 +63,7 @@ describe('activeChips', () => {
       page: 4,
     });
     const byKey = Object.fromEntries(chips.map((c) => [c.key, c]));
+    expect(byKey['location']?.label).toBe('In Didsbury');
     expect(byKey['saleType']?.label).toBe('To rent');
     expect(byKey['listingType']?.label).toBe('New home');
     expect(byKey['priceMin']?.label).toBe('From £100,000');
