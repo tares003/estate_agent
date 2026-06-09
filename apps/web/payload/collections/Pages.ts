@@ -1,12 +1,13 @@
 import type { CollectionConfig } from 'payload';
 
 import { pageBlocks } from '../blocks/index.js';
+import { tenantCreateAccess, tenantField, tenantScopedAccess } from '../access/tenant.js';
 
 // EPIC-D managed pages: an ordered list of typed sections (the `sections` Blocks
 // field, mirroring apps/web/components/blocks/*). Draft/publish via Payload
-// versions (FR-D-4/5). Per-tenant + draft-visibility access scoping lands with
-// B23.3; for the mount, published pages read publicly and the page renderer
-// (B23.4) consumes them.
+// versions (FR-D-4/5). Tenant-isolated at the app layer (B23.3) — every
+// operation is scoped to the request's tenant; the page renderer (B23.4) consumes
+// the current tenant's published pages.
 export const Pages: CollectionConfig = {
   slug: 'pages',
   admin: {
@@ -17,9 +18,13 @@ export const Pages: CollectionConfig = {
     drafts: true,
   },
   access: {
-    read: () => true,
+    read: tenantScopedAccess,
+    create: tenantCreateAccess,
+    update: tenantScopedAccess,
+    delete: tenantScopedAccess,
   },
   fields: [
+    tenantField,
     { name: 'title', type: 'text', required: true },
     {
       name: 'slug',
