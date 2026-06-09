@@ -1101,3 +1101,31 @@ Runtime smoke (Docker Postgres + **MailHog SMTP catcher** + `next dev`): configu
 Mount · 9-block page-builder · per-tenant isolation · live rendering · menus (FR-D-7) · sitemap (FR-D-4) · property grids · **email templates with working send-test (FR-D-8)**. Remaining nicety: a Payload admin "Send test" button (custom UI) calling this endpoint.
 
 ---
+
+## Phase B32 — EPIC-I CRM first slice: enquiry status workflow (2026-06-09)
+
+Status: **first slice complete** (branch feat/EPIC-I-crm)
+
+The first EPIC-I (CRM) slice: the **enquiry status workflow** — the domain rules, the queue read model, and the staff status-change Server Action. The queue UI / slide-over / composer / assignment / SLA remain deferred (need the EPIC-H admin shell + EPIC-N staff auth).
+
+### B32.1 — status-transition domain (`packages/validators/src/enquiry-status.ts`)
+- `ENQUIRY_STATUSES` — the eight committed Prisma enum values in order (`new`→`contacted`→`viewing_booked`/`valuation_booked`→`waiting`→`converted`/`lost`→`archived`); source of truth is the schema (G6).
+- `ENQUIRY_STATUS_TRANSITIONS` + `canTransition(from,to)` — an **allow-list** (illegal moves are rejected; `archived` is terminal; same-status is a no-op; unknown source → false).
+- `enquiryStatusUpdateSchema` — Zod; **requires a `reason` (canonical `LOST_REASONS`) when moving to `lost`** (superRefine). 100% coverage (18 tests).
+
+### B32.2 — queue read model (`apps/web/app/(app)/lib/enquiries.ts`)
+- Pure mapping over a **structural** Prisma client (DB-free unit-tested, mirrors `properties.ts`); live query runs tenant-scoped via `withTenant`.
+- `toQueueItem` derives the **age band** (green ≤4h, amber ≤24h, red >24h — master spec §H.6); `buildEnquiryWhere` hides `archived` by default; `listEnquiries` paginates (clamp 1..60, newest-first default). 100% coverage.
+- (The speculative enquiry-type projection was dropped from this slice — unused until the queue UI lands; it returns then with the canonical `enquiryType` name + a boundary map. Avoids a premature `leadType` identifier, which G6 forbids.)
+
+### B32.3 — status-change Server Action (`apps/web/app/(app)/admin/enquiries/actions.ts`)
+- `updateEnquiryStatus(prev, formData)` (for `useActionState`): parse → **RBAC gate `enquiry.write` (fail-closed BEFORE any read/write)** → `withTenant` → load the row → `canTransition` check (illegal writes nothing) → `update` → **`audit(tx, { action: 'enquiry.status_changed', diff: { status: { from, to }, reason? } })` in the same transaction (G4)**.
+- `app/(app)/lib/staff-session.ts` — the staff-session **seam**: `getStaffRole` / `getStaffActor` / `requireStaffPermission(permission)` (delegates to `@estate/auth` `requirePermission`). DEV STUB (super-admin) today; **TODO(EPIC-N)** resolve from the Better Auth session. Glue — excluded from coverage; callers mock it.
+
+### Verification
+6 action tests (legal transition + audit; illegal move writes nothing; lost-with-reason in the diff; lost-without-reason rejected before any write; not-found; **RBAC-denied before `withTenant`**). Full app suite 280 passed; `enquiries.ts` 100%, `actions.ts` 98.7%/89% branch (> scope threshold); validators `enquiry-status.ts` 100%. tsc + `next build` (bundles `@estate/auth` into the action) + repo lint (G6 naming clean) + prettier + diff guards G1/G2/G10/G11 — all green.
+
+### Deferred (EPIC-I remainder)
+Admin enquiries page UI + queue + slide-over (needs EPIC-H shell); assignment (FR-I-3); SLA timers (FR-I-4); notes / composer (FR-I-5); conversion (FR-I-6); bulk actions (FR-I-8); saved views (FR-I-9); reports (FR-I-10); notify-on-transition.
+
+---
