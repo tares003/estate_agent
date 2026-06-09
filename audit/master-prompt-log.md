@@ -1311,3 +1311,25 @@ These were the only inert `<Button>` CTAs in the app (a repo-wide scan confirmed
 RED→GREEN: the homepage test flipped from asserting `getByRole('button', …)` to `getByRole('link', { name: 'Browse properties' }).toHaveAttribute('href', '/properties')` (+ valuation), and 3 new `buttonClassName` tests. `@estate/ui` 594 tests (Button.tsx 100%), web suite green; tsc (web + ui) + `next build` (homepage route compiles) + repo lint + prettier + diff guards G1/G2/G7/G9/G10/G11 — all green. A live click-through needs the DB-backed dev server (proxy resolves a tenant per request); the link + href is proven by the test, which is more precise than a screenshot.
 
 ---
+
+## Phase B42 — EPIC-H reports page: enquiry pipeline report (FR-H-18) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-H-reports-page)
+
+The reports surface at `/admin/reports` — makes the EPIC-I pipeline report (B34) visible: the conversion funnel + the by-source breakdown, over a date range.
+
+- `admin/reports/reports-params.ts` (pure, tested): `parseReportRange` (URL from/to ISO → Date, invalid dropped) + `toDateInputValue` (Date → `yyyy-mm-dd` for the date inputs). 100%.
+- `admin/reports/PipelineReport.tsx` (presentational): KPI tiles (Total / Contacted / Converted / Conversion rate, formatted as a %) + the by-source table; empty state. Token-driven (G7).
+- `admin/reports/page.tsx` (RSC): resolves the tenant, runs `enquiryPipelineReport` + `enquiriesBySource` inside the tenant RLS scope (`withTenant`), with a URL-driven date-range GET filter.
+- `components/admin/admin-nav.ts`: added an Insights section with Reports.
+
+### Verification
+16 tests (range parse incl. invalid-drop + date-input format; KPI/funnel rendering + rate formatting + by-source table + empty state; the page's tenant-scoped queries, the rate from real counts, the date-range passthrough, and the bare entry; nav includes Reports). Full app suite 376 passed; `reports-params` 100%, others meet their thresholds. `next build` compiles `/admin/reports`; tsc + repo lint (G6/G7 clean) + prettier + diff guards G1/G2/G9/G10/G11 — all green.
+
+### Deferred (FR-H-18 remainder)
+The full sixteen pre-built reports (time-to-first-contact needs a status-event timeline; outstanding follow-ups need follow_up_date; days-on-market from PropertyStatusEvent), the custom report builder, branch/agent filters (EPIC-N), and CSV/Excel/PDF export + scheduled email.
+
+### Session arc (this continuation)
+EPIC-I backend (status/notes/reports/conversion, #7–#10) → EPIC-H admin UI (shell/queue/detail/actions/contacts, #11–#15) → fix homepage CTAs (#16) → reports page (this). The CRM is operable end-to-end and its key metric is visible. Next: EPIC-N (staff sessions/roster) to unlock assignment (FR-I-3), SLA (FR-I-4 + a status-event timeline), saved views (FR-I-9), and real RBAC behind the staff-session seam.
+
+---
