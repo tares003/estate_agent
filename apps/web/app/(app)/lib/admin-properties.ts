@@ -74,3 +74,34 @@ export async function listAdminProperties(
 
   return { items, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }
+
+/** A single listing's columns the admin detail reads (drafts included). */
+export interface AdminPropertyDetail {
+  id: string;
+  title: string | null;
+  displayAddress: string;
+  postcode: string;
+  saleType: string;
+  marketStatus: string;
+  price: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  receptions: number | null;
+  description: string | null;
+  publishedAt: Date | null;
+}
+
+/** The structural client the detail read needs (a real PrismaClient satisfies it). */
+export interface AdminPropertyDetailReader {
+  property: {
+    findFirst(args: { where: Record<string, unknown> }): Promise<AdminPropertyDetail | null>;
+  };
+}
+
+/** Load a single listing by id (drafts included; soft-deleted excluded). */
+export async function getAdminProperty(
+  db: AdminPropertyDetailReader,
+  id: string,
+): Promise<AdminPropertyDetail | null> {
+  return db.property.findFirst({ where: { id, deletedAt: null } });
+}
