@@ -976,3 +976,25 @@ Pure options mapping + the **9-block Payload↔config parity** contract; an **as
 Follow-up: a full on-page render e2e (Prisma+PostGIS+seed + a CMS page carrying a property_grid) — same e2e bucket as the deferred public-header render.
 
 ---
+
+## Phase B28 — CMS-managed email templates (EPIC-D FR-D-8) (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-D-email-templates → PR #2; off the merged main)
+Main: `ef42776` (RED) → `a3008ab` (GREEN engine) → `c0fda25` (collection)
+
+> PR #1 (the B22–B27 Payload CMS foundation, ~34 commits) was **merged to main** (merge `0bc4551`) on owner authorisation; this phase starts the next epic-piece on a fresh branch per CLAUDE.md PR-per-phase.
+
+Implements FR-D-8's core: CMS-managed transactional email templates + the render/send engine.
+
+- **`@estate/email` render engine** (`packages/email/src/template.ts`, pure, **100% covered**): `renderTemplate` interpolates `{{variables}}` into a stored template (subject left raw as a plain-text header; body + preheader **HTML-escaped** to prevent injection; missing vars → empty; non-strings coerced; preheader injected as hidden inbox-preview text). `sendTemplatedEmail` renders then sends via the existing per-tenant `Mailer`.
+- **`email_templates` collection** (`apps/web`, tenant-scoped via the B23.3 helpers): `key` (lookup id), `name`, `subject`, `preheader`, `body` (Lexical), declared `variables[]`. Registered in payload.config; payload-types regenerated; contract test in cms-mount.
+
+### Verification
+
+Render engine 8 tests @ 100% coverage; collection contract; repo-wide test + lint + prettier + `next build` + diff guards G1/G2/G10/G11 — all green.
+
+### Follow-ups (the send-test's last mile)
+
+- The admin "send test" button + Lexical-body→HTML serialisation at send time (reuse `convertLexicalToHTML`) + per-tenant **SMTP credential storage** (no tenant-settings store exists yet — `@estate/email` already has the encrypt/decrypt + Mailer; it needs a place to persist per-tenant creds). The send PATH is built + tested (via the injected Mailer); only the credential plumbing is deferred.
+
+---
