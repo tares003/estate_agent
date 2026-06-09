@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   getPropertyBySlug,
   searchProperties,
+  searchPropertiesNear,
   toCardProps,
+  type PropertyRawClient,
   type PropertyRow,
 } from './properties.js';
 
@@ -164,6 +166,70 @@ describe('searchProperties', () => {
     const result = await searchProperties(db, { page: 0, pageSize: 1000 });
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 0, take: 60 }));
     expect(result).toMatchObject({ page: 1, pageSize: 60, totalPages: 1 });
+  });
+});
+
+describe('searchPropertiesNear', () => {
+  function rawClient(rows: PropertyRow[], total = rows.length) {
+    const calls: Array<{ sql: string; values: unknown[] }> = [];
+    const $queryRawUnsafe = vi.fn(async (sql: string, ...values: unknown[]) => {
+      calls.push({ sql, values });
+      return sql.includes('count(*)') ? [{ count: total }] : rows;
+    });
+    return { client: { $queryRawUnsafe } as unknown as PropertyRawClient, calls };
+  }
+
+  it('builds a parameterised ST_DWithin radius query ordered nearest-first', async () => {
+    const { client, calls } = rawClient([saleRow], 1);
+    const result = await searchPropertiesNear(client, {
+      lat: 51.5,
+      lng: -0.12,
+      radiusMetres: 8047,
+    });
+
+    expect(result).toMatchObject({ total: 1, page: 1, pageSize: 24, totalPages: 1 });
+    expect(result.items[0]?.href).toBe('/properties/palatine-road-m20');
+
+    const rowsCall = calls.find((c) => c.sql.includes('ORDER BY'));
+    expect(rowsCall?.sql).toContain('ST_DWithin');
+    expect(rowsCall?.sql).toContain('geog <-> ');
+    // lng, lat, radiusMetres are the first three bound params; limit/offset follow.
+    expect(rowsCall?.values.slice(0, 3)).toEqual([-0.12, 51.5, 8047]);
+    expect(rowsCall?.values).toContain(24); // LIMIT (default page size)
+    expect(rowsCall?.values).toContain(0); // OFFSET (page 1)
+  });
+
+  it('appends the filter conditions and runs a distinct count query', async () => {
+    const { client, calls } = rawClient([], 0);
+    await searchPropertiesNear(client, {
+      lat: 51,
+      lng: 0,
+      radiusMetres: 5000,
+      saleType: 'rent',
+      priceMax: 50_000_000,
+      bedroomsMin: 2,
+      location: 'M20',
+      page: 3,
+      pageSize: 10,
+    });
+
+    const rowsCall = calls.find((c) => c.sql.includes('ORDER BY'));
+    expect(rowsCall?.sql).toMatch(/sale_type = \$\d+::sale_type/);
+    expect(rowsCall?.sql).toMatch(/price <= \$\d+/);
+    expect(rowsCall?.sql).toMatch(/bedrooms >= \$\d+/);
+    expect(rowsCall?.sql).toMatch(/town ILIKE \$\d+ OR postcode LIKE \$\d+/);
+    expect(rowsCall?.values).toContain('rent');
+    expect(rowsCall?.values).toContain('%M20%');
+    expect(rowsCall?.values).toContain('M20%');
+    expect(rowsCall?.values).toContain(10); // LIMIT (page size)
+    expect(rowsCall?.values).toContain(20); // OFFSET (page 3 × size 10)
+
+    const countCall = calls.find((c) => c.sql.includes('count(*)'));
+    expect(countCall?.sql).not.toContain('ORDER BY');
+    expect(countCall?.sql).not.toContain('LIMIT');
+    // count reuses the WHERE params but omits limit/offset.
+    expect(countCall?.values).not.toContain(10);
+    expect(countCall?.values).not.toContain(20);
   });
 });
 

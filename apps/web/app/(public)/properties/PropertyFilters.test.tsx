@@ -6,10 +6,10 @@ import { render, screen } from '@testing-library/react';
 import type { PropertySearch } from '@estate/validators';
 import { PropertyFilters } from './PropertyFilters.js';
 
-const empty: PropertySearch = { sort: 'newest', page: 1 };
+const empty: PropertySearch = { sort: 'newest', page: 1, unit: 'mi' };
 
 describe('PropertyFilters', () => {
-  it('is a GET form to /properties carrying the core filter controls', () => {
+  it('is a GET form to /properties carrying the core + radius controls', () => {
     const { container } = render(<PropertyFilters current={empty} />);
 
     const form = container.querySelector('form');
@@ -23,8 +23,11 @@ describe('PropertyFilters', () => {
     expect(screen.getByLabelText('Bathrooms')).toBeInTheDocument();
     expect(screen.getByLabelText(/Min price/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Max price/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Distance')).toBeInTheDocument();
+    expect(screen.getByLabelText('Unit')).toBeInTheDocument();
     expect(screen.getByLabelText('Order by')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Apply filters/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Search near me/i })).toBeInTheDocument();
   });
 
   it('pre-fills each control from the current filters', () => {
@@ -36,6 +39,8 @@ describe('PropertyFilters', () => {
           listingType: 'residential',
           bedroomsMin: 2,
           priceMin: 100000,
+          radius: 5,
+          unit: 'km',
           sort: 'price_asc',
           page: 1,
         }}
@@ -47,6 +52,8 @@ describe('PropertyFilters', () => {
     expect(screen.getByLabelText('Property type')).toHaveValue('residential');
     expect(screen.getByLabelText('Bedrooms')).toHaveValue('2');
     expect(screen.getByLabelText(/Min price/i)).toHaveValue(100000);
+    expect(screen.getByLabelText('Distance')).toHaveValue('5');
+    expect(screen.getByLabelText('Unit')).toHaveValue('km');
     expect(screen.getByLabelText('Order by')).toHaveValue('price_asc');
   });
 
@@ -60,6 +67,10 @@ describe('PropertyFilters', () => {
       'bathroomsMin',
       'priceMin',
       'priceMax',
+      'radius',
+      'unit',
+      'lat',
+      'lng',
       'sort',
     ]) {
       expect(container.querySelector(`[name="${name}"]`)).toBeInTheDocument();

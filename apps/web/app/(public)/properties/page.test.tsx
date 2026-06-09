@@ -9,9 +9,12 @@ vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findMany = vi.fn();
 const count = vi.fn();
+const queryRawUnsafe = vi.fn(async (sql: string) =>
+  String(sql).includes('count(*)') ? [{ count: 1 }] : [row],
+);
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findMany, count } }),
+    fn({ property: { findMany, count }, $queryRawUnsafe: queryRawUnsafe }),
 }));
 
 const { default: CataloguePage } = await import('./page.js');
@@ -158,5 +161,26 @@ describe('CataloguePage', () => {
       '/properties?page=2',
     );
     expect(within(nav).queryByRole('link', { name: /Next/ })).toBeNull();
+  });
+
+  it('uses the PostGIS radius query (not Prisma) when a centre point + radius are given', async () => {
+    render(await CataloguePage(params({ lat: '51.5074', lng: '-0.1278', radius: '5' })));
+
+    expect(findMany).not.toHaveBeenCalled(); // the Prisma path is bypassed
+    const rawCall = queryRawUnsafe.mock.calls.find(([sql]) => String(sql).includes('ST_DWithin'));
+    expect(rawCall).toBeDefined();
+    expect(rawCall?.slice(1)).toContain(8047); // 5 mi → 8047 m bound into the query
+
+    const chips = screen.getByRole('list', { name: 'Active filters' });
+    expect(within(chips).getByText('Within 5 mi')).toBeInTheDocument();
+  });
+
+  it('uses km when unit=km is given', async () => {
+    render(await CataloguePage(params({ lat: '51.5', lng: '-0.1', radius: '4', unit: 'km' })));
+
+    const rawCall = queryRawUnsafe.mock.calls.find(([sql]) => String(sql).includes('ST_DWithin'));
+    expect(rawCall?.slice(1)).toContain(4000); // 4 km → 4000 m
+    const chips = screen.getByRole('list', { name: 'Active filters' });
+    expect(within(chips).getByText('Within 4 km')).toBeInTheDocument();
   });
 });

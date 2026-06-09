@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PropertySearch } from '@estate/validators';
 import { activeChips, toSearchQuery } from './search-params.js';
 
-const base: PropertySearch = { sort: 'newest', page: 1 };
+const base: PropertySearch = { sort: 'newest', page: 1, unit: 'mi' };
 
 describe('toSearchQuery', () => {
   it('returns an empty string for the canonical no-filter search', () => {
@@ -18,6 +18,15 @@ describe('toSearchQuery', () => {
   it('serialises location first', () => {
     expect(toSearchQuery({ ...base, location: 'M20', saleType: 'sale' })).toBe(
       '?location=M20&saleType=sale',
+    );
+  });
+
+  it('serialises a radius search but omits the default miles unit', () => {
+    expect(toSearchQuery({ ...base, lat: 51.5, lng: -0.12, radius: 5 })).toBe(
+      '?lat=51.5&lng=-0.12&radius=5',
+    );
+    expect(toSearchQuery({ ...base, lat: 51.5, lng: -0.12, radius: 5, unit: 'km' })).toBe(
+      '?lat=51.5&lng=-0.12&radius=5&unit=km',
     );
   });
 
@@ -48,6 +57,16 @@ describe('toSearchQuery', () => {
 describe('activeChips', () => {
   it('returns no chips for an empty search', () => {
     expect(activeChips(base)).toEqual([]);
+  });
+
+  it('renders one radius chip that clears the whole geo search', () => {
+    const chips = activeChips({ ...base, lat: 51.5, lng: -0.12, radius: 5, unit: 'mi', page: 2 });
+    const radius = chips.find((c) => c.key === 'radius');
+    expect(radius?.label).toBe('Within 5 mi');
+    expect(radius?.removeQuery).toBe(''); // lat/lng/radius/unit + page all dropped
+    expect(activeChips({ ...base, lat: 51.5, lng: -0.12, radius: 3, unit: 'km' })[0]?.label).toBe(
+      'Within 3 km',
+    );
   });
 
   it('builds a chip per active filter with a remove query that resets to page 1', () => {

@@ -11,6 +11,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./test-setup.ts'],
     include: ['app/**/*.test.{ts,tsx}', 'components/**/*.test.{ts,tsx}'],
+    // Integration tests (real Postgres + PostGIS via Testcontainers) are opt-in —
+    // `pnpm test:integration`; kept out of the fast, Docker-free unit run.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/*.integration.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'lcov'],

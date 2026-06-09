@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { parsePropertySearch, propertySearchSchema } from './property-search.js';
+import { parsePropertySearch, propertySearchSchema, radiusToMetres } from './property-search.js';
 
 describe('propertySearchSchema / parsePropertySearch', () => {
-  it('defaults to newest sort, page 1 and no filters for an empty query', () => {
-    expect(parsePropertySearch({})).toEqual({ sort: 'newest', page: 1 });
+  it('defaults to newest sort, page 1, miles unit and no filters for an empty query', () => {
+    expect(parsePropertySearch({})).toEqual({ sort: 'newest', page: 1, unit: 'mi' });
   });
 
   it('parses a full filter set from string query params', () => {
@@ -26,7 +26,28 @@ describe('propertySearchSchema / parsePropertySearch', () => {
       bathroomsMin: 1,
       sort: 'price_asc',
       page: 3,
+      unit: 'mi',
     });
+  });
+
+  it('parses a radius search (lat/lng/radius) and defaults the unit to miles', () => {
+    const result = parsePropertySearch({ lat: '51.5074', lng: '-0.1278', radius: '5' });
+    expect(result).toMatchObject({ lat: 51.5074, lng: -0.1278, radius: 5, unit: 'mi' });
+    expect(parsePropertySearch({ unit: 'km' }).unit).toBe('km');
+    expect(parsePropertySearch({ unit: 'parsec' }).unit).toBe('mi'); // unknown → default
+  });
+
+  it('drops out-of-range coordinates and a non-positive / over-cap radius', () => {
+    expect(parsePropertySearch({ lat: '200' }).lat).toBeUndefined();
+    expect(parsePropertySearch({ lng: '-999' }).lng).toBeUndefined();
+    expect(parsePropertySearch({ radius: '0' }).radius).toBeUndefined();
+    expect(parsePropertySearch({ radius: '1000' }).radius).toBeUndefined();
+  });
+
+  it('radiusToMetres converts miles and km to whole metres', () => {
+    expect(radiusToMetres(5, 'mi')).toBe(8047); // 5 * 1609.344
+    expect(radiusToMetres(5, 'km')).toBe(5000);
+    expect(radiusToMetres(1, 'mi')).toBe(1609);
   });
 
   it('trims a location and drops a blank or over-long one', () => {
