@@ -60,3 +60,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.shared.json
+
+# Agent runtime lock files (never commit)
+.claude/*.lock
