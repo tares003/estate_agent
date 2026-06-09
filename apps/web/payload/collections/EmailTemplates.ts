@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { tenantCreateAccess, tenantField, tenantScopedAccess } from '../access/tenant.js';
+import { sendTestEndpoint } from '../endpoints/send-test.js';
 
 // EPIC-D FR-D-8: CMS-managed transactional email templates. Tenant-scoped (app
 // layer, B23.3). Each template carries a stable `key` (the code that triggers a
@@ -21,6 +22,9 @@ export const EmailTemplates: CollectionConfig = {
     update: tenantScopedAccess,
     delete: tenantScopedAccess,
   },
+  // FR-D-8 send-test: render this template + send it to a recipient via the
+  // tenant's SMTP. POST /admin/cms/api/email_templates/:id/send-test { to, values? }.
+  endpoints: [{ path: '/:id/send-test', method: 'post', handler: sendTestEndpoint }],
   fields: [
     tenantField,
     {

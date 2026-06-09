@@ -1079,3 +1079,25 @@ Runtime smoke (Docker Postgres + `prisma db push` + **2 seeded tenants** + `next
 EPIC-S the EPIC (provisioning, lifecycle, custom-domain wizard, TLS auto-issue, billing-metering, usage rollup) remains its own large body of work; FR-S-1 hostname resolution + FR-S-2 isolation are now done end-to-end.
 
 ---
+
+## Phase B31 — email send-test endpoint: closes FR-D-8 (2026-06-09)
+
+Status: **complete** (branch feat/EPIC-D-send-test → PR #6; off main after PR #5 merged)
+Main: `8d6e916` (RED) → `f357abb` (GREEN)
+
+> PR #5 (B30b proxy hostname resolution) **merged to main** (`b6b1916`).
+
+The send-test last mile — **FR-D-8 (CMS-managed email templates) is now complete**.
+
+- `app/(app)/lib/email-template.ts` (pure, tested): `buildTemplateInput` (template doc → `@estate/email` render input; Lexical body serialised via the injected serializer) + `sampleValuesFor` (bracketed sample values from the declared variables).
+- `payload/endpoints/send-test.ts` (glue): **POST `/admin/cms/api/email_templates/:id/send-test` `{ to, values? }`** → auth-gated, tenant from the resolved request, loads the template, serialises the Lexical body (`convertLexicalToHTML`), renders + interpolates (`@estate/email`), and sends via the tenant Mailer (`getTenantMailer`, B29). Heavy deps dynamically imported (collection stays light for the node tests); excluded from coverage.
+
+### Verification — delivered a real email
+
+Runtime smoke (Docker Postgres + **MailHog SMTP catcher** + `next dev`): configured the tenant SMTP → MailHog, then `send-test` → **200 `{messageId}`** and MailHog received `To: buyer@example.com`, `Subject: "Welcome, Sam!"` — the `{{firstName}}` interpolated and the message delivered via the per-tenant SMTP. Auth gate → 401; missing recipient → 400. tsc + repo lint + prettier + next build + diff guards G1/G2/G10/G11 — all green.
+
+### EPIC-D status: COMPLETE
+
+Mount · 9-block page-builder · per-tenant isolation · live rendering · menus (FR-D-7) · sitemap (FR-D-4) · property grids · **email templates with working send-test (FR-D-8)**. Remaining nicety: a Payload admin "Send test" button (custom UI) calling this endpoint.
+
+---
