@@ -32,9 +32,14 @@ vi.mock('./ConvertForm.js', () => ({
 
 const findFirst = vi.fn();
 const noteFindMany = vi.fn();
+const eventFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ enquiry: { findFirst }, note: { findMany: noteFindMany } }),
+    fn({
+      enquiry: { findFirst },
+      note: { findMany: noteFindMany },
+      enquiryStatusEvent: { findMany: eventFindMany },
+    }),
 }));
 
 const { default: EnquiryDetailPage } = await import('./page.js');
@@ -65,6 +70,15 @@ beforeEach(() => {
       createdAt: new Date('2026-06-09T11:30:00.000Z'),
     },
   ]);
+  eventFindMany.mockResolvedValue([
+    {
+      id: 'ev1',
+      fromStatus: null,
+      toStatus: 'new',
+      changedByAgentId: null,
+      changedAt: new Date('2026-06-09T11:00:00.000Z'),
+    },
+  ]);
 });
 
 describe('EnquiryDetailPage', () => {
@@ -74,10 +88,13 @@ describe('EnquiryDetailPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Sam Buyer' })).toBeInTheDocument();
     expect(screen.getByText('sam@example.com')).toBeInTheDocument();
     expect(screen.getByText('Interested in the Didsbury semi.')).toBeInTheDocument();
-    expect(screen.getByText('New')).toBeInTheDocument();
+    // "New" appears as the summary status badge (and again in the timeline)
+    expect(screen.getAllByText('New').length).toBeGreaterThan(0);
     expect(screen.getByTestId('status-changer')).toHaveTextContent('e1');
     expect(screen.getByTestId('note-composer')).toHaveTextContent('e1');
     expect(screen.getByText('Left a voicemail.')).toBeInTheDocument();
+    // the status activity timeline renders under its own section
+    expect(screen.getByRole('region', { name: 'Activity' })).toBeInTheDocument();
     // a `new` enquiry cannot yet be converted, so no convert form is offered
     expect(screen.queryByTestId('convert-form')).not.toBeInTheDocument();
   });
