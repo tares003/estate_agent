@@ -15,7 +15,13 @@ export interface AdminNavSection {
 
 export const ADMIN_NAV: readonly AdminNavSection[] = [
   { label: 'Overview', items: [{ label: 'Dashboard', href: '/admin' }] },
-  { label: 'CRM', items: [{ label: 'Enquiries', href: '/admin/enquiries' }] },
+  {
+    label: 'CRM',
+    items: [
+      { label: 'Enquiries', href: '/admin/enquiries' },
+      { label: 'Contacts', href: '/admin/contacts' },
+    ],
+  },
 ];
 
 /**
