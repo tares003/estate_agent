@@ -143,6 +143,14 @@ describe('EmailTemplates collection (EPIC-D FR-D-8)', () => {
       ]),
     );
   });
+
+  it('exposes the FR-D-8 send-test endpoint', () => {
+    const endpoint = (EmailTemplates.endpoints || []).find(
+      (e) => typeof e !== 'boolean' && e.path === '/:id/send-test',
+    );
+    expect(endpoint).toBeDefined();
+    expect(endpoint && typeof endpoint !== 'boolean' ? endpoint.method : undefined).toBe('post');
+  });
 });
 
 describe('EmailSettings collection (per-tenant SMTP, B29)', () => {
