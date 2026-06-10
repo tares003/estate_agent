@@ -1536,3 +1536,22 @@ The first slice of the property editor (FR-H-2 write): the read shell + the navi
 The editable "core details" form on this page — an `updateProperty` Server Action (RBAC `property.write`, transition-safe market_status, audited). The image manager + remaining tabs follow (the image tab needs the object-storage decision).
 
 ---
+
+## Phase B54 — EPIC-H editable property core-details form (FR-H-2 write) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-H-property-edit) — second property-editor slice
+
+The first *write* slice of the property editor: a staff member edits a listing's core details on `/admin/properties/[id]`.
+
+- `@estate/validators`: `propertyUpdateSchema` (id uuid, displayAddress + postcode required, title/price/bedrooms/bathrooms/receptions/description optional; price in £). 100%.
+- `admin/properties/[id]/actions.ts`: `updateProperty` Server Action — parse → **RBAC `property.write` (fail-closed before any read/write)** → `withTenant` → tenant-scoped existence check → `property.update` (price £→pence; blank optionals clear the column) → **`audit('property.updated', { to })` in the same transaction (G4)**.
+- `admin/properties/[id]/PropertyEditForm.tsx` (client): `useActionState(updateProperty)`, **pre-filled** from the listing (price shown in £), field-linked errors, `router.refresh()` + "Changes saved" on success.
+- `admin/properties/[id]/page.tsx`: now shows the read-only context (sale type · market status · Published/Draft) in the header and the editable form below.
+
+### Verification
+15 tests (schema accept/reject incl. uuid/address/postcode/negative; action £→pence + audit, POA null, invalid-before-write, RBAC-denied-before-withTenant, not-found; form pre-fill + POA-blank + save+refresh + error surfacing; the page header context + 404 + tenant-scoped read). Full app suite 456 passed; validators 119 passed; `property-update.ts` 100%, the action/form/page meet their thresholds. `next build` compiles `/admin/properties/[id]` (run with the dev server stopped, then restarted — see [[build-gate-clobbers-dev-server]]). tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G4/G9/G10/G11 — all green.
+
+### Deferred (FR-H-2 remainder)
+Market-status transitions (with a PropertyStatusEvent, mirroring the enquiry status workflow) + publish/unpublish; the image manager (needs the object-storage decision); documents; the remaining editor tabs.
+
+---
