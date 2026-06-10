@@ -1611,3 +1611,24 @@ RED → GREEN → docs(audit). 3 new tests (read-model query shape; component em
 Browse → edit → publish/unpublish → market-status change → **status-history timeline**, all RBAC-gated + audited + tenant-isolated. The read surfaces (detail + history) are now complete. Remaining FR-H-2: the **image manager** (gated on the object-storage decision) + documents.
 
 ---
+
+## Phase B58 — EPIC-G tenant repair-report intake (FR-G-1) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-G-repair-intake) — first EPIC-G slice; the public maintenance-report form
+
+A tenant reports a repair at their property (PRODUCT.md §4 — "Report a repair" / `repair_request`). The `RepairRequest` model + `repairRequestSchema` validator were already committed, so this is the page + form + action, mirroring the valuation/contact/viewing public flows one-for-one.
+
+- `consent-text.ts`: `REPAIR_CONSENT_TEXT` — persisted verbatim into `consent_logs` and rendered as the checkbox label (G5, §S.7).
+- `actions.ts`: `submitRepairRequest` — Zod parse → **Turnstile verify BEFORE any write (G8)** → `withTenant` → `recordConsent` + `repairRequest.create` + **`audit('repair_request.created')` in the same transaction (G4)**. The tenant's free-text `propertyReference` is stored as `reference`; `propertyId` is left null for staff to resolve in the admin inbox (a later slice) — no invented property-matching.
+- `RepairForm.tsx` (client): name/email/phone/propertyReference/category/description + the committed `urgency` Select (emergency/urgent/standard/low — labels are the plain levels; per-level SLA/dispatch is FR-G-5, downstream); field-linked error summary + success confirmation.
+- `page.tsx`: `/report-a-repair` shell + canonical metadata.
+
+The repair flow is in the **`core` pack** (every tenant — PRODUCT.md §6), so no `<RequirePack>` gate. Public intake, so no RBAC (like the other public forms).
+
+### Verification
+RED → GREEN → docs(audit). 12 tests (action: consent+create+audit, invalid-before-write, unknown-urgency, whitespace-trim, missing-consent, fail-closed-on-challenge, token-passed; form: fields+verbatim-consent, success, field-linked errors; page: shell + canonical metadata). Full app suite **490 passed**; coverage 98.99% lines / 91.91% branches. `next build` green (`/report-a-repair` compiled); tsc + repo lint (G6/G7/G8/G9/G12) + prettier + diff guards **G1/G2/G10/G11** — all green.
+
+### Next on EPIC-G
+The admin **repairs inbox** (triage urgency, resolve `propertyId`, assign a contractor) + the contractor magic-link portal + emergency dispatch (FR-G-5, Twilio) — each its own slice.
+
+---
