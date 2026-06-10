@@ -11,6 +11,14 @@ const notFound = vi.fn(() => {
 });
 vi.mock('next/navigation', () => ({ notFound: () => notFound() }));
 
+// The edit form is a client component (useActionState/useRouter); stub it so the
+// RSC page test focuses on the header + the tenant-scoped read.
+vi.mock('./PropertyEditForm.js', () => ({
+  PropertyEditForm: ({ property }: { property: { id: string } }) => (
+    <div data-testid="property-edit-form">{property.id}</div>
+  ),
+}));
+
 const findFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
@@ -44,40 +52,29 @@ beforeEach(() => {
 });
 
 describe('AdminPropertyDetailPage', () => {
-  it('renders the listing detail (drafts included) from the tenant-scoped read', async () => {
+  it('renders the header context + the edit form for the fetched listing', async () => {
     render(await AdminPropertyDetailPage(props()));
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Palatine Road, Didsbury' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Draft')).toBeInTheDocument();
-    expect(screen.getByText('Guide price')).toBeInTheDocument();
-    expect(screen.getByText('£525,000')).toBeInTheDocument();
-    expect(screen.getByText('A handsome semi.')).toBeInTheDocument();
+    expect(screen.getByText('For sale · For sale')).toBeInTheDocument(); // saleType · marketStatus
+    expect(screen.getByTestId('property-edit-form')).toHaveTextContent('p1');
     // admin read is by id, drafts included (no published filter)
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'p1', deletedAt: null } });
   });
 
-  it('frames a published rental and omits absent stats / description / title', async () => {
+  it('frames a published rental in the header', async () => {
     findFirst.mockResolvedValue({
       ...property,
-      title: null,
       saleType: 'rent',
       marketStatus: 'to_let',
-      bedrooms: null,
-      bathrooms: null,
-      receptions: null,
-      description: null,
       publishedAt: new Date('2026-06-01T00:00:00.000Z'),
     });
-
     render(await AdminPropertyDetailPage(props()));
-
     expect(screen.getByText('Published')).toBeInTheDocument();
-    expect(screen.getByText('To rent')).toBeInTheDocument();
-    expect(screen.getByText('Asking rent')).toBeInTheDocument(); // rent qualifier
-    expect(screen.queryByText('Bedrooms')).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Description' })).not.toBeInTheDocument();
+    expect(screen.getByText('To rent · To let')).toBeInTheDocument();
   });
 
   it('404s an unknown listing', async () => {
