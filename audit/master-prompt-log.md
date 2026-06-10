@@ -1573,3 +1573,23 @@ Completes the listing lifecycle: a staff member publishes a draft (making it vis
 A listing can now be browsed (admin catalogue, drafts included) → opened → **edited** (core details, B54) → **published/unpublished** (B55), all RBAC-gated + audited + tenant-isolated. Remaining FR-H-2: market-status transitions (with a PropertyStatusEvent), the image manager (object-storage decision), documents, and the remaining editor tabs.
 
 ---
+
+## Phase B56 — EPIC-H property market-status change (FR-H-2 / §J.3) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-H-market-status) — fourth property-editor slice
+
+A staff member changes a listing's market status. The master spec (§J.3) lists the statuses but — unlike enquiries (§I.3) — imposes **no restrictive transition allow-list**, so the spec-faithful behaviour is: any value relevant to the sale type is settable, and the change is recorded on the property status timeline (the existing `PropertyStatusEvent`, no schema change).
+
+- `@estate/validators`: `MARKET_STATUSES` (mirrors the Prisma enum) + `marketStatusUpdateSchema` (id uuid + status enum). 100%.
+- `[id]/market-status-display.ts` (pure, tested): `marketStatusLabel` (e.g. `sold_stc` → "Sold STC") + `marketStatusesForSaleType` (sale: for_sale/under_offer/sold_stc/sold/withdrawn; rent: to_let/let_agreed/let/withdrawn — a sale listing can't be "Let"). 100%.
+- `[id]/market-status-actions.ts`: `setPropertyMarketStatus` — parse → **RBAC `property.write` (fail-closed)** → `withTenant` → load current → **no-op if unchanged** → `property.update` + `propertyStatusEvent.create` (from→to, agent) + **`audit('property.status_changed')` in the same transaction (G4)**.
+- `[id]/MarketStatusControl.tsx` (client): a select of the sale-type statuses, pre-set to current; `router.refresh()` on success.
+- `[id]/page.tsx`: the control sits in the header beside Publish.
+
+### Verification
+14 tests (schema; label/grouping; action change+event+audit, no-op-unchanged, invalid-before-write, RBAC-denied-before-withTenant, not-found; control options+pre-set+submit+refresh) + the page passing the current status + sale-type options. Full app suite 475 passed (a single load-flaky PropertyEditForm test passed on isolation + re-run); validators 100%. `next build` green; tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G4/G9/G10/G11 — all green.
+
+### Property editor status
+Browse → edit (B54) → publish/unpublish (B55) → **change market status (B56, with the PropertyStatusEvent timeline)**, all RBAC-gated + audited + tenant-isolated. Remaining FR-H-2: the **image manager** (needs the object-storage decision) + documents + the per-property status-event timeline UI.
+
+---

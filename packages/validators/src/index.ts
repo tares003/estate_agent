@@ -32,6 +32,12 @@ export {
 export { enquiryNoteCreateSchema, type EnquiryNoteCreate } from './enquiry-note.js';
 export { propertyUpdateSchema, type PropertyUpdate } from './property-update.js';
 export {
+  MARKET_STATUSES,
+  marketStatusUpdateSchema,
+  type MarketStatus,
+  type MarketStatusUpdate,
+} from './market-status.js';
+export {
   CONTACT_TYPES,
   enquiryConversionSchema,
   type ContactType,

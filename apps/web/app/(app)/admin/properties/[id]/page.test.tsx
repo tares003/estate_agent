@@ -23,6 +23,11 @@ vi.mock('./PublishControl.js', () => ({
     <div data-testid="publish-control">{published ? 'published' : 'draft'}</div>
   ),
 }));
+vi.mock('./MarketStatusControl.js', () => ({
+  MarketStatusControl: ({ current, options }: { current: string; options: string[] }) => (
+    <div data-testid="market-status-control">{`${current}:${options.join(',')}`}</div>
+  ),
+}));
 
 const findFirst = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -67,6 +72,10 @@ describe('AdminPropertyDetailPage', () => {
     expect(screen.getByText('For sale · For sale')).toBeInTheDocument(); // saleType · marketStatus
     expect(screen.getByTestId('property-edit-form')).toHaveTextContent('p1');
     expect(screen.getByTestId('publish-control')).toHaveTextContent('draft');
+    // the market-status control gets the current status + the sale-type's options
+    expect(screen.getByTestId('market-status-control')).toHaveTextContent(
+      'for_sale:for_sale,under_offer,sold_stc,sold,withdrawn',
+    );
     // admin read is by id, drafts included (no published filter)
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'p1', deletedAt: null } });
   });
