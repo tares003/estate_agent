@@ -39,6 +39,7 @@ function form(over: Record<string, string> = {}): FormData {
     description: 'The kitchen tap is leaking steadily under the sink.',
     urgency: 'urgent',
     gdpr_consent: 'on',
+    'cf-turnstile-response': 'turnstile-token',
     ...over,
   };
   for (const [k, v] of Object.entries(base)) fd.set(k, v);
@@ -98,6 +99,20 @@ describe('submitRepairRequest', () => {
     const result = await submitRepairRequest({ ok: false }, form({ urgency: 'whenever' }));
     expect(result.ok).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();
+  });
+
+  it('treats a whitespace-only required field as missing (no write)', async () => {
+    const result = await submitRepairRequest({ ok: false }, form({ description: '   ' }));
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'description' })]),
+    );
+    expect(withTenant).not.toHaveBeenCalled();
+  });
+
+  it('passes the verified Turnstile token to the anti-spam check', async () => {
+    await submitRepairRequest({ ok: false }, form());
+    expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token', '203.0.113.7');
   });
 
   it('requires consent', async () => {

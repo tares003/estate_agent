@@ -15,9 +15,7 @@ const { default: ReportRepairPage, generateMetadata } = await import('./page.js'
 describe('ReportRepairPage', () => {
   it('renders the heading + the repair form', () => {
     render(<ReportRepairPage />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Report a repair' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Report a repair' })).toBeInTheDocument();
     expect(screen.getByTestId('repair-form')).toBeInTheDocument();
   });
 
