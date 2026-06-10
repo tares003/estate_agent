@@ -28,7 +28,16 @@ describe('RepairsInboxTable', () => {
   it('renders a row per repair with the urgency + status badges', () => {
     render(
       <RepairsInboxTable
-        repairs={[row(), row({ id: 'r2', name: 'Bob Tenant', urgency: 'low', status: 'completed' })]}
+        repairs={[
+          row(),
+          row({
+            id: 'r2',
+            name: 'Bob Tenant',
+            reference: '7 Oak Avenue',
+            urgency: 'low',
+            status: 'completed',
+          }),
+        ]}
       />,
     );
     const table = screen.getByRole('table');

@@ -24,7 +24,15 @@ const { default: RepairsInboxPage } = await import('./page.js');
 describe('RepairsInboxPage', () => {
   it('renders the heading + the tenant-scoped repairs', async () => {
     findMany.mockResolvedValue([
-      { id: 'r1', name: 'Tess', reference: null, category: 'Plumbing', urgency: 'urgent', status: 'new', createdAt: new Date() },
+      {
+        id: 'r1',
+        name: 'Tess',
+        reference: null,
+        category: 'Plumbing',
+        urgency: 'urgent',
+        status: 'new',
+        createdAt: new Date(),
+      },
     ]);
     render(await RepairsInboxPage());
 

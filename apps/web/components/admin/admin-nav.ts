@@ -23,6 +23,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       { label: 'Contacts', href: '/admin/contacts' },
     ],
   },
+  { label: 'Lettings', items: [{ label: 'Repairs', href: '/admin/repairs' }] },
   {
     label: 'Insights',
     items: [
