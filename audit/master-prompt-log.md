@@ -1593,3 +1593,21 @@ A staff member changes a listing's market status. The master spec (§J.3) lists 
 Browse → edit (B54) → publish/unpublish (B55) → **change market status (B56, with the PropertyStatusEvent timeline)**, all RBAC-gated + audited + tenant-isolated. Remaining FR-H-2: the **image manager** (needs the object-storage decision) + documents + the per-property status-event timeline UI.
 
 ---
+
+## Phase B57 — EPIC-H property status-history timeline (FR-H-2 / §J.3) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-H-property-timeline) — fifth property-editor slice
+
+Surfaces the market-status history that B56's change action records on `PropertyStatusEvent`, on the listing detail. Mirrors the enquiry timeline (B44) one-for-one.
+
+- `lib/property-status-events.ts`: `listPropertyStatusEvents` read model — structural client (DB-free unit test), property-scoped, newest-first. 100%.
+- `[id]/PropertyTimeline.tsx`: presentational, token-driven (G7); each entry is a from→to transition (label-led `Badge`, never colour alone — G9) + a fixed-locale timestamp; empty state when there's no history.
+- `[id]/page.tsx`: fetches the events alongside the property in the **same tenant (RLS) transaction**; renders a "Status history" section under Core details.
+
+### Verification
+RED → GREEN → docs(audit). 3 new tests (read-model query shape; component empty-state + from→to labels) + the detail page asserting the tenant-scoped history renders. Full app suite **478 passed**; coverage 99.05% lines / 92.17% branches. `next build` green; tsc + repo lint (G6/G7/G8/G9/G12 ESLint) + prettier + diff guards **G1/G2/G10/G11** — all green.
+
+### Property editor status
+Browse → edit → publish/unpublish → market-status change → **status-history timeline**, all RBAC-gated + audited + tenant-isolated. The read surfaces (detail + history) are now complete. Remaining FR-H-2: the **image manager** (gated on the object-storage decision) + documents.
+
+---

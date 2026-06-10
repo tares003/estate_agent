@@ -30,9 +30,10 @@ vi.mock('./MarketStatusControl.js', () => ({
 }));
 
 const findFirst = vi.fn();
+const eventFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findFirst } }),
+    fn({ property: { findFirst }, propertyStatusEvent: { findMany: eventFindMany } }),
 }));
 
 const { default: AdminPropertyDetailPage } = await import('./page.js');
@@ -59,6 +60,15 @@ function props(id = 'p1') {
 beforeEach(() => {
   vi.clearAllMocks();
   findFirst.mockResolvedValue(property);
+  eventFindMany.mockResolvedValue([
+    {
+      id: 'se1',
+      fromStatus: 'for_sale',
+      toStatus: 'under_offer',
+      changedByAgentId: null,
+      changedAt: new Date('2026-06-09T11:00:00.000Z'),
+    },
+  ]);
 });
 
 describe('AdminPropertyDetailPage', () => {
@@ -76,6 +86,13 @@ describe('AdminPropertyDetailPage', () => {
     expect(screen.getByTestId('market-status-control')).toHaveTextContent(
       'for_sale:for_sale,under_offer,sold_stc,sold,withdrawn',
     );
+    // the status-history timeline renders the tenant-scoped events
+    expect(screen.getByRole('heading', { level: 2, name: 'Status history' })).toBeInTheDocument();
+    expect(screen.getByText('Under offer')).toBeInTheDocument();
+    expect(eventFindMany).toHaveBeenCalledWith({
+      where: { propertyId: 'p1' },
+      orderBy: { changedAt: 'desc' },
+    });
     // admin read is by id, drafts included (no published filter)
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'p1', deletedAt: null } });
   });
