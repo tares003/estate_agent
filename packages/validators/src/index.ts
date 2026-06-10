@@ -30,6 +30,7 @@ export {
   type LostReason,
 } from './enquiry-status.js';
 export { enquiryNoteCreateSchema, type EnquiryNoteCreate } from './enquiry-note.js';
+export { propertyUpdateSchema, type PropertyUpdate } from './property-update.js';
 export {
   CONTACT_TYPES,
   enquiryConversionSchema,
