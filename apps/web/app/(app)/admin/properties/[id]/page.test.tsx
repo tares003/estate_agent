@@ -87,9 +87,7 @@ describe('AdminPropertyDetailPage', () => {
       'for_sale:for_sale,under_offer,sold_stc,sold,withdrawn',
     );
     // the status-history timeline renders the tenant-scoped events
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Status history' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Status history' })).toBeInTheDocument();
     expect(screen.getByText('Under offer')).toBeInTheDocument();
     expect(eventFindMany).toHaveBeenCalledWith({
       where: { propertyId: 'p1' },

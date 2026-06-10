@@ -5,10 +5,15 @@ import { Badge } from '@estate/ui';
 
 import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/admin-properties.js';
 import { getDb } from '../../../lib/db.js';
+import {
+  listPropertyStatusEvents,
+  type PropertyEventReader,
+} from '../../../lib/property-status-events.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { marketStatusesForSaleType } from './market-status-display.js';
 import { MarketStatusControl } from './MarketStatusControl.js';
 import { PropertyEditForm } from './PropertyEditForm.js';
+import { PropertyTimeline } from './PropertyTimeline.js';
 import { PublishControl } from './PublishControl.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
@@ -32,11 +37,16 @@ export default async function AdminPropertyDetailPage({
 }) {
   const { id } = await params;
   const tenantId = await getCurrentTenantId();
-  const property = await withTenant(getDb(), tenantId, (tx) =>
-    getAdminProperty(tx as unknown as AdminPropertyDetailReader, id),
-  );
+  const data = await withTenant(getDb(), tenantId, async (tx) => {
+    const property = await getAdminProperty(tx as unknown as AdminPropertyDetailReader, id);
+    if (!property) return null;
+    const events = await listPropertyStatusEvents(tx as unknown as PropertyEventReader, id);
+    return { property, events };
+  });
 
-  if (!property) notFound();
+  if (!data) notFound();
+
+  const { property, events } = data;
 
   const saleTypeLabel = property.saleType === 'rent' ? 'To rent' : 'For sale';
 
@@ -84,6 +94,13 @@ export default async function AdminPropertyDetailPage({
             description: property.description,
           }}
         />
+      </section>
+
+      <section aria-labelledby="activity-heading" className="flex flex-col gap-3">
+        <h2 id="activity-heading" className="t-heading-sm">
+          Status history
+        </h2>
+        <PropertyTimeline events={events} />
       </section>
     </div>
   );
