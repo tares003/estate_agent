@@ -18,6 +18,11 @@ vi.mock('./PropertyEditForm.js', () => ({
     <div data-testid="property-edit-form">{property.id}</div>
   ),
 }));
+vi.mock('./PublishControl.js', () => ({
+  PublishControl: ({ published }: { published: boolean }) => (
+    <div data-testid="publish-control">{published ? 'published' : 'draft'}</div>
+  ),
+}));
 
 const findFirst = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -61,6 +66,7 @@ describe('AdminPropertyDetailPage', () => {
     expect(screen.getByText('Draft')).toBeInTheDocument();
     expect(screen.getByText('For sale · For sale')).toBeInTheDocument(); // saleType · marketStatus
     expect(screen.getByTestId('property-edit-form')).toHaveTextContent('p1');
+    expect(screen.getByTestId('publish-control')).toHaveTextContent('draft');
     // admin read is by id, drafts included (no published filter)
     expect(findFirst).toHaveBeenCalledWith({ where: { id: 'p1', deletedAt: null } });
   });
@@ -75,6 +81,7 @@ describe('AdminPropertyDetailPage', () => {
     render(await AdminPropertyDetailPage(props()));
     expect(screen.getByText('Published')).toBeInTheDocument();
     expect(screen.getByText('To rent · To let')).toBeInTheDocument();
+    expect(screen.getByTestId('publish-control')).toHaveTextContent('published');
   });
 
   it('404s an unknown listing', async () => {
