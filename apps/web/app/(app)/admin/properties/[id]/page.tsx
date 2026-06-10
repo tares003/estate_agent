@@ -7,6 +7,7 @@ import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/a
 import { getDb } from '../../../lib/db.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { PropertyEditForm } from './PropertyEditForm.js';
+import { PublishControl } from './PublishControl.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
 // (drafts included). Resolves the tenant, reads the listing by id inside the tenant
@@ -54,6 +55,9 @@ export default async function AdminPropertyDetailPage({
         <p className="t-body-sm text-text-secondary">
           {saleTypeLabel} · {humanise(property.marketStatus)}
         </p>
+        <div className="mt-2">
+          <PublishControl propertyId={property.id} published={property.publishedAt !== null} />
+        </div>
       </div>
 
       <section aria-labelledby="edit-heading" className="flex flex-col gap-3">
