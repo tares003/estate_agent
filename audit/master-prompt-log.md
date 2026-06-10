@@ -1632,3 +1632,25 @@ RED → GREEN → docs(audit). 12 tests (action: consent+create+audit, invalid-b
 The admin **repairs inbox** (triage urgency, resolve `propertyId`, assign a contractor) + the contractor magic-link portal + emergency dispatch (FR-G-5, Twilio) — each its own slice.
 
 ---
+
+## Phase B59 — EPIC-G admin repairs inbox (FR-G-2) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-G-repairs-inbox) — closes the public→admin repair loop
+
+Reports submitted via the tenant repair form (B58) now surface to staff in an inbox, mirroring the enquiry queue. Both `repair_request.read/.write/.manage` permissions and the `repairs_manager` role were already committed in `@estate/auth`.
+
+- `lib/repairs.ts`: `listRepairRequests` read model — structural client (DB-free unit test), tenant-scoped, newest-first. 100%.
+- `admin/repairs/repair-display.ts`: urgency (emergency→danger … low→neutral) + status (new→info … completed→success) → semantic Badge tone + label (G7 — tone is a token); unknown values fall back to neutral+raw so a future enum addition never crashes. 100%.
+- `admin/repairs/RepairsInboxTable.tsx`: semantic triage table (`<th scope="col">`, G9) — reporter / property / category / urgency / status / submitted; label-led badges; empty state; a dash for an as-yet-unresolved property reference.
+- `admin/repairs/page.tsx`: tenant-scoped (RLS) read + table.
+- `admin-nav.ts`: a Lettings → Repairs entry (only live routes are listed).
+
+Read surface only — consistent with the other admin list pages (reads are tenant-isolated by RLS; RBAC gates the write actions). Listing is unpaginated newest-first; status/urgency filters + pagination are a later refinement (as they were for the enquiry queue).
+
+### Verification
+RED → GREEN → docs(audit). 10 tests (read-model query shape; 5 display mappings incl. fallbacks; table rows/empty/dash; page tenant-scoped read; nav entry). Full app suite **500 passed**; new files 100%; overall coverage 99.01% lines / 92% branches. `next build` green (`/admin/repairs` compiled); tsc + repo lint (G6/G7/G9) + prettier + diff guards **G1/G2/G10/G11** — all green.
+
+### Next on EPIC-G
+The repair **detail + triage** (resolve `propertyId`, set status through the RepairStatus lifecycle, assign a contractor — RBAC `repair_request.write` + audit + a status timeline) + the contractor magic-link portal + emergency dispatch (FR-G-5).
+
+---
