@@ -6,6 +6,8 @@ import { Badge } from '@estate/ui';
 import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/admin-properties.js';
 import { getDb } from '../../../lib/db.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
+import { marketStatusesForSaleType } from './market-status-display.js';
+import { MarketStatusControl } from './MarketStatusControl.js';
 import { PropertyEditForm } from './PropertyEditForm.js';
 import { PublishControl } from './PublishControl.js';
 
@@ -55,8 +57,13 @@ export default async function AdminPropertyDetailPage({
         <p className="t-body-sm text-text-secondary">
           {saleTypeLabel} · {humanise(property.marketStatus)}
         </p>
-        <div className="mt-2">
+        <div className="mt-2 flex flex-wrap items-end gap-6">
           <PublishControl propertyId={property.id} published={property.publishedAt !== null} />
+          <MarketStatusControl
+            propertyId={property.id}
+            current={property.marketStatus}
+            options={marketStatusesForSaleType(property.saleType)}
+          />
         </div>
       </div>
 
