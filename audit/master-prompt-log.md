@@ -1555,3 +1555,21 @@ The first *write* slice of the property editor: a staff member edits a listing's
 Market-status transitions (with a PropertyStatusEvent, mirroring the enquiry status workflow) + publish/unpublish; the image manager (needs the object-storage decision); documents; the remaining editor tabs.
 
 ---
+
+## Phase B55 — EPIC-H property publish / unpublish (FR-H-2) (2026-06-10)
+
+Status: **complete** (branch feat/EPIC-H-property-publish) — third property-editor slice
+
+Completes the listing lifecycle: a staff member publishes a draft (making it visible on the public catalogue) or unpublishes a live listing (back to draft).
+
+- `[id]/publish-actions.ts`: `setPropertyPublished` Server Action — validates the id (uuid) → **RBAC `property.publish`** (the distinct publish permission, fail-closed before any read/write) → `withTenant` → tenant-scoped existence check → sets `publishedAt` (now to publish, null to unpublish) → **`audit('property.published' | 'property.unpublished')` in the same transaction (G4)**.
+- `[id]/PublishControl.tsx` (client): a small `useActionState` form — "Publish" for a draft, "Unpublish" for a live listing; `router.refresh()` on success so the badge + the public catalogue reflect the change.
+- `[id]/page.tsx`: the publish control sits in the header beside the Published/Draft badge.
+
+### Verification
+8 new tests (action: publish sets publishedAt + audits; unpublish clears it + audits; non-uuid rejected before any write; **RBAC-denied on `property.publish` before withTenant**; not-found writes nothing; control: Publish/Unpublish labels + the publish flag + refresh-on-success) + the page asserting the control's draft/published state. Full app suite 464 passed; the action/control/page meet their thresholds. `next build` green (dev server stopped during build, then restarted). tsc + repo lint (G6/G7/G8 clean) + prettier + diff guards G1/G2/G4/G9/G10/G11 — all green.
+
+### Property editor status
+A listing can now be browsed (admin catalogue, drafts included) → opened → **edited** (core details, B54) → **published/unpublished** (B55), all RBAC-gated + audited + tenant-isolated. Remaining FR-H-2: market-status transitions (with a PropertyStatusEvent), the image manager (object-storage decision), documents, and the remaining editor tabs.
+
+---
