@@ -53,7 +53,12 @@ beforeEach(() => {
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
   imageFindMany.mockResolvedValue([
-    { propertyId: 'p1', url: 'tenants/t1/properties/p1/a.jpg', alt: 'The front elevation' },
+    {
+      propertyId: 'p1',
+      url: 'tenants/t1/properties/p1/a.jpg',
+      alt: 'The front elevation',
+      width: 1200,
+    },
   ]);
 });
 
@@ -68,7 +73,7 @@ describe('CataloguePage', () => {
     // the card carries the listing's hero image via a render-time signed path
     expect(screen.getByAltText('The front elevation')).toHaveAttribute(
       'src',
-      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
+      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.thumb.jpg',
     );
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({

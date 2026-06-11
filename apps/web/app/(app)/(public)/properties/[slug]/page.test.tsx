@@ -59,6 +59,7 @@ beforeEach(() => {
       alt: 'The front elevation',
       sortOrder: 0,
       isPrimary: true,
+      width: 1200,
     },
     {
       id: 'i2',
@@ -85,9 +86,13 @@ describe('PropertyDetailPage', () => {
     // the gallery: the hero leads, every image alt-texted (G9), signed paths
     expect(screen.getByAltText('The front elevation')).toHaveAttribute(
       'src',
-      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
+      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.large.jpg',
     );
-    expect(screen.getByAltText('The kitchen')).toBeInTheDocument();
+    // an unprocessed image still serves its original
+    expect(screen.getByAltText('The kitchen')).toHaveAttribute(
+      'src',
+      '/api/storage/object?token=tok:tenants/t1/properties/p1/b.jpg',
+    );
 
     // EPIC-O structured data: a RealEstateListing + a BreadcrumbList (FR-O-5/6).
     const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
