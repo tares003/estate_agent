@@ -19,4 +19,16 @@ Every job carries a `tenantId`. The worker resolves the tenant context and appli
 
 Every queue handler ships with: a Vitest integration test (queue-in / DB-out), an idempotency assertion (a job replayed must not double-effect), and an `audit()` call for any state-changing job (G4). Coverage gate: 100% on shared-package code paths.
 
-Status: **scaffold** — queues land with their owning epic.
+Status: **live** — the package scaffold + the **email-send** queue shipped in B64
+(a repeatable tick dispatches the `notification_logs` outbox per tenant: atomic
+claim → SMTP send via the tenant's resolved mailer → finalize + audit). The
+remaining queues land with their owning epic.
+
+## Running
+
+```
+REDIS_URL=redis://localhost:6379 \
+DATABASE_URL=postgresql://… \
+EMAIL_ENCRYPTION_KEY=<base64 32-byte key> \
+pnpm --filter @estate/workers start
+```

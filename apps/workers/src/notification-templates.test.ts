@@ -35,6 +35,21 @@ describe('renderNotification', () => {
     const message = renderNotification('repair_request.received', null);
     expect(message).not.toBeNull();
     expect(message!.subject).toContain('repair');
+    // a non-object payload is equally tolerated
+    expect(renderNotification('repair_request.received', 'garbage')).not.toBeNull();
+  });
+
+  it('interpolates number and boolean payload values and drops non-scalar ones', () => {
+    const message = renderNotification('repair_request.received', {
+      reference: 42,
+      name: true,
+      category: { nested: 'object' },
+      urgency: ['array'],
+    });
+    expect(message!.subject).toContain('42');
+    expect(message!.html).toContain('true');
+    expect(message!.html).not.toContain('nested');
+    expect(message!.html).not.toContain('array');
   });
 
   it('returns null for an event with no template', () => {

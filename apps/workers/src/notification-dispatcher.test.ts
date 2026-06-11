@@ -56,18 +56,18 @@ describe('claimNotification', () => {
   it('claims atomically — only a still-queued row is claimed', async () => {
     const tx = makeTx();
     tx.notificationLog.updateMany.mockResolvedValue({ count: 1 });
-    await expect(
-      claimNotification(tx as unknown as NotificationQueueClient, 'n1'),
-    ).resolves.toBe(true);
+    await expect(claimNotification(tx as unknown as NotificationQueueClient, 'n1')).resolves.toBe(
+      true,
+    );
     expect(tx.notificationLog.updateMany).toHaveBeenCalledWith({
       where: { id: 'n1', status: 'queued' },
       data: { status: 'processing' },
     });
 
     tx.notificationLog.updateMany.mockResolvedValue({ count: 0 });
-    await expect(
-      claimNotification(tx as unknown as NotificationQueueClient, 'n1'),
-    ).resolves.toBe(false);
+    await expect(claimNotification(tx as unknown as NotificationQueueClient, 'n1')).resolves.toBe(
+      false,
+    );
   });
 });
 

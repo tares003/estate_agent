@@ -16,8 +16,7 @@
     "@estate/db": "workspace:*",
     "@estate/email": "workspace:*",
     "@estate/observability": "workspace:*",
-    "bullmq": "^5.0.0",
-    "ioredis": "^5.4.0"
+    "bullmq": "^5.0.0"
   },
   "devDependencies": {
     "@estate/config": "workspace:*",
