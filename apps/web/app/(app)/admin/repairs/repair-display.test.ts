@@ -19,11 +19,25 @@ describe('repairUrgencyDisplay', () => {
 });
 
 describe('repairStatusDisplay', () => {
-  it('humanises multi-word statuses and tones the lifecycle', () => {
-    expect(repairStatusDisplay('in_progress')).toEqual({ tone: 'warning', label: 'In progress' });
-    expect(repairStatusDisplay('awaiting_parts').label).toBe('Awaiting parts');
+  it('covers the §G.5 happy path with humanised labels', () => {
+    expect(repairStatusDisplay('new')).toEqual({ tone: 'info', label: 'New' });
+    expect(repairStatusDisplay('triaged').label).toBe('Triaged');
+    expect(repairStatusDisplay('contractor_assigned').label).toBe('Contractor assigned');
+    expect(repairStatusDisplay('work_in_progress')).toEqual({
+      tone: 'warning',
+      label: 'In progress',
+    });
+    expect(repairStatusDisplay('awaiting_review').label).toBe('Awaiting review');
     expect(repairStatusDisplay('completed').tone).toBe('success');
-    expect(repairStatusDisplay('new').tone).toBe('info');
+  });
+
+  it('covers the off-path states', () => {
+    expect(repairStatusDisplay('awaiting_tenant')).toEqual({
+      tone: 'warning',
+      label: 'Awaiting tenant',
+    });
+    expect(repairStatusDisplay('on_hold')).toEqual({ tone: 'neutral', label: 'On hold' });
+    expect(repairStatusDisplay('rejected')).toEqual({ tone: 'danger', label: 'Rejected' });
   });
 
   it('falls back gracefully for an unknown status', () => {

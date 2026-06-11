@@ -41,7 +41,11 @@ describe('RepairsInboxTable', () => {
       />,
     );
     const table = screen.getByRole('table');
-    expect(within(table).getByText('Tess Tenant')).toBeInTheDocument();
+    // the reporter links through to the triage detail
+    expect(within(table).getByRole('link', { name: 'Tess Tenant' })).toHaveAttribute(
+      'href',
+      '/admin/repairs/r1',
+    );
     expect(within(table).getByText('Flat 2, 14 Palatine Road')).toBeInTheDocument();
     expect(within(table).getByText('Emergency')).toBeInTheDocument();
     expect(within(table).getByText('New')).toBeInTheDocument();
