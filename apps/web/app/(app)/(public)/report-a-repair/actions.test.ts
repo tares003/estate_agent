@@ -18,11 +18,13 @@ vi.mock('../../lib/turnstile.js', () => ({
 
 const audit = vi.fn();
 const recordConsent = vi.fn();
+const notify = vi.fn();
 const repairCreate = vi.fn();
+const repairCount = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-  fn({ repairRequest: { create: repairCreate } }),
+  fn({ repairRequest: { create: repairCreate, count: repairCount } }),
 );
-vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent }));
+vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent, notify }));
 
 const { submitRepairRequest } = await import('./actions.js');
 
@@ -52,13 +54,15 @@ beforeEach(() => {
   getRequestIp.mockResolvedValue('203.0.113.7');
   verifyTurnstile.mockResolvedValue(true);
   repairCreate.mockResolvedValue({ id: 'rep-1' });
+  repairCount.mockResolvedValue(41);
 });
 
 describe('submitRepairRequest', () => {
-  it('records consent + a repair_request + an audit row (G4/G5)', async () => {
+  it('records consent + the ticket (with its §G.1 reference) + audit + the queued confirmation (G4/G5, FR-G-3)', async () => {
     const result = await submitRepairRequest({ ok: false }, form());
 
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(true);
+    expect(result.reference).toMatch(/^RPR-\d{4}-00042$/); // count 41 → next sequence 42
     expect(recordConsent).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ scope: 'repair_form', subject: 'tess@example.com' }),
@@ -68,21 +72,41 @@ describe('submitRepairRequest', () => {
         tenantId: TENANT,
         name: 'Tess Tenant',
         email: 'tess@example.com',
-        phone: '07700900000',
-        reference: 'Flat 2, 14 Palatine Road',
+        reference: result.reference,
+        propertyReference: 'Flat 2, 14 Palatine Road',
         category: 'Plumbing',
-        description: 'The kitchen tap is leaking steadily under the sink.',
         urgency: 'urgent',
       }),
     });
-    expect(audit).toHaveBeenCalledWith(
+    // the tenant confirmation is QUEUED in the same transaction (§H.13 — the
+    // worker dispatches; the action only records intent)
+    expect(notify).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        action: 'repair_request.created',
-        entity: 'repair_request',
-        entityId: 'rep-1',
+        tenantId: TENANT,
+        event: 'repair_request.received',
+        channel: 'email',
+        recipient: 'tess@example.com',
+        payload: expect.objectContaining({ reference: result.reference }),
       }),
     );
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: 'repair_request.created', entityId: 'rep-1' }),
+    );
+  });
+
+  it('retries once when the reference collides under concurrency (unique violation)', async () => {
+    withTenant
+      .mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }))
+      .mockImplementationOnce(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
+        fn({ repairRequest: { create: repairCreate, count: repairCount } }),
+      );
+
+    const result = await submitRepairRequest({ ok: false }, form());
+
+    expect(result.ok).toBe(true);
+    expect(withTenant).toHaveBeenCalledTimes(2);
   });
 
   it('rejects an invalid submission before any write', async () => {
@@ -110,11 +134,6 @@ describe('submitRepairRequest', () => {
     expect(withTenant).not.toHaveBeenCalled();
   });
 
-  it('passes the verified Turnstile token to the anti-spam check', async () => {
-    await submitRepairRequest({ ok: false }, form());
-    expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token', '203.0.113.7');
-  });
-
   it('requires consent', async () => {
     const result = await submitRepairRequest({ ok: false }, form({ gdpr_consent: 'off' }));
     expect(result.ok).toBe(false);
@@ -128,5 +147,10 @@ describe('submitRepairRequest', () => {
     expect(result.ok).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();
     expect(repairCreate).not.toHaveBeenCalled();
+  });
+
+  it('passes the verified Turnstile token to the anti-spam check', async () => {
+    await submitRepairRequest({ ok: false }, form());
+    expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token', '203.0.113.7');
   });
 });

@@ -13,7 +13,8 @@ function row(over: Partial<RepairRow> = {}): RepairRow {
   return {
     id: 'r1',
     name: 'Tess Tenant',
-    reference: 'Flat 2, 14 Palatine Road',
+    reference: 'RPR-2026-00001',
+    propertyReference: 'Flat 2, 14 Palatine Road',
     category: 'Plumbing',
     urgency: 'urgent',
     status: 'new',

@@ -49,7 +49,8 @@ const repair = {
   name: 'Tess Tenant',
   email: 'tess@example.com',
   phone: '07700900000',
-  reference: 'Flat 2, 14 Palatine Road',
+  reference: 'RPR-2026-00042',
+  propertyReference: 'Flat 2, 14 Palatine Road',
   category: 'Plumbing',
   description: 'The kitchen tap is leaking steadily.',
   urgency: 'urgent',
@@ -85,6 +86,8 @@ describe('RepairDetailPage', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: /Repair — Tess Tenant/ }),
     ).toBeInTheDocument();
+    // the §G.2 ticket meta carries the human-readable reference
+    expect(screen.getByText(/RPR-2026-00042/)).toBeInTheDocument();
     expect(screen.getByText('Urgent')).toBeInTheDocument();
     expect(screen.getByText('New')).toBeInTheDocument();
     expect(screen.getByText('The kitchen tap is leaking steadily.')).toBeInTheDocument();
