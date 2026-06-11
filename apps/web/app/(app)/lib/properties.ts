@@ -77,9 +77,12 @@ export interface PropertySearchOptions {
   pageSize?: number;
 }
 
+/** A catalogue entry: card props plus the id the hero-image join keys on. */
+export type CatalogueItem = PropertyCardProps & { id: string };
+
 /** A page of catalogue results plus the totals the UI needs to paginate. */
 export interface PropertySearchResult {
-  items: PropertyCardProps[];
+  items: CatalogueItem[];
   total: number;
   page: number;
   pageSize: number;
@@ -171,7 +174,7 @@ export async function searchProperties(
   ]);
 
   return {
-    items: rows.map(toCardProps),
+    items: rows.map((row) => ({ id: row.id, ...toCardProps(row) })),
     total,
     page,
     pageSize,
@@ -265,7 +268,7 @@ export async function searchPropertiesNear(
   const total = Number(countRows[0]?.count ?? 0);
 
   return {
-    items: rows.map(toCardProps),
+    items: rows.map((row) => ({ id: row.id, ...toCardProps(row) })),
     total,
     page,
     pageSize,

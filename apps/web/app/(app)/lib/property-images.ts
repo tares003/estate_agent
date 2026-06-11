@@ -34,3 +34,28 @@ export async function listPropertyImages(
     orderBy: { sortOrder: 'asc' },
   });
 }
+
+/** A listing's hero image (the columns the catalogue card needs). */
+export interface HeroImageRow {
+  propertyId: string;
+  url: string;
+  alt: string;
+}
+
+/** The structural client the hero join needs. */
+export interface HeroImageReader {
+  propertyImage: {
+    findMany(args: { where?: Record<string, unknown> }): Promise<HeroImageRow[]>;
+  };
+}
+
+/** The hero image per listing for a page of listing ids (no query when empty). */
+export async function listHeroImages(
+  db: HeroImageReader,
+  propertyIds: readonly string[],
+): Promise<HeroImageRow[]> {
+  if (propertyIds.length === 0) return [];
+  return db.propertyImage.findMany({
+    where: { propertyId: { in: [...propertyIds] }, isPrimary: true },
+  });
+}

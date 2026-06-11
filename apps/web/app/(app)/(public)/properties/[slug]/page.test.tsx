@@ -60,7 +60,13 @@ beforeEach(() => {
       sortOrder: 0,
       isPrimary: true,
     },
-    { id: 'i2', url: 'tenants/t1/properties/p1/b.jpg', alt: 'The kitchen', sortOrder: 1, isPrimary: false },
+    {
+      id: 'i2',
+      url: 'tenants/t1/properties/p1/b.jpg',
+      alt: 'The kitchen',
+      sortOrder: 1,
+      isPrimary: false,
+    },
   ]);
 });
 
