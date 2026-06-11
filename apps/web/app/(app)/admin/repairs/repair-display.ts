@@ -22,11 +22,13 @@ const URGENCY_DISPLAY: Record<string, BadgeDisplay> = {
 const STATUS_DISPLAY: Record<string, BadgeDisplay> = {
   new: { tone: 'info', label: 'New' },
   triaged: { tone: 'neutral', label: 'Triaged' },
-  assigned: { tone: 'info', label: 'Assigned' },
-  in_progress: { tone: 'warning', label: 'In progress' },
-  awaiting_parts: { tone: 'warning', label: 'Awaiting parts' },
+  contractor_assigned: { tone: 'info', label: 'Contractor assigned' },
+  work_in_progress: { tone: 'warning', label: 'In progress' },
+  awaiting_review: { tone: 'warning', label: 'Awaiting review' },
   completed: { tone: 'success', label: 'Completed' },
-  cancelled: { tone: 'neutral', label: 'Cancelled' },
+  awaiting_tenant: { tone: 'warning', label: 'Awaiting tenant' },
+  on_hold: { tone: 'neutral', label: 'On hold' },
+  rejected: { tone: 'danger', label: 'Rejected' },
 };
 
 /** The badge tone + label for a repair urgency (unknown values fall back gracefully). */

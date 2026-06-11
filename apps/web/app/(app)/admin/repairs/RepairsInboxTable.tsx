@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Badge } from '@estate/ui';
 
 import type { RepairRow } from '../../lib/repairs.js';
@@ -6,8 +7,8 @@ import { repairStatusDisplay, repairUrgencyDisplay } from './repair-display.js';
 // EPIC-G repairs inbox (FR-G-2) — the triage table. Presentational + pure (the rows
 // are passed in); token-driven (G7). Semantic table (`<th scope="col">`) so every
 // cell announces its column header (G9). Urgency + status are conveyed by the badge
-// label, never by colour alone (G9). The row is read-only for now — triage (resolve
-// the property, assign a contractor) is a later slice with its own detail route.
+// label, never by colour alone (G9). The reporter links through to the ticket's
+// triage detail (/admin/repairs/[id]) where the §G.5 workflow is driven.
 
 const SUBMITTED = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -50,7 +51,11 @@ export function RepairsInboxTable({ repairs }: { repairs: RepairRow[] }) {
           const status = repairStatusDisplay(repair.status);
           return (
             <tr key={repair.id} className="border-divider border-b">
-              <td className="t-body-md py-3 pr-4">{repair.name}</td>
+              <td className="py-3 pr-4">
+                <Link href={`/admin/repairs/${repair.id}`} className="t-body-md text-brand-primary">
+                  {repair.name}
+                </Link>
+              </td>
               <td className="t-body-md py-3 pr-4">{repair.reference ?? '—'}</td>
               <td className="t-body-md py-3 pr-4">{repair.category}</td>
               <td className="py-3 pr-4">

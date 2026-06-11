@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  listRepairStatusEvents,
-  type RepairStatusEventRow,
-} from './repair-status-events.js';
+import { listRepairStatusEvents, type RepairStatusEventRow } from './repair-status-events.js';
 
 function row(over: Partial<RepairStatusEventRow> = {}): RepairStatusEventRow {
   return {

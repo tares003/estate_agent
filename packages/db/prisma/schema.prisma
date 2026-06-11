@@ -46,6 +46,7 @@ model PlatformTenant {
   notes                Note[]
   propertyStatusEvents PropertyStatusEvent[]
   enquiryStatusEvents  EnquiryStatusEvent[]
+  repairStatusEvents   RepairStatusEvent[]
 
   @@map("platform_tenants")
 }
@@ -357,16 +358,43 @@ model RepairRequest {
   description String
   urgency     RepairUrgency @default(standard)
   status      RepairStatus  @default(new)
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  // §G.6: required commentary when a ticket is rejected ("not our responsibility").
+  rejectedReason String?  @map("rejected_reason")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  property Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant       PlatformTenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property     Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  statusEvents RepairStatusEvent[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, urgency])
   @@map("repair_requests")
+}
+
+/// The append-only audit of a repair ticket's status transitions — the
+/// `repair_status_history` table §G.6 specifies (FR-G-7: every transition records
+/// from/to, actor, notes, timestamp). The actor is a soft user reference (like
+/// Note.authorAgentId — history survives a staff member leaving; null for
+/// system-generated transitions). Tenant-scoped, isolated by the tenant_isolation
+/// RLS policy in migrations/raw/0008_repair_status_history_rls.sql.
+model RepairStatusEvent {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  repairRequestId String        @map("repair_request_id") @db.Uuid
+  fromStatus      RepairStatus? @map("from_status")
+  toStatus        RepairStatus  @map("to_status")
+  actorUserId     String?       @map("actor_user_id") @db.Uuid
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  tenant        PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repairRequest RepairRequest  @relation(fields: [repairRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, repairRequestId])
+  @@map("repair_status_history")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role
@@ -593,15 +621,20 @@ enum RepairUrgency {
   @@map("repair_urgency")
 }
 
-/// Repair-ticket lifecycle (master spec §G).
+/// Repair-ticket lifecycle — the §G.6-specified enum verbatim. The happy path is
+/// new → triaged → contractor_assigned → work_in_progress → awaiting_review →
+/// completed (§G.5); awaiting_tenant / on_hold / rejected are the off-path states.
+/// The transition allow-list lives in @estate/validators (repair-status.ts).
 enum RepairStatus {
   new
   triaged
-  assigned
-  in_progress
-  awaiting_parts
+  contractor_assigned
+  work_in_progress
+  awaiting_review
   completed
-  cancelled
+  awaiting_tenant
+  on_hold
+  rejected
 
   @@map("repair_status")
 }

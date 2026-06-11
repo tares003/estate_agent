@@ -38,6 +38,14 @@ export {
   type MarketStatusUpdate,
 } from './market-status.js';
 export {
+  REPAIR_STATUSES,
+  REPAIR_STATUS_TRANSITIONS,
+  canRepairTransition,
+  repairStatusUpdateSchema,
+  type RepairStatus,
+  type RepairStatusUpdate,
+} from './repair-status.js';
+export {
   CONTACT_TYPES,
   enquiryConversionSchema,
   type ContactType,
