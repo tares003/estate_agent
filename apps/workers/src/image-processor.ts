@@ -1,4 +1,5 @@
 import { audit } from '@estate/db';
+import { variantKey } from '@estate/storage';
 
 // EPIC-F image post-processing (FR-F-7) — the second workers queue. Re-encodes
 // every newly uploaded PropertyImage to strip EXIF (location / device / ownership
@@ -73,11 +74,9 @@ function extensionOf(key: string): string {
   return key.slice(key.lastIndexOf('.') + 1).toLowerCase();
 }
 
-/** `…/<name>.<ext>` → `…/<name>.<variant>.<ext>` (the rendition key convention). */
-export function variantKey(key: string, variant: 'thumb' | 'large'): string {
-  const dot = key.lastIndexOf('.');
-  return `${key.slice(0, dot)}.${variant}${key.slice(dot)}`;
-}
+// The rendition key convention lives in @estate/storage (shared with the app's
+// serving side); re-exported so this module remains the processor's one surface.
+export { variantKey };
 
 /** Read the oldest gallery rows that have no recorded dimensions yet. */
 export async function listUnprocessedImages(

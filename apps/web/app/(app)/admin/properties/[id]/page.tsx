@@ -5,7 +5,11 @@ import { Badge } from '@estate/ui';
 
 import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/admin-properties.js';
 import { getDb } from '../../../lib/db.js';
-import { listPropertyImages, type PropertyImageReader } from '../../../lib/property-images.js';
+import {
+  listPropertyImages,
+  renditionKeyFor,
+  type PropertyImageReader,
+} from '../../../lib/property-images.js';
 import {
   listPropertyStatusEvents,
   type PropertyEventReader,
@@ -57,7 +61,7 @@ export default async function AdminPropertyDetailPage({
     id: image.id,
     alt: image.alt,
     isPrimary: image.isPrimary,
-    thumbUrl: signedObjectPath(image.url, thumbExpiry),
+    thumbUrl: signedObjectPath(renditionKeyFor(image, 'thumb'), thumbExpiry),
   }));
 
   const saleTypeLabel = property.saleType === 'rent' ? 'To rent' : 'For sale';

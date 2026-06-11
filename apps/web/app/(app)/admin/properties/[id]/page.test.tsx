@@ -82,6 +82,7 @@ beforeEach(() => {
       alt: 'Front',
       sortOrder: 0,
       isPrimary: true,
+      width: 1200,
     },
   ]);
   eventFindMany.mockResolvedValue([
@@ -112,7 +113,7 @@ describe('AdminPropertyDetailPage', () => {
     );
     // the images manager gets the gallery with render-time signed thumbnails
     expect(screen.getByTestId('property-images-manager')).toHaveTextContent(
-      '1:/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
+      '1:/api/storage/object?token=tok:tenants/t1/properties/p1/a.thumb.jpg',
     );
     // the status-history timeline renders the tenant-scoped events
     expect(screen.getByRole('heading', { level: 2, name: 'Status history' })).toBeInTheDocument();
