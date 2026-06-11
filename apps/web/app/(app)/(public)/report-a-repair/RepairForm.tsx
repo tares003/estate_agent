@@ -43,10 +43,11 @@ export function RepairForm() {
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   if (state.ok) {
+    const referenceNote = state.reference ? ` Your ticket reference is ${state.reference}.` : '';
     return (
       <FormSuccess
         title="Your repair has been reported"
-        message="The agent’s repairs team will be in touch about the next steps."
+        message={`The agent’s repairs team will be in touch about the next steps.${referenceNote}`}
       />
     );
   }

@@ -55,6 +55,7 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
           <Badge tone={status.tone}>{status.label}</Badge>
         </div>
         <p className="t-body-sm text-text-secondary">
+          {repair.reference ? `${repair.reference} · ` : ''}
           {repair.category} · Submitted {SUBMITTED.format(repair.createdAt)}
         </p>
       </div>
@@ -78,7 +79,7 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
         <dl className="flex flex-col gap-1">
           <div className="flex gap-2">
             <dt className="t-body-sm text-text-secondary w-24">Property</dt>
-            <dd className="t-body-sm">{repair.reference ?? '—'}</dd>
+            <dd className="t-body-sm">{repair.propertyReference ?? '—'}</dd>
           </div>
           <div className="flex gap-2">
             <dt className="t-body-sm text-text-secondary w-24">Email</dt>
