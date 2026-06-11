@@ -1718,3 +1718,20 @@ Status: **complete** (branch feat/EPIC-G-ticket-reference)
 RED → GREEN → docs(audit). Tests: db schema shape (unique + column); the formatter; intake (reference assigned from the sequence, confirmation queued with the reference in the payload, **retry-once on unique collision**, all prior compliance tests retained); success panel shows the reference; inbox ticket column; detail header. db **183 passed**, web **539 passed** (112 files); tsc + lint + prettier + `prisma format` + diff guards **G1/G2/G10/G11** green; `next build` green; Docker smoke green.
 
 ---
+
+## Phase B63 — EPIC-G repair-to-property matching (§G.6) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-G-property-matching) — the last small §G.2 triage piece
+
+Staff match a ticket to a catalogue listing (§G.6 `property_id … matched by admin`), or unmatch it.
+
+- `repairPropertyLinkSchema` (absent propertyId = unmatch). 100%.
+- `lib/property-choices.ts`: tenant-scoped live-listings choices (id + address). V1 lists the full catalogue — small-agency scale; a searchable picker is a later refinement once ADR-0001 (client-query mechanism) lands. 100%.
+- `setRepairProperty`: **RBAC `repair_request.write` fail-closed** → tenant-scoped existence of BOTH the ticket and the (non-soft-deleted) property **before any write** (a cross-tenant id simply looks unknown under RLS) → update + **`audit('repair_request.property_matched')` with a from/to diff (G4)**, one tenant transaction.
+- `PropertyMatchControl` (client): listings select pre-set to the current match; "Not matched" unmatches.
+- Detail page: a "Property match" section — the matched listing linked through to `/admin/properties/[id]`; choices fetched in the same tenant transaction.
+
+### Verification
+RED → GREEN → docs(audit). 13 new/updated tests (schema match+unmatch+non-uuid; choices query shape; action match-audit/unmatch/unknown-property-no-write/RBAC-before-read/ticket-not-found; control options+preselect+submit+refresh; page choices pass-through + matched-link + existing branches). Full web suite **548 passed** (115 files; one unrelated PublishControl parallel-load flake passed in isolation + on re-run); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green. No schema change.
+
+---
