@@ -1680,3 +1680,23 @@ RED → GREEN → docs(audit). 30 new/updated tests across db (schema shape, 000
 Contractor assignment (needs the contractors entity), the contractor magic-link portal (FR-G-8), property/landlord matching on the ticket, SLA badges (FR-G-9), notifications (FR-G-3 — needs workers wiring).
 
 ---
+
+## Phase B61 — EPIC-G repairs inbox v2: filters + pagination + SLA-risk badges (FR-G-9) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-G-repairs-inbox-v2)
+
+The B59 inbox gains the deferred refinements plus FR-G-9's SLA-breach-risk badges.
+
+- `lib/repair-sla.ts` (pure, "now" injected, 100%): due-at from the **§G.4 default targets** — emergency 4h, urgent 24h, standard 48h, low 5 *working* days (weekend-aware; the committed enum value for the spec's "non-urgent" row) — banded at the **FR-G-9 default thresholds** (green ≤50%, amber 50–75%, red >75%, breached ≥100%). Closed tickets carry no band. §G defines no SLA pausing for off-path states, so none is invented; the admin-editable taxonomy + per-urgency SLA config is FR-G-5, deferred.
+- `lib/repairs.ts`: status/urgency filters (closed tickets hidden by default — `notIn [completed, rejected]`), sort, `DEFAULT_PAGE_SIZE` pagination + totals; each item banded. 100%.
+- `admin/repairs/queue-params.ts`: URL parse + serialise, mirroring the enquiry queue (the URL is the single source of truth). 100%.
+- `RepairsInboxTable.tsx`: GET filter bar (status/urgency/sort, no JS), an SLA column (label-led badges — G9; closed rows show a dash), filter-preserving pagination.
+- `page.tsx`: searchParams → options → tenant-scoped (RLS) read with `Date.now()` injected.
+
+### Verification
+RED → GREEN → docs(audit). 18 new/updated tests (SLA: working-days math, §G.4 targets, threshold boundary values at exactly 50%/75%/100%, closed-unbanded; params: parse/drop/first-of-repeated/serialise; read model: default-where, filters, pagination, banding; table: filters, SLA badges, link, filter-preserving pagination; page: params pass-through + no-params default). Full web suite **536 passed** (111 files); changed files 100% (one 95.65-branch param helper above its 70 gate); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### EPIC-G state
+Intake (B58) → inbox with SLA risk (B59+B61) → triage workflow + history (B60). Remaining: contractor entity + assignment + magic-link portal (FR-G-8), property/landlord matching, notifications (FR-G-3), categories/SLA admin config (FR-G-4/5), files (FR-G-2 uploads), messaging (FR-G-12), recurring maintenance (FR-G-11).
+
+---
