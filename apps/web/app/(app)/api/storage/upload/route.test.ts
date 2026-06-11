@@ -16,11 +16,15 @@ function tokenFor(key = KEY, expiresInMs = 60_000): string {
 }
 
 function request(token: string | null, body: Uint8Array, contentType = 'image/jpeg'): Request {
-  const url = token === null ? 'http://acme.test/api/storage/upload' : `http://acme.test/api/storage/upload?token=${encodeURIComponent(token)}`;
+  const url =
+    token === null
+      ? 'http://acme.test/api/storage/upload'
+      : `http://acme.test/api/storage/upload?token=${encodeURIComponent(token)}`;
   return new Request(url, {
     method: 'PUT',
     headers: { 'content-type': contentType },
-    body,
+    // Uint8Array<ArrayBufferLike> vs BodyInit — a TS DOM-lib variance quirk.
+    body: body as unknown as BodyInit,
   });
 }
 
@@ -55,5 +59,21 @@ describe('PUT /api/storage/upload', () => {
     const response = await PUT(request(tokenFor(), body));
     expect(response.status).toBe(413);
     expect(put).not.toHaveBeenCalled();
+  });
+
+  it('rejects an empty body (400)', async () => {
+    const response = await PUT(request(tokenFor(), new Uint8Array(0)));
+    expect(response.status).toBe(400);
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('stores without a content type when none is declared', async () => {
+    const url = `http://acme.test/api/storage/upload?token=${encodeURIComponent(tokenFor())}`;
+    const response = await PUT(
+      new Request(url, { method: 'PUT', body: new Uint8Array([7]) as unknown as BodyInit }),
+    );
+    expect(response.status).toBe(204);
+    const [, , opts] = put.mock.calls[0] as [string, Buffer, Record<string, unknown>];
+    expect(opts).toEqual({});
   });
 });

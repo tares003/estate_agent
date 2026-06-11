@@ -47,6 +47,14 @@ export {
 } from './repair-status.js';
 export { repairPropertyLinkSchema, type RepairPropertyLink } from './repair-property.js';
 export {
+  IMAGE_CONTENT_TYPES,
+  IMAGE_EXTENSIONS,
+  IMAGE_MAX_BYTES,
+  propertyImageUploadSchema,
+  type ImageContentType,
+  type PropertyImageUpload,
+} from './image-upload.js';
+export {
   CONTACT_TYPES,
   enquiryConversionSchema,
   type ContactType,

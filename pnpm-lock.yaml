@@ -35,6 +35,9 @@ importers:
       '@estate/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@estate/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@estate/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens

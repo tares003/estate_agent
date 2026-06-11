@@ -25,6 +25,7 @@
     "@estate/email": "workspace:*",
     "@estate/entitlement": "workspace:*",
     "@estate/i18n": "workspace:*",
+    "@estate/storage": "workspace:*",
     "@estate/tokens": "workspace:*",
     "@estate/ui": "workspace:*",
     "@estate/validators": "workspace:*",

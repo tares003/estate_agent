@@ -37,8 +37,7 @@ describe('propertyImageUploadSchema', () => {
       propertyImageUploadSchema.safeParse({ propertyId, contentType: 'text/html' }).success,
     ).toBe(false);
     expect(
-      propertyImageUploadSchema.safeParse({ propertyId: 'nope', contentType: 'image/png' })
-        .success,
+      propertyImageUploadSchema.safeParse({ propertyId: 'nope', contentType: 'image/png' }).success,
     ).toBe(false);
   });
 });

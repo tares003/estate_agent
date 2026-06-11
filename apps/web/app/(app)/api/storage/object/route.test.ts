@@ -51,4 +51,15 @@ describe('GET /api/storage/object', () => {
     const response = await GET(request(tokenFor()));
     expect(response.status).toBe(404);
   });
+
+  it('serves an unrecognised extension as a generic byte stream', async () => {
+    const response = await GET(request(tokenFor('tenants/t1/files/data.bin')));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/octet-stream');
+  });
+
+  it('rethrows a non-storage failure (a real fault is not a 404)', async () => {
+    get.mockRejectedValue(new Error('disk on fire'));
+    await expect(GET(request(tokenFor()))).rejects.toThrow('disk on fire');
+  });
 });
