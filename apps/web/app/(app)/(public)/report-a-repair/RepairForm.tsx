@@ -1,11 +1,12 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import {
   AntiSpamChallenge,
   Button,
   Checkbox,
   EmailField,
+  FileDropzone,
   FormError,
   FormSuccess,
   PhoneField,
@@ -14,7 +15,7 @@ import {
   type SelectOption,
 } from '@estate/ui';
 
-import { submitRepairRequest, type RepairFormState } from './actions.js';
+import { finalizeRepairFiles, submitRepairRequest, type RepairFormState } from './actions.js';
 import { REPAIR_CONSENT_TEXT } from './consent-text.js';
 
 const INITIAL_STATE: RepairFormState = { ok: false };
@@ -42,12 +43,64 @@ export function RepairForm() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
+  // FR-G-2 attachments. The selected files are DECLARED to the submit via the
+  // hidden metadata field; the verified submit answers with one signed grant per
+  // file, and this effect then PUTs the bytes and records them via
+  // finalizeRepairFiles. Ref-guarded so the upload runs once per success.
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadError, setUploadError] = useState(false);
+  const uploadedFor = useRef<string | null>(null);
+  const filesMeta = JSON.stringify(
+    files.map((file) => ({ fileName: file.name, contentType: file.type, sizeBytes: file.size })),
+  );
+
+  useEffect(() => {
+    const { ok, repairRequestId, uploadGrants } = state;
+    if (!ok || !repairRequestId || !uploadGrants || uploadedFor.current === repairRequestId) {
+      return;
+    }
+    uploadedFor.current = repairRequestId;
+    void (async () => {
+      try {
+        const landed: Array<{ key: string; name: string; contentType: string; sizeBytes: number }> =
+          [];
+        for (const grant of uploadGrants) {
+          const file = files.find((candidate) => candidate.name === grant.name);
+          if (!file) continue;
+          const response = await fetch(
+            `/api/storage/upload?token=${encodeURIComponent(grant.token)}`,
+            { method: 'PUT', headers: { 'content-type': file.type }, body: file },
+          );
+          if (!response.ok) {
+            setUploadError(true);
+            continue;
+          }
+          landed.push({
+            key: grant.key,
+            name: file.name,
+            contentType: file.type,
+            sizeBytes: file.size,
+          });
+        }
+        if (landed.length > 0) {
+          const finalized = await finalizeRepairFiles({ repairRequestId, files: landed });
+          if (!finalized.ok) setUploadError(true);
+        }
+      } catch {
+        setUploadError(true);
+      }
+    })();
+  }, [state, files]);
+
   if (state.ok) {
     const referenceNote = state.reference ? ` Your ticket reference is ${state.reference}.` : '';
+    const attachmentNote = uploadError
+      ? ' Some attachments could not be uploaded — the team may ask you to resend them.'
+      : '';
     return (
       <FormSuccess
         title="Your repair has been reported"
-        message={`The agent’s repairs team will be in touch about the next steps.${referenceNote}`}
+        message={`The agent’s repairs team will be in touch about the next steps.${referenceNote}${attachmentNote}`}
       />
     );
   }
@@ -118,6 +171,13 @@ export function RepairForm() {
         defaultValue="standard"
         error={errorFor('urgency')}
       />
+      <FileDropzone
+        label="Photos or videos (optional)"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+        onFiles={setFiles}
+      />
+      <input type="hidden" name="filesMeta" value={filesMeta} />
+
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

@@ -73,3 +73,13 @@ export {
   type ListingTypeFilter,
   type RadiusUnit,
 } from './property-search.js';
+export {
+  REPAIR_FILE_CONTENT_TYPES,
+  REPAIR_FILE_EXTENSIONS,
+  REPAIR_FILE_MAX_BYTES,
+  REPAIR_MAX_FILES,
+  repairFileMetaSchema,
+  repairFilesMetaSchema,
+  type RepairFileContentType,
+  type RepairFileMeta,
+} from './repair-file.js';

@@ -1,6 +1,15 @@
 'use server';
 
-import { repairRequestSchema } from '@estate/validators';
+import { randomUUID } from 'node:crypto';
+
+import { signObjectToken } from '@estate/storage';
+import {
+  REPAIR_FILE_EXTENSIONS,
+  REPAIR_MAX_FILES,
+  repairFilesMetaSchema,
+  repairRequestSchema,
+  type RepairFileMeta,
+} from '@estate/validators';
 import {
   audit,
   notify,
@@ -13,6 +22,7 @@ import {
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
+import { getStorageBackend, storageSigningSecret } from '../../lib/storage.js';
 import { repairReference } from '../../lib/repair-reference.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
@@ -36,7 +46,22 @@ interface RepairWriteClient extends ConsentWriter, AuditWriter, NotificationWrit
   repairRequest: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
     count(args: Record<string, unknown>): Promise<number>;
+    findFirst(args: { where: Record<string, unknown> }): Promise<{ id: string } | null>;
   };
+  repairFile: {
+    count(args: { where?: Record<string, unknown> }): Promise<number>;
+    create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+  };
+}
+
+/** A server-issued authorisation to PUT one declared file (FR-G-2). */
+export interface RepairUploadGrant {
+  /** The storage key the upload must land at (echoed back to finalize). */
+  key: string;
+  /** The signed token authorising a PUT of exactly that key. */
+  token: string;
+  /** The declared file name the grant was issued for (client-side matching). */
+  name: string;
 }
 
 /** The result of a repair submission, consumed by `useActionState`. */
@@ -44,6 +69,10 @@ export interface RepairFormState {
   ok: boolean;
   /** The §G.1 ticket reference, set on success (shown on the success panel). */
   reference?: string;
+  /** The new ticket id, set when attachments were declared (finalize target). */
+  repairRequestId?: string;
+  /** One grant per declared attachment (issued AFTER the verified submit). */
+  uploadGrants?: RepairUploadGrant[];
   errors?: FormErrorItem[];
 }
 
@@ -85,6 +114,24 @@ export async function submitRepairRequest(
     return { ok: false, errors };
   }
 
+  // FR-G-2: the declared attachments (validated BEFORE any write; grants are
+  // issued only after the verified submit creates the ticket).
+  const filesMetaRaw = field(formData, 'filesMeta');
+  let filesMeta: RepairFileMeta[] = [];
+  if (filesMetaRaw !== undefined) {
+    let parsedMeta: unknown;
+    try {
+      parsedMeta = JSON.parse(filesMetaRaw);
+    } catch {
+      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }] };
+    }
+    const metaResult = repairFilesMetaSchema.safeParse(parsedMeta);
+    if (!metaResult.success) {
+      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }] };
+    }
+    filesMeta = metaResult.data;
+  }
+
   const repair = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
@@ -102,7 +149,7 @@ export async function submitRepairRequest(
     };
   }
 
-  const submit = (): Promise<string> =>
+  const submit = (): Promise<{ id: string; reference: string }> =>
     withTenant(getDb(), tenantId, async (rawTx) => {
       const tx = rawTx as unknown as RepairWriteClient;
       await recordConsent(tx, {
@@ -151,17 +198,127 @@ export async function submitRepairRequest(
         entityId: created.id,
         ip,
       });
-      return reference;
+      return { id: created.id, reference };
     });
 
-  let reference: string;
+  let ticket: { id: string; reference: string };
   try {
-    reference = await submit();
+    ticket = await submit();
   } catch (error) {
     if (!isUniqueViolation(error)) throw error;
     // A concurrent submission took the same sequence number — retry once.
-    reference = await submit();
+    ticket = await submit();
   }
 
-  return { ok: true, reference };
+  if (filesMeta.length === 0) {
+    return { ok: true, reference: ticket.reference };
+  }
+
+  // FR-G-2 upload grants: one signed key per declared file, bound under THIS
+  // ticket's tenant prefix. Issued only now — after the Turnstile-verified,
+  // consented submit — so the single challenge covers the whole flow (G8). The
+  // rows are recorded by finalizeRepairFiles once the bytes have landed.
+  const expiry = Date.now() + GRANT_TTL_MS;
+  const secret = storageSigningSecret();
+  const uploadGrants: RepairUploadGrant[] = filesMeta.map((meta) => {
+    const extension = REPAIR_FILE_EXTENSIONS[meta.contentType];
+    const key = `tenants/${tenantId}/repairs/${ticket.id}/${randomUUID()}.${extension}`;
+    return { key, token: signObjectToken(key, expiry, secret), name: meta.fileName };
+  });
+  return { ok: true, reference: ticket.reference, repairRequestId: ticket.id, uploadGrants };
+}
+
+const GRANT_TTL_MS = 15 * 60_000;
+
+/** One landed attachment, echoed back from the client after its PUT succeeded. */
+export interface RepairFileFinalizeInput {
+  key: string;
+  name: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+/**
+ * Record the landed attachments against a ticket (FR-G-2's second half). Public
+ * like the submit itself — the authorisation is structural: every key must sit
+ * under THIS ticket's tenant prefix (a grant for another ticket cannot be
+ * grafted on), the bytes must actually exist in storage, the metadata must pass
+ * the same constraints the grants were issued for, and the §G.1 ten-file cap
+ * counts what is already attached. Every recorded file writes an audit row (G4).
+ */
+export async function finalizeRepairFiles(input: {
+  repairRequestId: string;
+  files: RepairFileFinalizeInput[];
+}): Promise<RepairFormState> {
+  const refused: RepairFormState = {
+    ok: false,
+    errors: [{ message: 'Those attachments could not be recorded.' }],
+  };
+
+  const metaResult = repairFilesMetaSchema.safeParse(
+    input.files.map((file) => ({
+      fileName: file.name,
+      contentType: file.contentType,
+      sizeBytes: file.sizeBytes,
+    })),
+  );
+  if (!metaResult.success || input.files.length === 0) {
+    return refused;
+  }
+
+  const tenantId = await getCurrentTenantId();
+  const ip = await getRequestIp();
+
+  // Structural authorisation: every key under THIS ticket's tenant prefix.
+  const prefix = `tenants/${tenantId}/repairs/${input.repairRequestId}/`;
+  if (input.files.some((file) => !file.key.startsWith(prefix))) {
+    return refused;
+  }
+
+  // The bytes must actually have landed.
+  const backend = getStorageBackend();
+  for (const file of input.files) {
+    if (!(await backend.exists(file.key))) {
+      return refused;
+    }
+  }
+
+  let result: RepairFormState = refused;
+  await withTenant(getDb(), tenantId, async (rawTx) => {
+    const tx = rawTx as unknown as RepairWriteClient;
+    const ticket = await tx.repairRequest.findFirst({
+      where: { id: input.repairRequestId },
+    });
+    if (!ticket) {
+      return; // result stays refused
+    }
+    const attached = await tx.repairFile.count({
+      where: { repairRequestId: input.repairRequestId },
+    });
+    if (attached + input.files.length > REPAIR_MAX_FILES) {
+      return; // result stays refused
+    }
+    for (const file of input.files) {
+      const created = await tx.repairFile.create({
+        data: {
+          tenantId,
+          repairRequestId: input.repairRequestId,
+          url: file.key,
+          fileName: file.name,
+          mimeType: file.contentType,
+          fileSizeBytes: file.sizeBytes,
+        },
+      });
+      await audit(tx, {
+        tenantId,
+        actor: `repair_request:${input.repairRequestId}`,
+        action: 'repair_file.created',
+        entity: 'repair_file',
+        entityId: created.id,
+        ip,
+      });
+    }
+    result = { ok: true };
+  });
+  return result;
 }

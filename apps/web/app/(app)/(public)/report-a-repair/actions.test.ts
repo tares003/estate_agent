@@ -176,7 +176,7 @@ const REP = 'rep-1';
 
 describe('submitRepairRequest — upload grants (FR-G-2)', () => {
   const filesMeta = JSON.stringify([
-    { name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 2048 },
+    { fileName: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 2048 },
   ]);
 
   it('issues signed grants bound under the new ticket after the verified submit', async () => {
@@ -199,7 +199,9 @@ describe('submitRepairRequest — upload grants (FR-G-2)', () => {
   });
 
   it('rejects a disallowed attachment type before any write', async () => {
-    const bad = JSON.stringify([{ name: 'x.zip', contentType: 'application/zip', sizeBytes: 1 }]);
+    const bad = JSON.stringify([
+      { fileName: 'x.zip', contentType: 'application/zip', sizeBytes: 1 },
+    ]);
     const result = await submitRepairRequest({ ok: false }, form({ filesMeta: bad }));
     expect(result.ok).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();

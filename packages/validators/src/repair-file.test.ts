@@ -8,7 +8,7 @@ import {
   repairFilesMetaSchema,
 } from './repair-file.js';
 
-const meta = { name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 1024 };
+const meta = { fileName: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 1024 };
 
 describe('repair file constraints (§G.1 step 4)', () => {
   it('allows photos and videos, each with an extension', () => {
@@ -46,9 +46,9 @@ describe('repairFilesMetaSchema', () => {
   });
 
   it('rejects an empty or absurd file name', () => {
-    expect(repairFilesMetaSchema.safeParse([{ ...meta, name: '' }]).success).toBe(false);
-    expect(
-      repairFilesMetaSchema.safeParse([{ ...meta, name: 'x'.repeat(256) }]).success,
-    ).toBe(false);
+    expect(repairFilesMetaSchema.safeParse([{ ...meta, fileName: '' }]).success).toBe(false);
+    expect(repairFilesMetaSchema.safeParse([{ ...meta, fileName: 'x'.repeat(256) }]).success).toBe(
+      false,
+    );
   });
 });

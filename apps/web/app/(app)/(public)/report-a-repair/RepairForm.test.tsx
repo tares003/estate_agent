@@ -104,7 +104,7 @@ describe('RepairForm — attachments (FR-G-2)', () => {
 
     const formData = submitRepairRequest.mock.calls[0]?.[1] as FormData;
     expect(JSON.parse(String(formData.get('filesMeta')))).toEqual([
-      { name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 3 },
+      { fileName: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 3 },
     ]);
   });
 });
