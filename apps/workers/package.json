@@ -16,7 +16,8 @@
     "@estate/db": "workspace:*",
     "@estate/email": "workspace:*",
     "@estate/observability": "workspace:*",
-    "bullmq": "^5.0.0"
+    "bullmq": "^5.0.0",
+    "sharp": "^0.34.0"
   },
   "devDependencies": {
     "@estate/config": "workspace:*",
