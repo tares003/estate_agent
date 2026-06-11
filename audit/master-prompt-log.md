@@ -1802,3 +1802,20 @@ RED → GREEN → docs(audit). 17 new/updated tests (read model; signed-path tok
 The property editor now covers: core details, publish/unpublish, market status + history, and a working image gallery (upload/hero/delete) end-to-end on the committed local-fs storage. Next: the public catalogue + detail galleries reading PropertyImage (B67), then FR-F-7's EXIF/variants worker job.
 
 ---
+
+## Phase B67 — EPIC-F public galleries (FR-F) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-F-public-galleries) — the FR-F-6 uploads surface on the public site
+
+- `lib/properties.ts`: catalogue items carry the property id (`CatalogueItem`) for the hero join — both the standard and the PostGIS-radius query paths.
+- `lib/property-images.ts` + `listHeroImages`: the per-listing hero for a page of ids (one `IN` query; none for an empty page). 100%.
+- Catalogue: heroes joined **in the same tenant (RLS) read**; `PropertyCard` receives `imageUrl`/`imageAlt` via 1-hour render-time signed paths (CLAUDE.md §9 signed-URL serving; the pages are force-dynamic so paths are re-minted per request).
+- Detail: `loadProperty` returns the listing + its gallery in one tenant read (React `cache` still dedupes the metadata + page calls); the gallery leads with the hero then sort order; **every image alt-texted (G9)**.
+
+### Verification
+RED → GREEN → docs(audit). New/updated tests: items carry the id; `listHeroImages` query shape + empty-page short-circuit; the catalogue card's signed hero src; the detail gallery (hero + thumbnails by alt). Full web suite **586 passed** (121 files); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### EPIC-F image story — complete end to end
+Upload (B65 pipeline) → curate (B66 manager: hero/delete/alt) → publish (B67 galleries on catalogue cards + detail). Remaining: FR-F-7's EXIF-strip + thumb/large variants as a workers job (the B64 foundation hosts it), and a lightbox/carousel polish pass.
+
+---
