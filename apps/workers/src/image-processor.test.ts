@@ -214,10 +214,8 @@ describe('runImageTick', () => {
     });
 
     expect(totals).toEqual({ tenants: 2, processed: 1, failed: 0 });
-    expect(backend.put).toHaveBeenCalledWith(
-      'tenants/a/properties/p/a.png',
-      Buffer.from([2]),
-      { contentType: 'image/png' },
-    );
+    expect(backend.put).toHaveBeenCalledWith('tenants/a/properties/p/a.png', Buffer.from([2]), {
+      contentType: 'image/png',
+    });
   });
 });
