@@ -1761,3 +1761,26 @@ RED → GREEN → docs(audit). 14 tests, **100% lines / 96.77% branches** on the
 Wire the remaining FR-G-3 channels once tenant notification-config exists (internal/branch recipients, emergency SMS via Twilio); CMS template overrides; the per-epic queues (portal-syndication, bulk-import, report-generation, feedback-aggregation).
 
 ---
+
+## Phase B65 — EPIC-F property-image upload pipeline (FR-F-6) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-F-image-upload-pipeline) — the storage HTTP layer + the upload flow's two halves
+
+### Spec adaptation (deliberate, documented)
+FR-F-6's "pre-signed direct upload / never proxy media bytes" was written against an S3 assumption. The **committed stack** (CLAUDE.md §9, post-dating the brief) is local-filesystem behind `StorageBackend`, "served through a signed-URL route handler (no pre-signed S3 URLs)" — on local-fs the app host IS the storage host, so a **signed PUT route is the local-fs equivalent of a pre-signed upload**: token-authorized, bytes land at the token-attested key with no application logic touching the payload beyond the size guard. The `StorageBackend` seam keeps true S3 pre-signed URLs swappable later without touching feature code. FR-F-7 (EXIF strip + thumb/large variants) is the deferred background job — the B64 workers foundation can host it.
+
+### What's in
+- **validators**: jpeg/png/webp only (browser-renderable — no transcode job exists yet for HEIC) + the 25MB cap (the spec's per-file figure). 100%.
+- **`lib/storage.ts`**: env-fail-closed bindings (`STORAGE_DIR`, `STORAGE_SIGNING_SECRET` — an unset secret must never silently verify). 100%.
+- **`PUT /api/storage/upload`**: bytes land at the **token-attested key only** (never caller-supplied); tampered/expired tokens rejected before reading the body; oversize 413; empty 400.
+- **`GET /api/storage/object`**: token-attested reads; content type from the attested key's extension; vanished objects 404; real faults rethrown (not masked as 404).
+- **`image-actions.ts`**: `createPropertyImageUpload` — **RBAC `property.write` fail-closed** → tenant-scoped listing check → key minted under `tenants/<tenant>/properties/<id>/` + a 10-minute token verifiably bound to it (issuing writes nothing — no audit row; the state change is the finalize). `finalizePropertyImage` — **key-prefix enforcement** (a token for another listing/tenant cannot be grafted on) → storage-existence check → `PropertyImage` row (`url` stores the storage KEY; serving mints signed URLs at render time; **first image becomes the hero**) + `audit('property_image.created')` in the tenant transaction (**G4**).
+- `@estate/storage` added as an apps/web dependency.
+
+### Verification
+RED → GREEN → docs(audit). 22 tests (constraints; env fail-closed; PUT: attested-key store + token rejections + 413/400 + absent content type; GET: attested read + token rejections + 404 + octet-stream fallback + rethrow; issuance: grant shape + token-key binding + RBAC-before-read + unknown listing + bad type; finalize: hero-on-first + append-without-stealing-hero + prefix refusal + not-landed refusal + RBAC). Full web suite **569 passed** (119 files; one parallel-load flake — the known useActionState pattern — passed on the clean run); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green (both routes compiled).
+
+### Next
+B66: the admin images manager UI on the property detail (list / upload via FileDropzone / set hero / delete, all audited); B67: the public catalogue + detail galleries reading PropertyImage with render-time signed URLs.
+
+---
