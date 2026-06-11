@@ -17,6 +17,8 @@ const CONTENT_TYPES: Record<string, string> = {
   png: 'image/png',
   webp: 'image/webp',
   pdf: 'application/pdf',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
 };
 
 function contentTypeFor(key: string): string {

@@ -1859,3 +1859,27 @@ Cuts public image weight (G3's performance budgets) for free once the worker has
 RED → GREEN → docs(audit). New/updated tests: the storage-owned variantKey; renditionKeyFor (variant when processed, original when null/poisoned); catalogue hero on the thumb path; detail hero on large with an unprocessed sibling verifiably still on its original; the admin manager on thumbs. Suites: web **588 passed** (121 files, clean run), storage **41 (100%)**, workers **25**; repo-wide tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
 
 ---
+
+## Phase B70 — EPIC-G repair file uploads (FR-G-2 / §G.1 step 4, §G.6) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-G-repair-files) — tenants attach photos/videos to a repair report; staff see them on the ticket
+
+### Schema (first commit pair)
+`RepairFile` per §G.6 (ticket ref; `file_url` holding the StorageBackend KEY; file_name / mime_type / file_size_bytes — Int, documented: 4-byte suffices under the 25MB cap; the `uploaded_by` enum tenant/staff/contractor; created_at), tenant-scoped + indexed; the `files` relation on RepairRequest; **0009 fail-closed RLS** (the 0003–0008 shape), pglite-exercised. **Runtime smoke**: `prisma db push` against Docker postgis 16-3.4 — table shape verified column-for-column, 0009 applied, `relrowsecurity`/`relforcerowsecurity` both true.
+
+### The G8-clean anonymous upload design
+The public form cannot get RBAC-gated grants, and the Turnstile token is single-use — so grants are issued **inside the verified submit**: declared attachments are validated BEFORE any write; after the consented, challenge-verified submit creates the ticket, the action answers with one signed grant per file, bound under `tenants/<t>/repairs/<ticket>/`. **One challenge covers the whole flow.** The anonymous finalize is authorised structurally: key-prefix enforcement (a grant for another ticket cannot be grafted on), storage-existence checks, the same metadata constraints re-applied, the §G.1 **ten-file cap counting what is already attached**, unknown-ticket refusal (cross-tenant ids look unknown under RLS), and **one audit row per recorded file (G4)**.
+
+### Surfaces
+- `RepairForm`: an optional FileDropzone (photos + videos); selected files declared via a hidden metadata field; on success the grants are PUT then finalized, with a calm note if an attachment failed (the ticket itself is already recorded).
+- Admin ticket detail: a **Files** section — signed, expiring links + uploader provenance.
+- The signed GET route now serves the video types (mp4/quicktime).
+- G5 lint note: the schema's file-name field is `fileName` — the personal-data lint rightly hunts `name` fields; renamed for what it is rather than suppressed.
+
+### Verification
+RED → GREEN → docs(audit). 7 db tests (schema shape, enum, relation, 0009 text, pglite isolation ×2); 5 validator tests; 8 new action tests (grant binding verified via verifyObjectToken, no-grants-without-files, type-rejection-before-write; finalize: record+audit, prefix refusal, not-landed refusal, cap, unknown ticket); 2 form tests (the upload→finalize flow, the hidden declaration); the admin Files assertion; 1 route test. Suites: web **600 passed** (122 files), validators **142**, db **190**; repo tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### EPIC-G remaining
+The contractor magic-link portal (FR-G-8) — **decision-gated**: the committed stack assigns portal auth to Better Auth magic-link, which needs the Better Auth foundation wired (no provider credentials needed for magic-link itself, but it is a foundation-sized slice). Emergency SMS dispatch (FR-G-3) — needs Twilio credentials. Category/SLA admin config (FR-G-4/5).
+
+---

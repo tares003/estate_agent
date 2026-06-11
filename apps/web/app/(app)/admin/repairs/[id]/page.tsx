@@ -9,7 +9,9 @@ import {
   listRepairStatusEvents,
   type RepairEventReader,
 } from '../../../lib/repair-status-events.js';
+import { listRepairFiles, type RepairFileReader } from '../../../lib/repair-files.js';
 import { getRepairRequest, type RepairDetailReader } from '../../../lib/repairs.js';
+import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { repairStatusDisplay, repairUrgencyDisplay } from '../repair-display.js';
 import { nextRepairStatusOptions } from './next-statuses.js';
@@ -37,12 +39,21 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
     if (!repair) return null;
     const events = await listRepairStatusEvents(tx as unknown as RepairEventReader, id);
     const choices = await listPropertyChoices(tx as unknown as PropertyChoiceReader);
-    return { repair, events, choices };
+    const files = await listRepairFiles(tx as unknown as RepairFileReader, id);
+    return { repair, events, choices, files };
   });
 
   if (!data) notFound();
 
-  const { repair, events, choices } = data;
+  const { repair, events, choices, files } = data;
+  // FR-G-2: signed, expiring links to the ticket attachments (CLAUDE.md §9).
+  const fileExpiry = Date.now() + 15 * 60_000;
+  const attachments = files.map((file) => ({
+    id: file.id,
+    name: file.fileName,
+    uploadedBy: file.uploadedBy,
+    href: signedObjectPath(file.url, fileExpiry),
+  }));
   const urgency = repairUrgencyDisplay(repair.urgency);
   const status = repairStatusDisplay(repair.status);
   const matched = repair.propertyId
@@ -96,6 +107,31 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
             <dd className="t-body-sm">{repair.phone ?? '—'}</dd>
           </div>
         </dl>
+      </section>
+
+      <section aria-labelledby="files-heading" className="flex flex-col gap-3">
+        <h2 id="files-heading" className="t-heading-sm">
+          Files
+        </h2>
+        {attachments.length === 0 ? (
+          <p className="t-body-sm text-text-secondary">No files attached.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {attachments.map((file) => (
+              <li key={file.id} className="flex items-center gap-3">
+                <a
+                  href={file.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="t-body-sm text-brand-primary"
+                >
+                  {file.name}
+                </a>
+                <span className="t-caption text-text-secondary">from {file.uploadedBy}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section aria-labelledby="match-heading" className="flex flex-col gap-3">
