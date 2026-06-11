@@ -108,6 +108,9 @@ export function RepairsInboxTable({
           <thead>
             <tr className="border-divider border-b">
               <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                Ticket
+              </th>
+              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
                 Reporter
               </th>
               <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
@@ -137,6 +140,9 @@ export function RepairsInboxTable({
               const risk = repair.slaRisk === null ? null : slaRiskDisplay(repair.slaRisk);
               return (
                 <tr key={repair.id} className="border-divider border-b">
+                  <td className="t-body-sm text-text-secondary py-3 pr-4">
+                    {repair.reference ?? '—'}
+                  </td>
                   <td className="py-3 pr-4">
                     <Link
                       href={`/admin/repairs/${repair.id}`}
@@ -145,7 +151,7 @@ export function RepairsInboxTable({
                       {repair.name}
                     </Link>
                   </td>
-                  <td className="t-body-md py-3 pr-4">{repair.reference ?? '—'}</td>
+                  <td className="t-body-md py-3 pr-4">{repair.propertyReference ?? '—'}</td>
                   <td className="t-body-md py-3 pr-4">{repair.category}</td>
                   <td className="py-3 pr-4">
                     <Badge tone={urgency.tone}>{urgency.label}</Badge>

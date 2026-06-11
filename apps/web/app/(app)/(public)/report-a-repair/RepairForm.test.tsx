@@ -30,14 +30,15 @@ describe('RepairForm', () => {
     expect(screen.getByText(REPAIR_CONSENT_TEXT)).toBeInTheDocument();
   });
 
-  it('shows the success confirmation after a successful submit', async () => {
-    submitRepairRequest.mockResolvedValue({ ok: true });
+  it('shows the success confirmation with the §G.1 ticket reference', async () => {
+    submitRepairRequest.mockResolvedValue({ ok: true, reference: 'RPR-2026-00042' });
     const user = userEvent.setup();
     render(<RepairForm />);
 
     await user.click(screen.getByRole('button', { name: /Report repair/i }));
 
     expect(await screen.findByText(/repair has been reported/i)).toBeInTheDocument();
+    expect(screen.getByText(/RPR-2026-00042/)).toBeInTheDocument();
     expect(submitRepairRequest).toHaveBeenCalledTimes(1);
   });
 

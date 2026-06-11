@@ -13,7 +13,10 @@ import { slaRisk, type SlaRisk } from './repair-sla.js';
 export interface RepairRow {
   id: string;
   name: string;
+  /** The §G.1 human-readable ticket number (e.g. "RPR-2026-04321"). */
   reference: string | null;
+  /** The tenant's free-text property pointer, until staff resolve `propertyId`. */
+  propertyReference: string | null;
   category: string;
   urgency: string;
   status: string;

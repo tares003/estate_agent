@@ -10,7 +10,8 @@ function item(over: Partial<RepairQueueItem> = {}): RepairQueueItem {
   return {
     id: 'r1',
     name: 'Tess Tenant',
-    reference: 'Flat 2, 14 Palatine Road',
+    reference: 'RPR-2026-04321',
+    propertyReference: 'Flat 2, 14 Palatine Road',
     category: 'Plumbing',
     urgency: 'emergency',
     status: 'new',
@@ -40,7 +41,7 @@ describe('RepairsInboxTable', () => {
     expect(screen.getByText(/No repairs match this view/i)).toBeInTheDocument();
   });
 
-  it('renders a row per repair with urgency, status and SLA badges, linked to the detail', () => {
+  it('renders a row per repair with the ticket number, badges and the detail link', () => {
     render(
       <RepairsInboxTable
         result={result([
@@ -48,7 +49,8 @@ describe('RepairsInboxTable', () => {
           item({
             id: 'r2',
             name: 'Bob Tenant',
-            reference: '7 Oak Avenue',
+            reference: 'RPR-2026-04322',
+            propertyReference: '7 Oak Avenue',
             urgency: 'low',
             status: 'on_hold',
             slaRisk: 'on_track',
@@ -58,10 +60,13 @@ describe('RepairsInboxTable', () => {
       />,
     );
     const table = screen.getByRole('table');
+    // the §G.2 ticket-ID column
+    expect(within(table).getByText('RPR-2026-04321')).toBeInTheDocument();
     expect(within(table).getByRole('link', { name: 'Tess Tenant' })).toHaveAttribute(
       'href',
       '/admin/repairs/r1',
     );
+    expect(within(table).getByText('Flat 2, 14 Palatine Road')).toBeInTheDocument();
     expect(within(table).getByText('Emergency')).toBeInTheDocument();
     expect(within(table).getByText('Breached')).toBeInTheDocument();
     expect(within(table).getByText('On hold')).toBeInTheDocument();
