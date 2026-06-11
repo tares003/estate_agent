@@ -40,3 +40,15 @@ export function repairUrgencyDisplay(urgency: string): BadgeDisplay {
 export function repairStatusDisplay(status: string): BadgeDisplay {
   return STATUS_DISPLAY[status] ?? { tone: 'neutral', label: status };
 }
+
+const SLA_RISK_DISPLAY: Record<string, BadgeDisplay> = {
+  on_track: { tone: 'success', label: 'On track' },
+  due_soon: { tone: 'warning', label: 'Due soon' },
+  at_risk: { tone: 'danger', label: 'At risk' },
+  breached: { tone: 'danger', label: 'Breached' },
+};
+
+/** The badge tone + label for an FR-G-9 SLA risk band (label-led, never colour alone — G9). */
+export function slaRiskDisplay(risk: string): BadgeDisplay {
+  return SLA_RISK_DISPLAY[risk] ?? { tone: 'neutral', label: risk };
+}

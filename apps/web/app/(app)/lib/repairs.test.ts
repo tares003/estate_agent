@@ -1,6 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { getRepairRequest, listRepairRequests, type RepairRow } from './repairs.js';
+import {
+  buildRepairWhere,
+  getRepairRequest,
+  listRepairRequests,
+  type RepairRow,
+} from './repairs.js';
+
+const NOW = new Date('2026-06-09T10:00:00.000Z').getTime();
 
 function row(over: Partial<RepairRow> = {}): RepairRow {
   return {
@@ -10,20 +17,67 @@ function row(over: Partial<RepairRow> = {}): RepairRow {
     category: 'Plumbing',
     urgency: 'urgent',
     status: 'new',
-    createdAt: new Date('2026-06-09T10:00:00.000Z'),
+    createdAt: new Date('2026-06-09T09:00:00.000Z'),
     ...over,
   };
 }
 
+function reader(rows: RepairRow[], total = rows.length) {
+  return {
+    repairRequest: {
+      findMany: vi.fn().mockResolvedValue(rows),
+      count: vi.fn().mockResolvedValue(total),
+    },
+  };
+}
+
+describe('buildRepairWhere', () => {
+  it('hides closed tickets unless a status is asked for', () => {
+    expect(buildRepairWhere({})).toEqual({ status: { notIn: ['completed', 'rejected'] } });
+    expect(buildRepairWhere({ status: 'completed' })).toEqual({ status: 'completed' });
+  });
+
+  it('filters by urgency alongside the status default', () => {
+    expect(buildRepairWhere({ urgency: 'emergency' })).toEqual({
+      status: { notIn: ['completed', 'rejected'] },
+      urgency: 'emergency',
+    });
+  });
+});
+
 describe('listRepairRequests', () => {
-  it('lists the tenant repairs newest-first and returns the rows', async () => {
-    const rows = [row(), row({ id: 'r2' })];
-    const findMany = vi.fn().mockResolvedValue(rows);
+  it('lists newest-first by default, paginated, with totals', async () => {
+    const db = reader([row()], 30);
+    const result = await listRepairRequests(db, {}, NOW);
 
-    const out = await listRepairRequests({ repairRequest: { findMany } });
+    expect(db.repairRequest.findMany).toHaveBeenCalledWith({
+      where: { status: { notIn: ['completed', 'rejected'] } },
+      orderBy: { createdAt: 'desc' },
+      skip: 0,
+      take: 24,
+    });
+    expect(result.total).toBe(30);
+    expect(result.page).toBe(1);
+    expect(result.totalPages).toBe(2);
+  });
 
-    expect(out).toBe(rows);
-    expect(findMany).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' } });
+  it('sorts oldest-first and skips to the requested page', async () => {
+    const db = reader([]);
+    await listRepairRequests(db, { sort: 'oldest', page: 2 }, NOW);
+    expect(db.repairRequest.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: 'asc' }, skip: 24, take: 24 }),
+    );
+  });
+
+  it('bands each open item by SLA risk against the injected now (FR-G-9)', async () => {
+    // urgent target is 24h: 1h elapsed = on_track; 23h = at_risk; 25h = breached
+    const db = reader([
+      row({ id: 'a', createdAt: new Date(NOW - 1 * 3_600_000) }),
+      row({ id: 'b', createdAt: new Date(NOW - 23 * 3_600_000) }),
+      row({ id: 'c', createdAt: new Date(NOW - 25 * 3_600_000) }),
+    ]);
+    const result = await listRepairRequests(db, {}, NOW);
+    expect(result.items.map((item) => item.slaRisk)).toEqual(['on_track', 'at_risk', 'breached']);
   });
 });
 

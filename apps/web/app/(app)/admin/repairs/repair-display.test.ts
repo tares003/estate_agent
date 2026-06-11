@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { repairStatusDisplay, repairUrgencyDisplay } from './repair-display.js';
+import { repairStatusDisplay, repairUrgencyDisplay, slaRiskDisplay } from './repair-display.js';
 
 describe('repairUrgencyDisplay', () => {
   it('maps emergency to the danger tone and a readable label', () => {
@@ -42,5 +42,14 @@ describe('repairStatusDisplay', () => {
 
   it('falls back gracefully for an unknown status', () => {
     expect(repairStatusDisplay('mystery')).toEqual({ tone: 'neutral', label: 'mystery' });
+  });
+});
+
+describe('slaRiskDisplay', () => {
+  it('maps the FR-G-9 risk bands to label-led badges', () => {
+    expect(slaRiskDisplay('on_track')).toEqual({ tone: 'success', label: 'On track' });
+    expect(slaRiskDisplay('due_soon')).toEqual({ tone: 'warning', label: 'Due soon' });
+    expect(slaRiskDisplay('at_risk')).toEqual({ tone: 'danger', label: 'At risk' });
+    expect(slaRiskDisplay('breached')).toEqual({ tone: 'danger', label: 'Breached' });
   });
 });
