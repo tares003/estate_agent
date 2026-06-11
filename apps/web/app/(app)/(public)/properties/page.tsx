@@ -3,6 +3,7 @@ import { withTenant } from '@estate/db';
 import { PropertyCard } from '@estate/ui';
 import { parsePropertySearch, radiusToMetres, type PropertySearch } from '@estate/validators';
 import { getDb } from '../../lib/db.js';
+import { listHeroImages, type HeroImageReader } from '../../lib/property-images.js';
 import {
   searchProperties,
   searchPropertiesNear,
@@ -11,6 +12,7 @@ import {
   type PropertySearchOptions,
   type PropertySearchResult,
 } from '../../lib/properties.js';
+import { signedObjectPath } from '../../lib/storage.js';
 import { getCurrentTenantId, getRequestOrigin } from '../../lib/tenant.js';
 import { PropertyFilters } from './PropertyFilters.js';
 import { activeChips, toSearchQuery } from './search-params.js';
@@ -63,21 +65,30 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
   const search = parsePropertySearch((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
   const { lat, lng, radius, unit } = search;
-  const result = await withTenant(getDb(), tenantId, (tx): Promise<PropertySearchResult> => {
+  const { result, heroes } = await withTenant(getDb(), tenantId, async (tx) => {
     // A centre point + radius switches to the PostGIS distance query (nearest-first);
     // otherwise the standard Prisma filter/sort query runs.
-    if (lat != null && lng != null && radius != null) {
-      return searchPropertiesNear(tx as unknown as PropertyRawClient, {
-        ...toOptions(search),
-        lat,
-        lng,
-        radiusMetres: radiusToMetres(radius, unit),
-      });
-    }
-    return searchProperties(tx as unknown as PropertyListReader, toOptions(search));
+    const searched: PropertySearchResult =
+      lat != null && lng != null && radius != null
+        ? await searchPropertiesNear(tx as unknown as PropertyRawClient, {
+            ...toOptions(search),
+            lat,
+            lng,
+            radiusMetres: radiusToMetres(radius, unit),
+          })
+        : await searchProperties(tx as unknown as PropertyListReader, toOptions(search));
+    // The hero image per card, joined in the same tenant (RLS) read.
+    const pageHeroes = await listHeroImages(
+      tx as unknown as HeroImageReader,
+      searched.items.map((item) => item.id),
+    );
+    return { result: searched, heroes: pageHeroes };
   });
 
   const { items, total, page, totalPages } = result;
+  // Render-time signed thumbnails (CLAUDE.md §9 — files served via signed URLs).
+  const heroExpiry = Date.now() + 60 * 60_000;
+  const heroByProperty = new Map(heroes.map((hero) => [hero.propertyId, hero]));
   const chips = activeChips(search);
   const heading =
     search.saleType === 'rent'
@@ -120,9 +131,18 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((card) => (
-            <PropertyCard key={card.href} {...card} />
-          ))}
+          {items.map(({ id, ...card }) => {
+            const hero = heroByProperty.get(id);
+            return (
+              <PropertyCard
+                key={card.href}
+                {...card}
+                {...(hero
+                  ? { imageUrl: signedObjectPath(hero.url, heroExpiry), imageAlt: hero.alt }
+                  : {})}
+              />
+            );
+          })}
         </div>
       )}
 

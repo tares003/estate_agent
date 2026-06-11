@@ -92,6 +92,8 @@ describe('searchProperties', () => {
     expect(result.items).toHaveLength(2);
     expect(result).toMatchObject({ total: 2, page: 1, pageSize: 24, totalPages: 1 });
     expect(result.items[0]?.href).toBe('/properties/palatine-road-m20');
+    // the hero-image join needs the property id alongside the card props
+    expect(result.items[0]?.id).toBe('11111111-1111-1111-1111-111111111111');
   });
 
   it('composes every filter into the where clause', async () => {

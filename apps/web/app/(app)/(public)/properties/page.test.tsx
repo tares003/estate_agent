@@ -15,9 +15,17 @@ const count = vi.fn();
 const queryRawUnsafe = vi.fn(async (sql: string) =>
   String(sql).includes('count(*)') ? [{ count: 1 }] : [row],
 );
+const imageFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findMany, count }, $queryRawUnsafe: queryRawUnsafe }),
+    fn({
+      property: { findMany, count },
+      propertyImage: { findMany: imageFindMany },
+      $queryRawUnsafe: queryRawUnsafe,
+    }),
+}));
+vi.mock('../../lib/storage.js', () => ({
+  signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
 }));
 
 const { default: CataloguePage, generateMetadata } = await import('./page.js');
@@ -44,6 +52,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
+  imageFindMany.mockResolvedValue([
+    { propertyId: 'p1', url: 'tenants/t1/properties/p1/a.jpg', alt: 'The front elevation' },
+  ]);
 });
 
 describe('CataloguePage', () => {
@@ -54,6 +65,11 @@ describe('CataloguePage', () => {
     expect(screen.getByText('£525,000')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Edwardian semi · 4 bed' })).toBeInTheDocument();
     expect(screen.getByText('1 property')).toBeInTheDocument();
+    // the card carries the listing's hero image via a render-time signed path
+    expect(screen.getByAltText('The front elevation')).toHaveAttribute(
+      'src',
+      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
+    );
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { publishedAt: { not: null }, deletedAt: null },
