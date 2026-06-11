@@ -1,0 +1,11 @@
+{
+  // react-library (not library) so tsc can parse the JSX in @estate/entitlement's
+  // <RequirePack>, pulled in transitively via @estate/db's PackSource type import
+  // (the same documented workaround as packages/db). @estate/workers has no JSX
+  // of its own.
+  "extends": "@estate/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"]
+}

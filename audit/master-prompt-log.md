@@ -1735,3 +1735,29 @@ Staff match a ticket to a catalogue listing (§G.6 `property_id … matched by a
 RED → GREEN → docs(audit). 13 new/updated tests (schema match+unmatch+non-uuid; choices query shape; action match-audit/unmatch/unknown-property-no-write/RBAC-before-read/ticket-not-found; control options+preselect+submit+refresh; page choices pass-through + matched-link + existing branches). Full web suite **548 passed** (115 files; one unrelated PublishControl parallel-load flake passed in isolation + on re-run); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green. No schema change.
 
 ---
+
+## Phase B64 — EPIC-U workers foundation: the email-send dispatcher (FR-G-3 dispatch) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-U-workers-email-dispatch) — apps/workers goes live with its first queue
+
+The `notification_logs` outbox the forms queue into (B62's `notify()` pattern — record intent, never send inline) now gets DELIVERED: a BullMQ repeatable tick dispatches every active tenant's queued email via the tenant's own SMTP.
+
+### Design (held to the committed patterns)
+- **Tenancy**: `notification_logs` is FORCE-RLS'd, so there is deliberately **no cross-tenant scan** — the tick lists the (un-RLS'd) `platform_tenants` registry and dispatches EACH tenant inside its own tenant scope via `withTenant` (the same `SET LOCAL` extension apps/web uses; the apps/workers README's stated discipline).
+- **Idempotency** (README discipline): a row is **claimed with an atomic compare-and-set** (`queued → processing`) before any send — a replayed job or a second worker finds nothing to claim and skips. The SMTP send happens OUTSIDE any DB transaction; a crash between send and finalize parks the row in `processing` (manual review) rather than risking a double-send.
+- **G4**: every finalize (`sent` / `failed`) writes the matching `audit_logs` row (`worker:email-send` actor).
+- **Fail-without-blocking**: an event with no template, a tenant with no SMTP configured, or an SMTP failure fails THAT row and the batch continues — the queue head never wedges.
+- **Templates**: a code-level event→template registry rendered with @estate/email's HTML-escaping interpolator; `repair_request.received` ships first (the FR-G-3 confirmation, ticket reference in subject + body). CMS-managed overrides (EPIC-D email_templates) are a later refinement. **Copy is AI-drafted — flagged for human review per CLAUDE.md §8.**
+- **Glue** (coverage-excluded with documented justification, mirroring transport.ts/client.ts): the BullMQ/Redis/Prisma entrypoint (30s repeatable tick via `upsertJobScheduler`, pino logging, graceful shutdown) and the `email_settings` mailer binding (raw query against the Payload collection's table — coupling documented; AES-256-GCM `pass` decrypted in memory at send time, never plaintext, key from `EMAIL_ENCRYPTION_KEY`).
+
+### Build notes
+- New workspace package `@estate/workers` (tsconfig extends react-library — the documented packages/db workaround for the transitive @estate/entitlement JSX pull).
+- **No direct ioredis dependency**: BullMQ gets plain connection options parsed from `REDIS_URL` — a direct ioredis dep resolved to a different 5.x than BullMQ's own copy and the two nominal types clash under `exactOptionalPropertyTypes`.
+
+### Verification
+RED → GREEN → docs(audit). 14 tests, **100% lines / 96.77% branches** on the covered files (the "worker" G2 scope 90/80 — passed): templates (reference render, HTML-escaping, scalar-only payload values, malformed payload, unknown event → null); dispatcher (batch query shape, atomic claim true/false, finalize+audit, send-and-mark-sent, **replay-idempotency skip**, no-template fail, no-SMTP fail, send-throw fail-and-continue); tick (per-tenant scoping + mailer resolution + totals). Repo-wide tsc + repo-wide lint + prettier + diff guards **G1/G2/G10/G11** all green. Runtime Redis/SMTP integration is the documented next verification step (needs a live Redis + a seeded tenant SMTP config).
+
+### Next
+Wire the remaining FR-G-3 channels once tenant notification-config exists (internal/branch recipients, emergency SMS via Twilio); CMS template overrides; the per-epic queues (portal-syndication, bulk-import, report-generation, feedback-aggregation).
+
+---
