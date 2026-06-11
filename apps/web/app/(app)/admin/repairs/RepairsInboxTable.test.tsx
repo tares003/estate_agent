@@ -20,7 +20,10 @@ function item(over: Partial<RepairQueueItem> = {}): RepairQueueItem {
   };
 }
 
-function result(items: RepairQueueItem[], over: Partial<RepairQueueResult> = {}): RepairQueueResult {
+function result(
+  items: RepairQueueItem[],
+  over: Partial<RepairQueueResult> = {},
+): RepairQueueResult {
   return {
     items,
     total: items.length,
