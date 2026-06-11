@@ -104,6 +104,8 @@ export interface RepairDetailRow extends RepairRow {
   phone: string | null;
   description: string;
   rejectedReason: string | null;
+  /** The matched catalogue listing (§G.6 — matched by admin), when resolved. */
+  propertyId: string | null;
   updatedAt: Date;
 }
 

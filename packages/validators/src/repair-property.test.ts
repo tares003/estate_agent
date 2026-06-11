@@ -15,8 +15,8 @@ describe('repairPropertyLinkSchema', () => {
     expect(repairPropertyLinkSchema.safeParse({ repairId: 'nope', propertyId }).success).toBe(
       false,
     );
-    expect(
-      repairPropertyLinkSchema.safeParse({ repairId, propertyId: 'nope' }).success,
-    ).toBe(false);
+    expect(repairPropertyLinkSchema.safeParse({ repairId, propertyId: 'nope' }).success).toBe(
+      false,
+    );
   });
 });

@@ -38,9 +38,7 @@ vi.mock('./PropertyMatchControl.js', () => ({
   }: {
     current: string | null;
     choices: Array<{ id: string }>;
-  }) => (
-    <div data-testid="property-match-control">{`${current ?? 'none'}:${choices.length}`}</div>
-  ),
+  }) => <div data-testid="property-match-control">{`${current ?? 'none'}:${choices.length}`}</div>,
 }));
 
 const repairFindFirst = vi.fn();
