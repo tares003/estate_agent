@@ -1654,3 +1654,29 @@ RED → GREEN → docs(audit). 10 tests (read-model query shape; 5 display mappi
 The repair **detail + triage** (resolve `propertyId`, set status through the RepairStatus lifecycle, assign a contractor — RBAC `repair_request.write` + audit + a status timeline) + the contractor magic-link portal + emergency dispatch (FR-G-5).
 
 ---
+
+## Phase B60 — EPIC-G repair triage workflow (FR-G-6/FR-G-7, §G.5/§G.6) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-G-repair-triage) — the ticket lifecycle, end to end
+
+Staff drive a repair ticket through the §G.5 status workflow from a new `/admin/repairs/[id]` triage detail; every transition is recorded in the §G.6 `repair_status_history` table AND audited.
+
+### Spec-drift correction (deliberate, documented)
+The pre-EPIC-G placeholder `RepairStatus` enum (`assigned`, `in_progress`, `awaiting_parts`, `cancelled`) had drifted from the enum **§G.6 specifies verbatim** and was missing the FR-G-6 off-path states entirely. Corrected to the spec-exact 9 values: `new, triaged, contractor_assigned, work_in_progress, awaiting_review, completed, awaiting_tenant, on_hold, rejected`. No production data exists; the only consumer (`repair-display.ts`, shipped yesterday in B59) was updated in the same slice. (Known remaining drift, out of scope here: urgency `low` vs the spec's `non_urgent` — the taxonomy is admin-editable per FR-G-5, so deferred to that slice.)
+
+### Transition allow-list (derivation note)
+§G.5 gives the happy-path arrows (`new → triaged → contractor_assigned → work_in_progress → awaiting_review → completed`) and names the off-path states without a full adjacency matrix. The committed reading, mirroring §G.2's described admin actions: off-path states are entered from any active state; `awaiting_tenant`/`on_hold` resume to the active path states; `awaiting_review` passes to `completed` or fails back to `work_in_progress` (FR-G-8's contractor hand-back); `rejected` (reason required, stored on `rejected_reason`) and `completed` are terminal.
+
+### What's in
+- **db**: the corrected enum; `RepairRequest.rejected_reason` (§G.6); `RepairStatusEvent` → `repair_status_history` (from/to, soft `actor_user_id` ref — history survives a staff member leaving, like Note.authorAgentId — notes, timestamp); `0008_repair_status_history_rls.sql` (ENABLE+FORCE, fail-closed NULLIF GUC policy, pglite-exercised). **Smoke-tested**: `prisma db push` against Docker postgis:16-3.4, 0008 applied, policy + 9 enum values verified live.
+- **validators**: `REPAIR_STATUSES` + `REPAIR_STATUS_TRANSITIONS` + `canRepairTransition` + `repairStatusUpdateSchema` (rejecting requires the reason).
+- **web**: `setRepairStatus` — RBAC `repair_request.write` **fail-closed before any read** → tenant-scoped load → **allow-list check before any write** → update (+`rejectedReason`) + history row + `audit('repair_request.status_changed')` **in one tenant (RLS) transaction (G4)**. Detail page: header badges (label-led, G9), issue + rejection reason, reporter `<dl>`, the legal-next-statuses `Select` control (terminal tickets get a quiet explanation), the notes field feeding the history, and the newest-first timeline (badges + notes). Inbox reporter links through.
+- **validators/property-update**: justified `estate/gdpr-consent` disable — the listing's marketing address is business data a staff member edits, not a data-subject capture; this was a **pre-existing latent repo-lint failure on main** (B54 gates linted only @estate/web) surfaced by this slice's repo-wide lint, fixed here.
+
+### Verification
+RED → GREEN → docs(audit). 30 new/updated tests across db (schema shape, 0008 text, pglite RLS admit/deny), validators (statuses, arrows, no-skip, off-path, terminals, reason-required), web (action: advance+history+audit, rejection-reason stored, reject-without-reason refused, **illegal transition refused with no writes**, RBAC-denied before read, not-found; control: legal-options-only, terminal state, submit+refresh; timeline; detail page incl. §G.5 allow-list pass-through + 404; display 9 statuses; inbox link). Full web suite **520 passed** (109 files); repo-wide tsc + repo-wide lint + prettier + diff guards **G1/G2/G10/G11** all green; `next build` green (`/admin/repairs/[id]` compiled); Docker postgis smoke green.
+
+### Next on EPIC-G
+Contractor assignment (needs the contractors entity), the contractor magic-link portal (FR-G-8), property/landlord matching on the ticket, SLA badges (FR-G-9), notifications (FR-G-3 — needs workers wiring).
+
+---

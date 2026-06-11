@@ -26,3 +26,27 @@ export interface RepairListReader {
 export async function listRepairRequests(db: RepairListReader): Promise<RepairRow[]> {
   return db.repairRequest.findMany({ orderBy: { createdAt: 'desc' } });
 }
+
+/** The full ticket the triage detail reads (FR-G-6). */
+export interface RepairDetailRow extends RepairRow {
+  email: string;
+  phone: string | null;
+  description: string;
+  rejectedReason: string | null;
+  updatedAt: Date;
+}
+
+/** The structural client the detail read needs. */
+export interface RepairDetailReader {
+  repairRequest: {
+    findFirst(args: { where: Record<string, unknown> }): Promise<RepairDetailRow | null>;
+  };
+}
+
+/** Read one repair ticket by id (tenant-scoped by RLS), or null when unknown. */
+export async function getRepairRequest(
+  db: RepairDetailReader,
+  id: string,
+): Promise<RepairDetailRow | null> {
+  return db.repairRequest.findFirst({ where: { id } });
+}

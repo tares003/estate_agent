@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { listRepairRequests, type RepairRow } from './repairs.js';
+import { getRepairRequest, listRepairRequests, type RepairRow } from './repairs.js';
 
 function row(over: Partial<RepairRow> = {}): RepairRow {
   return {
@@ -24,5 +24,23 @@ describe('listRepairRequests', () => {
 
     expect(out).toBe(rows);
     expect(findMany).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' } });
+  });
+});
+
+describe('getRepairRequest', () => {
+  it('reads one repair by id', async () => {
+    const detail = { ...row(), email: 'tess@example.com', phone: null, description: 'Leaky tap' };
+    const findFirst = vi.fn().mockResolvedValue(detail);
+
+    const out = await getRepairRequest({ repairRequest: { findFirst } }, 'r1');
+
+    expect(out).toBe(detail);
+    expect(findFirst).toHaveBeenCalledWith({ where: { id: 'r1' } });
+  });
+
+  it('returns null for an unknown repair', async () => {
+    const findFirst = vi.fn().mockResolvedValue(null);
+    const out = await getRepairRequest({ repairRequest: { findFirst } }, 'nope');
+    expect(out).toBeNull();
   });
 });
