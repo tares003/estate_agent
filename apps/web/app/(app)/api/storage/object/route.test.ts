@@ -52,6 +52,15 @@ describe('GET /api/storage/object', () => {
     expect(response.status).toBe(404);
   });
 
+  it('serves repair video attachments with their video content types', async () => {
+    expect(
+      (await GET(request(tokenFor('tenants/t/repairs/r/clip.mp4')))).headers.get('content-type'),
+    ).toBe('video/mp4');
+    expect(
+      (await GET(request(tokenFor('tenants/t/repairs/r/clip.mov')))).headers.get('content-type'),
+    ).toBe('video/quicktime');
+  });
+
   it('serves an unrecognised extension as a generic byte stream', async () => {
     const response = await GET(request(tokenFor('tenants/t1/files/data.bin')));
     expect(response.status).toBe(200);

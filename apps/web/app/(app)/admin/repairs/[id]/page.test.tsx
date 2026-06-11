@@ -44,13 +44,18 @@ vi.mock('./PropertyMatchControl.js', () => ({
 const repairFindFirst = vi.fn();
 const eventFindMany = vi.fn();
 const propertyFindMany = vi.fn();
+const fileFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
       repairRequest: { findFirst: repairFindFirst },
       repairStatusEvent: { findMany: eventFindMany },
       property: { findMany: propertyFindMany },
+      repairFile: { findMany: fileFindMany },
     }),
+}));
+vi.mock('../../../lib/storage.js', () => ({
+  signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
 }));
 
 const { default: RepairDetailPage } = await import('./page.js');
@@ -83,6 +88,17 @@ beforeEach(() => {
     { id: 'p1', displayAddress: '1 Acacia Avenue' },
     { id: 'p2', displayAddress: '2 Birch Road' },
   ]);
+  fileFindMany.mockResolvedValue([
+    {
+      id: 'f1',
+      url: 'tenants/t1/repairs/r1/leak.jpg',
+      fileName: 'leak.jpg',
+      mimeType: 'image/jpeg',
+      fileSizeBytes: 2048,
+      uploadedBy: 'tenant',
+      createdAt: new Date('2026-06-10T10:00:00.000Z'),
+    },
+  ]);
   eventFindMany.mockResolvedValue([
     {
       id: 'ev1',
@@ -114,6 +130,13 @@ describe('RepairDetailPage', () => {
       'r1:triaged,awaiting_tenant,on_hold,rejected',
     );
     expect(screen.getByTestId('repair-timeline')).toHaveTextContent('1');
+    // FR-G-2: the ticket attachments, served via signed links
+    expect(screen.getByRole('heading', { level: 2, name: 'Files' })).toBeInTheDocument();
+    const fileLink = screen.getByRole('link', { name: /leak\.jpg/ });
+    expect(fileLink).toHaveAttribute(
+      'href',
+      '/api/storage/object?token=tok:tenants/t1/repairs/r1/leak.jpg',
+    );
     // §G.6: property matching — the control gets the tenant's listings
     expect(screen.getByTestId('property-match-control')).toHaveTextContent('none:2');
     expect(repairFindFirst).toHaveBeenCalledWith({ where: { id: 'r1' } });

@@ -8,8 +8,10 @@ import userEvent from '@testing-library/user-event';
 import { REPAIR_CONSENT_TEXT } from './consent-text.js';
 
 const submitRepairRequest = vi.fn();
+const finalizeRepairFiles = vi.fn();
 vi.mock('./actions.js', () => ({
   submitRepairRequest: (...args: unknown[]) => submitRepairRequest(...args),
+  finalizeRepairFiles: (...args: unknown[]) => finalizeRepairFiles(...args),
 }));
 
 const { RepairForm } = await import('./RepairForm.js');
@@ -54,5 +56,55 @@ describe('RepairForm', () => {
 
     const link = await screen.findByRole('link', { name: /Enter a valid email address/i });
     expect(link).toHaveAttribute('href', '#email');
+  });
+});
+
+describe('RepairForm — attachments (FR-G-2)', () => {
+  it('uploads each granted file after a successful submit, then finalizes and confirms', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal('fetch', fetchMock);
+    submitRepairRequest.mockResolvedValue({
+      ok: true,
+      reference: 'RPR-2026-00042',
+      repairRequestId: 'rep-1',
+      uploadGrants: [{ key: 'tenants/t/repairs/rep-1/abc.jpg', token: 'tok', name: 'leak.jpg' }],
+    });
+    finalizeRepairFiles.mockResolvedValue({ ok: true });
+
+    const user = userEvent.setup();
+    const { container } = render(<RepairForm />);
+    const file = new File([new Uint8Array([1, 2])], 'leak.jpg', { type: 'image/jpeg' });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /Report repair/i }));
+
+    expect(await screen.findByText(/repair has been reported/i)).toBeInTheDocument();
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/storage/upload?token=tok');
+    expect(init.method).toBe('PUT');
+    expect(finalizeRepairFiles).toHaveBeenCalledWith({
+      repairRequestId: 'rep-1',
+      files: [
+        {
+          key: 'tenants/t/repairs/rep-1/abc.jpg',
+          name: 'leak.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 2,
+        },
+      ],
+    });
+  });
+
+  it('declares the selected files to the submit action via the hidden metadata field', async () => {
+    submitRepairRequest.mockResolvedValue({ ok: false, errors: [] });
+    const user = userEvent.setup();
+    const { container } = render(<RepairForm />);
+    const file = new File([new Uint8Array([1, 2, 3])], 'leak.jpg', { type: 'image/jpeg' });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /Report repair/i }));
+
+    const formData = submitRepairRequest.mock.calls[0]?.[1] as FormData;
+    expect(JSON.parse(String(formData.get('filesMeta')))).toEqual([
+      { name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 3 },
+    ]);
   });
 });

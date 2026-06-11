@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { verifyObjectToken } from '@estate/storage';
 
 // Real @estate/validators (repairRequestSchema) drives the rules; the data layer,
 // request context and anti-spam verifier are doubled so the action is exercised in
@@ -11,6 +12,12 @@ vi.mock('../../lib/tenant.js', () => ({
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const storageExists = vi.fn();
+vi.mock('../../lib/storage.js', () => ({
+  getStorageBackend: () => ({ exists: storageExists }),
+  storageSigningSecret: () => 'test-secret',
+}));
+
 const verifyTurnstile = vi.fn();
 vi.mock('../../lib/turnstile.js', () => ({
   verifyTurnstile: (...args: unknown[]) => verifyTurnstile(...args),
@@ -21,12 +28,18 @@ const recordConsent = vi.fn();
 const notify = vi.fn();
 const repairCreate = vi.fn();
 const repairCount = vi.fn();
+const repairFindFirst = vi.fn();
+const fileCount = vi.fn();
+const fileCreate = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-  fn({ repairRequest: { create: repairCreate, count: repairCount } }),
+  fn({
+    repairRequest: { create: repairCreate, count: repairCount, findFirst: repairFindFirst },
+    repairFile: { count: fileCount, create: fileCreate },
+  }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent, notify }));
 
-const { submitRepairRequest } = await import('./actions.js');
+const { submitRepairRequest, finalizeRepairFiles } = await import('./actions.js');
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
 
@@ -55,6 +68,10 @@ beforeEach(() => {
   verifyTurnstile.mockResolvedValue(true);
   repairCreate.mockResolvedValue({ id: 'rep-1' });
   repairCount.mockResolvedValue(41);
+  repairFindFirst.mockResolvedValue({ id: 'rep-1' });
+  fileCount.mockResolvedValue(0);
+  fileCreate.mockResolvedValue({ id: 'file-1' });
+  storageExists.mockResolvedValue(true);
 });
 
 describe('submitRepairRequest', () => {
@@ -152,5 +169,97 @@ describe('submitRepairRequest', () => {
   it('passes the verified Turnstile token to the anti-spam check', async () => {
     await submitRepairRequest({ ok: false }, form());
     expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token', '203.0.113.7');
+  });
+});
+
+const REP = 'rep-1';
+
+describe('submitRepairRequest — upload grants (FR-G-2)', () => {
+  const filesMeta = JSON.stringify([
+    { name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 2048 },
+  ]);
+
+  it('issues signed grants bound under the new ticket after the verified submit', async () => {
+    const result = await submitRepairRequest({ ok: false }, form({ filesMeta }));
+
+    expect(result.ok).toBe(true);
+    expect(result.repairRequestId).toBe(REP);
+    expect(result.uploadGrants).toHaveLength(1);
+    const grant = result.uploadGrants![0]!;
+    expect(grant.name).toBe('leak.jpg');
+    expect(grant.key).toMatch(new RegExp(`^tenants/${TENANT}/repairs/${REP}/[0-9a-f-]+\.jpg$`));
+    const verified = verifyObjectToken(grant.token, 'test-secret', Date.now());
+    expect(verified?.key).toBe(grant.key);
+  });
+
+  it('issues no grants when no files were declared', async () => {
+    const result = await submitRepairRequest({ ok: false }, form());
+    expect(result.ok).toBe(true);
+    expect(result.uploadGrants).toBeUndefined();
+  });
+
+  it('rejects a disallowed attachment type before any write', async () => {
+    const bad = JSON.stringify([{ name: 'x.zip', contentType: 'application/zip', sizeBytes: 1 }]);
+    const result = await submitRepairRequest({ ok: false }, form({ filesMeta: bad }));
+    expect(result.ok).toBe(false);
+    expect(withTenant).not.toHaveBeenCalled();
+  });
+});
+
+describe('finalizeRepairFiles', () => {
+  const KEY = `tenants/${TENANT}/repairs/${REP}/abc.jpg`;
+  const file = { key: KEY, name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 2048 };
+
+  it('records each landed file against the ticket and audits (G4)', async () => {
+    const result = await finalizeRepairFiles({ repairRequestId: REP, files: [file] });
+
+    expect(result.ok).toBe(true);
+    expect(storageExists).toHaveBeenCalledWith(KEY);
+    expect(fileCreate).toHaveBeenCalledWith({
+      data: {
+        tenantId: TENANT,
+        repairRequestId: REP,
+        url: KEY,
+        fileName: 'leak.jpg',
+        mimeType: 'image/jpeg',
+        fileSizeBytes: 2048,
+      },
+    });
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'repair_file.created',
+        entity: 'repair_file',
+        entityId: 'file-1',
+      }),
+    );
+  });
+
+  it('refuses a key outside the ticket prefix without writing (no cross-ticket grafts)', async () => {
+    const foreign = { ...file, key: `tenants/${TENANT}/repairs/other/abc.jpg` };
+    const result = await finalizeRepairFiles({ repairRequestId: REP, files: [foreign] });
+    expect(result.ok).toBe(false);
+    expect(fileCreate).not.toHaveBeenCalled();
+  });
+
+  it('refuses an upload that never landed in storage', async () => {
+    storageExists.mockResolvedValue(false);
+    const result = await finalizeRepairFiles({ repairRequestId: REP, files: [file] });
+    expect(result.ok).toBe(false);
+    expect(fileCreate).not.toHaveBeenCalled();
+  });
+
+  it('enforces the 10-file ticket cap counting what is already attached', async () => {
+    fileCount.mockResolvedValue(10);
+    const result = await finalizeRepairFiles({ repairRequestId: REP, files: [file] });
+    expect(result.ok).toBe(false);
+    expect(fileCreate).not.toHaveBeenCalled();
+  });
+
+  it('refuses an unknown ticket (cross-tenant ids look unknown under RLS)', async () => {
+    repairFindFirst.mockResolvedValue(null);
+    const result = await finalizeRepairFiles({ repairRequestId: REP, files: [file] });
+    expect(result.ok).toBe(false);
+    expect(fileCreate).not.toHaveBeenCalled();
   });
 });
