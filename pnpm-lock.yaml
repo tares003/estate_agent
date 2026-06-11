@@ -153,6 +153,9 @@ importers:
       '@estate/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@estate/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       bullmq:
         specifier: ^5.0.0
         version: 5.78.0
