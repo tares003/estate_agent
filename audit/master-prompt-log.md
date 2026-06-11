@@ -1841,3 +1841,21 @@ RED → GREEN → docs(audit). 11 new tests (variantKey; unprocessed-scan shape;
 Wire the galleries to prefer the thumb/large variants once processed (incremental adoption); the contractor magic-link portal (FR-G-8); repair file uploads (FR-G-2, anonymous-issuance design).
 
 ---
+
+## Phase B69 — EPIC-F galleries adopt the FR-F-7 renditions (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-F-rendition-adoption) — closes the rendition loop B68 opened
+
+Every gallery surface now serves the right rendition **once the post-process job has produced it**, keyed entirely off the DB's processed marker (no storage-existence checks at render time):
+
+- `variantKey` moved to **@estate/storage** — the rendition key convention's shared home (the worker that writes variants and the app that serves them share one definition; apps/workers re-exports it so its surface is unchanged).
+- The gallery/hero read-model rows carry the marker (`width`: null = unprocessed, 0 = poisoned).
+- `renditionKeyFor` picks the variant **only when `width > 0`** — unprocessed and poisoned rows keep serving the original, so adoption is incremental and nothing breaks mid-rollout.
+- Catalogue heroes + the admin manager thumbnails serve the **480px thumb**; the detail hero serves the **1600px large**; unprocessed siblings stay on their originals.
+
+Cuts public image weight (G3's performance budgets) for free once the worker has swept a tenant's gallery.
+
+### Verification
+RED → GREEN → docs(audit). New/updated tests: the storage-owned variantKey; renditionKeyFor (variant when processed, original when null/poisoned); catalogue hero on the thumb path; detail hero on large with an unprocessed sibling verifiably still on its original; the admin manager on thumbs. Suites: web **588 passed** (121 files, clean run), storage **41 (100%)**, workers **25**; repo-wide tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+---
