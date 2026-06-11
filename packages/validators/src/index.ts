@@ -45,6 +45,7 @@ export {
   type RepairStatus,
   type RepairStatusUpdate,
 } from './repair-status.js';
+export { repairPropertyLinkSchema, type RepairPropertyLink } from './repair-property.js';
 export {
   CONTACT_TYPES,
   enquiryConversionSchema,

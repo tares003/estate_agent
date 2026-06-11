@@ -31,14 +31,25 @@ vi.mock('./RepairTimeline.js', () => ({
     <div data-testid="repair-timeline">{events.length}</div>
   ),
 }));
+vi.mock('./PropertyMatchControl.js', () => ({
+  PropertyMatchControl: ({
+    current,
+    choices,
+  }: {
+    current: string | null;
+    choices: Array<{ id: string }>;
+  }) => <div data-testid="property-match-control">{`${current ?? 'none'}:${choices.length}`}</div>,
+}));
 
 const repairFindFirst = vi.fn();
 const eventFindMany = vi.fn();
+const propertyFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
       repairRequest: { findFirst: repairFindFirst },
       repairStatusEvent: { findMany: eventFindMany },
+      property: { findMany: propertyFindMany },
     }),
 }));
 
@@ -51,6 +62,7 @@ const repair = {
   phone: '07700900000',
   reference: 'RPR-2026-00042',
   propertyReference: 'Flat 2, 14 Palatine Road',
+  propertyId: null,
   category: 'Plumbing',
   description: 'The kitchen tap is leaking steadily.',
   urgency: 'urgent',
@@ -67,6 +79,10 @@ function props(id = 'r1') {
 beforeEach(() => {
   vi.clearAllMocks();
   repairFindFirst.mockResolvedValue(repair);
+  propertyFindMany.mockResolvedValue([
+    { id: 'p1', displayAddress: '1 Acacia Avenue' },
+    { id: 'p2', displayAddress: '2 Birch Road' },
+  ]);
   eventFindMany.mockResolvedValue([
     {
       id: 'ev1',
@@ -98,11 +114,23 @@ describe('RepairDetailPage', () => {
       'r1:triaged,awaiting_tenant,on_hold,rejected',
     );
     expect(screen.getByTestId('repair-timeline')).toHaveTextContent('1');
+    // §G.6: property matching — the control gets the tenant's listings
+    expect(screen.getByTestId('property-match-control')).toHaveTextContent('none:2');
     expect(repairFindFirst).toHaveBeenCalledWith({ where: { id: 'r1' } });
     expect(eventFindMany).toHaveBeenCalledWith({
       where: { repairRequestId: 'r1' },
       orderBy: { createdAt: 'desc' },
     });
+  });
+
+  it('links the matched catalogue listing when the ticket is matched', async () => {
+    repairFindFirst.mockResolvedValue({ ...repair, propertyId: 'p1' });
+    render(await RepairDetailPage(props()));
+    expect(screen.getByTestId('property-match-control')).toHaveTextContent('p1:2');
+    expect(screen.getByRole('link', { name: /1 Acacia Avenue/ })).toHaveAttribute(
+      'href',
+      '/admin/properties/p1',
+    );
   });
 
   it('shows the rejection reason on a rejected ticket', async () => {

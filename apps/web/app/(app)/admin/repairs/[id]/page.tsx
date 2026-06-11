@@ -4,6 +4,7 @@ import { withTenant } from '@estate/db';
 import { Badge } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
+import { listPropertyChoices, type PropertyChoiceReader } from '../../../lib/property-choices.js';
 import {
   listRepairStatusEvents,
   type RepairEventReader,
@@ -12,6 +13,7 @@ import { getRepairRequest, type RepairDetailReader } from '../../../lib/repairs.
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { repairStatusDisplay, repairUrgencyDisplay } from '../repair-display.js';
 import { nextRepairStatusOptions } from './next-statuses.js';
+import { PropertyMatchControl } from './PropertyMatchControl.js';
 import { RepairStatusControl } from './RepairStatusControl.js';
 import { RepairTimeline } from './RepairTimeline.js';
 
@@ -34,14 +36,18 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
     const repair = await getRepairRequest(tx as unknown as RepairDetailReader, id);
     if (!repair) return null;
     const events = await listRepairStatusEvents(tx as unknown as RepairEventReader, id);
-    return { repair, events };
+    const choices = await listPropertyChoices(tx as unknown as PropertyChoiceReader);
+    return { repair, events, choices };
   });
 
   if (!data) notFound();
 
-  const { repair, events } = data;
+  const { repair, events, choices } = data;
   const urgency = repairUrgencyDisplay(repair.urgency);
   const status = repairStatusDisplay(repair.status);
+  const matched = repair.propertyId
+    ? (choices.find((choice) => choice.id === repair.propertyId) ?? null)
+    : null;
 
   return (
     <div className="flex max-w-[70ch] flex-col gap-8">
@@ -90,6 +96,23 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
             <dd className="t-body-sm">{repair.phone ?? '—'}</dd>
           </div>
         </dl>
+      </section>
+
+      <section aria-labelledby="match-heading" className="flex flex-col gap-3">
+        <h2 id="match-heading" className="t-heading-sm">
+          Property match
+        </h2>
+        {matched ? (
+          <p className="t-body-sm">
+            Matched to{' '}
+            <Link href={`/admin/properties/${matched.id}`} className="text-brand-primary">
+              {matched.displayAddress}
+            </Link>
+          </p>
+        ) : (
+          <p className="t-body-sm text-text-secondary">Not matched to a catalogue listing yet.</p>
+        )}
+        <PropertyMatchControl repairId={repair.id} current={repair.propertyId} choices={choices} />
       </section>
 
       <section aria-labelledby="triage-heading" className="flex flex-col gap-3">
