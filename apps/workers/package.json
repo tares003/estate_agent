@@ -1,0 +1,31 @@
+{
+  "name": "@estate/workers",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The BullMQ worker process (EPIC-U) — same TypeScript codebase as apps/web, different entrypoint, consuming the shared Redis queue. Queues land with their owning epic; email-send (the notification_logs outbox dispatcher) is the first.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@estate/db": "workspace:*",
+    "@estate/email": "workspace:*",
+    "@estate/observability": "workspace:*",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "@estate/config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
