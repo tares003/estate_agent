@@ -1700,3 +1700,21 @@ RED → GREEN → docs(audit). 18 new/updated tests (SLA: working-days math, §G
 Intake (B58) → inbox with SLA risk (B59+B61) → triage workflow + history (B60). Remaining: contractor entity + assignment + magic-link portal (FR-G-8), property/landlord matching, notifications (FR-G-3), categories/SLA admin config (FR-G-4/5), files (FR-G-2 uploads), messaging (FR-G-12), recurring maintenance (FR-G-11).
 
 ---
+
+## Phase B62 — EPIC-G ticket reference + queued tenant confirmation (FR-G-1/FR-G-3) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-G-ticket-reference)
+
+### Drift correction (B58)
+§G.6 defines `reference` as the **human-readable ticket number** ("RPR-2026-04321", UNIQUE) — B58 had stored the tenant's free-text *property* pointer there. Fixed: the property pointer moves to its own `property_reference` column (§G.6's address block, collapsed to the committed single-field shape); `reference` becomes the ticket number, **per-tenant unique** (the spec's UNIQUE mapped multi-tenant).
+
+### What's in
+- **db**: `property_reference` column + `@@unique([tenantId, reference])`. Docker postgis smoke: column + unique index verified live.
+- **`lib/repair-reference.ts`** (pure, 100%): `RPR-YYYY-NNNNN` per the §G.1 example; no truncation past 5 digits.
+- **intake**: the next per-tenant sequence is derived **inside the submission transaction** (the RLS-scoped count); the per-tenant unique constraint backstops a concurrent race and the transaction **retries once on P2002**. The §G.1 success panel shows the assigned reference. The **FR-G-3 tenant confirmation is queued via `notify()` in the same transaction** — the committed §H.13 pattern (the action records intent into `notification_logs`; the workers render + dispatch). Internal/branch notifications + emergency SMS stay deferred: no tenant notification-config exists yet to name recipients, and recipients must not be invented (FR-G-3's "configured internal notifications" presupposes that config).
+- **admin**: the inbox gains the §G.2 **ticket-ID column**; property columns read `property_reference`; the detail header carries the reference.
+
+### Verification
+RED → GREEN → docs(audit). Tests: db schema shape (unique + column); the formatter; intake (reference assigned from the sequence, confirmation queued with the reference in the payload, **retry-once on unique collision**, all prior compliance tests retained); success panel shows the reference; inbox ticket column; detail header. db **183 passed**, web **539 passed** (112 files); tsc + lint + prettier + `prisma format` + diff guards **G1/G2/G10/G11** green; `next build` green; Docker smoke green.
+
+---
