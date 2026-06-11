@@ -11,9 +11,13 @@ vi.mock('../../../lib/tenant.js', () => ({
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findFirst = vi.fn();
+const imageFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findFirst } }),
+    fn({ property: { findFirst }, propertyImage: { findMany: imageFindMany } }),
+}));
+vi.mock('../../../lib/storage.js', () => ({
+  signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
 }));
 
 const notFound = vi.fn(() => {
@@ -46,7 +50,19 @@ const saleRow = {
   description: 'A handsome Edwardian semi moments from the village.',
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  imageFindMany.mockResolvedValue([
+    {
+      id: 'i1',
+      url: 'tenants/t1/properties/p1/a.jpg',
+      alt: 'The front elevation',
+      sortOrder: 0,
+      isPrimary: true,
+    },
+    { id: 'i2', url: 'tenants/t1/properties/p1/b.jpg', alt: 'The kitchen', sortOrder: 1, isPrimary: false },
+  ]);
+});
 
 describe('PropertyDetailPage', () => {
   it('renders the property detail and wires the enquiry form to the property id', async () => {
@@ -59,6 +75,13 @@ describe('PropertyDetailPage', () => {
     expect(findFirst).toHaveBeenCalledWith({
       where: { slug: 'palatine-road-m20', publishedAt: { not: null }, deletedAt: null },
     });
+
+    // the gallery: the hero leads, every image alt-texted (G9), signed paths
+    expect(screen.getByAltText('The front elevation')).toHaveAttribute(
+      'src',
+      '/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
+    );
+    expect(screen.getByAltText('The kitchen')).toBeInTheDocument();
 
     // EPIC-O structured data: a RealEstateListing + a BreadcrumbList (FR-O-5/6).
     const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
