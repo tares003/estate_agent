@@ -1784,3 +1784,21 @@ RED → GREEN → docs(audit). 22 tests (constraints; env fail-closed; PUT: atte
 B66: the admin images manager UI on the property detail (list / upload via FileDropzone / set hero / delete, all audited); B67: the public catalogue + detail galleries reading PropertyImage with render-time signed URLs.
 
 ---
+
+## Phase B66 — EPIC-F admin property images manager (FR-H-2 over FR-F-6) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-F-images-manager) — the B65 pipeline becomes usable from the property editor
+
+- `lib/property-images.ts`: the gallery read model (sort order; `url` holds the storage KEY). 100%.
+- `lib/storage.ts` + `signedObjectPath`: render-time app-relative signed serving paths (CLAUDE.md §9 signed-URL serving; token verifiably attests the key). 100%.
+- `image-actions`: `setPrimaryPropertyImage` — the schema's **one-hero invariant** moves in a single tenant transaction (clear all → set one → `audit('property_image.hero_set')`, G4). `deletePropertyImage` — row deleted + the hero **promoted to the next survivor** inside the transaction (the invariant holds), audited; the stored object removed **after commit** (file deletion is not transactional — a crash orphans a file, never a DB row).
+- `PropertyImagesManager` (client): thumbnails carry their alt text (G9 — every image described), the hero marked by a label-led Badge; the upload runs the **issue → PUT → finalize** flow with every failure surfaced (refused grant stops before the PUT; a failed PUT stops before the finalize); promote/delete call their audited actions and refresh the RSC tree.
+- `[id]/page.tsx`: an Images section; thumbnails minted with 15-minute signed paths in the same tenant (RLS) read.
+
+### Verification
+RED → GREEN → docs(audit). 17 new/updated tests (read model; signed-path token attestation; hero move + the not-on-this-listing refusal + RBAC-before-read; delete + hero promotion + storage removal + refusals; manager: thumbnails/hero badge, the full upload flow, file+alt precondition, refused-grant stop, failed-PUT stop, promote, delete; the detail page passing signed thumbnails). Full web suite **584 passed** (121 files); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### Product state
+The property editor now covers: core details, publish/unpublish, market status + history, and a working image gallery (upload/hero/delete) end-to-end on the committed local-fs storage. Next: the public catalogue + detail galleries reading PropertyImage (B67), then FR-F-7's EXIF/variants worker job.
+
+---

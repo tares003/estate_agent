@@ -28,12 +28,27 @@ vi.mock('./MarketStatusControl.js', () => ({
     <div data-testid="market-status-control">{`${current}:${options.join(',')}`}</div>
   ),
 }));
+vi.mock('./PropertyImagesManager.js', () => ({
+  PropertyImagesManager: ({ images }: { images: Array<{ id: string; thumbUrl: string }> }) => (
+    <div data-testid="property-images-manager">
+      {`${images.length}:${images.map((image) => image.thumbUrl).join(',')}`}
+    </div>
+  ),
+}));
+vi.mock('../../../lib/storage.js', () => ({
+  signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
+}));
 
 const findFirst = vi.fn();
 const eventFindMany = vi.fn();
+const imageFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findFirst }, propertyStatusEvent: { findMany: eventFindMany } }),
+    fn({
+      property: { findFirst },
+      propertyStatusEvent: { findMany: eventFindMany },
+      propertyImage: { findMany: imageFindMany },
+    }),
 }));
 
 const { default: AdminPropertyDetailPage } = await import('./page.js');
@@ -60,6 +75,15 @@ function props(id = 'p1') {
 beforeEach(() => {
   vi.clearAllMocks();
   findFirst.mockResolvedValue(property);
+  imageFindMany.mockResolvedValue([
+    {
+      id: 'img1',
+      url: 'tenants/t1/properties/p1/a.jpg',
+      alt: 'Front',
+      sortOrder: 0,
+      isPrimary: true,
+    },
+  ]);
   eventFindMany.mockResolvedValue([
     {
       id: 'se1',
@@ -85,6 +109,10 @@ describe('AdminPropertyDetailPage', () => {
     // the market-status control gets the current status + the sale-type's options
     expect(screen.getByTestId('market-status-control')).toHaveTextContent(
       'for_sale:for_sale,under_offer,sold_stc,sold,withdrawn',
+    );
+    // the images manager gets the gallery with render-time signed thumbnails
+    expect(screen.getByTestId('property-images-manager')).toHaveTextContent(
+      '1:/api/storage/object?token=tok:tenants/t1/properties/p1/a.jpg',
     );
     // the status-history timeline renders the tenant-scoped events
     expect(screen.getByRole('heading', { level: 2, name: 'Status history' })).toBeInTheDocument();

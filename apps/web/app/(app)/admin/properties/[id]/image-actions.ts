@@ -34,6 +34,19 @@ interface PropertyImageClient extends AuditWriter {
   propertyImage: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
     count(args: { where?: Record<string, unknown> }): Promise<number>;
+    findFirst(args: {
+      where: Record<string, unknown>;
+      orderBy?: unknown;
+    }): Promise<{ id: string; isPrimary: boolean; url: string } | null>;
+    update(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<unknown>;
+    updateMany(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<unknown>;
+    delete(args: { where: Record<string, unknown> }): Promise<unknown>;
   };
 }
 
@@ -159,5 +172,143 @@ export async function finalizePropertyImage(input: {
     });
     result = { ok: true };
   });
+  return result;
+}
+
+const imageRef = propertyImageUploadSchema.pick({ propertyId: true });
+
+/** Validate a {propertyId, imageId} pair (both uuid). */
+function parseImageRef(input: {
+  propertyId: string;
+  imageId: string;
+}): { propertyId: string; imageId: string } | null {
+  const property = imageRef.safeParse({ propertyId: input.propertyId });
+  const image = imageRef.safeParse({ propertyId: input.imageId });
+  return property.success && image.success
+    ? { propertyId: input.propertyId, imageId: input.imageId }
+    : null;
+}
+
+/**
+ * Make `imageId` the listing's hero. The one-hero invariant (schema: exactly one
+ * `isPrimary` row per listing) moves in a single tenant transaction: clear all,
+ * set one, audit (G4).
+ */
+export async function setPrimaryPropertyImage(input: {
+  propertyId: string;
+  imageId: string;
+}): Promise<PropertyImageFinalizeState> {
+  const ref = parseImageRef(input);
+  if (ref === null) {
+    return { ok: false, errors: [{ message: 'That image could not be found.' }] };
+  }
+
+  // RBAC gate — fail closed BEFORE any read/write.
+  try {
+    await requireStaffPermission('property.write');
+  } catch {
+    return { ok: false, errors: [{ message: 'You do not have permission to edit listings.' }] };
+  }
+
+  const tenantId = await getCurrentTenantId();
+  const actor = await getStaffActor();
+  const ip = await getRequestIp();
+
+  let result: PropertyImageFinalizeState = {
+    ok: false,
+    errors: [{ message: 'That image could not be found.' }],
+  };
+  await withTenant(getDb(), tenantId, async (rawTx) => {
+    const tx = rawTx as unknown as PropertyImageClient;
+    const image = await tx.propertyImage.findFirst({
+      where: { id: ref.imageId, propertyId: ref.propertyId },
+    });
+    if (!image) {
+      return; // result stays the not-found default
+    }
+    await tx.propertyImage.updateMany({
+      where: { propertyId: ref.propertyId },
+      data: { isPrimary: false },
+    });
+    await tx.propertyImage.update({ where: { id: ref.imageId }, data: { isPrimary: true } });
+    await audit(tx, {
+      tenantId,
+      actor,
+      action: 'property_image.hero_set',
+      entity: 'property_image',
+      entityId: ref.imageId,
+      diff: { isPrimary: { from: image.isPrimary, to: true } },
+      ip,
+    });
+    result = { ok: true };
+  });
+  return result;
+}
+
+/**
+ * Remove an image: the row goes in the tenant transaction (hero promoted to the
+ * next survivor so the one-hero invariant holds, audited — G4); the stored object
+ * is removed AFTER the transaction commits (file deletion is not transactional —
+ * a crash in between orphans a file, never a DB row).
+ */
+export async function deletePropertyImage(input: {
+  propertyId: string;
+  imageId: string;
+}): Promise<PropertyImageFinalizeState> {
+  const ref = parseImageRef(input);
+  if (ref === null) {
+    return { ok: false, errors: [{ message: 'That image could not be found.' }] };
+  }
+
+  // RBAC gate — fail closed BEFORE any read/write.
+  try {
+    await requireStaffPermission('property.write');
+  } catch {
+    return { ok: false, errors: [{ message: 'You do not have permission to edit listings.' }] };
+  }
+
+  const tenantId = await getCurrentTenantId();
+  const actor = await getStaffActor();
+  const ip = await getRequestIp();
+
+  let removedKey: string | null = null;
+  let result: PropertyImageFinalizeState = {
+    ok: false,
+    errors: [{ message: 'That image could not be found.' }],
+  };
+  await withTenant(getDb(), tenantId, async (rawTx) => {
+    const tx = rawTx as unknown as PropertyImageClient;
+    const image = await tx.propertyImage.findFirst({
+      where: { id: ref.imageId, propertyId: ref.propertyId },
+    });
+    if (!image) {
+      return; // result stays the not-found default
+    }
+    await tx.propertyImage.delete({ where: { id: ref.imageId } });
+    if (image.isPrimary) {
+      const next = await tx.propertyImage.findFirst({
+        where: { propertyId: ref.propertyId },
+        orderBy: { sortOrder: 'asc' },
+      });
+      if (next) {
+        await tx.propertyImage.update({ where: { id: next.id }, data: { isPrimary: true } });
+      }
+    }
+    await audit(tx, {
+      tenantId,
+      actor,
+      action: 'property_image.deleted',
+      entity: 'property_image',
+      entityId: ref.imageId,
+      diff: { url: { from: image.url, to: null } },
+      ip,
+    });
+    removedKey = image.url;
+    result = { ok: true };
+  });
+
+  if (removedKey !== null) {
+    await getStorageBackend().delete(removedKey);
+  }
   return result;
 }
