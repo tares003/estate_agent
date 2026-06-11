@@ -47,6 +47,7 @@ model PlatformTenant {
   propertyStatusEvents PropertyStatusEvent[]
   enquiryStatusEvents  EnquiryStatusEvent[]
   repairStatusEvents   RepairStatusEvent[]
+  repairFiles          RepairFile[]
 
   @@map("platform_tenants")
 }
@@ -372,6 +373,7 @@ model RepairRequest {
   tenant       PlatformTenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   property     Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   statusEvents RepairStatusEvent[]
+  files        RepairFile[]
 
   @@unique([tenantId, reference])
   @@index([tenantId])
@@ -402,6 +404,40 @@ model RepairStatusEvent {
   @@index([tenantId])
   @@index([tenantId, repairRequestId])
   @@map("repair_status_history")
+}
+
+/// A photo / video attached to a repair ticket (master spec §G.6, FR-G-2). The
+/// tenant attaches media at intake; staff and contractors add more later
+/// (completion photos — FR-G-8). `url` holds the StorageBackend KEY (the spec's
+/// file_url column; serving mints signed URLs at render time, CLAUDE.md §9).
+/// `fileSizeBytes` is Int (the spec says bigint; 4-byte suffices under the 25MB
+/// upload cap and avoids BigInt serialization in the app layer).
+model RepairFile {
+  id              String               @id @default(uuid()) @db.Uuid
+  tenantId        String               @map("tenant_id") @db.Uuid
+  repairRequestId String               @map("repair_request_id") @db.Uuid
+  url             String               @map("file_url")
+  fileName        String               @map("file_name")
+  mimeType        String               @map("mime_type")
+  fileSizeBytes   Int                  @map("file_size_bytes")
+  uploadedBy      RepairFileUploadedBy @default(tenant) @map("uploaded_by")
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  tenant        PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repairRequest RepairRequest  @relation(fields: [repairRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, repairRequestId])
+  @@map("repair_files")
+}
+
+/// Who attached a repair file (master spec §G.6 uploaded_by).
+enum RepairFileUploadedBy {
+  tenant
+  staff
+  contractor
+
+  @@map("repair_file_uploaded_by")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role
