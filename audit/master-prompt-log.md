@@ -1819,3 +1819,25 @@ RED → GREEN → docs(audit). New/updated tests: items carry the id; `listHeroI
 Upload (B65 pipeline) → curate (B66 manager: hero/delete/alt) → publish (B67 galleries on catalogue cards + detail). Remaining: FR-F-7's EXIF-strip + thumb/large variants as a workers job (the B64 foundation hosts it), and a lightbox/carousel polish pass.
 
 ---
+
+## Phase B68 — EPIC-F image post-processing worker (FR-F-7) (2026-06-11)
+
+Status: **complete** (branch feat/EPIC-F-image-postprocess) — the second workers queue; the FR-F-7 privacy + rendition job
+
+Every newly uploaded property image is now re-encoded with its **EXIF (location / device / ownership metadata) stripped**, its true pixel dimensions recorded, and **480px thumb / 1600px large variants** rendered beside the original (key convention `<key>.<variant>.<ext>` — nothing in the DB references them, so serving can adopt them incrementally).
+
+### Design (held to the committed patterns)
+- **Discovery is an outbox scan** like the email dispatcher: the schema commits `width`/`height` as "populated by the post-process job", so **`width IS NULL` is the unprocessed marker** — no schema change, no web→Redis coupling.
+- **Tenancy**: the tick lists the (un-RLS'd) tenant registry and processes each tenant inside its own `withTenant` scope.
+- **Idempotency** (README discipline): the work is idempotent by construction (re-processing overwrites the same artifacts) and the **mark is an atomic compare-and-set on `width IS NULL`** — a raced second worker marks nothing and audits nothing; exactly one `property_image.processed` audit row per image (G4).
+- **Poison handling**: untransformable bytes (a corrupt upload) are marked `width/height 0` and audited as `property_image.process_failed` — never retried forever, the queue never wedges.
+- **The transform is verified against REAL encoded images** (no mocks): EXIF demonstrably present on the input JPEG and absent from the output; auto-orientation baked in before the EXIF is dropped; no enlargement past the source. Rendition widths are documented V1 defaults (the brief commits the variants, not the sizes).
+- `sharp` (the committed image library) + `@estate/storage` added to apps/workers.
+
+### Verification
+RED → GREEN → docs(audit). 11 new tests (variantKey; unprocessed-scan shape; atomic mark + the raced-worker no-audit case + the poison mark; per-tenant processing incl. re-encode-in-place + both variants + fail-and-continue; the tick; 3 real-sharp round-trips). Workers suite **25 passed, 100% lines / 92.45% branches**; typecheck + lint + prettier + diff guards **G1/G2/G10/G11** green.
+
+### Next
+Wire the galleries to prefer the thumb/large variants once processed (incremental adoption); the contractor magic-link portal (FR-G-8); repair file uploads (FR-G-2, anonymous-issuance design).
+
+---
