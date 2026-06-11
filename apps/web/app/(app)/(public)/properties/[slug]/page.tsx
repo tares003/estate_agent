@@ -5,6 +5,7 @@ import { withTenant } from '@estate/db';
 import { getDb } from '../../../lib/db.js';
 import {
   listPropertyImages,
+  renditionKeyFor,
   type PropertyImageReader,
   type PropertyImageRow,
 } from '../../../lib/property-images.js';
@@ -90,9 +91,15 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   // The gallery leads with the hero, then sort order; signed render-time paths
   // (CLAUDE.md §9), every image alt-texted (G9).
   const galleryExpiry = Date.now() + 60 * 60_000;
-  const gallery = [...images]
-    .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder)
-    .map((image) => ({ src: signedObjectPath(image.url, galleryExpiry), alt: image.alt }));
+  const sorted = [...images].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.sortOrder - b.sortOrder,
+  );
+  // The hero serves the large rendition, the strip serves thumbs — each only
+  // once the post-process job has produced them (renditionKeyFor falls back).
+  const gallery = sorted.map((image, index) => ({
+    src: signedObjectPath(renditionKeyFor(image, index === 0 ? 'large' : 'thumb'), galleryExpiry),
+    alt: image.alt,
+  }));
   const heroImage = gallery[0];
 
   // Destructured to locals so the price renders as a bare identifier beside its

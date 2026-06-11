@@ -3,7 +3,11 @@ import { withTenant } from '@estate/db';
 import { PropertyCard } from '@estate/ui';
 import { parsePropertySearch, radiusToMetres, type PropertySearch } from '@estate/validators';
 import { getDb } from '../../lib/db.js';
-import { listHeroImages, type HeroImageReader } from '../../lib/property-images.js';
+import {
+  listHeroImages,
+  renditionKeyFor,
+  type HeroImageReader,
+} from '../../lib/property-images.js';
 import {
   searchProperties,
   searchPropertiesNear,
@@ -138,7 +142,10 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
                 key={card.href}
                 {...card}
                 {...(hero
-                  ? { imageUrl: signedObjectPath(hero.url, heroExpiry), imageAlt: hero.alt }
+                  ? {
+                      imageUrl: signedObjectPath(renditionKeyFor(hero, 'thumb'), heroExpiry),
+                      imageAlt: hero.alt,
+                    }
                   : {})}
               />
             );

@@ -1,3 +1,5 @@
+import { variantKey } from '@estate/storage';
+
 // EPIC-F property images (FR-F-6) — the gallery read model. Pure query-shaping
 // over a STRUCTURAL Prisma client (DB-free to unit-test); the live query runs
 // tenant-scoped (RLS) via withTenant. `url` holds the storage KEY — the serving
@@ -12,6 +14,8 @@ export interface PropertyImageRow {
   alt: string;
   sortOrder: number;
   isPrimary: boolean;
+  /** Set by the FR-F-7 post-process job; null = unprocessed, 0 = poisoned. */
+  width: number | null;
 }
 
 /** The structural client the read model needs (a real PrismaClient satisfies it). */
@@ -40,6 +44,8 @@ export interface HeroImageRow {
   propertyId: string;
   url: string;
   alt: string;
+  /** Set by the FR-F-7 post-process job; null = unprocessed, 0 = poisoned. */
+  width: number | null;
 }
 
 /** The structural client the hero join needs. */
@@ -58,4 +64,17 @@ export async function listHeroImages(
   return db.propertyImage.findMany({
     where: { propertyId: { in: [...propertyIds] }, isPrimary: true },
   });
+}
+
+/**
+ * The storage key a gallery surface should serve for an image: the FR-F-7
+ * rendition once the post-process job has marked the row (`width > 0`), the
+ * original otherwise (unprocessed rows have no variants yet; poisoned rows —
+ * width 0 — never will).
+ */
+export function renditionKeyFor(
+  image: { url: string; width: number | null },
+  variant: 'thumb' | 'large',
+): string {
+  return image.width !== null && image.width > 0 ? variantKey(image.url, variant) : image.url;
 }
