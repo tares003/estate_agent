@@ -1,4 +1,4 @@
-import { LocalFilesystemBackend, type StorageBackend } from '@estate/storage';
+import { LocalFilesystemBackend, signObjectToken, type StorageBackend } from '@estate/storage';
 
 // CLAUDE.md §9 object storage — the app's binding to the V1 local-filesystem
 // StorageBackend and the HMAC secret the signed-URL routes mint/verify tokens
@@ -22,4 +22,10 @@ export function getStorageBackend(): StorageBackend {
     throw new Error('STORAGE_DIR is not set');
   }
   return new LocalFilesystemBackend(root);
+}
+
+/** Mint the app-relative signed serving path for a stored object (render-time). */
+export function signedObjectPath(key: string, expiresAtMs: number): string {
+  const token = signObjectToken(key, expiresAtMs, storageSigningSecret());
+  return `/api/storage/object?token=${encodeURIComponent(token)}`;
 }

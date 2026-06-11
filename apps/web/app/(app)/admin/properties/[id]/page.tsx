@@ -5,14 +5,17 @@ import { Badge } from '@estate/ui';
 
 import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/admin-properties.js';
 import { getDb } from '../../../lib/db.js';
+import { listPropertyImages, type PropertyImageReader } from '../../../lib/property-images.js';
 import {
   listPropertyStatusEvents,
   type PropertyEventReader,
 } from '../../../lib/property-status-events.js';
+import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { marketStatusesForSaleType } from './market-status-display.js';
 import { MarketStatusControl } from './MarketStatusControl.js';
 import { PropertyEditForm } from './PropertyEditForm.js';
+import { PropertyImagesManager } from './PropertyImagesManager.js';
 import { PropertyTimeline } from './PropertyTimeline.js';
 import { PublishControl } from './PublishControl.js';
 
@@ -41,12 +44,21 @@ export default async function AdminPropertyDetailPage({
     const property = await getAdminProperty(tx as unknown as AdminPropertyDetailReader, id);
     if (!property) return null;
     const events = await listPropertyStatusEvents(tx as unknown as PropertyEventReader, id);
-    return { property, events };
+    const images = await listPropertyImages(tx as unknown as PropertyImageReader, id);
+    return { property, events, images };
   });
 
   if (!data) notFound();
 
-  const { property, events } = data;
+  const { property, events, images } = data;
+  // Render-time signed thumbnails (CLAUDE.md §9 — files served via signed URLs).
+  const thumbExpiry = Date.now() + 15 * 60_000;
+  const managedImages = images.map((image) => ({
+    id: image.id,
+    alt: image.alt,
+    isPrimary: image.isPrimary,
+    thumbUrl: signedObjectPath(image.url, thumbExpiry),
+  }));
 
   const saleTypeLabel = property.saleType === 'rent' ? 'To rent' : 'For sale';
 
@@ -94,6 +106,13 @@ export default async function AdminPropertyDetailPage({
             description: property.description,
           }}
         />
+      </section>
+
+      <section aria-labelledby="images-heading" className="flex flex-col gap-3">
+        <h2 id="images-heading" className="t-heading-sm">
+          Images
+        </h2>
+        <PropertyImagesManager propertyId={property.id} images={managedImages} />
       </section>
 
       <section aria-labelledby="activity-heading" className="flex flex-col gap-3">

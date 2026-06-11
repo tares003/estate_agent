@@ -5,7 +5,13 @@ import { listPropertyImages } from './property-images.js';
 describe('listPropertyImages', () => {
   it('lists a listing gallery in sort order', async () => {
     const rows = [
-      { id: 'i1', url: 'tenants/t/properties/p/a.jpg', alt: 'Front', sortOrder: 0, isPrimary: true },
+      {
+        id: 'i1',
+        url: 'tenants/t/properties/p/a.jpg',
+        alt: 'Front',
+        sortOrder: 0,
+        isPrimary: true,
+      },
     ];
     const findMany = vi.fn().mockResolvedValue(rows);
 

@@ -29,11 +29,7 @@ vi.mock('./MarketStatusControl.js', () => ({
   ),
 }));
 vi.mock('./PropertyImagesManager.js', () => ({
-  PropertyImagesManager: ({
-    images,
-  }: {
-    images: Array<{ id: string; thumbUrl: string }>;
-  }) => (
+  PropertyImagesManager: ({ images }: { images: Array<{ id: string; thumbUrl: string }> }) => (
     <div data-testid="property-images-manager">
       {`${images.length}:${images.map((image) => image.thumbUrl).join(',')}`}
     </div>

@@ -21,7 +21,12 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 const { PropertyImagesManager } = await import('./PropertyImagesManager.js');
 
 const IMAGES = [
-  { id: 'i1', alt: 'The front elevation', isPrimary: true, thumbUrl: '/api/storage/object?token=t1' },
+  {
+    id: 'i1',
+    alt: 'The front elevation',
+    isPrimary: true,
+    thumbUrl: '/api/storage/object?token=t1',
+  },
   { id: 'i2', alt: 'The kitchen', isPrimary: false, thumbUrl: '/api/storage/object?token=t2' },
 ];
 
@@ -31,7 +36,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockResolvedValue({ ok: true, status: 204 });
-  createPropertyImageUpload.mockResolvedValue({ ok: true, key: 'tenants/t/p/abc.png', token: 'tok' });
+  createPropertyImageUpload.mockResolvedValue({
+    ok: true,
+    key: 'tenants/t/p/abc.png',
+    token: 'tok',
+  });
   finalizePropertyImage.mockResolvedValue({ ok: true });
   setPrimaryPropertyImage.mockResolvedValue({ ok: true });
   deletePropertyImage.mockResolvedValue({ ok: true });
@@ -71,6 +80,47 @@ describe('PropertyImagesManager', () => {
       alt: 'The front elevation',
     });
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it('asks for a file and alt text before starting an upload', async () => {
+    const user = userEvent.setup();
+    render(<PropertyImagesManager propertyId="p1" images={[]} />);
+    await user.click(screen.getByRole('button', { name: /Upload image/i }));
+    expect(await screen.findByText(/Choose an image and describe it/i)).toBeInTheDocument();
+    expect(createPropertyImageUpload).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a refused grant and stops (no PUT, no finalize)', async () => {
+    createPropertyImageUpload.mockResolvedValue({
+      ok: false,
+      errors: [{ message: 'You do not have permission to edit listings.' }],
+    });
+    const user = userEvent.setup();
+    const { container } = render(<PropertyImagesManager propertyId="p1" images={[]} />);
+
+    const file = new File([new Uint8Array([1])], 'a.png', { type: 'image/png' });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.type(screen.getByLabelText(/Alt text/i), 'x');
+    await user.click(screen.getByRole('button', { name: /Upload image/i }));
+
+    expect(await screen.findByText(/do not have permission/i)).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(finalizePropertyImage).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a failed PUT and does not finalize', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 413 });
+    const user = userEvent.setup();
+    const { container } = render(<PropertyImagesManager propertyId="p1" images={[]} />);
+
+    const file = new File([new Uint8Array([1])], 'a.png', { type: 'image/png' });
+    await user.upload(container.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.type(screen.getByLabelText(/Alt text/i), 'x');
+    await user.click(screen.getByRole('button', { name: /Upload image/i }));
+
+    expect(await screen.findByText(/upload failed/i)).toBeInTheDocument();
+    expect(finalizePropertyImage).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('promotes an image to hero and refreshes', async () => {

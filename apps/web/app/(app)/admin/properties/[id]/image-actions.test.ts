@@ -46,8 +46,12 @@ const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => u
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
-const { createPropertyImageUpload, finalizePropertyImage, setPrimaryPropertyImage, deletePropertyImage } =
-  await import('./image-actions.js');
+const {
+  createPropertyImageUpload,
+  finalizePropertyImage,
+  setPrimaryPropertyImage,
+  deletePropertyImage,
+} = await import('./image-actions.js');
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
 const PROPERTY = '11111111-1111-1111-1111-111111111111';
@@ -242,9 +246,7 @@ describe('deletePropertyImage', () => {
       expect.anything(),
       expect.objectContaining({ action: 'property_image.deleted', entityId: IMAGE }),
     );
-    expect(storageDelete).toHaveBeenCalledWith(
-      `tenants/${TENANT}/properties/${PROPERTY}/abc.jpg`,
-    );
+    expect(storageDelete).toHaveBeenCalledWith(`tenants/${TENANT}/properties/${PROPERTY}/abc.jpg`);
   });
 
   it('promotes the next image to hero when the hero is deleted (the one-hero invariant)', async () => {
