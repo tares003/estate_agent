@@ -1883,3 +1883,23 @@ RED → GREEN → docs(audit). 7 db tests (schema shape, enum, relation, 0009 te
 The contractor magic-link portal (FR-G-8) — **decision-gated**: the committed stack assigns portal auth to Better Auth magic-link, which needs the Better Auth foundation wired (no provider credentials needed for magic-link itself, but it is a foundation-sized slice). Emergency SMS dispatch (FR-G-3) — needs Twilio credentials. Category/SLA admin config (FR-G-4/5).
 
 ---
+
+## Phase B71 — EPIC-G repair categories (FR-G-4 / §G.3) (2026-06-12)
+
+Status: **complete** (branch feat/EPIC-G-repair-categories) — the category catalogue table + the §G.1-step-3 dropdown
+
+### Schema (first commit pair)
+`RepairCategory` per §G.3 (slug / label / icon / default_urgency / auto_assign_role / sort_order / visible), tenant-scoped, **unique per (tenant, slug)**; **0010 fail-closed RLS** (the 0003–0009 shape), pglite-exercised. **Runtime smoke**: `prisma db push` against Docker postgis 16-3.4 — table + the `(tenant_id, slug)` unique key + the default_urgency/visible/sort_order defaults verified column-for-column; 0010 applied, RLS forced.
+
+### The §G.3 seed + the dropdown
+- `@estate/validators` `DEFAULT_REPAIR_CATEGORIES`: the 18 §G.3 entries (slug + label + default urgency — emergency_repair → emergency, the rest per §G.3/§G.4). This is **both the provisioning seed and the public-form fallback**.
+- `lib/repair-categories.ts`: `listVisibleRepairCategories` (visible, sort order) + `repairCategoryOptions` (value/label, falling back to the defaults when the tenant has none).
+- The report-a-repair page reads the tenant's categories in a tenant (RLS) scope; the form's category field is now a **`Select`** (was free-text) fed by the options — so a fresh tenant already sees the §G.1-step-3 dropdown, and once an admin customises the catalogue it takes over.
+
+### Verification
+RED → GREEN → docs(audit). 8 db tests (schema columns, unique, 0010 text, pglite ×2); 3 validator tests (the 18 slugs in order, valid urgencies, emergency mapping); 3 read-model tests (query shape, option mapping, defaults fallback); the page (tenant read + fallback) + form (Select options) updated. Suites: db **196**, validators **148**, web **604** (123 files); repo tsc + lint (also fixed a stray no-useless-escape inherited from B70) + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### EPIC-G FR-G-4 remaining (honest follow-up)
+The **admin category editor** (CRUD over repair_categories — reorder, relabel, toggle visibility, set default urgency / auto-assign role) + seeding the defaults at tenant provisioning. FR-G-5 (per-urgency SLA config replacing the hardcoded §G.4 defaults in repair-sla.ts) is its own slice.
+
+---
