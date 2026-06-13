@@ -53,7 +53,10 @@ describe('seedRepairCategories', () => {
 
     expect(result.ok).toBe(true);
     expect(requireStaffPermission).toHaveBeenCalledWith('repair_request.manage');
-    const created = createMany.mock.calls[0]?.[0]?.data as Array<{ slug: string; sortOrder: number }>;
+    const created = createMany.mock.calls[0]?.[0]?.data as Array<{
+      slug: string;
+      sortOrder: number;
+    }>;
     expect(created).toHaveLength(18);
     expect(created[0]).toMatchObject({ tenantId: TENANT, slug: 'plumbing', sortOrder: 0 });
     expect(audit).toHaveBeenCalledWith(
