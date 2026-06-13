@@ -31,3 +31,26 @@ describe('repairCategoryOptions', () => {
     expect(options.some((o) => o.value === 'emergency_repair')).toBe(true);
   });
 });
+
+import { listManagedRepairCategories } from './repair-categories.js';
+
+describe('listManagedRepairCategories', () => {
+  it('lists all categories (visible + hidden) in sort then label order', async () => {
+    const rows = [
+      {
+        id: 'c1',
+        slug: 'plumbing',
+        label: 'Plumbing',
+        defaultUrgency: 'standard',
+        visible: true,
+        sortOrder: 0,
+      },
+    ];
+    const findMany = vi.fn().mockResolvedValue(rows);
+
+    const out = await listManagedRepairCategories({ repairCategory: { findMany } });
+
+    expect(out).toBe(rows);
+    expect(findMany).toHaveBeenCalledWith({ orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }] });
+  });
+});
