@@ -41,7 +41,9 @@ describe('RepairCategory — schema (repair_categories, master spec §G.3)', () 
     expect(model).toMatch(/slug\s+String/);
     expect(model).toMatch(/label\s+String/);
     expect(model).toMatch(/icon\s+String\?/);
-    expect(model).toMatch(/defaultUrgency\s+RepairUrgency\s+@map\("default_urgency"\)/);
+    expect(model).toMatch(
+      /defaultUrgency\s+RepairUrgency\s+@default\(standard\)\s+@map\("default_urgency"\)/,
+    );
     expect(model).toMatch(/autoAssignRole\s+String\?\s+@map\("auto_assign_role"\)/);
     expect(model).toMatch(/sortOrder\s+Int\s+@default\(0\)\s+@map\("sort_order"\)/);
     expect(model).toMatch(/visible\s+Boolean\s+@default\(true\)/);
@@ -86,7 +88,9 @@ describe('RLS tenant isolation on repair_categories (pglite — mirrors 0010)', 
   it('admits only the current tenant rows and fails closed when unset', async () => {
     const db = await setup();
     await db.exec(`SET app.current_tenant_id = '${TENANT_A}'`);
-    await db.exec(`INSERT INTO repair_categories (tenant_id, slug) VALUES ('${TENANT_A}','plumbing')`);
+    await db.exec(
+      `INSERT INTO repair_categories (tenant_id, slug) VALUES ('${TENANT_A}','plumbing')`,
+    );
     await db.exec(`SET app.current_tenant_id = '${TENANT_B}'`);
     const none = await db.query<{ slug: string }>(`SELECT slug FROM repair_categories`);
     expect(none.rows).toEqual([]);

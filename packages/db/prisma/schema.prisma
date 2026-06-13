@@ -48,6 +48,7 @@ model PlatformTenant {
   enquiryStatusEvents  EnquiryStatusEvent[]
   repairStatusEvents   RepairStatusEvent[]
   repairFiles          RepairFile[]
+  repairCategories     RepairCategory[]
 
   @@map("platform_tenants")
 }
@@ -438,6 +439,31 @@ enum RepairFileUploadedBy {
   contractor
 
   @@map("repair_file_uploaded_by")
+}
+
+/// An admin-editable repair category (master spec §G.3, FR-G-4). §G.3 stores the
+/// catalogue here so admins can edit labels, icons, default urgency, the
+/// auto-assign role, ordering and visibility. The §G.3 default seed lives in
+/// @estate/validators (DEFAULT_REPAIR_CATEGORIES) — the source for provisioning a
+/// new tenant and the fallback the public form uses before any customisation.
+model RepairCategory {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  slug           String
+  label          String
+  icon           String?
+  defaultUrgency RepairUrgency @default(standard) @map("default_urgency")
+  autoAssignRole String?       @map("auto_assign_role")
+  sortOrder      Int           @default(0) @map("sort_order")
+  visible        Boolean       @default(true)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("repair_categories")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role
