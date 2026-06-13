@@ -83,3 +83,4 @@ export {
   type RepairFileContentType,
   type RepairFileMeta,
 } from './repair-file.js';
+export { DEFAULT_REPAIR_CATEGORIES, type DefaultRepairCategory } from './repair-category.js';

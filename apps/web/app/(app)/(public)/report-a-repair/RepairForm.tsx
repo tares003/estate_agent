@@ -37,7 +37,7 @@ const URGENCY_OPTIONS: SelectOption[] = [
  * confirmation. The consent checkbox carries the exact affirmation the action
  * persists (master spec §S.7).
  */
-export function RepairForm() {
+export function RepairForm({ categories }: { categories: SelectOption[] }) {
   const [state, formAction, pending] = useActionState(submitRepairRequest, INITIAL_STATE);
 
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -145,12 +145,12 @@ export function RepairForm() {
         required
         error={errorFor('propertyReference')}
       />
-      <TextField
+      <Select
         id="category"
         name="category"
         label="What needs repairing?"
-        hint="e.g. plumbing, heating, electrics"
-        required
+        placeholder="Choose a category"
+        options={categories}
         error={errorFor('category')}
       />
       <label htmlFor="description" className="flex flex-col gap-1">

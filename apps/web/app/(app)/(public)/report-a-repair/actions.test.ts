@@ -187,7 +187,7 @@ describe('submitRepairRequest — upload grants (FR-G-2)', () => {
     expect(result.uploadGrants).toHaveLength(1);
     const grant = result.uploadGrants![0]!;
     expect(grant.name).toBe('leak.jpg');
-    expect(grant.key).toMatch(new RegExp(`^tenants/${TENANT}/repairs/${REP}/[0-9a-f-]+\.jpg$`));
+    expect(grant.key).toMatch(new RegExp(`^tenants/${TENANT}/repairs/${REP}/[0-9a-f-]+\\.jpg$`));
     const verified = verifyObjectToken(grant.token, 'test-secret', Date.now());
     expect(verified?.key).toBe(grant.key);
   });
