@@ -1903,3 +1903,20 @@ RED → GREEN → docs(audit). 8 db tests (schema columns, unique, 0010 text, pg
 The **admin category editor** (CRUD over repair_categories — reorder, relabel, toggle visibility, set default urgency / auto-assign role) + seeding the defaults at tenant provisioning. FR-G-5 (per-urgency SLA config replacing the hardcoded §G.4 defaults in repair-sla.ts) is its own slice.
 
 ---
+
+## Phase B72 — EPIC-G admin repair-categories manager (FR-G-4) (2026-06-12)
+
+Status: **complete** (branch feat/EPIC-G-category-admin) — the category table is now admin-editable, completing FR-G-4's core
+
+- `lib/repair-categories.ts`: `listManagedRepairCategories` (every category, visible + hidden, sort then label).
+- `categories/actions.ts` (RBAC **`repair_request.manage`**, fail-closed, tenant-scoped, audited — G4): `seedRepairCategories` — **idempotent** insert of the 18 §G.3 defaults via `createMany` with a summary audit row, no-op when the catalogue is already populated; `setRepairCategoryVisibility` — parses slug + the boolean, tenant-scoped lookup, `update` + audit with a from/to diff; refuses an unknown slug or an invalid value without writing.
+- `categories/page.tsx` + `RepairCategoriesManager`: `/admin/repairs/categories` — a seed prompt when the catalogue is empty, a per-row one-click Hide/Show, and default-urgency + visibility badges.
+- `admin-nav`: a Lettings → Repair categories entry.
+
+### Verification
+RED → GREEN → docs(audit). 11 new tests (read-model order; seed insert+audit + no-op + RBAC; visibility update+audit + invalid + unknown + RBAC; manager seed-prompt/list/toggle; page tenant read; nav entry). Full web suite **616 passed** (126 files); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green (`/admin/repairs/categories` compiled).
+
+### FR-G-4 now
+Table (B71) → public dropdown (B71) → **admin curation: seed + show/hide (B72)**. Remaining refinements: relabel / reorder / custom-create + auto-seed at tenant provisioning. FR-G-5 (per-urgency SLA config) is the next EPIC-G config slice; the contractor portal (FR-G-8) is gated on the Better Auth foundation.
+
+---

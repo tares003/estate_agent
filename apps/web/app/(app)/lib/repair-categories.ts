@@ -12,13 +12,29 @@ export interface RepairCategoryRow {
   label: string;
 }
 
-/** The structural client the read model needs (a real PrismaClient satisfies it). */
+/** A managed category row (the columns the admin manager needs). */
+export interface ManagedRepairCategoryRow {
+  id: string;
+  slug: string;
+  label: string;
+  defaultUrgency: string;
+  visible: boolean;
+}
+
+/** The structural client the read models need (a real PrismaClient satisfies it). */
 export interface RepairCategoryReader {
   repairCategory: {
     findMany(args: {
       where?: Record<string, unknown>;
       orderBy?: unknown;
     }): Promise<RepairCategoryRow[]>;
+  };
+}
+
+/** The structural client the managed read model needs. */
+export interface ManagedRepairCategoryReader {
+  repairCategory: {
+    findMany(args: { orderBy?: unknown }): Promise<ManagedRepairCategoryRow[]>;
   };
 }
 
@@ -38,4 +54,11 @@ export function repairCategoryOptions(
 ): Array<{ value: string; label: string }> {
   const source = rows.length > 0 ? rows : DEFAULT_REPAIR_CATEGORIES;
   return source.map((category) => ({ value: category.slug, label: category.label }));
+}
+
+/** List every category (visible + hidden), in sort then label order — the admin view. */
+export async function listManagedRepairCategories(
+  db: ManagedRepairCategoryReader,
+): Promise<ManagedRepairCategoryRow[]> {
+  return db.repairCategory.findMany({ orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }] });
 }
