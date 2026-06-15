@@ -78,7 +78,9 @@ describe('RLS tenant isolation on contractors (pglite — mirrors 0011)', () => 
   it('admits only the current tenant rows and fails closed when unset', async () => {
     const db = await setup();
     await db.exec(`SET app.current_tenant_id = '${TENANT_A}'`);
-    await db.exec(`INSERT INTO contractors (tenant_id, name) VALUES ('${TENANT_A}','Ace Plumbing')`);
+    await db.exec(
+      `INSERT INTO contractors (tenant_id, name) VALUES ('${TENANT_A}','Ace Plumbing')`,
+    );
     await db.exec(`SET app.current_tenant_id = '${TENANT_B}'`);
     const none = await db.query<{ name: string }>(`SELECT name FROM contractors`);
     expect(none.rows).toEqual([]);
