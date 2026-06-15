@@ -28,6 +28,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
     items: [
       { label: 'Repairs', href: '/admin/repairs' },
       { label: 'Repair categories', href: '/admin/repairs/categories' },
+      { label: 'Contractors', href: '/admin/repairs/contractors' },
     ],
   },
   {

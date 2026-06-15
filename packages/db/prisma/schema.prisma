@@ -49,6 +49,7 @@ model PlatformTenant {
   repairStatusEvents   RepairStatusEvent[]
   repairFiles          RepairFile[]
   repairCategories     RepairCategory[]
+  contractors          Contractor[]
 
   @@map("platform_tenants")
 }
@@ -464,6 +465,28 @@ model RepairCategory {
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@map("repair_categories")
+}
+
+/// A repair contractor a staff member assigns tickets to (master spec §G.6,
+/// FR-G-8). A staff-entered B2B directory record (legitimate-interest basis — not
+/// a consenting data subject filling a form). The magic-link the contractor uses
+/// to access an assigned ticket is a signed token (no account), so there is no
+/// auth row here.
+model Contractor {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  email     String
+  phone     String?
+  trade     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("contractors")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role

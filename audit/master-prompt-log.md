@@ -1920,3 +1920,23 @@ RED → GREEN → docs(audit). 11 new tests (read-model order; seed insert+audit
 Table (B71) → public dropdown (B71) → **admin curation: seed + show/hide (B72)**. Remaining refinements: relabel / reorder / custom-create + auto-seed at tenant provisioning. FR-G-5 (per-urgency SLA config) is the next EPIC-G config slice; the contractor portal (FR-G-8) is gated on the Better Auth foundation.
 
 ---
+
+## Phase B73 — EPIC-G contractor directory (FR-G-8 foundation / §G.6) (2026-06-12)
+
+Status: **complete** (branch feat/EPIC-G-contractors) — the contractor directory; first slice of the contractor-portal vertical
+
+The contractor portal (FR-G-8) is "access the ticket via a magic-link URL without signing in" — a **scoped signed-token** flow (the HMAC-link pattern already built for storage), **not** Better Auth. So FR-G-8 is fully unblocked, built as: this directory (B73) → assign-to-ticket + emailed magic-link (B74) → the public contractor portal (B75). No external credentials (email already works via B64).
+
+- Schema: `Contractor` (name/email/phone/trade/active), tenant-scoped + indexed; **0011 fail-closed RLS** (the 0003–0010 shape), pglite-exercised. (Live-PG db-push smoke deferred — Docker daemon was down this turn; the table is byte-identical in shape to 0010, smoke-verified earlier this session.)
+- `lib/contractors.ts`: `listContractors` (name order).
+- `contractors/actions.ts` (RBAC **`repair_request.manage`**, fail-closed, audited — G4): `createContractor` — **a contractor is a staff-entered B2B record on a legitimate-interest basis, NOT a consenting data subject**, so creating one is not a consent event; input is validated **field-by-field with the shared standalone validators (no `z.object`)**, which reads honestly and avoids both a false GDPR-consent assertion and a G5 false-positive (rather than contorting the model or weakening the guard). `setContractorActive` — toggle + from/to-diff audit, unknown refusal.
+- `contractors/page.tsx` + `ContractorsManager`: `/admin/repairs/contractors` — add form + per-row Activate/Deactivate.
+- `admin-nav`: a Lettings → Contractors entry.
+
+### Verification
+RED → GREEN → docs(audit). 12 new tests (db schema + pglite isolation ×2; read-model order; create + audit + invalid + RBAC; toggle + audit + unknown + RBAC; manager add/list/toggle + empty + success-refresh + reject-no-refresh; page). Full web suite **630 passed** (130 files; the recurring useActionState parallel-load flake passed clean on re-run); db **201**; tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### Next
+B74 — assign a contractor to a ticket (triaged → contractor_assigned; mint the signed magic-link; queue the assignment email) on the repair detail. B75 — the public `/repairs/contractor/<token>` portal (verify → view excluding internal notes → upload completion photos → mark work complete → awaiting_review).
+
+---
