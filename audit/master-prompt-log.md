@@ -2009,3 +2009,25 @@ RED → GREEN → docs(audit). 22 new tests (sms: request mapping + non-2xx + tr
 3. **OAuth sign-in** — built on the Better Auth foundation, **env-gated**; real sign-in needs the operator's Microsoft/Google/Apple provider-app client IDs + secrets.
 
 ---
+
+## Phase B77 — EPIC-N Better Auth schema (FR-N-*) (2026-06-15)
+
+Status: **complete** (branch feat/EPIC-N-better-auth-schema) — the schema half of "all 3" item #2 (Better Auth foundation)
+
+The first slice of the Better Auth foundation: the database contract the adapter binds to. Two product questions were resolved before writing the test:
+- **Identity scope = PER-TENANT.** `users` keeps `@@unique([tenantId, email])`, so the same email may exist once per tenant. (The alternative — global identity — was rejected: it would break the multi-tenant model and the existing `users` RLS.)
+- **User-table strategy = EXTEND.** The existing tenant-scoped `users` table IS better-auth's `user`; it gains the adapter's columns rather than introducing a parallel identity table. `users` already carried `tenantId` + `role` (better-auth `additionalFields`), so only `emailVerified` / `image` / `twoFactorEnabled` + the back-relations were added.
+
+- **schema.prisma**: `User` extended (`emailVerified`, `image`, `twoFactorEnabled`, + `sessions`/`accounts`/`twoFactors` back-relations); four new adapter models — `Session` (token, expiresAt, ip/ua, **`tenantId` denormalised** from the session cookie), `Account` (provider + password + access/refresh/id tokens), `Verification` (identifier/value/expiresAt — magic-link + email-verify), `TwoFactor` (TOTP secret + backupCodes — FR-N-2) — mapped to `sessions`/`accounts`/`verifications`/`two_factors`. **Field names are exact** — generated from the installed `better-auth@1.6.15`'s own `getAuthTables` (the published `@better-auth/cli` is version-skewed at 1.4.21, so introspecting the installed package directly was the only authoritative source), not guessed.
+- **migrations/raw/0012_better_auth_tables.sql**: the **auth-layer RLS exception**, documented. Unlike every other tenant table, the auth tables are NOT under the per-request `tenant_isolation` FORCE-RLS policy — the adapter reads/writes them BEFORE a session exists (it resolves the very session that would set `app.current_tenant_id`), so the standard policy would admit zero rows and break sign-in. Isolation is instead **structural** (every row chains to a tenant-scoped `User` via `user_id`) plus a **privileged auth connection that bypasses RLS** — the operator-path pattern (CLAUDE.md §9). RLS is ENABLEd (no permissive policy → only the privileged/owner role sees rows) but deliberately NOT FORCEd, so the owning auth role is the intended bypass.
+- **DORMANT**: nothing constructs the Better Auth instance against the DB yet (that is B78), so the slice is purely additive and cannot destabilise the running app. The new `User` columns all carry defaults / are optional, so existing `create` call-sites are untouched (full-workspace typecheck green).
+
+### Verification
+RED → GREEN. The RED (`packages/db/src/auth-schema.test.ts`) asserts the schema source + the 0012 text; GREEN makes it pass with **zero test edits** (byte-identical RED retained). `prisma generate` + `prisma format`; **211 db tests** pass (incl. the new auth-schema suite); full-workspace `tsc` + db `lint` + prettier clean; diff guards **G1/G2/G10/G11** green. Live-PG smoke deferred (Docker down) — 0012 is plain ENABLE-RLS DDL on four new tables; the existing RLS pattern is exercised structurally by the pglite suites.
+
+### "All 3" status
+1. **Twilio SMS — DONE** (B76; activates on operator `TWILIO_*` env).
+2. **Better Auth foundation — schema DONE (this slice).** Next (B78): the route mount + `createAuth` instantiation (`advanced.database.generateId:false` so Prisma mints the uuid PKs; `BETTER_AUTH_SECRET`; `sendMagicLink` → `@estate/email`) + the privileged/BYPASSRLS auth DB connection + the session-seam rewire. Magic-link + email/password need no external creds.
+3. **OAuth sign-in** — rides on B78; the `createAuth` social-providers config is already built + tested (env-gated). Real sign-in needs the operator's Microsoft/Google/Apple provider-app client IDs + secrets.
+
+---
