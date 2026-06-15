@@ -5,7 +5,14 @@ import { listContractors } from './contractors.js';
 describe('listContractors', () => {
   it('lists the tenant contractors in name order', async () => {
     const rows = [
-      { id: 'k1', name: 'Ace Plumbing', email: 'ace@example.com', phone: null, trade: 'Plumbing', active: true },
+      {
+        id: 'k1',
+        name: 'Ace Plumbing',
+        email: 'ace@example.com',
+        phone: null,
+        trade: 'Plumbing',
+        active: true,
+      },
     ];
     const findMany = vi.fn().mockResolvedValue(rows);
 
