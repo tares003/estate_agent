@@ -1990,3 +1990,22 @@ RED → GREEN → docs(audit). 12 new tests (grants: prefix + storage-token atte
 Directory (B73) → assign + emailed 14-day magic-link (B74) → contractor opens the link → curated view, PII-minimised (B75a) → Start work → Mark complete (→ awaiting_review) → **completion photos (B75b)** — entirely token-authorized, audited, tenant-isolated, no account, no Better Auth. Deploy env: `CONTRACTOR_LINK_SECRET`.
 
 ---
+
+## Phase B76 — EPIC-G emergency-repair SMS via Twilio (FR-G-3 / §G.1 step 8) (2026-06-15)
+
+Status: **complete** (branch feat/EPIC-G-emergency-sms) — the "Twilio SMS" of the three; code-complete + fail-closed, activates on operator env
+
+- **`@estate/sms`** (new shared package, 100% cov): `SmsBackend` interface + `TwilioSmsBackend` (Twilio REST over `fetch`, no SDK dep; HTTP basic auth; To/From/Body; throws `SmsError` on non-2xx/transport failure so the dispatcher fails the row) + `resolveSmsBackend` (env-gated — **null when `TWILIO_*` unset**, so SMS degrades gracefully without affecting email/DB). The request mapping is covered via an injected fake `fetch`; `resolve.ts` (real binding) is the documented glue exclusion.
+- **apps/workers `sms-send` queue**: the `channel='sms'` outbox dispatcher — mirrors the email dispatcher (oldest-first batch, atomic-claim idempotency, send outside the DB tx, finalize sent/failed + audit `worker:sms-send` per row — G4); no-backend / no-template / send-throw each fail that row without blocking the batch. Plain-text template registry (`repair_request.emergency`). A 30s tick added to the entrypoint; graceful shutdown closes it.
+- **web**: `submitRepairRequest` queues an emergency SMS to the **reporter** (§G.1 step 8 — "SMS goes to tenant if urgency=Emergency") when `urgency=emergency` and a phone was given; non-emergency queues none.
+- Twilio is already in `docs/sub-processors.json` (G10 clean); no SDK dependency added (fetch-based).
+
+### Verification
+RED → GREEN → docs(audit). 22 new tests (sms: request mapping + non-2xx + transport-failure + missing-sid + SmsError + barrel; workers: renderSms + scan + claim-idempotency + no-backend + fail-and-continue + tick; web: emergency-queues-SMS + non-emergency-queues-none). Suites — sms **6 (100%)**, workers **34 (100% lines)**, web **673** (139 files); repo tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### "All 3" status
+1. **Twilio SMS — DONE in code (this slice).** Operator sets `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` to activate; until then SMS rows fail-soft (logged), email + ticket unaffected.
+2. **Better Auth foundation — next**, large security-critical multi-slice effort (schema → adapter → magic-link → session/tenant wiring). Magic-link needs no external creds.
+3. **OAuth sign-in** — built on the Better Auth foundation, **env-gated**; real sign-in needs the operator's Microsoft/Google/Apple provider-app client IDs + secrets.
+
+---
