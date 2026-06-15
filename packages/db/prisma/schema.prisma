@@ -350,32 +350,34 @@ model Valuation {
 /// A maintenance ticket raised by a tenant (repair_request — master spec §J.6/§G).
 /// propertyId is optional for the property-not-yet-known case (master spec §J.9).
 model RepairRequest {
-  id                String        @id @default(uuid()) @db.Uuid
-  tenantId          String        @map("tenant_id") @db.Uuid
-  propertyId        String?       @map("property_id") @db.Uuid
+  id                   String        @id @default(uuid()) @db.Uuid
+  tenantId             String        @map("tenant_id") @db.Uuid
+  propertyId           String?       @map("property_id") @db.Uuid
+  assignedContractorId String?       @map("assigned_contractor_id") @db.Uuid
   // §G.6: the human-readable ticket number (e.g. "RPR-2026-04321"), assigned at
   // submission; per-tenant unique (the spec's UNIQUE, mapped multi-tenant).
-  reference         String?
+  reference            String?
   // The tenant's free-text pointer to their property at intake (§G.6's property
   // address block, collapsed to the committed single-field shape); staff resolve
   // it to `propertyId` in the admin.
-  propertyReference String?       @map("property_reference")
-  name              String
-  email             String
-  phone             String?
-  category          String
-  description       String
-  urgency           RepairUrgency @default(standard)
-  status            RepairStatus  @default(new)
+  propertyReference    String?       @map("property_reference")
+  name                 String
+  email                String
+  phone                String?
+  category             String
+  description          String
+  urgency              RepairUrgency @default(standard)
+  status               RepairStatus  @default(new)
   // §G.6: required commentary when a ticket is rejected ("not our responsibility").
-  rejectedReason    String?       @map("rejected_reason")
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  rejectedReason       String?       @map("rejected_reason")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
 
-  tenant       PlatformTenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  property     Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  statusEvents RepairStatusEvent[]
-  files        RepairFile[]
+  tenant             PlatformTenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property           Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  assignedContractor Contractor?         @relation(fields: [assignedContractorId], references: [id], onDelete: SetNull)
+  statusEvents       RepairStatusEvent[]
+  files              RepairFile[]
 
   @@unique([tenantId, reference])
   @@index([tenantId])
@@ -483,7 +485,8 @@ model Contractor {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant          PlatformTenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignedRepairs RepairRequest[]
 
   @@index([tenantId])
   @@map("contractors")

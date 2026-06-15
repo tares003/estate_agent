@@ -31,6 +31,19 @@ vi.mock('./RepairTimeline.js', () => ({
     <div data-testid="repair-timeline">{events.length}</div>
   ),
 }));
+vi.mock('./AssignContractorControl.js', () => ({
+  AssignContractorControl: ({
+    contractors,
+    assignedContractorName,
+  }: {
+    contractors: Array<{ id: string }>;
+    assignedContractorName: string | null;
+  }) => (
+    <div data-testid="assign-contractor-control">
+      {`${assignedContractorName ?? 'none'}:${contractors.length}`}
+    </div>
+  ),
+}));
 vi.mock('./PropertyMatchControl.js', () => ({
   PropertyMatchControl: ({
     current,
@@ -45,6 +58,7 @@ const repairFindFirst = vi.fn();
 const eventFindMany = vi.fn();
 const propertyFindMany = vi.fn();
 const fileFindMany = vi.fn();
+const contractorFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
@@ -52,6 +66,7 @@ vi.mock('@estate/db', () => ({
       repairStatusEvent: { findMany: eventFindMany },
       property: { findMany: propertyFindMany },
       repairFile: { findMany: fileFindMany },
+      contractor: { findMany: contractorFindMany },
     }),
 }));
 vi.mock('../../../lib/storage.js', () => ({
@@ -68,6 +83,7 @@ const repair = {
   reference: 'RPR-2026-00042',
   propertyReference: 'Flat 2, 14 Palatine Road',
   propertyId: null,
+  assignedContractorId: null,
   category: 'Plumbing',
   description: 'The kitchen tap is leaking steadily.',
   urgency: 'urgent',
@@ -97,6 +113,24 @@ beforeEach(() => {
       fileSizeBytes: 2048,
       uploadedBy: 'tenant',
       createdAt: new Date('2026-06-10T10:00:00.000Z'),
+    },
+  ]);
+  contractorFindMany.mockResolvedValue([
+    {
+      id: 'k1',
+      name: 'Ace Plumbing',
+      email: 'ace@example.com',
+      phone: null,
+      trade: 'Plumbing',
+      active: true,
+    },
+    {
+      id: 'k2',
+      name: 'Old Co',
+      email: 'old@example.com',
+      phone: null,
+      trade: null,
+      active: false,
     },
   ]);
   eventFindMany.mockResolvedValue([
@@ -139,6 +173,8 @@ describe('RepairDetailPage', () => {
     );
     // §G.6: property matching — the control gets the tenant's listings
     expect(screen.getByTestId('property-match-control')).toHaveTextContent('none:2');
+    // FR-G-8: the assign control gets the ACTIVE contractors (1 of 2) + no assignee
+    expect(screen.getByTestId('assign-contractor-control')).toHaveTextContent('none:1');
     expect(repairFindFirst).toHaveBeenCalledWith({ where: { id: 'r1' } });
     expect(eventFindMany).toHaveBeenCalledWith({
       where: { repairRequestId: 'r1' },

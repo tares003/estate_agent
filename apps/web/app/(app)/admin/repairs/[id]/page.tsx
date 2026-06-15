@@ -9,12 +9,14 @@ import {
   listRepairStatusEvents,
   type RepairEventReader,
 } from '../../../lib/repair-status-events.js';
+import { listContractors, type ContractorReader } from '../../../lib/contractors.js';
 import { listRepairFiles, type RepairFileReader } from '../../../lib/repair-files.js';
 import { getRepairRequest, type RepairDetailReader } from '../../../lib/repairs.js';
 import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { repairStatusDisplay, repairUrgencyDisplay } from '../repair-display.js';
 import { nextRepairStatusOptions } from './next-statuses.js';
+import { AssignContractorControl } from './AssignContractorControl.js';
 import { PropertyMatchControl } from './PropertyMatchControl.js';
 import { RepairStatusControl } from './RepairStatusControl.js';
 import { RepairTimeline } from './RepairTimeline.js';
@@ -40,12 +42,22 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
     const events = await listRepairStatusEvents(tx as unknown as RepairEventReader, id);
     const choices = await listPropertyChoices(tx as unknown as PropertyChoiceReader);
     const files = await listRepairFiles(tx as unknown as RepairFileReader, id);
-    return { repair, events, choices, files };
+    const contractors = await listContractors(tx as unknown as ContractorReader);
+    return { repair, events, choices, files, contractors };
   });
 
   if (!data) notFound();
 
-  const { repair, events, choices, files } = data;
+  const { repair, events, choices, files, contractors } = data;
+  // FR-G-8: active contractors are assignable; the current assignee may be inactive
+  // (kept on the ticket), so its name is resolved from the full directory.
+  const assignableContractors = contractors
+    .filter((contractor) => contractor.active)
+    .map((contractor) => ({ id: contractor.id, name: contractor.name }));
+  const assignedContractorName = repair.assignedContractorId
+    ? (contractors.find((contractor) => contractor.id === repair.assignedContractorId)?.name ??
+      null)
+    : null;
   // FR-G-2: signed, expiring links to the ticket attachments (CLAUDE.md §9).
   const fileExpiry = Date.now() + 15 * 60_000;
   const attachments = files.map((file) => ({
@@ -149,6 +161,17 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
           <p className="t-body-sm text-text-secondary">Not matched to a catalogue listing yet.</p>
         )}
         <PropertyMatchControl repairId={repair.id} current={repair.propertyId} choices={choices} />
+      </section>
+
+      <section aria-labelledby="assign-heading" className="flex flex-col gap-3">
+        <h2 id="assign-heading" className="t-heading-sm">
+          Contractor
+        </h2>
+        <AssignContractorControl
+          repairId={repair.id}
+          contractors={assignableContractors}
+          assignedContractorName={assignedContractorName}
+        />
       </section>
 
       <section aria-labelledby="triage-heading" className="flex flex-col gap-3">

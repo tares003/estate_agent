@@ -55,4 +55,16 @@ describe('renderNotification', () => {
   it('returns null for an event with no template', () => {
     expect(renderNotification('mystery.event', {})).toBeNull();
   });
+
+  it('renders the FR-G-8 contractor-assignment email with the magic-link', () => {
+    const message = renderNotification('repair.contractor_assigned', {
+      reference: 'RPR-2026-00042',
+      contractorName: 'Ace Plumbing',
+      link: 'https://acme.test/repairs/contractor/tok.en.sig',
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject).toContain('RPR-2026-00042');
+    expect(message!.html).toContain('Ace Plumbing');
+    expect(message!.html).toContain('https://acme.test/repairs/contractor/tok.en.sig');
+  });
 });
