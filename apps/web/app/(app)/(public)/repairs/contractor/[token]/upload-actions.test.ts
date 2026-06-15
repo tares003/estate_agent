@@ -28,9 +28,8 @@ const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => u
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
-const { issueContractorUploadGrants, finalizeContractorRepairFiles } = await import(
-  './upload-actions.js'
-);
+const { issueContractorUploadGrants, finalizeContractorRepairFiles } =
+  await import('./upload-actions.js');
 
 const LINK_SECRET = 'link-secret';
 const TENANT = '00000000-0000-0000-0000-000000000001';
@@ -47,7 +46,7 @@ function token(over: { contractor?: string; expiresInMs?: number } = {}): string
   );
 }
 
-const meta = [{ fileName: 'done.jpg', contentType: 'image/jpeg', sizeBytes: 2048 }];
+const meta = [{ name: 'done.jpg', contentType: 'image/jpeg', sizeBytes: 2048 }];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -86,7 +85,7 @@ describe('issueContractorUploadGrants', () => {
 
   it('rejects a disallowed attachment type', async () => {
     const result = await issueContractorUploadGrants(token(), [
-      { fileName: 'x.zip', contentType: 'application/zip', sizeBytes: 1 },
+      { name: 'x.zip', contentType: 'application/zip', sizeBytes: 1 },
     ]);
     expect(result.ok).toBe(false);
   });

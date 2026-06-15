@@ -12,6 +12,7 @@ import {
 } from '../../../../admin/repairs/repair-display.js';
 import { getCurrentTenantId } from '../../../../lib/tenant.js';
 import { ContractorAdvanceControl } from './ContractorAdvanceControl.js';
+import { ContractorPhotoUpload } from './ContractorPhotoUpload.js';
 
 // EPIC-G contractor portal (FR-G-8) — the no-sign-in ticket view a contractor
 // opens from their emailed magic-link. The token IS the authorisation: it is
@@ -88,6 +89,15 @@ export default async function ContractorPortalPage({
             </p>
           )}
         </section>
+
+        {step ? (
+          <section aria-labelledby="photos-heading" className="flex flex-col gap-3">
+            <h2 id="photos-heading" className="t-heading-sm">
+              Completion photos
+            </h2>
+            <ContractorPhotoUpload token={token} />
+          </section>
+        ) : null}
       </div>
     </main>
   );
