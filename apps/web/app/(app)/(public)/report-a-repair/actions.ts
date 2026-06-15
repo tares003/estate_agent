@@ -190,6 +190,17 @@ export async function submitRepairRequest(
           urgency: repair.urgency,
         },
       });
+      // FR-G-3 / §G.1 step 8: an emergency ticket also queues an SMS to the
+      // reporter (when they gave a number); the worker sends it via Twilio.
+      if (repair.urgency === 'emergency' && repair.phone) {
+        await notify(tx, {
+          tenantId,
+          event: 'repair_request.emergency',
+          channel: 'sms',
+          recipient: repair.phone,
+          payload: { reference },
+        });
+      }
       await audit(tx, {
         tenantId,
         actor: `repair_request:${repair.email}`,

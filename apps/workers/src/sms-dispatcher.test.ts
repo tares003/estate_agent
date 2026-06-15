@@ -108,12 +108,20 @@ describe('dispatchTenantSms', () => {
   });
 
   it('fails a row with no template and one whose send throws, without blocking the batch', async () => {
-    tx.notificationLog.findMany.mockResolvedValue([row({ id: 'a', event: 'mystery.x' }), row({ id: 'b' })]);
+    tx.notificationLog.findMany.mockResolvedValue([
+      row({ id: 'a', event: 'mystery.x' }),
+      row({ id: 'b' }),
+    ]);
     send.mockRejectedValueOnce(new Error('twilio down'));
     const result = await dispatchTenantSms({ tenantId: TENANT, runTenant: runnerFor(tx), backend });
-    expect(result.failed).toBe(1);
+    // both fail — 'a' has no template, 'b' throws on send — and neither blocks the other
+    expect(result.failed).toBe(2);
     expect(tx.notificationLog.update).toHaveBeenCalledWith({
       where: { id: 'a' },
+      data: { status: 'failed' },
+    });
+    expect(tx.notificationLog.update).toHaveBeenCalledWith({
+      where: { id: 'b' },
       data: { status: 'failed' },
     });
   });

@@ -113,6 +113,30 @@ describe('submitRepairRequest', () => {
     );
   });
 
+  it('queues an emergency SMS to the reporter when urgency is emergency (§G.1 step 8)', async () => {
+    const result = await submitRepairRequest({ ok: false }, form({ urgency: 'emergency' }));
+
+    expect(result.ok).toBe(true);
+    expect(notify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: TENANT,
+        event: 'repair_request.emergency',
+        channel: 'sms',
+        recipient: '07700900000',
+        payload: expect.objectContaining({ reference: result.reference }),
+      }),
+    );
+  });
+
+  it('does not queue an SMS for a non-emergency repair', async () => {
+    await submitRepairRequest({ ok: false }, form({ urgency: 'standard' }));
+    const smsCalls = notify.mock.calls.filter(
+      (call) => (call[1] as { channel?: string }).channel === 'sms',
+    );
+    expect(smsCalls).toHaveLength(0);
+  });
+
   it('retries once when the reference collides under concurrency (unique violation)', async () => {
     withTenant
       .mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }))

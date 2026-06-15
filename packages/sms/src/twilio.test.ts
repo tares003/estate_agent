@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { SmsError } from './backend.js';
 import { TwilioSmsBackend, type TwilioCredentials, type FetchLike } from './twilio.js';
 
 const CREDS: TwilioCredentials = {
@@ -37,11 +38,39 @@ describe('TwilioSmsBackend.send', () => {
   });
 
   it('throws when Twilio responds with a non-2xx status (so the caller can fail the row)', async () => {
-    const fetchMock = vi.fn<FetchLike>().mockResolvedValue(
-      new Response(JSON.stringify({ message: 'unverified number' }), { status: 400 }),
-    );
+    const fetchMock = vi
+      .fn<FetchLike>()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ message: 'unverified number' }), { status: 400 }),
+      );
     const backend = new TwilioSmsBackend(CREDS, fetchMock);
 
-    await expect(backend.send('+447700900000', 'hi')).rejects.toThrow();
+    await expect(backend.send('+447700900000', 'hi')).rejects.toThrow(/HTTP 400/);
+  });
+
+  it('wraps a network/transport failure as SmsError', async () => {
+    const fetchMock = vi.fn<FetchLike>().mockRejectedValue(new Error('ECONNRESET'));
+    const backend = new TwilioSmsBackend(CREDS, fetchMock);
+
+    await expect(backend.send('+447700900000', 'hi')).rejects.toThrow(SmsError);
+  });
+
+  it('returns an empty sid when Twilio omits it from the response', async () => {
+    const fetchMock = vi
+      .fn<FetchLike>()
+      .mockResolvedValue(new Response(JSON.stringify({}), { status: 201 }));
+    const backend = new TwilioSmsBackend(CREDS, fetchMock);
+
+    expect(await backend.send('+447700900000', 'hi')).toEqual({ sid: '' });
+  });
+});
+
+describe('SmsError', () => {
+  it('carries the message and an optional cause', () => {
+    const cause = new Error('root');
+    const error = new SmsError('failed', { cause });
+    expect(error.name).toBe('SmsError');
+    expect(error.message).toBe('failed');
+    expect(error.cause).toBe(cause);
   });
 });
