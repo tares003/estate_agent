@@ -106,6 +106,8 @@ export interface RepairDetailRow extends RepairRow {
   rejectedReason: string | null;
   /** The matched catalogue listing (§G.6 — matched by admin), when resolved. */
   propertyId: string | null;
+  /** The assigned contractor (§G.6 / FR-G-8), when assigned. */
+  assignedContractorId: string | null;
   updatedAt: Date;
 }
 

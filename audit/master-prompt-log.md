@@ -1940,3 +1940,21 @@ RED → GREEN → docs(audit). 12 new tests (db schema + pglite isolation ×2; r
 B74 — assign a contractor to a ticket (triaged → contractor_assigned; mint the signed magic-link; queue the assignment email) on the repair detail. B75 — the public `/repairs/contractor/<token>` portal (verify → view excluding internal notes → upload completion photos → mark work complete → awaiting_review).
 
 ---
+
+## Phase B74 — EPIC-G contractor magic-link assignment (FR-G-8 dispatch) (2026-06-15)
+
+Status: **complete** (branch feat/EPIC-G-contractor-assign) — the assign half of the contractor portal
+
+- **`lib/contractor-access.ts`** (its own RED→GREEN): the magic-link signing core — HMAC-SHA256 over `(repairRequestId:contractorId, absolute expiry)`, constant-time verify returning the **attested** ids, a dedicated fail-closed secret (`CONTRACTOR_LINK_SECRET`, separate from the storage key). Adversarial tests: expiry, wrong-secret, tampered-payload, malformed all reject.
+- **Schema**: `assignedContractorId` FK + relation on RepairRequest; back-relation on Contractor. (prisma generate validates; the pglite/live-PG smoke was a no-op for a nullable FK on the already-RLS'd table — and Docker was down this turn.)
+- **`assignContractor`** (RBAC **`repair_request.write`**, fail-closed, audited — G4): tenant-scoped ticket + **active-contractor** checks; assignment **is** the §G.5 transition to `contractor_assigned` (refused from a status that can't reach it); sets the contractor + status, writes the status-history event (FR-G-7), and **queues the contractor's 14-day signed magic-link email** (notify `repair.contractor_assigned`; the worker sends via the tenant SMTP).
+- **Worker template** `repair.contractor_assigned`: ticket ref + the no-sign-in link.
+- **`AssignContractorControl`** + a Contractor section on the repair detail: assign an active contractor; the current assignee shows even if later deactivated; an empty active-directory points staff to add one.
+
+### Verification
+RED → GREEN → docs(audit). 23 new tests (crypto 7 incl. adversarial; assign action 6 incl. transition-guard + active-only + non-uuid + RBAC; control 3; worker template 1; page assign-section + schema-relation assertions). Full web suite **646 passed** (133 files); workers **26**; db **203**; tsc + repo lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### Next — B75 (the public contractor portal), the last FR-G-8 slice
+`/repairs/contractor/<token>`: verify the magic-link → show the ticket **excluding internal notes** → upload completion photos (reuse the FR-G-2 grant/finalize, uploadedBy=contractor) → **mark work complete** (work_in_progress → awaiting_review). Then EPIC-G FR-G-8 is end-to-end. New env to document at deploy: `CONTRACTOR_LINK_SECRET`.
+
+---

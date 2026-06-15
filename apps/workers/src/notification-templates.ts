@@ -27,8 +27,20 @@ const REPAIR_RECEIVED: EmailTemplateInput = {
     '<p>The repairs team will be in touch about the next steps.</p>',
 };
 
+/** FR-G-8: the contractor's no-sign-in magic-link to an assigned ticket. */
+const CONTRACTOR_ASSIGNED: EmailTemplateInput = {
+  subject: 'You’ve been assigned a repair — {{reference}}',
+  preheader: 'Open repair {{reference}} to view the details and mark it complete.',
+  html:
+    '<p>Hello {{contractorName}},</p>' +
+    '<p>You’ve been assigned repair <strong>{{reference}}</strong>.</p>' +
+    '<p>Open the ticket to view the details, add completion photos, and mark the work complete — no sign-in needed:</p>' +
+    '<p><a href="{{link}}">View the repair</a></p>',
+};
+
 const TEMPLATES: Record<string, EmailTemplateInput> = {
   'repair_request.received': REPAIR_RECEIVED,
+  'repair.contractor_assigned': CONTRACTOR_ASSIGNED,
 };
 
 /** Pull the string/number/boolean entries out of a queued row's JSON payload. */

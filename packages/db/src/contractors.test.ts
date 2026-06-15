@@ -96,3 +96,18 @@ describe('RLS tenant isolation on contractors (pglite — mirrors 0011)', () => 
     await db.close();
   });
 });
+
+describe('RepairRequest ↔ Contractor assignment (FR-G-8)', () => {
+  it('RepairRequest carries the optional assigned-contractor FK + relation', () => {
+    const model = block('RepairRequest', 'model');
+    expect(model).toMatch(
+      /assignedContractorId\s+String\?\s+@map\("assigned_contractor_id"\)\s+@db\.Uuid/,
+    );
+    expect(model).toMatch(/assignedContractor\s+Contractor\?\s+@relation/);
+  });
+
+  it('Contractor carries the back-relation to its assigned tickets', () => {
+    const model = block('Contractor', 'model');
+    expect(model).toMatch(/assignedRepairs\s+RepairRequest\[\]/);
+  });
+});
