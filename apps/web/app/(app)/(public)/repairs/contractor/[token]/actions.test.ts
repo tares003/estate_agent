@@ -106,9 +106,9 @@ describe('advanceRepairAsContractor', () => {
 
   it('rejects an invalid / expired / tampered token before any read or write', async () => {
     expect((await advanceRepairAsContractor({ ok: false }, form('garbage'))).ok).toBe(false);
-    expect((await advanceRepairAsContractor({ ok: false }, form(token({ expiresInMs: -1 })))).ok).toBe(
-      false,
-    );
+    expect(
+      (await advanceRepairAsContractor({ ok: false }, form(token({ expiresInMs: -1 })))).ok,
+    ).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();
   });
 
