@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the manager behaviour; layout is the
 // admin-routes Playwright pass (design-requirements §3).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const createContractor = vi.fn();
@@ -17,8 +17,22 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
 const { ContractorsManager } = await import('./ContractorsManager.js');
 
 const CONTRACTORS = [
-  { id: 'k1', name: 'Ace Plumbing', email: 'ace@example.com', phone: '07700900000', trade: 'Plumbing', active: true },
-  { id: 'k2', name: 'Bright Spark', email: 'spark@example.com', phone: null, trade: 'Electrical', active: false },
+  {
+    id: 'k1',
+    name: 'Ace Plumbing',
+    email: 'ace@example.com',
+    phone: '07700900000',
+    trade: 'Plumbing',
+    active: true,
+  },
+  {
+    id: 'k2',
+    name: 'Bright Spark',
+    email: 'spark@example.com',
+    phone: null,
+    trade: 'Electrical',
+    active: false,
+  },
 ];
 
 beforeEach(() => {
@@ -56,5 +70,33 @@ describe('ContractorsManager', () => {
     const fd = setContractorActive.mock.calls[0]?.[1] as FormData;
     expect(fd.get('id')).toBe('k2');
     expect(fd.get('active')).toBe('true');
+  });
+
+  it('shows the add form and an empty note when there are no contractors', () => {
+    render(<ContractorsManager contractors={[]} />);
+    expect(screen.getByLabelText(/Name/i)).toBeInTheDocument();
+    expect(screen.getByText('No contractors yet.')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('submits the add form and refreshes the directory on success', async () => {
+    const user = userEvent.setup();
+    render(<ContractorsManager contractors={[]} />);
+    await user.type(screen.getByLabelText(/Name/i), 'New Trade Co');
+    await user.type(screen.getByLabelText(/Email/i), 'new@example.com');
+    await user.click(screen.getByRole('button', { name: /Add contractor/i }));
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(createContractor).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refresh when a toggle is rejected', async () => {
+    setContractorActive.mockResolvedValue({ ok: false, errors: [{ message: 'no' }] });
+    const user = userEvent.setup();
+    render(<ContractorsManager contractors={CONTRACTORS} />);
+    await user.click(screen.getByRole('button', { name: 'Deactivate' }));
+
+    await waitFor(() => expect(setContractorActive).toHaveBeenCalled());
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

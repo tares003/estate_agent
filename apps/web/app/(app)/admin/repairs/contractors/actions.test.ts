@@ -27,6 +27,7 @@ vi.mock('@estate/db', () => ({ withTenant, audit }));
 const { createContractor, setContractorActive } = await import('./actions.js');
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
+const ID = '33333333-3333-3333-3333-333333333333';
 
 function form(entries: Record<string, string>): FormData {
   const fd = new FormData();
@@ -41,7 +42,7 @@ beforeEach(() => {
   requireStaffPermission.mockResolvedValue(undefined);
   getStaffActor.mockResolvedValue('user:staff-1');
   create.mockResolvedValue({ id: 'k1' });
-  findFirst.mockResolvedValue({ id: 'k1', name: 'Ace Plumbing', active: true });
+  findFirst.mockResolvedValue({ id: ID, name: 'Ace Plumbing', active: true });
   update.mockResolvedValue({});
 });
 
@@ -49,7 +50,12 @@ describe('createContractor', () => {
   it('creates a contractor and audits it (G4)', async () => {
     const result = await createContractor(
       { ok: false },
-      form({ name: 'Ace Plumbing', email: 'ace@example.com', phone: '07700900000', trade: 'Plumbing' }),
+      form({
+        name: 'Ace Plumbing',
+        email: 'ace@example.com',
+        phone: '07700900000',
+        trade: 'Plumbing',
+      }),
     );
 
     expect(result.ok).toBe(true);
@@ -65,12 +71,18 @@ describe('createContractor', () => {
     });
     expect(audit).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ action: 'contractor.created', entity: 'contractor', entityId: 'k1' }),
+      expect.objectContaining({
+        action: 'contractor.created',
+        entity: 'contractor',
+        entityId: 'k1',
+      }),
     );
   });
 
   it('rejects a missing name or an invalid email before any write', async () => {
-    expect((await createContractor({ ok: false }, form({ email: 'ace@example.com' }))).ok).toBe(false);
+    expect((await createContractor({ ok: false }, form({ email: 'ace@example.com' }))).ok).toBe(
+      false,
+    );
     expect(
       (await createContractor({ ok: false }, form({ name: 'Ace', email: 'not-an-email' }))).ok,
     ).toBe(false);
@@ -90,19 +102,16 @@ describe('createContractor', () => {
 
 describe('setContractorActive', () => {
   it('toggles active and audits the change (G4)', async () => {
-    const result = await setContractorActive(
-      { ok: false },
-      form({ id: 'k1', active: 'false' }),
-    );
+    const result = await setContractorActive({ ok: false }, form({ id: ID, active: 'false' }));
 
     expect(result.ok).toBe(true);
     expect(requireStaffPermission).toHaveBeenCalledWith('repair_request.manage');
-    expect(update).toHaveBeenCalledWith({ where: { id: 'k1' }, data: { active: false } });
+    expect(update).toHaveBeenCalledWith({ where: { id: ID }, data: { active: false } });
     expect(audit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
         action: 'contractor.active_changed',
-        entityId: 'k1',
+        entityId: ID,
         diff: { active: { from: true, to: false } },
       }),
     );
@@ -110,14 +119,14 @@ describe('setContractorActive', () => {
 
   it('refuses an unknown contractor without writing', async () => {
     findFirst.mockResolvedValue(null);
-    const result = await setContractorActive({ ok: false }, form({ id: 'k1', active: 'true' }));
+    const result = await setContractorActive({ ok: false }, form({ id: ID, active: 'true' }));
     expect(result.ok).toBe(false);
     expect(update).not.toHaveBeenCalled();
   });
 
   it('fails closed when RBAC denies', async () => {
     requireStaffPermission.mockRejectedValue(new Error('denied'));
-    const result = await setContractorActive({ ok: false }, form({ id: 'k1', active: 'false' }));
+    const result = await setContractorActive({ ok: false }, form({ id: ID, active: 'false' }));
     expect(result.ok).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();
   });
