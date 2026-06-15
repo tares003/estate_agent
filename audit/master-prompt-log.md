@@ -1975,3 +1975,18 @@ RED → GREEN → docs(audit). 15 new tests (next-step logic; the action's advan
 Directory → assign (status → contractor_assigned, emailed 14-day magic-link) → contractor opens the link → views the curated ticket → Start work → Mark work complete (→ awaiting_review), all audited + tenant-isolated, no account. Remaining enhancement: **B75b** — completion-photo upload from the portal (reuse the FR-G-2 grant/finalize, token-authorized, uploadedBy=contractor). Deploy env (already noted): `CONTRACTOR_LINK_SECRET`.
 
 ---
+
+## Phase B75b — EPIC-G contractor completion-photo upload (FR-G-8) — portal complete (2026-06-15)
+
+Status: **complete** (branch feat/EPIC-G-contractor-portal-uploads) — **FR-G-8 is now done end-to-end**
+
+- `[token]/upload-actions.ts`: `issueContractorUploadGrants` + `finalizeContractorRepairFiles` — the contractor-side of the B70 upload flow, but **authorised by the magic-link token** (no Turnstile, no staff session): each re-verifies the token, resolves the tenant from the host, and **binds to the ticket's current assignee** before issuing a grant or recording a file. Grants are signed STORAGE tokens (the existing PUT route accepts them) for keys under the ticket's tenant prefix; finalize re-checks the prefix (no cross-ticket grafts), storage existence, and the §G.1 ten-file cap, then records each as **`uploadedBy: contractor`** + audit (`contractor:<id>`, G4).
+- `[token]/ContractorPhotoUpload.tsx`: the issue→PUT→finalize uploader, shown on the portal while the contractor is actively working (a next step exists). The admin ticket's Files section already shows "from contractor" (no admin change needed).
+
+### Verification
+RED → GREEN → docs(audit). 12 new tests (grants: prefix + storage-token attestation + non-assignee + bad-type; finalize: contractor-upload record + audit + prefix-graft + not-landed + non-assignee + cap; the uploader's issue→PUT→finalize happy path + failed-PUT). Full web suite **671 passed** (139 files); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green.
+
+### FR-G-8 — COMPLETE
+Directory (B73) → assign + emailed 14-day magic-link (B74) → contractor opens the link → curated view, PII-minimised (B75a) → Start work → Mark complete (→ awaiting_review) → **completion photos (B75b)** — entirely token-authorized, audited, tenant-isolated, no account, no Better Auth. Deploy env: `CONTRACTOR_LINK_SECRET`.
+
+---
