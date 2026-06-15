@@ -62,17 +62,28 @@ enum TenantStatus {
   @@map("tenant_status")
 }
 
-/// A staff user belonging to a tenant agency. Tenant-scoped (RLS).
+/// A staff user belonging to a tenant agency. Tenant-scoped (RLS). This is also
+/// better-auth's `user` (EPIC-N, CLAUDE.md §9): the existing table is EXTENDED with
+/// the adapter's columns (emailVerified/image) and the twoFactor plugin's
+/// twoFactorEnabled flag, rather than introducing a second identity table.
+/// Identity is PER-TENANT — the @@unique([tenantId, email]) is retained, so the
+/// same email may exist once per tenant.
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  email     String
-  name      String
-  role      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  email            String
+  name             String
+  role             String
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  image            String?
+  twoFactorEnabled Boolean? @map("two_factor_enabled")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant     PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions   Session[]
+  accounts   Account[]
+  twoFactors TwoFactor[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -127,6 +138,101 @@ model NotificationLog {
 
   @@index([tenantId])
   @@map("notification_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EPIC-N — Better Auth adapter tables (CLAUDE.md §9; better-auth@1.6.15).
+//
+// These four models ARE the better-auth Prisma-adapter contract: the camelCase
+// FIELD names are the exact identifiers better-auth reads/writes; the @map column
+// names are ours (better-auth never sees a column name). The field set is
+// generated from the installed package's own getAuthTables — not guessed.
+//
+// RLS exception (migrations/raw/0012_better_auth_tables.sql): unlike every other
+// tenant table, these are NOT under the per-request tenant_isolation FORCE-RLS
+// policy. The adapter reads/writes them BEFORE a session exists — it is resolving
+// the very session that would set app.current_tenant_id — so the standard policy
+// would admit zero rows and break sign-in. Isolation is instead structural (every
+// row chains to a tenant-scoped User via userId) plus a privileged auth connection
+// that bypasses RLS (the operator-path pattern). The tables are DORMANT until the
+// route mount (B78) constructs the Better Auth instance; nothing touches them yet.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A signed-in session (prisma.session). `token` is the session secret; `tenantId`
+/// is the additionalField the session cookie carries (CLAUDE.md §9), denormalised
+/// here so a resolved session names its tenant without a second read. Cascades
+/// with its user.
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  token     String   @unique
+  userId    String   @map("user_id") @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// A provider/credential link for a user (prisma.account) — one row per OAuth
+/// provider connection (microsoft/google/apple) or the email+password credential.
+/// `password` is null for OAuth accounts; the token columns hold the provider's
+/// access/refresh/id tokens. Cascades with its user.
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id") @db.Uuid
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// A short-lived verification value (prisma.verification) — backs the magic-link
+/// (vendor/landlord/tenant portals) and email-verification flows. `identifier` is
+/// the email/key, `value` the token, `expiresAt` its bound. Precedes the user
+/// being resolved, so it is neither tenant- nor user-scoped.
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+/// A user's TOTP enrolment (prisma.twoFactor) — the twoFactor plugin's store for
+/// staff 2FA (FR-N-2). `secret` is the TOTP seed; `backupCodes` the recovery set.
+/// Cascades with its user. No timestamps — matches better-auth's model.
+model TwoFactor {
+  id          String @id @default(uuid()) @db.Uuid
+  secret      String
+  backupCodes String @map("backup_codes")
+  userId      String @map("user_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("two_factors")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
