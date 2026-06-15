@@ -2031,3 +2031,27 @@ RED → GREEN. The RED (`packages/db/src/auth-schema.test.ts`) asserts the schem
 3. **OAuth sign-in** — rides on B78; the `createAuth` social-providers config is already built + tested (env-gated). Real sign-in needs the operator's Microsoft/Google/Apple provider-app client IDs + secrets.
 
 ---
+
+## BLOCKER (2026-06-15) — B78 Better Auth sign-in runtime cannot ship blind
+
+Logged per CLAUDE.md §6. The schema half of EPIC-N (B77) is merged. The **runtime** half (the actual sign-in / session-resolution flow) is paused — it is NOT a safe "env-gated glue + injected-fake" slice like B76 SMS / SMTP / storage, because it IS the security boundary and has a real multi-tenancy correctness problem with the stock adapter. Two blockers:
+
+1. **Per-tenant identity vs. better-auth's email lookup (design + custom adapter).** We chose PER-TENANT identity — `users.@@unique([tenantId, email])`, so an email is unique only *within* a tenant, not globally. Better-auth's stock email/password + OAuth account resolution looks a user up by email (effectively `findFirst({ where: { email } })`). The auth adapter must read `users` (which is FORCE-RLS'd, 0002) before any session/tenant GUC exists:
+   - A **BYPASSRLS privileged connection** (what 0012's comment anticipated) lets the adapter read `users`, but then the email lookup spans ALL tenants → it can authenticate against the WRONG tenant's user when two tenants share an email. **That is a cross-tenant auth flaw — must not ship.**
+   - The **correct** design is a *tenant-scoped* adapter: every better-auth DB op runs in a transaction that first `SET LOCAL app.current_tenant_id = <hostname tenant>` (the tenant is known from the request hostname via the EPIC-S proxy). Then `users` RLS scopes the email lookup to the current tenant automatically, and the four non-policied auth tables (0012) work regardless. Session resolution re-validates by re-loading the user by id *within the session's tenant* (defence in depth). This needs a **custom Prisma adapter wrapper** (the stock `prismaAdapter` does not wrap each op in a GUC-setting transaction), or an AsyncLocalStorage + `$extends` query hook — non-trivial, and `SET LOCAL` only persists within a transaction.
+
+2. **Live-Postgres verification is unavailable (Docker is DOWN this session).** The sign-in / session boundary MUST be Testcontainers/live-PG-verified before it ships (RLS + transaction + GUC interplay under a real connection is exactly what pglite cannot fully model). `docker version` hangs on an unresponsive daemon. So even a correctly-written runtime cannot be proven here.
+
+**Why not ship it env-gated-and-dormant anyway?** Because the *logic* (the tenant-scoped adapter) is the un-fake-able part, and a wrong version is a silent cross-tenant auth hole. The safe-failure precedent (SMS fails a row; storage 404s) does not apply to an auth boundary.
+
+**To resume (human or a session with Docker up):**
+- Decide BYPASSRLS-privileged vs. GUC-scoped-per-op adapter (recommend GUC-scoped — consistent with the rest of the app, no cross-tenant flaw; update 0012's comment if so).
+- Write the custom tenant-scoped Prisma adapter wrapper + `getAuth()` composition (`createAuth(authDb, { secret: BETTER_AUTH_SECRET, sendMagicLink → @estate/email, social: env })`) + the `/api/auth/[...all]` route mount + rewire `staff-session.ts` to read the verified session cookie (keep the dev override/fallback).
+- Verify end-to-end with Testcontainers: sign-up/in, getSession, AND the cross-tenant negative (tenant-A creds rejected on tenant-B subdomain; same email in two tenants resolves to the right user).
+- `advanced.database.generateId: false` so Prisma mints the uuid PKs (the schema PKs are `@db.Uuid @default(uuid())`).
+
+**Independent of code:** OAuth (#3) additionally needs the operator's Microsoft/Google/Apple client IDs + secrets — I cannot supply those (credential rule). Email/password + magic-link need no external creds.
+
+Status: **#1 SMS done. #2 schema done+merged; #2 runtime BLOCKED (above). #3 blocked on #2 + operator OAuth creds.** Awaiting the user's call on how to proceed (build-now-unverified vs. defer-until-live-DB vs. continue other epics meanwhile).
+
+---
