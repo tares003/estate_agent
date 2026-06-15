@@ -17,6 +17,9 @@ vi.mock('./ContractorAdvanceControl.js', () => ({
     <div data-testid="advance-control">{label}</div>
   ),
 }));
+vi.mock('./ContractorPhotoUpload.js', () => ({
+  ContractorPhotoUpload: () => <div data-testid="photo-upload" />,
+}));
 
 const findFirst = vi.fn();
 vi.mock('@estate/db', () => ({
