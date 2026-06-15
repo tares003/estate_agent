@@ -1958,3 +1958,20 @@ RED → GREEN → docs(audit). 23 new tests (crypto 7 incl. adversarial; assign 
 `/repairs/contractor/<token>`: verify the magic-link → show the ticket **excluding internal notes** → upload completion photos (reuse the FR-G-2 grant/finalize, uploadedBy=contractor) → **mark work complete** (work_in_progress → awaiting_review). Then EPIC-G FR-G-8 is end-to-end. New env to document at deploy: `CONTRACTOR_LINK_SECRET`.
 
 ---
+
+## Phase B75a — EPIC-G public contractor portal: view + advance (FR-G-8) (2026-06-15)
+
+Status: **complete** (branch feat/EPIC-G-contractor-portal) — the contractor's no-sign-in portal; **FR-G-8 is now end-to-end** (directory B73 → assign+magic-link B74 → portal B75a)
+
+- `lib/contractor-portal.ts`: `contractorNextStep` — the only two forward moves a contractor may make (`contractor_assigned → work_in_progress → awaiting_review`); staff keep triage/hold/reject/review.
+- `[token]/actions.ts` — `advanceRepairAsContractor`: **the magic-link token IS the authorisation** (no staff session/RBAC here). Re-verified on every call (stateless); the tenant is resolved from the request host (EPIC-S) and the ticket loaded in the **RLS** scope; the token's contractor **must be the ticket's current assignee** (a reassign invalidates old links); the target is **derived server-side** from the current status (the client cannot pick it). Writes the status-history event (actor = the contractor, no staff user) + audit (`contractor:<id>`) in one tenant transaction (G4). Invalid/expired/tampered/unknown/wrong-assignee/terminal all refuse.
+- `[token]/page.tsx` — verify-**before**-read; a bad/expired/mismatched link is a **404** (reveals nothing). The view is **curated**: reference, category, urgency, where (property reference), the job (description), and the advance step — and deliberately **omits the reporter's contact PII and the internal status-history notes** (FR-G-8 "excluding internal notes"). A completed ticket shows a "submitted for review" note instead of a control.
+- `[token]/ContractorAdvanceControl.tsx` — the single forward button, labelled by the server-derived step.
+
+### Verification
+RED → GREEN → docs(audit). 15 new tests (next-step logic; the action's advance + token-rejection + assignee-binding + unknown + terminal cases; the page's curated render + **PII-omission assertion** + 404 gates + complete-state note; the control). Full web suite **661 passed** (137 files); tsc + lint + prettier + diff guards **G1/G2/G10/G11** green; `next build` green (`/repairs/contractor/[token]` compiled).
+
+### FR-G-8 status — done end-to-end
+Directory → assign (status → contractor_assigned, emailed 14-day magic-link) → contractor opens the link → views the curated ticket → Start work → Mark work complete (→ awaiting_review), all audited + tenant-isolated, no account. Remaining enhancement: **B75b** — completion-photo upload from the portal (reuse the FR-G-2 grant/finalize, token-authorized, uploadedBy=contractor). Deploy env (already noted): `CONTRACTOR_LINK_SECRET`.
+
+---
