@@ -1,0 +1,28 @@
+{
+  "name": "@estate/sms",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Operator-level SMS send abstraction (Twilio) behind an SmsBackend interface. Used for emergency repair-ticket alerts (master spec §G) and optional staff 2FA fallback. Fail-closed: with no Twilio credentials configured, the backend is unavailable and callers degrade gracefully.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@estate/config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
