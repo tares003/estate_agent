@@ -2144,3 +2144,14 @@ The Better Auth runtime is built end-to-end across B77 + B78a–e: schema → te
 **"All 3" final status: #1 SMS — done (#54). #2 Better Auth — done (schema #55 + runtime #57/#58/#59/#60 + integration tests). #3 OAuth — wired + env-gated; activates on operator provider credentials.**
 
 ---
+
+## Phase B79 — mortgage calculator domain (EPIC-W FR-W-5/6) (2026-06-15)
+
+First slice of EPIC-W (the indicative calculators). Pure, greenfield, no external deps — the maths + input schema that a page-builder calculator block (later slice) will render.
+
+- **`@estate/validators` `mortgageInputSchema`**: `z.coerce.number()` fields (purchase price / deposit / annual rate / term) with a refine that the deposit ≤ price. Captures NO personal data (FR-W-11), so — unlike the lead forms — no `gdpr_consent` (G5 not applicable).
+- **`apps/web` `lib/mortgage.ts` `computeMortgage`** (pure, covered): standard amortisation `M = P·r·(1+r)^n / ((1+r)^n − 1)` → monthly repayment, total interest, total payable, LTV (money rounded to the penny). 0% rate → straight-line; cash purchase (deposit = price) → zero loan/figures. Indicative only (PRODUCT.md §9); the "not financial advice" disclosure (FR-W-10) lands with the UI block.
+
+RED → GREEN per piece. Verified: validators 150 + the web mortgage suite (4) green, full-workspace typecheck + lint + diff guards (G1 found tests, G2 met threshold). Follow-on EPIC-W: the stamp-duty domain (FR-W-1/2/4, needs configurable bands) + the calculator UI block (FR-W-9/10/12).
+
+---
