@@ -2155,3 +2155,15 @@ First slice of EPIC-W (the indicative calculators). Pure, greenfield, no externa
 RED → GREEN per piece. Verified: validators 150 + the web mortgage suite (4) green, full-workspace typecheck + lint + diff guards (G1 found tests, G2 met threshold). Follow-on EPIC-W: the stamp-duty domain (FR-W-1/2/4, needs configurable bands) + the calculator UI block (FR-W-9/10/12).
 
 ---
+
+## Phase B80 — stamp-duty calculator domain (EPIC-W FR-W-1/2/4) (2026-06-15)
+
+The second EPIC-W calculator — a configurable progressive-band SDLT engine.
+
+- **`@estate/validators`**: `stampDutyInputSchema` (purchase price + `buyerCategory` enum: first_time_buyer / home_mover / additional_property) + `SDLT_BUYER_CATEGORIES`. No personal data → no consent (FR-W-11).
+- **`apps/web` `lib/stamp-duty.ts` `computeStampDuty`** (pure, covered): walks the configured bands, taxing only the slice of price within each → `{ totalTax, effectiveRatePercent, breakdown[], lastUpdated }`. First-time-buyer relief uses its own bands up to a cap; an additional property adds a surcharge to every band's rate.
+  - **Bands are CONFIGURATION (FR-W-3)** — admin-editable so HMRC changes need no redeploy. `DEFAULT_SDLT_CONFIG` is an illustrative England/NI starting point **clearly marked NOT authoritative**; the operator verifies/configures current rates. Deliberately did NOT assert specific live tax rates as fact (they change, and FR-W-3 exists for that reason) — the **band-application maths** is the tested invariant, proven against SYNTHETIC bands; the rates are data.
+
+RED → GREEN per piece. Verified: validators **154** + web stamp-duty suite **8** green; full-workspace typecheck + lint + diff guards (G1/G2). Remaining EPIC-W: admin band config (FR-W-3 persistence) + the calculator UI blocks (FR-W-9/10/12 — page-builder embed + "not financial advice" disclosure + PDF export).
+
+---
