@@ -50,6 +50,7 @@ model PlatformTenant {
   repairFiles          RepairFile[]
   repairCategories     RepairCategory[]
   contractors          Contractor[]
+  feedback             Feedback[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -630,6 +631,37 @@ model Contractor {
   @@map("contractors")
 }
 
+/// EPIC-AC (§B.36 / §J, FR-AC-4): structured feedback captured at a journey moment
+/// (after a viewing / sale / tenancy / repair). Holds the rating + optional comment,
+/// the publish-as-testimonial consent, the moderation lifecycle (FR-AC-5) and the
+/// "needs response" flag for negative sentiment (FR-AC-10). The respondent is
+/// anonymous (FR-AC-4); `triggerEntity`/`triggerEntityId` is a SOFT reference to the
+/// originating record (viewing/sale/tenancy/repair), so no hard FK. `agentActor`
+/// tags the agent for the league-table rollup (FR-AC-7). Tenant-scoped (RLS, 0013).
+model Feedback {
+  id                   String          @id @default(uuid()) @db.Uuid
+  tenantId             String          @map("tenant_id") @db.Uuid
+  triggerType          FeedbackTrigger
+  triggerEntity        String?         @map("trigger_entity")
+  triggerEntityId      String?         @map("trigger_entity_id") @db.Uuid
+  respondentRef        String?         @map("respondent_ref")
+  agentActor           String?         @map("agent_actor")
+  rating               Int
+  comment              String?
+  publishAsTestimonial Boolean         @default(false) @map("publish_as_testimonial")
+  status               FeedbackStatus  @default(pending)
+  rejectedReason       String?         @map("rejected_reason")
+  needsResponse        Boolean         @default(false) @map("needs_response")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("feedback")
+}
+
 /// A CRM contact record (master spec §J.5). One unified entity with a role
 /// discriminator (landlord / tenant / vendor / buyer) per the brief's open
 /// question 1 default-to-separate note; the role is captured on `type`.
@@ -870,6 +902,31 @@ enum RepairStatus {
   rejected
 
   @@map("repair_status")
+}
+
+/// EPIC-AC moderation lifecycle for publish-as-testimonial feedback (FR-AC-5):
+/// pending in the queue → published (flows to testimonials) or rejected (with a
+/// captured reason). Non-publishable feedback still counts toward the aggregate
+/// score (FR-AC-6) but never leaves `pending`.
+enum FeedbackStatus {
+  pending
+  published
+  rejected
+
+  @@map("feedback_status")
+}
+
+/// EPIC-AC feedback trigger points (FR-AC-1) — the journey moments that prompt a
+/// feedback request.
+enum FeedbackTrigger {
+  viewing_attended
+  sale_completed
+  tenancy_started
+  tenancy_ended
+  repair_completed
+  mid_year_review
+
+  @@map("feedback_trigger")
 }
 
 /// The kind of document attached to a property (EPIC-F §F.1). `epc` is the
