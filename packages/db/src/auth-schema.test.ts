@@ -66,6 +66,15 @@ describe('Account — better-auth OAuth/password links (prisma.account)', () => 
     expect(account).toMatch(/userId\s+String\s+@map\("user_id"\)/);
     expect(account).toContain('@@map("accounts")');
   });
+  it('carries tenantId so the auth adapter scopes OAuth/credential links per-tenant (B78)', () => {
+    // An OAuth account is found by (accountId, providerId); under per-tenant
+    // identity the same provider account can exist once per tenant, so the read
+    // MUST be tenant-scoped or sign-in could resolve the wrong tenant's user.
+    expect(account).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
+  });
+  it('relates tenantId to PlatformTenant (cascade — DB-layer defence in depth)', () => {
+    expect(account).toMatch(/tenant\s+PlatformTenant\s+@relation\(fields: \[tenantId\]/);
+  });
 });
 
 describe('Verification + TwoFactor', () => {
@@ -76,12 +85,25 @@ describe('Verification + TwoFactor', () => {
     expect(v).toMatch(/expiresAt\s+DateTime\s+@map\("expires_at"\)/);
     expect(v).toContain('@@map("verifications")');
   });
+  it('Verification carries tenantId so magic-link tokens cannot be consumed cross-tenant (B78)', () => {
+    // A verification is found by `identifier` (the email/key); two tenants can
+    // issue a link to the same email, so consumption MUST be tenant-scoped. The
+    // tenant FK also gives a cleanup path on tenant deletion (no user chain here).
+    const v = model('Verification');
+    expect(v).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
+    expect(v).toMatch(/tenant\s+PlatformTenant\s+@relation\(fields: \[tenantId\]/);
+  });
   it('TwoFactor carries the TOTP secret + backup codes + userId (FR-N-2)', () => {
     const t = model('TwoFactor');
     expect(t).toMatch(/secret\s+String/);
     expect(t).toMatch(/backupCodes\s+String\s+@map\("backup_codes"\)/);
     expect(t).toMatch(/userId\s+String\s+@map\("user_id"\)/);
     expect(t).toContain('@@map("two_factors")');
+  });
+  it('TwoFactor carries tenantId + the PlatformTenant FK for uniform adapter scoping (B78)', () => {
+    const t = model('TwoFactor');
+    expect(t).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
+    expect(t).toMatch(/tenant\s+PlatformTenant\s+@relation\(fields: \[tenantId\]/);
   });
 });
 
@@ -93,5 +115,18 @@ describe('0012 migration — auth-layer RLS exception (documented)', () => {
     expect(rls).toMatch(/pre-session|before a session|privileged|bypass/i);
     expect(rls).toContain('sessions');
     expect(rls).toContain('accounts');
+  });
+});
+
+describe('auth-table tenant scoping — schema-origin (no raw ADD COLUMN migration)', () => {
+  it('PlatformTenant back-relates to every auth table (cascade cleanup on tenant delete)', () => {
+    const t = model('PlatformTenant');
+    expect(t).toMatch(/sessions\s+Session\[\]/);
+    expect(t).toMatch(/accounts\s+Account\[\]/);
+    expect(t).toMatch(/verifications\s+Verification\[\]/);
+    expect(t).toMatch(/twoFactors\s+TwoFactor\[\]/);
+  });
+  it('Session also relates tenantId to PlatformTenant', () => {
+    expect(model('Session')).toMatch(/tenant\s+PlatformTenant\s+@relation\(fields: \[tenantId\]/);
   });
 });

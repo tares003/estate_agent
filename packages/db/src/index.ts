@@ -16,6 +16,16 @@ export {
   type TenantQueryClient,
   type AnyPrismaClient,
 } from './tenant-extension.js';
+export {
+  AUTH_TENANT_MODELS,
+  AuthTenantContextError,
+  isAuthTenantModel,
+  scopeAuthArgs,
+  runWithAuthTenant,
+  getAuthTenant,
+  requireAuthTenant,
+} from './auth-tenant-scope.js';
+export { authTenantScopeExtension } from './auth-tenant-extension.js';
 export { PrismaPackSource, type TenantPackReader } from './pack-source.js';
 export { audit, type AuditInput, type AuditWriter } from './audit.js';
 export { recordConsent, type ConsentInput, type ConsentWriter } from './consent.js';

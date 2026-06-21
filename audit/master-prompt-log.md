@@ -2055,3 +2055,28 @@ Logged per CLAUDE.md §6. The schema half of EPIC-N (B77) is merged. The **runti
 Status: **#1 SMS done. #2 schema done+merged; #2 runtime BLOCKED (above). #3 blocked on #2 + operator OAuth creds.** Awaiting the user's call on how to proceed (build-now-unverified vs. defer-until-live-DB vs. continue other epics meanwhile).
 
 ---
+
+## Phase B78a — tenant-scoped Better Auth adapter, the security core (EPIC-N, FR-N-*) (2026-06-15)
+
+User decision on the blocker: **build it** ("get all done all 3", informed). So the runtime is being built CORRECTLY (a tenant-scoped adapter — no cross-tenant flaw), in 5 separately-shippable slices (B78a–e); live-PG end-to-end verification is authored as Testcontainers tests (B78e) that run when Docker returns. B78a is the security core.
+
+**Grounded in the real better-auth@1.6.15 source** (5-agent research workflow over node_modules): its prismaAdapter uses `findFirst` (never `findUnique`) and holds the raw client, so a Prisma `$extends` query hook is a valid scoping seam; it touches exactly user/session/account/verification/two_factor; the cross-tenant-risky lookups are user-by-email (sign-in), account-by-(accountId,providerId) (OAuth), verification-by-identifier (magic-link); there is NO built-in multi-tenancy / global where-filter.
+
+**Design — BYPASSRLS connection + app-layer where-injection.** The adapter must read `users` before any session/tenant GUC exists, so it runs on a privileged BYPASSRLS role where RLS does not isolate. Isolation is re-imposed in app code:
+- `packages/db/src/auth-tenant-scope.ts` (pure, 100% covered): `scopeAuthArgs(model, op, args, tenantId)` injects `tenantId` into every where/data better-auth issues (ANDed into where for find/update/delete/count; stamped into data for create/createMany; both for upsert). The context tenant is written LAST (unspoofable from better-auth's args), the input is never mutated, and a missing/non-uuid tenant THROWS (fail-closed). Plus the request-scoped AsyncLocalStorage store (`runWithAuthTenant`/`getAuthTenant`/`requireAuthTenant`).
+- `packages/db/src/auth-tenant-extension.ts` (glue, coverage-excluded like client.ts): the `Prisma.defineExtension` that binds the injector into the live auth client and rejects any access to a non-auth model.
+- Schema: account/verification/two_factor gain `tenantId` + a real `tenant PlatformTenant` FK (onDelete: Cascade), Session gains the FK too; all from `schema.prisma` (Prisma db push), no raw migration.
+
+**Two self-caught corrections this slice:**
+1. My first cut wrote a `0013_auth_tenant_columns.sql` doing `ALTER TABLE … ADD COLUMN tenant_id`. Verifying how columns are built here (db push creates every Prisma-expressible column; raw SQL only adds the Prisma-inexpressible, e.g. 0004's PostGIS geography) showed that would DOUBLE-CREATE the column. Removed 0013; columns come from the schema.
+2. Added the `tenant PlatformTenant` FK after the adversarial review flagged the auth tables lacked the DB-layer FK that `users` has (defence in depth + a cascade cleanup path for verifications, which have no user chain → matters for GDPR tenant erasure).
+
+**Adversarial security review (4-lens workflow) — verdict + disposition.** The review confirmed the *design* is sound and the injector + fail-closed are correct, and (correctly) flagged that the mechanism is INERT until wired — which is exactly the B78b/c/d scope. Two hard security requirements it surfaced for the wiring slices, recorded here so they are not lost:
+- **B78c (route mount):** derive the tenant from the VALIDATED EPIC-S middleware resolution (`getCurrentTenantId()` / the host→tenant registry lookup), NEVER the raw `Host` header — else a forged Host could run the handler in another tenant's context.
+- **B78d (staff-session reader):** better-auth's cookie-cache returns a session from a signed cookie WITHOUT a DB hit, so a tenant-A cookie could be replayed on tenant-B's subdomain. The reader MUST reject any session whose `tenantId` ≠ the request's resolved tenant (and/or disable cookieCache). 
+- **B78e:** integration tests must assert that an unscoped auth query fails closed (`AuthTenantContextError`) and the cross-tenant negatives (same email in two tenants resolves to the right user; tenant-A creds/cookie rejected on tenant-B).
+
+### Verification
+RED → GREEN per sub-slice (schema columns; adapter core), then a `fix` commit for the two corrections. `prisma format` + `generate`; **234 db tests** (17 new on the adapter core, 100% on the pure file); full-workspace typecheck + db lint + diff guards (G1 found tests, G2 100/100 on the touched shared-package files) green. Live-PG deferred to B78e (Docker still down).
+
+---
