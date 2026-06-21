@@ -38,6 +38,7 @@
 
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { magicLink, twoFactor } from 'better-auth/plugins';
+import { nextCookies } from 'better-auth/next-js';
 import { betterAuth } from 'better-auth';
 import type { Auth as BetterAuth, BetterAuthOptions } from 'better-auth';
 
@@ -129,7 +130,10 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
         tenantId: { type: 'string', required: false, input: false },
       },
     },
-    plugins: [magicLink({ sendMagicLink: options.sendMagicLink }), twoFactor()],
+    // next-cookies MUST be last: it bridges Set-Cookie into next/headers so that
+    // session cookies set during a Server-Action / RSC `auth.api` call (e.g. a
+    // session refresh on read) actually land. better-auth warns if it is not last.
+    plugins: [magicLink({ sendMagicLink: options.sendMagicLink }), twoFactor(), nextCookies()],
   } satisfies BetterAuthOptions;
 
   // The full inferred return type of `betterAuth(config)` references zod's
