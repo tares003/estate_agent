@@ -2242,4 +2242,16 @@ RED → GREEN. Verified: web feedback-access suite **7** green; typecheck + lint
 
 ---
 
+## Phase B87b — public feedback form + page + persistence action (EPIC-AC FR-AC-2/3/4/10) (2026-06-15)
+
+The no-sign-in feedback submission vertical at `/feedback/[token]`, mirroring the EPIC-G contractor portal (token-as-authorisation, no session).
+
+- **`actions.ts` `submitFeedback`** (audited): re-verifies the signed token (the ONLY authorisation) on every call; validates the brief submission (`feedbackSubmissionSchema`); **rejects a token whose tenant ≠ the request tenant** (no cross-tenant replay); then writes the feedback row in one `withTenant` transaction — deriving the trigger context from the **attested** token (never caller fields), setting `needs_response` for a rating ≤ 2 (FR-AC-10), and writing an `audit` row (actor = the anonymous respondent, no personal data — FR-AC-4). G4.
+- **`FeedbackForm.tsx`** (client, RTL-covered): `useActionState` — 1–5 rating + optional comment + publish-as-testimonial toggle; field-linked error summary; calm thank-you on success. Design-system primitives only (G7).
+- **`page.tsx`** (server): verifies the token before anything renders (404 on bad/expired — reveals nothing); the token carries the context so the page reads no DB. `robots: noindex` (token page).
+
+RED → GREEN (action RED first). Verified: feedback `[token]` suite **10** (action: invalid/expired, cross-tenant reject, bad rating, persist+audit, needs_response+publish-default; form: fields + success + error; page: token gate + 404) + full web **734** green; typecheck + lint + all guards. EPIC-AC so far: entity (B85) → validator (B86) → token (B87a) → public submission (B87b). Next: the moderation queue (FR-AC-5), the live aggregate badge (FR-AC-6), and the trigger wiring (FR-AC-1/12, e.g. the post-repair hook).
+
+---
+
 ---
