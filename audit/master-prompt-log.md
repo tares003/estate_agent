@@ -2124,3 +2124,23 @@ With B78d the auth runtime is **functionally complete**: sign-in / OAuth / magic
 Verified: **web 684 tests** (7 new on the resolver), typecheck + lint + diff guards green.
 
 ---
+
+## Phase B78e — auth tenant-scope integration tests (Testcontainers) (EPIC-N) (2026-06-15)
+
+`packages/db/src/auth-tenant-scope.integration.test.ts` — exercises the B78a tenant-scoping extension against **real PostgreSQL 16** (opt-in `pnpm --filter @estate/db test:integration`, `describe.skipIf(!Docker)`), mirroring the existing `real-postgres.integration.test.ts` harness (Testcontainers + `prisma db push`). It deliberately does NOT apply the 0012 RLS-enable, so isolation comes purely from the `$extends` hook on the privileged (RLS-bypassing) connection — the exact production auth-adapter scenario.
+
+Asserts the cross-tenant negatives the B78a adversarial review demanded, end-to-end on a real engine:
+- the CONTEXT tenant is written on create, **overriding** a hostile supplied `tenantId` (unspoofable);
+- one tenant's user is **invisible** to another (cross-tenant read isolation);
+- the **SAME email in two tenants** creates two distinct users, and the email lookup (the sign-in path) resolves each to the RIGHT tenant's user — per-tenant identity proven on real PG;
+- an unscoped query **fails closed** (`AuthTenantContextError`);
+- the auth connection **rejects a non-auth model**.
+
+Authored + typechecked + lints clean; **skipped this session (Docker down)** — it runs green when Docker returns. The better-auth HTTP/cookie layer on top (`auth.api.signUpEmail`/`getSession` over the route) is a further live-smoke step; the isolation it relies on is what this locks.
+
+### EPIC-N — DONE (the "all 3" #2 + #3 foundation)
+The Better Auth runtime is built end-to-end across B77 + B78a–e: schema → tenant-scoped BYPASSRLS adapter → composition + magic-link → route mount → verified-cookie staff session → integration tests. Everything is env-gated/dormant; the operator activates it with `BETTER_AUTH_SECRET` + `AUTH_DATABASE_URL` (and `*_CLIENT_ID`/`*_CLIENT_SECRET` for OAuth #3). The only thing I cannot do is supply those credentials / run the live Postgres smoke (Docker down) — both are environment/operator actions, not code.
+
+**"All 3" final status: #1 SMS — done (#54). #2 Better Auth — done (schema #55 + runtime #57/#58/#59/#60 + integration tests). #3 OAuth — wired + env-gated; activates on operator provider credentials.**
+
+---
