@@ -99,6 +99,14 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
     secret: options.secret,
     ...(options.baseURL !== undefined ? { baseURL: options.baseURL } : {}),
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
+    // Our auth-table primary keys are `@db.Uuid @default(uuid())` (packages/db),
+    // so the database mints ids. Tell better-auth NOT to generate its own string
+    // ids, or its INSERTs would supply an id that fights the schema default.
+    advanced: {
+      database: {
+        generateId: false,
+      },
+    },
     emailAndPassword: {
       enabled: true,
     },
