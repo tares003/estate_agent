@@ -43,6 +43,13 @@ export default defineConfig({
         // (reads the session). Glue — callers mock it; the RBAC logic lives in
         // @estate/auth.
         'app/**/lib/staff-session.ts',
+        // Better Auth composition (B78b): getAuth() reads env + builds the
+        // better-auth instance against the BYPASSRLS auth client; auth-db.ts is the
+        // `new PrismaClient(AUTH_DATABASE_URL).$extends(...)` connection. Both are
+        // env/connection glue — verified by the Testcontainers integration tests
+        // (B78e). The pure magic-link mapping (magic-link.ts) stays covered.
+        'app/**/lib/auth.ts',
+        'app/**/lib/auth-db.ts',
         // Per-tenant Mailer resolver: Payload Local API + decrypt → NodemailerMailer
         // (glue); the crypto + field logic are unit-tested in @estate/email +
         // payload/fields/secret-field.ts.
