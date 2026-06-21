@@ -83,6 +83,12 @@ describe('createAuth — configuration shape (no DB connection)', () => {
     expect(auth.options.database).toBeDefined();
   });
 
+  it('lets the database mint ids (advanced.database.generateId=false) so Prisma uuid defaults win', () => {
+    // Our auth-table PKs are `@db.Uuid @default(uuid())`; better-auth must NOT
+    // generate its own string ids, or the inserts would fight the schema default.
+    expect(auth.options.advanced?.database?.generateId).toBe(false);
+  });
+
   it('omits a social provider when no credentials are supplied for it', () => {
     const partial = createAuth(fakePrisma, {
       secret: 'x',
