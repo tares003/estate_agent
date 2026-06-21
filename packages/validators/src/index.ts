@@ -85,3 +85,9 @@ export {
 } from './repair-file.js';
 export { DEFAULT_REPAIR_CATEGORIES, type DefaultRepairCategory } from './repair-category.js';
 export { mortgageInputSchema, type MortgageInput } from './mortgage.js';
+export {
+  SDLT_BUYER_CATEGORIES,
+  stampDutyInputSchema,
+  type SdltBuyerCategory,
+  type StampDutyInput,
+} from './stamp-duty.js';
