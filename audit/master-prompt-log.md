@@ -2254,4 +2254,13 @@ RED → GREEN (action RED first). Verified: feedback `[token]` suite **10** (act
 
 ---
 
+## Phase B88 — feedback moderation domain (EPIC-AC FR-AC-5) (2026-06-15)
+
+The backend foundation for the admin moderation queue.
+
+- **`@estate/auth`**: new `feedback.read` + `feedback.moderate` permissions, granted to super_admin / branch_manager / property_manager; `feedback.read` also reaches the read-only auditor (the `.read` filter). A roles.test assertion locks who can moderate (managers yes, sales_agent no, auditor read-only).
+- **`@estate/validators`**: `feedbackModerationSchema` (decision `publish` | `reject`; a reject **requires a reason** — FR-AC-5, captured for audit) + `feedbackDecisionStatus(decision)` → `published` | `rejected`.
+
+RED → GREEN. Verified: auth **49** + validators **165** green; typecheck + lint + diff guards. Next (B89): the moderation read model + the audited `moderateFeedback` action (requireStaffPermission('feedback.moderate'), withTenant, status update + reject reason, audit) → then the `/admin/feedback` queue page.
+
 ---
