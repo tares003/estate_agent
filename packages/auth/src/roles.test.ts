@@ -104,6 +104,16 @@ describe('ROLES catalogue (master spec §H.1)', () => {
     expect(hasPermission('repairs_manager', 'repair_request.write')).toBe(true);
     expect(hasPermission('repairs_manager', 'property.write')).toBe(false);
   });
+
+  it('grants feedback moderation to managers but not sales agents (FR-AC-5)', () => {
+    expect(hasPermission('branch_manager', 'feedback.moderate')).toBe(true);
+    expect(hasPermission('property_manager', 'feedback.moderate')).toBe(true);
+    expect(hasPermission('super_admin', 'feedback.moderate')).toBe(true);
+    expect(hasPermission('sales_agent', 'feedback.moderate')).toBe(false);
+    // The read-only auditor can VIEW feedback but never moderate it.
+    expect(hasPermission('read_only_auditor', 'feedback.read')).toBe(true);
+    expect(hasPermission('read_only_auditor', 'feedback.moderate')).toBe(false);
+  });
 });
 
 describe('hasPermission', () => {
