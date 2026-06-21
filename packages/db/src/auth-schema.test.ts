@@ -17,6 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const schema = readFileSync(join(root, 'prisma', 'schema.prisma'), 'utf8');
 const rls = readFileSync(join(root, 'migrations', 'raw', '0012_better_auth_tables.sql'), 'utf8');
+const scope = readFileSync(join(root, 'migrations', 'raw', '0013_auth_tenant_columns.sql'), 'utf8');
 
 function model(name: string): string {
   const match = schema.match(new RegExp(`model ${name} \\{[\\s\\S]*?\\n\\}`, 'm'));
@@ -66,6 +67,12 @@ describe('Account — better-auth OAuth/password links (prisma.account)', () => 
     expect(account).toMatch(/userId\s+String\s+@map\("user_id"\)/);
     expect(account).toContain('@@map("accounts")');
   });
+  it('carries tenantId so the auth adapter scopes OAuth/credential links per-tenant (B78)', () => {
+    // An OAuth account is found by (accountId, providerId); under per-tenant
+    // identity the same provider account can exist once per tenant, so the read
+    // MUST be tenant-scoped or sign-in could resolve the wrong tenant's user.
+    expect(account).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
+  });
 });
 
 describe('Verification + TwoFactor', () => {
@@ -76,12 +83,22 @@ describe('Verification + TwoFactor', () => {
     expect(v).toMatch(/expiresAt\s+DateTime\s+@map\("expires_at"\)/);
     expect(v).toContain('@@map("verifications")');
   });
+  it('Verification carries tenantId so magic-link tokens cannot be consumed cross-tenant (B78)', () => {
+    // A verification is found by `identifier` (the email/key); two tenants can
+    // issue a link to the same email, so consumption MUST be tenant-scoped.
+    const v = model('Verification');
+    expect(v).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
+  });
   it('TwoFactor carries the TOTP secret + backup codes + userId (FR-N-2)', () => {
     const t = model('TwoFactor');
     expect(t).toMatch(/secret\s+String/);
     expect(t).toMatch(/backupCodes\s+String\s+@map\("backup_codes"\)/);
     expect(t).toMatch(/userId\s+String\s+@map\("user_id"\)/);
     expect(t).toContain('@@map("two_factors")');
+  });
+  it('TwoFactor carries tenantId for uniform adapter scoping (B78)', () => {
+    const t = model('TwoFactor');
+    expect(t).toMatch(/tenantId\s+String\s+@map\("tenant_id"\)/);
   });
 });
 
@@ -93,5 +110,17 @@ describe('0012 migration — auth-layer RLS exception (documented)', () => {
     expect(rls).toMatch(/pre-session|before a session|privileged|bypass/i);
     expect(rls).toContain('sessions');
     expect(rls).toContain('accounts');
+  });
+});
+
+describe('0013 migration — auth-table tenant columns (adapter-enforced isolation)', () => {
+  it('adds tenant_id to accounts/verifications/two_factors and indexes it', () => {
+    expect(scope).toMatch(/ALTER TABLE accounts\s+ADD COLUMN\s+tenant_id/i);
+    expect(scope).toMatch(/ALTER TABLE verifications\s+ADD COLUMN\s+tenant_id/i);
+    expect(scope).toMatch(/ALTER TABLE two_factors\s+ADD COLUMN\s+tenant_id/i);
+    expect(scope).toMatch(/CREATE INDEX/i);
+  });
+  it('documents that the auth adapter where-injection is the isolation boundary', () => {
+    expect(scope).toMatch(/where-injection|\$extends|adapter|BYPASSRLS|privileged/i);
   });
 });
