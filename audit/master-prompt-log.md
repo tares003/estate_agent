@@ -2275,3 +2275,18 @@ The backend of the admin moderation queue (the `/admin/feedback` page is the nex
 RED → GREEN per piece. Verified: feedback-queue **3** + moderate-action **6** (no-permission deny, publish+audit, reject+reason, reason-required, already-moderated, not-found) + full web **743** green; typecheck + lint + all guards (incl. G4 audit-coverage). Next (B90): the `/admin/feedback` queue page + per-row publish/reject controls + an admin-nav link; then the live aggregate badge (FR-AC-6) and the trigger wiring (FR-AC-1/12).
 
 ---
+
+## Phase B90 + FR-AC-6 + FR-AC-1/12 — EPIC-AC finished IN PARALLEL via 3 git worktrees (2026-06-15)
+
+User asked to do the remaining EPIC-AC slices in parallel with multiple worktrees. Launched **three worktree-isolated agents concurrently**, each building one disjoint slice TDD-first (RED→GREEN), running the full local gate, and opening its own PR; I reviewed the security-sensitive parts of each, merged all three, then ran the **integrated gate** on main. (First attempt failed because the repo had no `remote.origin.fetch` refspec so `origin/main` didn't resolve — fixed with `git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'` + fetch, then re-launched.)
+
+- **B90 — `/admin/feedback` moderation queue page (FR-AC-5)** — PR #76. Server Component gated on `requireStaffPermission('feedback.read')`, loads the tenant-scoped pending+publishable queue via `listFeedbackForModeration` (B89), renders a table with a per-row `FeedbackModerationControls` ('use client', `useActionState(moderateFeedback)` — Publish / Reject-with-required-reason) + empty state; "Feedback" added to the admin sidebar nav. Reviewed: the page gates on the permission BEFORE any read.
+- **FR-AC-6 — live reviews aggregate badge** — PR #74. `feedbackAggregate` read model (avg rating 1 dp + count; structural reader, DB-free tests) + token-only `ReviewsBadge` (renders nothing at zero count — no fake score) + async `FooterReviews` glue (`withTenant`-scoped) surfaced in `SiteFooter` behind `<Suspense>`. Replaces the would-be hardcoded "4.9/5". (Caching FR-AC-6 mentions is a noted follow-on — render-time query for now.)
+- **FR-AC-1/12 — post-repair feedback trigger** — PR #75. `setRepairStatus`, on a transition INTO `completed` (pure tested `shouldRequestRepairFeedback(from,to)`), mints a signed feedback token + queues one `feedback.requested` email to the reporter via `notify(tx, …)` in the SAME tenant transaction — wrapped in its own try/catch so a feedback failure (e.g. unset `FEEDBACK_LINK_SECRET`) NEVER rolls back the status change. New `feedback.requested` worker email template. Reviewed: existing status/history/audit writes untouched.
+
+Integrated verification on main after merging all three: repo-wide `tsc` clean; **web 766** (+23) and **workers 36** green. Files were disjoint (admin page+nav / footer+badge / repair-action+worker-template) so the three merged conflict-free. Agent worktrees removed; merged branches pruned.
+
+### EPIC-AC — feedback & reviews DONE (V1 core)
+entity+RLS (B85) → submission validator (B86) → one-time token (B87a) → public submission flow (B87b) → moderation perms+schema (B88) → moderation backend (B89) → **moderation page (B90)** + **live reviews badge (FR-AC-6)** + **post-repair trigger (FR-AC-1/12)**. The "4.9/5" badge now reflects real collected feedback; staff moderate publishable entries (audited); a completed repair invites feedback. Remaining (later): the other trigger points (FR-AC-1 sale/tenancy), aggregate caching (FR-AC-6), agent league-table rating (FR-AC-7), external review cross-post (FR-AC-8), opt-out (FR-AC-9), vendor-portal surface (FR-AC-11). Activates with `FEEDBACK_LINK_SECRET` set.
+
+---
