@@ -2110,3 +2110,17 @@ The auth instance is now reachable: every flow (sign-in, OAuth callback, magic-l
 Verified: **web 677 + auth 48** tests; full-workspace typecheck + lint + diff guards green; **`next build` green** — `/api/auth/[...all]` appears in the route manifest as `ƒ` (dynamic), confirming better-auth bundles into the Next server build. Remaining: B78d (staff seam reads the verified cookie, rejecting cross-tenant replay) + B78e (live-PG integration). Still dormant until `BETTER_AUTH_SECRET` is set.
 
 ---
+
+## Phase B78d — staff-session seam reads the verified Better Auth cookie (EPIC-N) (2026-06-15)
+
+Closes the long-standing EPIC-N TODO in `staff-session.ts`: the admin's acting-staff resolution now reads the real Better Auth session before the dev seam. This is the security-critical session path, so the tenant-match decision is a pure, exhaustively-tested function.
+
+- **`lib/staff-session-resolve.ts`** (pure, covered): `staffAuthLookup(authSession, requestTenantId)` → `(userId, tenantId)` or null. It accepts a session ONLY when its tenant equals the request's resolved tenant — so a **tenant-A cookie replayed on tenant-B's subdomain is rejected**. This implements the B78a-adversarial-review HIGH finding directly: better-auth's cookie-cache returns a session straight from the signed cookie WITHOUT a DB read, so the tenant match here is the belt to the adapter's $extends braces. 7 cases incl. the cross-tenant rejection, the session-vs-user tenantId precedence, and the missing-user / missing-tenant nulls.
+- **`lib/staff-session.ts`** (glue): new FIRST resolution source — `getSession()` run inside `runWithAuthTenant(requestTenant)` (so the BYPASSRLS adapter (B78a) scopes the user read to that tenant), then `staffAuthLookup`, then re-load the staff user tenant-scoped + validate their stored role (defence in depth — a deleted/cross-tenant user yields no staff session). The `DEV_STAFF_USER_ID` override + `DEV_FALLBACK` are preserved, so with no `BETTER_AUTH_SECRET` (`getAuth()`→null) the dev path is byte-for-byte unchanged.
+
+### EPIC-N runtime status
+With B78d the auth runtime is **functionally complete**: sign-in / OAuth / magic-link / 2FA mount at `/api/auth/*` (B78c), the adapter is tenant-scoped + fails closed (B78a), magic-link delivery rides the per-tenant email outbox (B78b), and a signed-in staff member now resolves through the real session with cross-tenant replay rejected (B78d). It **activates** when the operator sets `BETTER_AUTH_SECRET` + `AUTH_DATABASE_URL` (a BYPASSRLS role); OAuth (#3) additionally needs the Microsoft/Google/Apple `*_CLIENT_ID`/`*_CLIENT_SECRET`. The one remaining task is **B78e** — Testcontainers integration tests proving the live flow + the cross-tenant negatives end-to-end against real Postgres (Docker still down this session, so authored-but-deferred).
+
+Verified: **web 684 tests** (7 new on the resolver), typecheck + lint + diff guards green.
+
+---
