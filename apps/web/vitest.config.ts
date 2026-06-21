@@ -50,6 +50,11 @@ export default defineConfig({
         // (B78e). The pure magic-link mapping (magic-link.ts) stays covered.
         'app/**/lib/auth.ts',
         'app/**/lib/auth-db.ts',
+        // The Better Auth catch-all route (B78c): its configured branch is
+        // `auth.handler` against a live DB — integration-tested (B78e). Its
+        // fail-soft 404 (unconfigured) IS unit-tested in route.test.ts; the file is
+        // coverage-excluded because the live-handler branch can't run without a DB.
+        'app/**/api/auth/**',
         // Per-tenant Mailer resolver: Payload Local API + decrypt → NodemailerMailer
         // (glue); the crypto + field logic are unit-tested in @estate/email +
         // payload/fields/secret-field.ts.
