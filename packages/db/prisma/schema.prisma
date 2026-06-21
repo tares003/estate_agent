@@ -152,10 +152,14 @@ model NotificationLog {
 // tenant table, these are NOT under the per-request tenant_isolation FORCE-RLS
 // policy. The adapter reads/writes them BEFORE a session exists — it is resolving
 // the very session that would set app.current_tenant_id — so the standard policy
-// would admit zero rows and break sign-in. Isolation is instead structural (every
-// row chains to a tenant-scoped User via userId) plus a privileged auth connection
-// that bypasses RLS (the operator-path pattern). The tables are DORMANT until the
-// route mount (B78) constructs the Better Auth instance; nothing touches them yet.
+// would admit zero rows and break sign-in. Isolation is instead enforced at the
+// APP layer: the Better Auth adapter (B78) connects through a privileged
+// BYPASSRLS role and a Prisma $extends hook injects `tenant_id = <current tenant>`
+// into every read/write/where for these models (failing closed when no tenant
+// context is set). Every model below therefore carries `tenantId` (user/session
+// since 0011-era; account/verification/two_factor added in 0013) and is backstopped
+// by the structural user_id → user chain. The tables are DORMANT until the route
+// mount (B78) constructs the Better Auth instance; nothing touches them yet.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// A signed-in session (prisma.session). `token` is the session secret; `tenantId`
@@ -182,12 +186,16 @@ model Session {
 /// A provider/credential link for a user (prisma.account) — one row per OAuth
 /// provider connection (microsoft/google/apple) or the email+password credential.
 /// `password` is null for OAuth accounts; the token columns hold the provider's
-/// access/refresh/id tokens. Cascades with its user.
+/// access/refresh/id tokens. Cascades with its user. `tenantId` is NOT a
+/// better-auth field — it is denormalised here so the auth adapter (B78) can scope
+/// the OAuth-account lookup (by accountId+providerId) to the current tenant; under
+/// per-tenant identity the same provider account may exist once per tenant.
 model Account {
   id                    String    @id @default(uuid()) @db.Uuid
   accountId             String    @map("account_id")
   providerId            String    @map("provider_id")
   userId                String    @map("user_id") @db.Uuid
+  tenantId              String    @map("tenant_id") @db.Uuid
   accessToken           String?   @map("access_token")
   refreshToken          String?   @map("refresh_token")
   idToken               String?   @map("id_token")
@@ -201,37 +209,47 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([tenantId])
   @@map("accounts")
 }
 
 /// A short-lived verification value (prisma.verification) — backs the magic-link
 /// (vendor/landlord/tenant portals) and email-verification flows. `identifier` is
-/// the email/key, `value` the token, `expiresAt` its bound. Precedes the user
-/// being resolved, so it is neither tenant- nor user-scoped.
+/// the email/key, `value` the token, `expiresAt` its bound. It precedes the user
+/// being resolved, but it IS issued on a tenant subdomain, so `tenantId` (not a
+/// better-auth field) is stamped by the auth adapter (B78) and scopes consumption:
+/// two tenants can issue a link to the same email, so the lookup-by-identifier
+/// must be tenant-scoped to prevent cross-tenant token consumption.
 model Verification {
   id         String   @id @default(uuid()) @db.Uuid
   identifier String
   value      String
+  tenantId   String   @map("tenant_id") @db.Uuid
   expiresAt  DateTime @map("expires_at")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@index([identifier])
+  @@index([tenantId])
   @@map("verifications")
 }
 
 /// A user's TOTP enrolment (prisma.twoFactor) — the twoFactor plugin's store for
 /// staff 2FA (FR-N-2). `secret` is the TOTP seed; `backupCodes` the recovery set.
-/// Cascades with its user. No timestamps — matches better-auth's model.
+/// Cascades with its user. No timestamps — matches better-auth's model. `tenantId`
+/// (not a better-auth field) is stamped by the auth adapter (B78) for uniform
+/// per-tenant scoping alongside the structural user_id → user chain.
 model TwoFactor {
   id          String @id @default(uuid()) @db.Uuid
   secret      String
   backupCodes String @map("backup_codes")
   userId      String @map("user_id") @db.Uuid
+  tenantId    String @map("tenant_id") @db.Uuid
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([tenantId])
   @@map("two_factors")
 }
 
