@@ -38,9 +38,23 @@ const CONTRACTOR_ASSIGNED: EmailTemplateInput = {
     '<p><a href="{{link}}">View the repair</a></p>',
 };
 
+/** EPIC-N (FR-N-*): the passwordless sign-in link for the vendor/landlord/tenant
+ *  portals. better-auth's magicLink plugin queues this via the auth sendMagicLink
+ *  callback; `url` is the one-time verification link. */
+const AUTH_MAGIC_LINK: EmailTemplateInput = {
+  subject: 'Sign in to your account',
+  preheader: 'Use this secure link to sign in — it expires shortly.',
+  html:
+    '<p>Hello,</p>' +
+    '<p>Use this secure link to sign in. It expires shortly and can be used once:</p>' +
+    '<p><a href="{{url}}">Sign in</a></p>' +
+    '<p>If you didn’t request this, you can safely ignore this email.</p>',
+};
+
 const TEMPLATES: Record<string, EmailTemplateInput> = {
   'repair_request.received': REPAIR_RECEIVED,
   'repair.contractor_assigned': CONTRACTOR_ASSIGNED,
+  'auth.magic_link': AUTH_MAGIC_LINK,
 };
 
 /** Pull the string/number/boolean entries out of a queued row's JSON payload. */
