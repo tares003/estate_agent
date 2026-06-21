@@ -36,7 +36,12 @@ describe('isAuthTenantModel', () => {
 
 describe('scopeAuthArgs — create/write paths stamp the tenant', () => {
   it('injects tenantId into create data and preserves the better-auth fields', () => {
-    const out = scopeAuthArgs('User', 'create', { data: { email: 'a@x.com', name: 'A' } }, TENANT_A);
+    const out = scopeAuthArgs(
+      'User',
+      'create',
+      { data: { email: 'a@x.com', name: 'A' } },
+      TENANT_A,
+    );
     expect(out.data).toEqual({ email: 'a@x.com', name: 'A', tenantId: TENANT_A });
   });
   it('injects tenantId into every row of createMany', () => {
@@ -50,6 +55,10 @@ describe('scopeAuthArgs — create/write paths stamp the tenant', () => {
       { accountId: '1', tenantId: TENANT_A },
       { accountId: '2', tenantId: TENANT_A },
     ]);
+  });
+  it('injects tenantId into a single-object createMany payload too', () => {
+    const out = scopeAuthArgs('Account', 'createMany', { data: { accountId: '1' } }, TENANT_A);
+    expect(out.data).toEqual({ accountId: '1', tenantId: TENANT_A });
   });
   it('upsert stamps both the where and the create branch', () => {
     const out = scopeAuthArgs(
@@ -88,7 +97,12 @@ describe('scopeAuthArgs — read/update/delete paths scope the where', () => {
     });
   });
   it('scopes update/delete/updateMany/deleteMany by the where and leaves data alone', () => {
-    const upd = scopeAuthArgs('Session', 'update', { where: { id: 's1' }, data: { x: 1 } }, TENANT_A);
+    const upd = scopeAuthArgs(
+      'Session',
+      'update',
+      { where: { id: 's1' }, data: { x: 1 } },
+      TENANT_A,
+    );
     expect(upd.where).toEqual({ id: 's1', tenantId: TENANT_A });
     expect(upd.data).toEqual({ x: 1 });
     for (const op of ['delete', 'deleteMany', 'updateMany'] as const) {
@@ -101,11 +115,11 @@ describe('scopeAuthArgs — read/update/delete paths scope the where', () => {
 describe('scopeAuthArgs — fails closed and is unspoofable', () => {
   it('the context tenant OVERRIDES any caller-supplied tenantId in a where', () => {
     const out = scopeAuthArgs('User', 'findFirst', { where: { tenantId: TENANT_B } }, TENANT_A);
-    expect(out.where.tenantId).toBe(TENANT_A);
+    expect(out.where?.tenantId).toBe(TENANT_A);
   });
   it('the context tenant OVERRIDES any caller-supplied tenantId in create data', () => {
     const out = scopeAuthArgs('User', 'create', { data: { tenantId: TENANT_B } }, TENANT_A);
-    expect(out.data.tenantId).toBe(TENANT_A);
+    expect((out.data as Record<string, unknown>).tenantId).toBe(TENANT_A);
   });
   it('throws when there is no tenant (empty / non-uuid) — never runs unscoped', () => {
     expect(() => scopeAuthArgs('User', 'findFirst', { where: {} }, '')).toThrow(

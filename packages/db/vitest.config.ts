@@ -19,7 +19,10 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       // client.ts is the `new PrismaClient()` connection glue — not unit-testable
       // without a live DB (its construction is exercised via Testcontainers in CI).
-      exclude: ['src/**/*.test.ts', 'src/client.ts'],
+      // auth-tenant-extension.ts is the Prisma.defineExtension binding for the auth
+      // client — same rationale (needs a live client + query fn); its decision logic
+      // lives in auth-tenant-scope.ts, which carries the gate.
+      exclude: ['src/**/*.test.ts', 'src/client.ts', 'src/auth-tenant-extension.ts'],
     },
   },
 });
