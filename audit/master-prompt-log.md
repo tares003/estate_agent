@@ -2180,3 +2180,14 @@ The RTL component test (compute/format + disclosure + recompute + invalid-prompt
 Verified: calculators suite **6** + full web **702** green; full-workspace typecheck + lint + **all 12 guards** (incl. G7 tokens, G9 a11y, G11 responsive opt-out) green. Follow-on: the stamp-duty UI + the page-builder calculator block (FR-W-9) + PDF export (FR-W-12).
 
 ---
+
+## Phase B82 — stamp-duty calculator UI + /calculators/stamp-duty page (EPIC-W FR-W-2/4/10) (2026-06-15)
+
+Surfaces the stamp-duty domain (B80) as a live, public calculator — completing both calculators' verticals (domain → UI → page).
+
+- **`StampDutyCalculator`** (client, RTL-covered): `NumberField` price + `Select` buyer category → `computeStampDuty(…, DEFAULT_SDLT_CONFIG)` live, showing total tax + effective rate + a **per-band breakdown**, the **"For guidance only — not financial advice"** disclosure (FR-W-10), and the bands' **last-updated date** (FR-W-4). `DEFAULT_SDLT_CONFIG` is the illustrative, operator-configurable band set (FR-W-3); the displayed figures follow from that config, not from an assertion about the law. Tokens only (NumberField + Select primitives) — G7.
+- **`/calculators/stamp-duty` page** (server): `generateMetadata` (FR-O-4) + heading shell; `page.test.tsx` asserts shell + canonical metadata.
+
+Verified: stamp-duty calculators suite **6** + full web **708** green; full-workspace typecheck + lint + all guards. Remaining EPIC-W: persist admin-editable bands (FR-W-3), the page-builder calculator block (FR-W-9), rate presets (FR-W-8), PDF export (FR-W-12), anonymous usage analytics (FR-W-11).
+
+---
