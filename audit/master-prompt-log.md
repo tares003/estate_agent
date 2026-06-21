@@ -2167,3 +2167,16 @@ The second EPIC-W calculator — a configurable progressive-band SDLT engine.
 RED → GREEN per piece. Verified: validators **154** + web stamp-duty suite **8** green; full-workspace typecheck + lint + diff guards (G1/G2). Remaining EPIC-W: admin band config (FR-W-3 persistence) + the calculator UI blocks (FR-W-9/10/12 — page-builder embed + "not financial advice" disclosure + PDF export).
 
 ---
+
+## Phase B81 — mortgage calculator UI + /calculators/mortgage page (EPIC-W FR-W-6/10) (2026-06-15)
+
+Surfaces the mortgage domain (B79) as a live, public calculator.
+
+- **`MortgageCalculator`** (client component, covered by RTL): controlled `NumberField` inputs re-parse through `mortgageInputSchema` on every change and run `computeMortgage` when valid → monthly repayment + loan / LTV / total interest / total payable (Intl GBP formatting). Renders the **"For guidance only — not financial advice"** disclosure adjacent to the result (FR-W-10 / PRODUCT.md §8); invalid inputs (e.g. deposit > price) show a prompt, not a stale figure. Design-system tokens only (G7) — the `NumberField` primitive + `t-*` / surface / divider tokens.
+- **`/calculators/mortgage` page** (server): `generateMetadata` (FR-O-4 canonical/OG/Twitter) + heading shell around the client calculator; `page.test.tsx` asserts the shell + canonical metadata.
+
+The RTL component test (compute/format + disclosure + recompute + invalid-prompt) opts out of G11 (responsive layout = the Playwright pass), matching the ValuationForm convention. Self-caught: the default-inputs assertion was corrected to the actual computed £1,334.00 (RED estimate was a penny off).
+
+Verified: calculators suite **6** + full web **702** green; full-workspace typecheck + lint + **all 12 guards** (incl. G7 tokens, G9 a11y, G11 responsive opt-out) green. Follow-on: the stamp-duty UI + the page-builder calculator block (FR-W-9) + PDF export (FR-W-12).
+
+---
