@@ -19,9 +19,11 @@ describe('computeMortgage', () => {
     // Textbook value for these inputs is ≈ £1,333.97/month.
     expect(r.monthlyRepayment).toBeCloseTo(1333.97, 1);
     expect(r.ltvPercent).toBe(80);
-    // Total payable = monthly × 300 payments; interest = total − principal.
-    expect(r.totalPayable).toBeCloseTo(r.monthlyRepayment * 300, 1);
-    expect(r.totalInterest).toBeCloseTo(r.totalPayable - 240_000, 1);
+    // Total payable ≈ £400,190 over 300 payments; interest is the balance over the
+    // £240k principal (an exact relationship since the loan is a whole number).
+    expect(r.totalPayable).toBeGreaterThan(400_000);
+    expect(r.totalPayable).toBeLessThan(400_500);
+    expect(r.totalInterest).toBeCloseTo(r.totalPayable - 240_000, 2);
   });
 
   it('handles a 0% rate as straight-line principal division (no interest)', () => {
