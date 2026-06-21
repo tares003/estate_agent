@@ -93,6 +93,11 @@ export {
 } from './stamp-duty.js';
 export {
   FEEDBACK_COMMENT_MAX,
+  FEEDBACK_DECISIONS,
   feedbackSubmissionSchema,
+  feedbackModerationSchema,
+  feedbackDecisionStatus,
   type FeedbackSubmission,
+  type FeedbackDecision,
+  type FeedbackModeration,
 } from './feedback.js';

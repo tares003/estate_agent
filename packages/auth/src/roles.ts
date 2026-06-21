@@ -39,6 +39,9 @@ export const PERMISSIONS = [
   // Contacts (vendors, landlords, tenants, buyers, applicants)
   'contact.read',
   'contact.write',
+  // Feedback & reviews moderation (EPIC-AC, FR-AC-5)
+  'feedback.read',
+  'feedback.moderate',
   // CMS / editorial content (EPIC-C / EPIC-D)
   'content.read',
   'content.write',
@@ -133,6 +136,8 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
       'repair_request.manage',
       'contact.read',
       'contact.write',
+      'feedback.read',
+      'feedback.moderate',
       'agent.read',
       'agent.write',
       'branch.read',
@@ -157,6 +162,8 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
       'repair_request.manage',
       'contact.read',
       'contact.write',
+      'feedback.read',
+      'feedback.moderate',
     ],
   },
   // Sales funnel. Create / edit sales properties; manage own leads; book

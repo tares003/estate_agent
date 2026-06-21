@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { feedbackSubmissionSchema } from './feedback.js';
+import {
+  FEEDBACK_DECISIONS,
+  feedbackDecisionStatus,
+  feedbackModerationSchema,
+  feedbackSubmissionSchema,
+} from './feedback.js';
 
 // EPIC-AC FR-AC-3 — the brief feedback form: a 1–5 star rating, an optional short
 // comment, and a "may we publish this as a testimonial?" toggle. The respondent is
@@ -45,5 +50,36 @@ describe('feedbackSubmissionSchema', () => {
   it('rejects an over-long comment', () => {
     const long = 'x'.repeat(2001);
     expect(feedbackSubmissionSchema.safeParse({ rating: 3, comment: long }).success).toBe(false);
+  });
+});
+
+// EPIC-AC FR-AC-5 — the staff moderation decision on publishable feedback: publish
+// it (→ flows to testimonials) or reject it WITH a captured reason.
+describe('feedbackModerationSchema', () => {
+  it('lists the two decisions', () => {
+    expect(FEEDBACK_DECISIONS).toEqual(['publish', 'reject']);
+  });
+
+  it('accepts publish with no reason', () => {
+    expect(feedbackModerationSchema.safeParse({ decision: 'publish' }).success).toBe(true);
+  });
+
+  it('requires a reason when rejecting (FR-AC-5 — reasons captured for audit)', () => {
+    expect(feedbackModerationSchema.safeParse({ decision: 'reject' }).success).toBe(false);
+    expect(feedbackModerationSchema.safeParse({ decision: 'reject', reason: '   ' }).success).toBe(
+      false,
+    );
+    expect(
+      feedbackModerationSchema.safeParse({ decision: 'reject', reason: 'Off-topic.' }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an unknown decision', () => {
+    expect(feedbackModerationSchema.safeParse({ decision: 'archive' }).success).toBe(false);
+  });
+
+  it('feedbackDecisionStatus maps a decision to the terminal moderation status', () => {
+    expect(feedbackDecisionStatus('publish')).toBe('published');
+    expect(feedbackDecisionStatus('reject')).toBe('rejected');
   });
 });
