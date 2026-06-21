@@ -2225,3 +2225,11 @@ First slice of EPIC-AC (feedback & review collection — currently the public "4
 RED → GREEN. Verified: **243 db tests** (9 new — schema-shape + migration text + pglite RLS isolation incl. WITH CHECK), prisma format + generate, full-workspace typecheck + db lint + diff guards green. Follow-on EPIC-AC: the feedback submission validator (FR-AC-3) → token-authorized public form (FR-AC-2) → persistence action (FR-AC-4) → moderation queue (FR-AC-5) → aggregate badge (FR-AC-6).
 
 ---
+
+## Phase B86 — feedback submission validator (EPIC-AC FR-AC-3) (2026-06-15)
+
+`@estate/validators` `feedbackSubmissionSchema` — the brief feedback form's input: `rating` 1–5 (coerced, integer-bounded), an optional `comment` (blank/whitespace → none, max `FEEDBACK_COMMENT_MAX` = 2000), and the `publishAsTestimonial` toggle (default false; the action coerces the checkbox, matching the `gdprConsent` convention). The respondent is anonymous (FR-AC-4 — the one-time token identifies them), so the schema has NO personal-data fields and carries no GDPR-consent affirmation (G5 not applicable); the publish toggle is a publishing consent, not a personal-data one.
+
+RED → GREEN. Verified: validators **160** (6 new) green; typecheck + lint + diff guards (incl. the ESLint G5/G6 consent/naming guards via lint). Next: the token-authorized public feedback form + page (FR-AC-2/3) → the persistence action (FR-AC-4, audited).
+
+---
