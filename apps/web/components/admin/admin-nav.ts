@@ -34,6 +34,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
   {
     label: 'Insights',
     items: [
+      { label: 'Feedback', href: '/admin/feedback' },
       { label: 'Reports', href: '/admin/reports' },
       { label: 'Audit log', href: '/admin/audit' },
     ],
