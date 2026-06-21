@@ -62,6 +62,13 @@ describe('createAuth — configuration shape (no DB connection)', () => {
     expect(pluginIds).toContain('two-factor');
   });
 
+  it('registers next-cookies LAST so RSC/Server-Action session writes propagate', () => {
+    const pluginIds = (auth.options.plugins ?? []).map((plugin) => plugin.id);
+    expect(pluginIds).toContain('next-cookies');
+    // better-auth requires the cookie plugin to be last (it warns otherwise).
+    expect(pluginIds[pluginIds.length - 1]).toBe('next-cookies');
+  });
+
   it('carries the tenant identifier on the session via an additional field', () => {
     const sessionFields = auth.options.session?.additionalFields ?? {};
     expect(sessionFields.tenantId).toBeDefined();
