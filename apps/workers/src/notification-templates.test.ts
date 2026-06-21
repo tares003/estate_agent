@@ -56,6 +56,15 @@ describe('renderNotification', () => {
     expect(renderNotification('mystery.event', {})).toBeNull();
   });
 
+  it('renders the EPIC-N magic-link sign-in email with the link url', () => {
+    const message = renderNotification('auth.magic_link', {
+      url: 'https://acme.test/api/auth/magic-link/verify?token=abc.def',
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject.toLowerCase()).toContain('sign in');
+    expect(message!.html).toContain('https://acme.test/api/auth/magic-link/verify?token=abc.def');
+  });
+
   it('renders the FR-G-8 contractor-assignment email with the magic-link', () => {
     const message = renderNotification('repair.contractor_assigned', {
       reference: 'RPR-2026-00042',
