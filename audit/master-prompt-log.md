@@ -2233,3 +2233,13 @@ RED → GREEN. Verified: **243 db tests** (9 new — schema-shape + migration te
 RED → GREEN. Verified: validators **160** (6 new) green; typecheck + lint + diff guards (incl. the ESLint G5/G6 consent/naming guards via lint). Next: the token-authorized public feedback form + page (FR-AC-2/3) → the persistence action (FR-AC-4, audited).
 
 ---
+
+## Phase B87a — feedback one-time token (EPIC-AC FR-AC-2) (2026-06-15)
+
+`apps/web` `lib/feedback-access.ts` — the no-sign-in feedback link's signing core. `signFeedbackToken` / `verifyFeedbackToken`: HMAC-SHA256 over a base64url JSON trigger **context** ({tenantId, triggerType, triggerEntity?, triggerEntityId?, agentActor?, respondentRef?}) + an absolute expiry, constant-time verify, and the payload is parsed **only after** the signature checks out (so a forged token never reaches JSON.parse). Its own `FEEDBACK_LINK_SECRET` (fail-closed) — structurally the contractor-magic-link / signed-object-token pattern, kept separate so a leaked secret in one surface can't authorise another. Verify returns the ATTESTED context, so a grafted token can't retarget the feedback.
+
+RED → GREEN. Verified: web feedback-access suite **7** green; typecheck + lint + diff guards. New deploy env: `FEEDBACK_LINK_SECRET`. Next (B87b): the public feedback form + `/feedback/[token]` page + the audited persistence action (FR-AC-3/4/10).
+
+---
+
+---
