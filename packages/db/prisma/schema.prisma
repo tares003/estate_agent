@@ -50,6 +50,10 @@ model PlatformTenant {
   repairFiles          RepairFile[]
   repairCategories     RepairCategory[]
   contractors          Contractor[]
+  sessions             Session[]
+  accounts             Account[]
+  verifications        Verification[]
+  twoFactors           TwoFactor[]
 
   @@map("platform_tenants")
 }
@@ -156,10 +160,14 @@ model NotificationLog {
 // APP layer: the Better Auth adapter (B78) connects through a privileged
 // BYPASSRLS role and a Prisma $extends hook injects `tenant_id = <current tenant>`
 // into every read/write/where for these models (failing closed when no tenant
-// context is set). Every model below therefore carries `tenantId` (user/session
-// since 0011-era; account/verification/two_factor added in 0013) and is backstopped
-// by the structural user_id → user chain. The tables are DORMANT until the route
-// mount (B78) constructs the Better Auth instance; nothing touches them yet.
+// context is set). Every model below therefore carries `tenantId` AND a real
+// `tenant PlatformTenant` FK (onDelete: Cascade — deleting a tenant erases its auth
+// rows, incl. verifications that have no user chain; defence in depth at the DB
+// layer behind the app-layer injection), backstopped by the structural user_id →
+// user chain. These columns/FKs/indexes are created by `prisma db push` from this
+// schema — there is deliberately NO raw ADD COLUMN migration (a plain uuid column
+// is Prisma-expressible, unlike the PostGIS column added in 0004). The tables are
+// DORMANT until the route mount (B78) constructs the Better Auth instance.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// A signed-in session (prisma.session). `token` is the session secret; `tenantId`
@@ -177,9 +185,11 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([tenantId])
   @@map("sessions")
 }
 
@@ -206,7 +216,8 @@ model Account {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([tenantId])
@@ -229,6 +240,8 @@ model Verification {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([identifier])
   @@index([tenantId])
   @@map("verifications")
@@ -246,7 +259,8 @@ model TwoFactor {
   userId      String @map("user_id") @db.Uuid
   tenantId    String @map("tenant_id") @db.Uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([tenantId])
