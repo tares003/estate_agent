@@ -2264,3 +2264,14 @@ The backend foundation for the admin moderation queue.
 RED → GREEN. Verified: auth **49** + validators **165** green; typecheck + lint + diff guards. Next (B89): the moderation read model + the audited `moderateFeedback` action (requireStaffPermission('feedback.moderate'), withTenant, status update + reject reason, audit) → then the `/admin/feedback` queue page.
 
 ---
+
+## Phase B89 — feedback moderation backend: read model + audited action (EPIC-AC FR-AC-5) (2026-06-15)
+
+The backend of the admin moderation queue (the `/admin/feedback` page is the next slice).
+
+- **`admin/feedback/feedback-queue.ts` `listFeedbackForModeration`** (read model, covered): shapes the tenant-scoped query — defaults to the PENDING, PUBLISHABLE feedback newest-first; widens to any status / all feedback. Structural reader → DB-free unit tests.
+- **`admin/feedback/actions.ts` `moderateFeedback`** (audited): RBAC **fail-closed** before any write (`requireStaffPermission('feedback.moderate')`); validates the decision (`feedbackModerationSchema` — a reject requires a reason); the entry MUST still be `pending` (no re-moderation / cross-status clobber); writes the terminal status + the reject reason + an `audit` row (`feedback.moderated`) in one `withTenant` transaction (G4).
+
+RED → GREEN per piece. Verified: feedback-queue **3** + moderate-action **6** (no-permission deny, publish+audit, reject+reason, reason-required, already-moderated, not-found) + full web **743** green; typecheck + lint + all guards (incl. G4 audit-coverage). Next (B90): the `/admin/feedback` queue page + per-row publish/reject controls + an admin-nav link; then the live aggregate badge (FR-AC-6) and the trigger wiring (FR-AC-1/12).
+
+---
