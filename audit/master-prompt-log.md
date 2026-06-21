@@ -2097,3 +2097,16 @@ New operator env this slice: `AUTH_DATABASE_URL` (BYPASSRLS connection, distinct
 The instance is still not mounted on a route (B78c) and the staff seam still reads the dev session (B78d) — so this is additive/dormant. Verified: **web 675 + auth 47 + workers 35** tests, full-workspace typecheck + lint + diff guards (G1 found tests, G2 met threshold) green.
 
 ---
+
+## Phase B78c — mount Better Auth at /api/auth/[...all] + next-cookies (EPIC-N) (2026-06-15)
+
+The auth instance is now reachable: every flow (sign-in, OAuth callback, magic-link verify, get-session, 2FA) is served by better-auth's own handler, mounted at `/api/auth/*`.
+
+- **`packages/auth` createAuth**: registers `nextCookies()` as the LAST plugin (RED→GREEN), better-auth's documented Next.js integration so a Set-Cookie issued during a Server-Action / RSC `auth.api` call (e.g. a session refresh on read in B78d) actually lands.
+- **`apps/web` `app/(app)/api/auth/[...all]/route.ts`** (glue): GET/POST → `runWithAuthTenant(tenantId, () => auth.handler(req))`. Confirmed from the better-auth source that `toNextJsHandler(auth)` is literally `(req) => auth.handler(req)`, so the route calls `auth.handler` directly — **no `better-auth` dependency added to the app**.
+  - **SECURITY (closes the B78a-review spoofing finding):** `tenantId = await getCurrentTenantId()` — the tenant the EPIC-S proxy resolved from the request HOSTNAME against the registry and set as a server-only header (the proxy *strips* any inbound `x-estate-tenant`). The proxy matcher covers `/api/*` (it skips only SEO-canonicalisation for them, still resolving + setting the tenant). So a forged `Host` cannot run the BYPASSRLS adapter in another tenant's context.
+  - **Fail-soft:** no `BETTER_AUTH_SECRET` → `getAuth()` null → 404, no DB touched (unit-tested). The configured `auth.handler` branch is integration-tested (B78e), so the route file is coverage-excluded.
+
+Verified: **web 677 + auth 48** tests; full-workspace typecheck + lint + diff guards green; **`next build` green** — `/api/auth/[...all]` appears in the route manifest as `ƒ` (dynamic), confirming better-auth bundles into the Next server build. Remaining: B78d (staff seam reads the verified cookie, rejecting cross-tenant replay) + B78e (live-PG integration). Still dormant until `BETTER_AUTH_SECRET` is set.
+
+---
