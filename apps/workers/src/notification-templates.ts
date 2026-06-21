@@ -51,10 +51,24 @@ const AUTH_MAGIC_LINK: EmailTemplateInput = {
     '<p>If you didn’t request this, you can safely ignore this email.</p>',
 };
 
+/** EPIC-AC (FR-AC-1/FR-AC-12): the post-journey feedback request — a no-sign-in
+ *  link to the brief feedback form. Queued (e.g.) when a repair ticket transitions
+ *  to `completed`; `url` is the one-time signed /feedback/<token> link. */
+const FEEDBACK_REQUESTED: EmailTemplateInput = {
+  subject: 'How did we do? Share your feedback',
+  preheader: 'It takes less than a minute — no sign-in needed.',
+  html:
+    '<p>Hello,</p>' +
+    '<p>Thank you — we’d love to hear how we did. It takes less than a minute, and there’s no sign-in:</p>' +
+    '<p><a href="{{url}}">Leave your feedback</a></p>' +
+    '<p>If now isn’t a good time, you can safely ignore this email.</p>',
+};
+
 const TEMPLATES: Record<string, EmailTemplateInput> = {
   'repair_request.received': REPAIR_RECEIVED,
   'repair.contractor_assigned': CONTRACTOR_ASSIGNED,
   'auth.magic_link': AUTH_MAGIC_LINK,
+  'feedback.requested': FEEDBACK_REQUESTED,
 };
 
 /** Pull the string/number/boolean entries out of a queued row's JSON payload. */

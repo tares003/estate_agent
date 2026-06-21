@@ -76,4 +76,13 @@ describe('renderNotification', () => {
     expect(message!.html).toContain('Ace Plumbing');
     expect(message!.html).toContain('https://acme.test/repairs/contractor/tok.en.sig');
   });
+
+  it('renders the FR-AC-1/12 post-repair feedback request with the feedback url', () => {
+    const message = renderNotification('feedback.requested', {
+      url: 'https://acme.test/feedback/seg.123.sig',
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject.toLowerCase()).toMatch(/feedback|how did we do|rate/);
+    expect(message!.html).toContain('https://acme.test/feedback/seg.123.sig');
+  });
 });

@@ -1,16 +1,18 @@
 'use server';
 
 import { canRepairTransition, repairStatusUpdateSchema } from '@estate/validators';
-import { audit, withTenant, type AuditWriter } from '@estate/db';
+import { audit, notify, withTenant, type AuditWriter, type NotificationWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
+import { feedbackLinkSecret, signFeedbackToken } from '../../../lib/feedback-access.js';
 import {
   getStaffActor,
   getStaffUserId,
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestOrigin } from '../../../lib/tenant.js';
+import { shouldRequestRepairFeedback } from './feedback-trigger.js';
 
 // EPIC-G repair triage (master spec §G.5, FR-G-6/FR-G-7): a staff member advances a
 // ticket through the status workflow. RBAC-gated on `repair_request.write`
@@ -18,14 +20,16 @@ import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 // (illegal moves are refused before any write); rejecting requires a reason, which
 // is stored on the ticket's `rejected_reason` (§G.6). Every transition writes BOTH
 // a `repair_status_history` row (from/to, actor, notes — FR-G-7) AND an
-// `audit_logs` row, inside the same tenant (RLS) transaction (G4). Drives a form
-// via `useActionState`.
+// `audit_logs` row, inside the same tenant (RLS) transaction (G4). A transition
+// INTO `completed` additionally queues a post-repair feedback request to the
+// reporter in the same transaction (EPIC-AC FR-AC-1/12), best-effort — see below.
+// Drives a form via `useActionState`.
 
-interface RepairTriageClient extends AuditWriter {
+interface RepairTriageClient extends AuditWriter, NotificationWriter {
   repairRequest: {
     findFirst(args: {
       where: Record<string, unknown>;
-    }): Promise<{ id: string; status: string } | null>;
+    }): Promise<{ id: string; status: string; email: string | null } | null>;
     update(args: {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
@@ -35,6 +39,9 @@ interface RepairTriageClient extends AuditWriter {
     create(args: { data: Record<string, unknown> }): Promise<unknown>;
   };
 }
+
+/** ~30 days for the post-repair feedback link to be used (FR-AC-1/12). */
+const FEEDBACK_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** The result of a status change, consumed by `useActionState`. */
 export interface RepairStatusState {
@@ -120,6 +127,43 @@ export async function setRepairStatus(
       diff: { status: { from, to } },
       ip,
     });
+
+    // EPIC-AC FR-AC-1/12: a transition INTO `completed` queues a post-repair
+    // feedback request to the reporter, in THIS same tenant transaction (the
+    // worker renders + dispatches it — §H.13). Best-effort: it only fires when
+    // FEEDBACK_LINK_SECRET is configured AND the reporter left an email, and a
+    // failure here (e.g. unset secret) must never roll back the status change —
+    // so it is wrapped in its own try/catch. The token binds the
+    // `repair_completed` trigger to THIS ticket (its own secret); the respondent
+    // ref is the soft `repair:<id>` reference (no personal data in the link).
+    if (shouldRequestRepairFeedback(from, to) && existing.email) {
+      const recipient = existing.email;
+      try {
+        const token = signFeedbackToken(
+          {
+            tenantId,
+            triggerType: 'repair_completed',
+            triggerEntity: 'repair_request',
+            triggerEntityId: repairId,
+            respondentRef: `repair:${repairId}`,
+          },
+          Date.now() + FEEDBACK_TOKEN_TTL_MS,
+          feedbackLinkSecret(),
+        );
+        const url = `${await getRequestOrigin()}/feedback/${token}`;
+        await notify(tx, {
+          tenantId,
+          event: 'feedback.requested',
+          channel: 'email',
+          recipient,
+          payload: { url },
+        });
+      } catch {
+        // Best-effort (FR-AC-12): the status change must stand even if the
+        // feedback request can't be minted or queued.
+      }
+    }
+
     result = { ok: true };
   });
   return result;
