@@ -12,6 +12,7 @@ describe('ADMIN_NAV', () => {
     expect(hrefs).toContain('/admin/repairs');
     expect(hrefs).toContain('/admin/repairs/categories');
     expect(hrefs).toContain('/admin/repairs/contractors');
+    expect(hrefs).toContain('/admin/feedback');
     expect(hrefs).toContain('/admin/reports');
     expect(hrefs).toContain('/admin/audit');
     expect(hrefs).toContain('/admin/users');
