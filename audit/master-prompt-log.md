@@ -2213,3 +2213,15 @@ Process note: the RED commit was accidentally made on local `main` (forgot to br
 Verified: SiteNav **6** + hub page **2** + full web (flake aside) green; typecheck + lint + all diff guards. EPIC-W remaining unchanged (FR-W-3/8/11/12).
 
 ---
+
+## Phase B85 — feedback entity schema + RLS (EPIC-AC FR-AC-4/5) (2026-06-15)
+
+First slice of EPIC-AC (feedback & review collection — currently the public "4.9/5" badge is hardcoded). The foundation entity.
+
+- **`Feedback` model** (`@@map("feedback")`, tenant-scoped + RLS): `triggerType` (FeedbackTrigger), soft `triggerEntity`/`triggerEntityId` reference to the originating record (viewing/sale/tenancy/repair — the type varies, so no hard FK), anonymous `respondentRef` (FR-AC-4), `agentActor` (league-table rollup FR-AC-7), `rating` (Int), `comment?`, `publishAsTestimonial` (consent), `status` (FeedbackStatus, default pending), `rejectedReason?` (FR-AC-5), `needsResponse` (negative-sentiment flag FR-AC-10).
+- **Enums**: `FeedbackStatus` (pending → published / rejected — the moderation lifecycle) + `FeedbackTrigger` (the FR-AC-1 journey moments). PlatformTenant back-relation `feedback`.
+- **`0013_feedback_rls.sql`**: ENABLE + FORCE RLS + the fail-closed `tenant_isolation` policy (NULLIF GUC), same shape as 0011.
+
+RED → GREEN. Verified: **243 db tests** (9 new — schema-shape + migration text + pglite RLS isolation incl. WITH CHECK), prisma format + generate, full-workspace typecheck + db lint + diff guards green. Follow-on EPIC-AC: the feedback submission validator (FR-AC-3) → token-authorized public form (FR-AC-2) → persistence action (FR-AC-4) → moderation queue (FR-AC-5) → aggregate badge (FR-AC-6).
+
+---
