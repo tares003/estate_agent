@@ -16,13 +16,16 @@ describe('SiteNav', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
   });
 
-  it('renders the default destinations (Buy/Rent/Sell/Contact) with hrefs', () => {
+  it('renders the default destinations (Buy/Rent/Sell/Calculators/Contact) with hrefs', () => {
     render(<SiteNav items={DEFAULT_NAV} />);
-    for (const label of ['Buy', 'Rent', 'Sell', 'Contact']) {
+    for (const label of ['Buy', 'Rent', 'Sell', 'Calculators', 'Contact']) {
       const link = screen.getByRole('link', { name: label });
       expect(link).toBeInTheDocument();
       expect(link.getAttribute('href')).toBeTruthy();
     }
+    expect(screen.getByRole('link', { name: 'Calculators' }).getAttribute('href')).toBe(
+      '/calculators',
+    );
   });
 
   it('opens target:"new" items in a new tab with rel=noopener noreferrer', () => {

@@ -13,6 +13,7 @@ export const DEFAULT_NAV: NavItem[] = [
   { label: 'Buy', href: '/properties?saleType=sale', target: 'same' },
   { label: 'Rent', href: '/properties?saleType=rent', target: 'same' },
   { label: 'Sell', href: '/valuation', target: 'same' },
+  { label: 'Calculators', href: '/calculators', target: 'same' },
   { label: 'Contact', href: '/contact', target: 'same' },
 ];
 

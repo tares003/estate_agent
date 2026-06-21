@@ -2203,3 +2203,13 @@ Makes the calculators embeddable on any CMS-managed page via the EPIC-D page bui
 Verified: CalculatorBlock **4** + blocks parity **32** + full web **715** green; full-workspace typecheck + lint + all guards; **`next build` green** (the block server-renders the client calculators into the page renderer). EPIC-W now has both calculators surfaced three ways (dedicated pages + page-builder block). Remaining EPIC-W: admin band persistence (FR-W-3), rate presets (FR-W-8), PDF export (FR-W-12), usage analytics (FR-W-11).
 
 ---
+
+## Phase B84 — calculators hub page + primary-nav link (EPIC-W) (2026-06-15)
+
+Discoverability for the calculators: a `/calculators` hub page (server, `generateMetadata` FR-O-4) with cards linking the mortgage + stamp-duty calculators, plus a **Calculators** item added to the primary nav's `DEFAULT_NAV` (Buy / Rent / Sell / **Calculators** / Contact). Tokens only (G7); RTL page test asserts both links + canonical metadata, and SiteNav.test now covers the new item.
+
+Process note: the RED commit was accidentally made on local `main` (forgot to branch) — caught when G1 failed (the committed RED sat in the guards' comparison base, so only the uncommitted impl showed → "impl without tests"). Recovered by committing GREEN, branching `feat/EPIC-W-calculators-hub` at that point, then resetting local `main` back to the origin HEAD (`d91dcb7`); guards then green (2 impl + 2 test). The one full-suite failure was the documented `PropertyEditForm` useActionState flake — passes 4/4 in isolation, unrelated.
+
+Verified: SiteNav **6** + hub page **2** + full web (flake aside) green; typecheck + lint + all diff guards. EPIC-W remaining unchanged (FR-W-3/8/11/12).
+
+---
