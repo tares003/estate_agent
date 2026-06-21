@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Block, Field } from 'payload';
 import type { ZodTypeAny } from 'zod';
 
+import { calculatorBlockSchema } from '../../components/blocks/calculator-options.js';
 import { ctaStripBlockSchema } from '../../components/blocks/CtaStripBlock.js';
 import { faqBlockSchema } from '../../components/blocks/FaqBlock.js';
 import { heroBlockSchema } from '../../components/blocks/HeroBlock.js';
@@ -13,6 +14,7 @@ import { threePillarBlockSchema } from '../../components/blocks/ThreePillarBlock
 import { twoColumnBlockSchema } from '../../components/blocks/TwoColumnBlock.js';
 import { BLOCK_REGISTRY } from '../../components/blocks/registry.js';
 import { Pages } from '../collections/Pages.js';
+import { calculatorBlock } from './calculator.js';
 import { ctaStripBlock } from './ctaStrip.js';
 import { faqBlock } from './faq.js';
 import { heroBlock } from './hero.js';
@@ -39,6 +41,7 @@ function namedFields(fields: Field[]): { name: string; required: boolean }[] {
 
 const DIRECT: { block: Block; schema: { shape: Record<string, ZodTypeAny> }; type: string }[] = [
   { block: heroBlock, schema: heroBlockSchema, type: 'hero' },
+  { block: calculatorBlock, schema: calculatorBlockSchema, type: 'calculator' },
   { block: ctaStripBlock, schema: ctaStripBlockSchema, type: 'cta_strip' },
   { block: faqBlock, schema: faqBlockSchema, type: 'faq' },
   { block: threePillarBlock, schema: threePillarBlockSchema, type: 'three_pillar' },
