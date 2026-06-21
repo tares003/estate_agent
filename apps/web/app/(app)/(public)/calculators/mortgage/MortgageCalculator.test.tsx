@@ -1,3 +1,6 @@
+// responsive-coverage: opt-out all — asserts the compute/format behaviour + the
+// FR-W-10 disclosure; the responsive layout is covered by the page-level Playwright
+// e2e pass (design-requirements §3).
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -10,8 +13,8 @@ import { MortgageCalculator } from './MortgageCalculator.js';
 describe('MortgageCalculator', () => {
   it('shows an indicative monthly repayment from the default inputs', () => {
     render(<MortgageCalculator />);
-    // Default £300k / £60k / 4.5% / 25y → ≈ £1,333.97/month.
-    expect(screen.getByTestId('monthly-repayment').textContent).toMatch(/£1,333\.97/);
+    // Default £300k / £60k / 4.5% / 25y → £1,334.00/month (the computed value).
+    expect(screen.getByTestId('monthly-repayment').textContent).toMatch(/£1,334\.00/);
   });
 
   it('renders the "not financial advice" disclosure adjacent to the result (FR-W-10)', () => {
