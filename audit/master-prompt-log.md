@@ -2191,3 +2191,15 @@ Surfaces the stamp-duty domain (B80) as a live, public calculator — completing
 Verified: stamp-duty calculators suite **6** + full web **708** green; full-workspace typecheck + lint + all guards. Remaining EPIC-W: persist admin-editable bands (FR-W-3), the page-builder calculator block (FR-W-9), rate presets (FR-W-8), PDF export (FR-W-12), anonymous usage analytics (FR-W-11).
 
 ---
+
+## Phase B83 — page-builder calculator block (EPIC-W FR-W-9) (2026-06-15)
+
+Makes the calculators embeddable on any CMS-managed page via the EPIC-D page builder.
+
+- **`components/blocks/calculator-options.ts`**: the `calculatorBlockSchema` (Zod — `kind: mortgage|stamp_duty` + optional `heading`), kept UI-free so the node-env parity test imports it without the renderer's client / `@estate/ui` deps (the same split as `property-grid-options.ts`).
+- **`components/blocks/CalculatorBlock.tsx`** (renderer, covered): dispatches to the same `MortgageCalculator` / `StampDutyCalculator` client components the dedicated `/calculators/*` pages use (each carries its own FR-W-10 disclosure), with the optional heading above.
+- **`payload/blocks/calculator.ts`**: the CMS authoring schema (kind select + heading), registered in `pageBlocks` + `BLOCK_REGISTRY`. The EPIC-D parity contract (`blocks.test.ts`) now covers it — slug↔type, field-names↔schema-keys, required↔non-optional — so the CMS schema and renderer can't drift.
+
+Verified: CalculatorBlock **4** + blocks parity **32** + full web **715** green; full-workspace typecheck + lint + all guards; **`next build` green** (the block server-renders the client calculators into the page renderer). EPIC-W now has both calculators surfaced three ways (dedicated pages + page-builder block). Remaining EPIC-W: admin band persistence (FR-W-3), rate presets (FR-W-8), PDF export (FR-W-12), usage analytics (FR-W-11).
+
+---
