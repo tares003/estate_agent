@@ -1,5 +1,6 @@
 import type { Block } from 'payload';
 
+import { calculatorBlock } from './calculator.js';
 import { ctaStripBlock } from './ctaStrip.js';
 import { faqBlock } from './faq.js';
 import { heroBlock } from './hero.js';
@@ -11,6 +12,7 @@ import { threePillarBlock } from './threePillar.js';
 import { twoColumnBlock } from './twoColumn.js';
 
 export {
+  calculatorBlock,
   ctaStripBlock,
   faqBlock,
   heroBlock,
@@ -27,6 +29,7 @@ export {
 // renderer registry (components/blocks/registry.ts) — no drift in either direction.
 export const pageBlocks: Block[] = [
   heroBlock,
+  calculatorBlock,
   richTextBlock,
   ctaStripBlock,
   faqBlock,

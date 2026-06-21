@@ -10,6 +10,8 @@ import { TestimonialsBlock, testimonialsBlockSchema } from './TestimonialsBlock.
 import { TwoColumnBlock, twoColumnBlockSchema } from './TwoColumnBlock.js';
 import { PropertyGridBlock } from './PropertyGridBlock.js';
 import { propertyGridBlockSchema } from './property-grid-options.js';
+import { CalculatorBlock } from './CalculatorBlock.js';
+import { calculatorBlockSchema } from './calculator-options.js';
 
 // The EPIC-D section-type registry (FR-D-1/2): maps a section `type` to its data
 // schema + renderer. The page renderer validates each section's stored data
@@ -33,6 +35,7 @@ function defineBlock<T>(schema: ZodType<T>, Component: BlockComponent<T>): Regis
 
 export const BLOCK_REGISTRY: Readonly<Record<string, RegisteredBlock>> = {
   hero: defineBlock(heroBlockSchema, HeroBlock),
+  calculator: defineBlock(calculatorBlockSchema, CalculatorBlock),
   rich_text: defineBlock(richTextBlockSchema, RichTextBlock),
   cta_strip: defineBlock(ctaStripBlockSchema, CtaStripBlock),
   faq: defineBlock(faqBlockSchema, FaqBlock),
