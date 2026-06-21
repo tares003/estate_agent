@@ -2080,3 +2080,20 @@ User decision on the blocker: **build it** ("get all done all 3", informed). So 
 RED → GREEN per sub-slice (schema columns; adapter core), then a `fix` commit for the two corrections. `prisma format` + `generate`; **234 db tests** (17 new on the adapter core, 100% on the pure file); full-workspace typecheck + db lint + diff guards (G1 found tests, G2 100/100 on the touched shared-package files) green. Live-PG deferred to B78e (Docker still down).
 
 ---
+
+## Phase B78b — Better Auth composition + magic-link delivery bridge (EPIC-N) (2026-06-15)
+
+Composes the platform Better Auth instance and wires magic-link delivery — env-gated and fail-soft (no `BETTER_AUTH_SECRET` → the running app is byte-for-byte unchanged).
+
+- **`packages/auth` createAuth**: now sets `advanced.database.generateId: false` so better-auth defers id minting to our `@db.Uuid @default(uuid())` PKs (RED→GREEN + shape-test assertion).
+- **`apps/workers` `auth.magic_link` email template**: the passwordless sign-in email (portal logins), registered in the EPIC-U event→template registry (RED→GREEN; subject/`{{url}}` covered). AI-drafted copy, flagged for human review per CLAUDE.md §8.
+- **`apps/web` composition**:
+  - `lib/magic-link.ts` (pure, covered): `magicLinkNotification()` maps better-auth's sendMagicLink callback to a queued per-tenant `auth.magic_link` email — locks the event-name + `payload.url` contract with the worker.
+  - `lib/auth-db.ts` (glue): `getAuthDb()` — the SEPARATE Prisma client the adapter connects through, on a privileged BYPASSRLS role (`AUTH_DATABASE_URL`), wrapped with `authTenantScopeExtension()` (B78a) so every auth query is tenant-scoped + fails closed.
+  - `lib/auth.ts` (glue): `getAuth()` builds the instance via `createAuth(getAuthDb(), …)` with the secret, env-gated social providers (only those with creds set), and `sendAuthMagicLink` wired to the tenant email outbox (`withTenant(getDb(), …)` → `notify()`); returns null when unconfigured.
+
+New operator env this slice: `AUTH_DATABASE_URL` (BYPASSRLS connection, distinct from `DATABASE_URL`), `BETTER_AUTH_SECRET`, optional `BETTER_AUTH_URL`, and the OAuth `*_CLIENT_ID`/`*_CLIENT_SECRET` pairs (#3).
+
+The instance is still not mounted on a route (B78c) and the staff seam still reads the dev session (B78d) — so this is additive/dormant. Verified: **web 675 + auth 47 + workers 35** tests, full-workspace typecheck + lint + diff guards (G1 found tests, G2 met threshold) green.
+
+---
