@@ -5,6 +5,7 @@ import { NumberField, Select } from '@estate/ui';
 import { stampDutyInputSchema, type SdltBuyerCategory } from '@estate/validators';
 
 import { computeStampDuty, DEFAULT_SDLT_CONFIG } from '../../../lib/stamp-duty.js';
+import { PrintButton } from '../PrintButton.js';
 
 // EPIC-W FR-W-2/4 — the indicative Stamp Duty (SDLT) calculator UI. Computes live
 // from DEFAULT_SDLT_CONFIG (an illustrative, operator-configurable band set —
@@ -88,6 +89,9 @@ export function StampDutyCalculator() {
             ) : null}
 
             <p className="t-caption text-text-secondary mt-6">Last updated {result.lastUpdated}.</p>
+            <div className="mt-6">
+              <PrintButton />
+            </div>
           </>
         ) : (
           <p className="t-body-md text-text-secondary">

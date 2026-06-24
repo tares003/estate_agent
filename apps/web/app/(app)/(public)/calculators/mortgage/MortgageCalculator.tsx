@@ -5,6 +5,7 @@ import { NumberField } from '@estate/ui';
 import { mortgageInputSchema } from '@estate/validators';
 
 import { computeMortgage } from '../../../lib/mortgage.js';
+import { PrintButton } from '../PrintButton.js';
 
 // EPIC-W FR-W-6 — the indicative mortgage calculator UI. Computes live from the
 // inputs (no server round-trip): every change re-parses through
@@ -92,6 +93,9 @@ export function MortgageCalculator() {
               <ResultRow label="Total interest" value={gbp.format(result.totalInterest)} />
               <ResultRow label="Total payable" value={gbp.format(result.totalPayable)} />
             </dl>
+            <div className="mt-6">
+              <PrintButton />
+            </div>
           </>
         ) : (
           <p className="t-body-md text-text-secondary">
