@@ -3,13 +3,14 @@ import { withTenant } from '@estate/db';
 
 import { getDb } from '../lib/db.js';
 import { enquiryPipelineReport, type EnquiryReportReader } from '../lib/enquiry-reports.js';
+import { countFeedbackNeedsResponse, type FeedbackAlertsReader } from '../lib/feedback-alerts.js';
 import { getCurrentTenantId } from '../lib/tenant.js';
 
 // EPIC-H admin home (FR-H-1). The v1 dashboard: live at-a-glance KPIs (the enquiry
 // conversion funnel, from the unit-tested pipeline read model, run tenant-scoped)
-// plus quick access to the live admin surfaces. The full role-adaptive KPI grid +
-// alerts + activity feed land as those capabilities do. Renders inside the shell's
-// `main` landmark.
+// plus the count of feedback awaiting a response (EPIC-AC FR-AC-10) and quick access
+// to the live admin surfaces. The full role-adaptive KPI grid + alerts + activity
+// feed land as those capabilities do. Renders inside the shell's `main` landmark.
 
 export const dynamic = 'force-dynamic';
 
@@ -24,15 +25,24 @@ function formatRate(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
 }
 
+interface DashboardKpi {
+  label: string;
+  value: string;
+  /** When set, the card links to this surface (e.g. the feedback moderation queue). */
+  href?: string;
+}
+
 export default async function AdminDashboardPage() {
   const tenantId = await getCurrentTenantId();
-  const report = await withTenant(getDb(), tenantId, (tx) =>
-    enquiryPipelineReport(tx as unknown as EnquiryReportReader, {}),
-  );
-  const kpis = [
+  const { report, needsResponse } = await withTenant(getDb(), tenantId, async (tx) => ({
+    report: await enquiryPipelineReport(tx as unknown as EnquiryReportReader, {}),
+    needsResponse: await countFeedbackNeedsResponse(tx as unknown as FeedbackAlertsReader),
+  }));
+  const kpis: DashboardKpi[] = [
     { label: 'Total enquiries', value: String(report.total) },
     { label: 'Converted', value: String(report.converted) },
     { label: 'Conversion rate', value: formatRate(report.conversionRate) },
+    { label: 'Feedback needs response', value: String(needsResponse), href: '/admin/feedback' },
   ];
 
   return (
@@ -49,15 +59,30 @@ export default async function AdminDashboardPage() {
           At a glance
         </h2>
         <dl className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {kpis.map((kpi) => (
-            <div
-              key={kpi.label}
-              className="border-divider bg-surface-raised flex flex-col gap-1 rounded-lg border p-6"
-            >
-              <dt className="t-body-sm text-text-secondary">{kpi.label}</dt>
-              <dd className="t-display-sm text-brand-primary">{kpi.value}</dd>
-            </div>
-          ))}
+          {kpis.map((kpi) => {
+            const card = (
+              <>
+                <dt className="t-body-sm text-text-secondary">{kpi.label}</dt>
+                <dd className="t-display-sm text-brand-primary">{kpi.value}</dd>
+              </>
+            );
+            return kpi.href ? (
+              <Link
+                key={kpi.label}
+                href={kpi.href}
+                className="border-divider bg-surface-raised hover:border-brand-primary flex flex-col gap-1 rounded-lg border p-6"
+              >
+                {card}
+              </Link>
+            ) : (
+              <div
+                key={kpi.label}
+                className="border-divider bg-surface-raised flex flex-col gap-1 rounded-lg border p-6"
+              >
+                {card}
+              </div>
+            );
+          })}
         </dl>
       </section>
 
