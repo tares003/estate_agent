@@ -13,10 +13,6 @@ import {
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
-import {
-  loadPublishPreflightInput,
-  type PublishPreflightReader,
-} from '../../../lib/property-preflight.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 
