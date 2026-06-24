@@ -50,8 +50,10 @@ export {
   IMAGE_CONTENT_TYPES,
   IMAGE_EXTENSIONS,
   IMAGE_MAX_BYTES,
+  propertyImageMetaSchema,
   propertyImageUploadSchema,
   type ImageContentType,
+  type PropertyImageMeta,
   type PropertyImageUpload,
 } from './image-upload.js';
 export {

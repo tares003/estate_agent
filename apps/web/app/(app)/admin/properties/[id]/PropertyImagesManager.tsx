@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button, FileDropzone, FormError, TextField } from '@estate/ui';
 import type { FormErrorItem } from '@estate/ui';
 
+import { suggestImageAltText } from '../../../lib/seo.js';
 import {
   createPropertyImageUpload,
   deletePropertyImage,
@@ -16,7 +17,9 @@ import {
 // the three-step flow: issue a signed grant (RBAC server-side) → PUT the bytes to
 // the signed upload route → finalize (records the row + audit). Every image
 // carries alt text (G9 — never decorative-by-default); the hero is marked by the
-// label, not colour alone. Promote/delete call their audited server actions and
+// label, not colour alone. The alt field is PRE-FILLED with the §O.8 / FR-O-13
+// auto-suggestion (admin can override), but a non-empty value is still required
+// before the upload starts. Promote/delete call their audited server actions and
 // refresh the RSC tree.
 
 /** One gallery entry, with its render-time signed thumbnail path. */
@@ -30,13 +33,25 @@ export interface ManagedPropertyImage {
 export function PropertyImagesManager({
   propertyId,
   images,
+  propertyTitle,
+  addressLine,
 }: {
   propertyId: string;
   images: readonly ManagedPropertyImage[];
+  /** Listing title — feeds the FR-O-13 alt-text suggestion. */
+  propertyTitle: string;
+  /** Listing display address — the location segment of the suggestion. */
+  addressLine: string;
 }) {
   const router = useRouter();
+  // The next photo's suggested alt — its position is the current image count.
+  const suggestedAlt = suggestImageAltText({
+    propertyTitle,
+    addressLine,
+    index: images.length,
+  });
   const [files, setFiles] = useState<File[]>([]);
-  const [alt, setAlt] = useState('');
+  const [alt, setAlt] = useState(suggestedAlt);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<FormErrorItem[]>([]);
 
@@ -73,7 +88,8 @@ export function PropertyImagesManager({
         return;
       }
       setFiles([]);
-      setAlt('');
+      // Pre-fill the next photo's suggestion (its position is one further along).
+      setAlt(suggestImageAltText({ propertyTitle, addressLine, index: images.length + 1 }));
       router.refresh();
     } finally {
       setBusy(false);

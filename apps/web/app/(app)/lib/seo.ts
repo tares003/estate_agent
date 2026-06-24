@@ -86,6 +86,36 @@ export function propertyListingJsonLd(
   return jsonLd;
 }
 
+/** The inputs the alt-text suggester needs for one gallery photo. */
+export interface ImageAltSuggestionInput {
+  /** The listing title (`Property.title`), e.g. "3-bed terraced house". */
+  propertyTitle: string;
+  /** A location segment — the listing's `displayAddress` (or town). May be empty. */
+  addressLine: string;
+  /** Zero-based position of the photo in the gallery; rendered as "photo N+1". */
+  index: number;
+}
+
+/** Collapse internal whitespace runs to single spaces and trim the ends. */
+function collapseWhitespace(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Suggest alt text for a property photo (FR-O-13; master spec §O.8 discipline:
+ * `"Photograph of [property title], [town] — [room or angle]"`). The room/angle
+ * is unknown at upload time, so the photo number stands in. The result is always
+ * non-empty (a blank title falls back to the generic noun "property"), so it can
+ * pre-fill the mandatory alt field and satisfy the never-decorative-by-default
+ * rule on its own. Pure + IO-free.
+ */
+export function suggestImageAltText(input: ImageAltSuggestionInput): string {
+  const title = collapseWhitespace(input.propertyTitle) || 'property';
+  const location = collapseWhitespace(input.addressLine);
+  const subject = location ? `${title}, ${location}` : title;
+  return `Photograph of ${subject} — photo ${input.index + 1}`;
+}
+
 /** One breadcrumb (name + absolute URL). */
 export interface Breadcrumb {
   name: string;
