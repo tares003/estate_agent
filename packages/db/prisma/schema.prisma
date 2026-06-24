@@ -54,6 +54,7 @@ model PlatformTenant {
   feedback             Feedback[]
   sdltConfig           SdltConfig?
   savedProperties      SavedProperty[]
+  savedSearches        SavedSearch[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
   sessions             Session[]
@@ -107,6 +108,7 @@ model User {
   accounts         Account[]
   twoFactors       TwoFactor[]
   savedProperties  SavedProperty[]
+  savedSearches    SavedSearch[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -135,6 +137,37 @@ model SavedProperty {
   @@index([tenantId])
   @@index([tenantId, userId])
   @@map("saved_properties")
+}
+
+/// EPIC-J / FR-T-7/8 (master spec §J line 1343-1344) — a set of search filters a
+/// registered customer has saved, with an email-alert cadence. The system
+/// captures: a reference to the user, a name the user gave the search, the
+/// structured filter criteria (Json), an alert frequency (off | instant | daily
+/// | weekly), the timestamp of the most recent alert sent (null until the first
+/// alert fires), and a creation timestamp. Tenant-scoped (RLS), isolated by the
+/// tenant_isolation policy in 0022. The @@unique([tenantId, userId, name]) keeps
+/// one saved search per name within a customer's account. Both FKs cascade —
+/// deleting the tenant or the customer erases the saved search. This is a
+/// PHASE-B foundation slice: the storage layer only; the alert cron + account UI
+/// consumers land in their owning epic PRs.
+model SavedSearch {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  name           String
+  filters        Json
+  alertFrequency AlertFrequency @default(off) @map("alert_frequency")
+  lastAlertSentAt DateTime?     @map("last_alert_sent_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, name])
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("saved_searches")
 }
 
 /// Append-only audit trail. Every state-changing action writes one row via the
@@ -1311,4 +1344,16 @@ enum FurnishedStatus {
   optional
 
   @@map("furnished_status")
+}
+
+/// EPIC-J / FR-T-7/8 (master spec §J line 1344) — the email-alert cadence for a
+/// saved search: `off` (no alerts), `instant` (as new matches appear), `daily`
+/// (the saved_search_alerts 07:00 cron) or `weekly` (the Monday 08:00 digest).
+enum AlertFrequency {
+  off
+  instant
+  daily
+  weekly
+
+  @@map("alert_frequency")
 }
