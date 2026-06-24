@@ -91,6 +91,7 @@ export {
   type SdltBuyerCategory,
   type StampDutyInput,
 } from './stamp-duty.js';
+export { sdltConfigSchema, type SdltConfigInput } from './sdlt-config.js';
 export {
   FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,
