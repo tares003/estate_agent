@@ -105,3 +105,45 @@ export function breadcrumbJsonLd(crumbs: Breadcrumb[]): Record<string, unknown> 
     })),
   };
 }
+
+/** Drop a single trailing slash so the origin is stable for `@id` / `url`. */
+function normaliseOrigin(origin: string): string {
+  return origin.endsWith('/') ? origin.slice(0, -1) : origin;
+}
+
+/** Stable `@id` for the agency entity so other JSON-LD nodes can reference it. */
+function organisationId(origin: string): string {
+  return `${normaliseOrigin(origin)}/#organisation`;
+}
+
+/**
+ * Site-wide `RealEstateAgent` (an `Organization`) JSON-LD (FR-O-7, master spec
+ * §O.3). Built from what the platform-tenant record exposes today — the agency
+ * `name` and the request origin. Richer fields (logo, telephone, address, geo,
+ * `sameAs`, `aggregateRating`, opening hours) are omitted rather than faked, to
+ * be added once a tenant-settings read model carries them.
+ */
+export function organizationJsonLd(name: string, origin: string): Record<string, unknown> {
+  const url = normaliseOrigin(origin);
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'RealEstateAgent',
+    '@id': organisationId(origin),
+    name,
+    url,
+  };
+}
+
+/**
+ * Site-wide `WebSite` JSON-LD (FR-O-7, master spec §O.3) for the public site,
+ * with its `publisher` linked to the `Organization` node by `@id`.
+ */
+export function webSiteJsonLd(name: string, origin: string): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name,
+    url: normaliseOrigin(origin),
+    publisher: { '@id': organisationId(origin) },
+  };
+}

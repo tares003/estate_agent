@@ -55,3 +55,33 @@ export async function getRequestIp(): Promise<string | null> {
   }
   return requestHeaders.get('x-real-ip')?.trim() || null;
 }
+
+/** The platform-tenant columns the public chrome / SEO needs. */
+export interface PlatformTenantRow {
+  name: string;
+}
+
+/**
+ * Structural reader for the operator-owned `platform_tenants` registry. That
+ * table is intentionally NOT under RLS (CLAUDE.md §9), so it is read on the base
+ * client by id — not inside `withTenant` — which is why this takes the client
+ * directly. Kept structural (not the full PrismaClient) so it unit-tests with a
+ * fake.
+ */
+export interface PlatformTenantReader {
+  platformTenant: {
+    findUnique(args: { where: { id: string } }): Promise<PlatformTenantRow | null>;
+  };
+}
+
+/**
+ * The current tenant agency's display name (for SEO structured data + chrome),
+ * or null when the tenant row is missing. Reads the un-RLS'd registry directly.
+ */
+export async function getTenantName(
+  reader: PlatformTenantReader,
+  tenantId: string,
+): Promise<string | null> {
+  const row = await reader.platformTenant.findUnique({ where: { id: tenantId } });
+  return row?.name ?? null;
+}
