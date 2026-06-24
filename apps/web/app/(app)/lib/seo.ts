@@ -44,13 +44,18 @@ function availabilityFor(marketStatus: string): string {
 }
 
 /**
- * `RealEstateListing` JSON-LD for a property (FR-O-5). Fields absent from the
- * view model (image, floor size) are omitted rather than faked; geo and offers
- * are included only when their data is present.
+ * `RealEstateListing` JSON-LD for a property (FR-O-5). Geo, offers and the
+ * gallery `image` array are included only when their data is present; floor
+ * size remains absent from the view model and is omitted rather than faked.
+ *
+ * `images` are the gallery photo URLs in display order (the caller resolves
+ * them to absolute, render-time signed URLs). Schema.org accepts a URL array
+ * for `image`; an empty/absent list omits the field.
  */
 export function propertyListingJsonLd(
   property: PropertyForSeo,
   url: string,
+  images: readonly string[] = [],
 ): Record<string, unknown> {
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -65,6 +70,7 @@ export function propertyListingJsonLd(
       addressCountry: 'GB',
     },
   };
+  if (images.length > 0) jsonLd['image'] = [...images];
   if (property.description) jsonLd['description'] = property.description;
   if (property.bedrooms != null) jsonLd['numberOfBedrooms'] = property.bedrooms;
   if (property.bathrooms != null) jsonLd['numberOfBathroomsTotal'] = property.bathrooms;

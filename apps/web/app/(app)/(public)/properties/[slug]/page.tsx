@@ -114,8 +114,11 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   // EPIC-O structured data (FR-O-5 RealEstateListing + FR-O-6 BreadcrumbList).
   const origin = await getRequestOrigin();
   const url = `${origin}/properties/${property.slug}`;
+  // The structured-data `image` array carries the gallery photos as absolute,
+  // render-time signed URLs (the gallery srcs are app-relative signed paths).
+  const listingImages = gallery.map((image) => `${origin}${image.src}`);
   const jsonLd = [
-    propertyListingJsonLd(property, url),
+    propertyListingJsonLd(property, url, listingImages),
     breadcrumbJsonLd([
       { name: 'Home', url: `${origin}/` },
       { name: 'Properties', url: `${origin}/properties` },
