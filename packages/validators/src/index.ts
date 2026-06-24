@@ -46,6 +46,7 @@ export {
   type RepairStatusUpdate,
 } from './repair-status.js';
 export { repairPropertyLinkSchema, type RepairPropertyLink } from './repair-property.js';
+export { savedPropertyToggleSchema, type SavedPropertyToggle } from './saved-property.js';
 export {
   IMAGE_CONTENT_TYPES,
   IMAGE_EXTENSIONS,

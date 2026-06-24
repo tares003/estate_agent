@@ -52,6 +52,7 @@ model PlatformTenant {
   contractors          Contractor[]
   feedback             Feedback[]
   sdltConfig           SdltConfig?
+  savedProperties      SavedProperty[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -80,20 +81,51 @@ model User {
   email            String
   name             String
   role             String
+  /// Discriminates a staff member (back-office RBAC role applies) from a
+  /// registered customer account holder (EPIC-T; PRODUCT.md §3 — "Customer" is
+  /// reserved for account holders). Defaults to `staff` so existing rows + the
+  /// staff-session seam are unchanged; the customer-session seam admits only
+  /// `customer`.
+  type             String   @default("staff")
   emailVerified    Boolean  @default(false) @map("email_verified")
   image            String?
   twoFactorEnabled Boolean? @map("two_factor_enabled")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenant     PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions   Session[]
-  accounts   Account[]
-  twoFactors TwoFactor[]
+  tenant           PlatformTenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions         Session[]
+  accounts         Account[]
+  twoFactors       TwoFactor[]
+  savedProperties  SavedProperty[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("users")
+}
+
+/// EPIC-T FR-T-5/6 — a property a registered customer has saved to favourites.
+/// Tenant-scoped (RLS), keyed to the customer (user) and the catalogue property.
+/// The @@unique([tenantId, userId, propertyId]) makes a save idempotent: the
+/// toggle upserts/deletes against it rather than creating duplicate rows. Both
+/// FKs cascade — deleting the tenant, the customer, or the property erases the
+/// save. The persisted row is what makes the heart's state survive navigation +
+/// sign-out/sign-in (FR-T-6).
+model SavedProperty {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, propertyId])
+  @@index([tenantId])
+  @@index([tenantId, userId])
+  @@map("saved_properties")
 }
 
 /// Append-only audit trail. Every state-changing action writes one row via the
@@ -378,12 +410,13 @@ model Property {
 
   tenant       PlatformTenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch       Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  enquiries    Enquiry[]
-  viewings     Viewing[]
-  repairs      RepairRequest[]
-  images       PropertyImage[]
-  documents    PropertyDocument[]
-  statusEvents PropertyStatusEvent[]
+  enquiries       Enquiry[]
+  viewings        Viewing[]
+  repairs         RepairRequest[]
+  images          PropertyImage[]
+  documents       PropertyDocument[]
+  statusEvents    PropertyStatusEvent[]
+  savedBy         SavedProperty[]
 
   @@unique([tenantId, reference])
   @@unique([tenantId, slug])

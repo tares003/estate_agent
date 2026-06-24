@@ -32,11 +32,11 @@ describe('customerSessionFromUser', () => {
   });
 
   it('carries an unverified-email flag through (FR-T-2 gate decides downstream)', () => {
-    expect(customerSessionFromUser(customer({ emailVerified: false })).emailVerified).toBe(false);
+    expect(customerSessionFromUser(customer({ emailVerified: false }))?.emailVerified).toBe(false);
   });
 
   it('treats a null email-verified column as not verified (fail-closed)', () => {
-    expect(customerSessionFromUser(customer({ emailVerified: null })).emailVerified).toBe(false);
+    expect(customerSessionFromUser(customer({ emailVerified: null }))?.emailVerified).toBe(false);
   });
 
   it('returns null for a non-customer (staff) user — never honour a staff identity', () => {
