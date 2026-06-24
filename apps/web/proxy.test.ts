@@ -74,6 +74,27 @@ describe('proxy URL canonicalisation (FR-O-2/3)', () => {
   });
 });
 
+describe('proxy security headers (EPIC-N FR-N-15)', () => {
+  it('emits the standard security headers on a pass-through response', async () => {
+    const res = await proxy(get('https://acme.test/properties'));
+    expect(res.status).not.toBe(301);
+    expect(res.headers.get('Strict-Transport-Security')).toContain('max-age=');
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(res.headers.get('Content-Security-Policy')).toContain("frame-ancestors 'none'");
+    expect(res.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
+    expect(res.headers.get('Permissions-Policy')).toContain('geolocation=()');
+  });
+
+  it('emits the standard security headers on a 301 canonicalisation redirect', async () => {
+    const res = await proxy(get('https://acme.test/Properties/Palatine-Road'));
+    expect(res.status).toBe(301);
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+    expect(res.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
+  });
+});
+
 describe('proxy tenant resolution (EPIC-S FR-S-1)', () => {
   it('forwards the host-resolved tenant and strips any forged inbound header', async () => {
     findFirst.mockImplementation(async ({ where }) =>

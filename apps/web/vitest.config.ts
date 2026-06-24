@@ -15,6 +15,7 @@ export default defineConfig({
       'components/**/*.test.{ts,tsx}',
       'payload/**/*.test.{ts,tsx}',
       'proxy.test.{ts,tsx}',
+      'security-headers.test.{ts,tsx}',
       'tenant-host.test.{ts,tsx}',
     ],
     // Integration tests (real Postgres + PostGIS via Testcontainers) are opt-in —
