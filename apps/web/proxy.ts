@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getDb } from './app/(app)/lib/db.js';
+import { applySecurityHeaders } from './security-headers.js';
 import { createTenantRegistry, resolveTenantIdByHost } from './tenant-host.js';
 
 // EPIC-S tenant resolution + EPIC-O URL canonicalisation, in Next 16's `proxy`
@@ -65,7 +66,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (canonical !== pathname) {
       const url = new URL(request.url);
       url.pathname = canonical;
-      return NextResponse.redirect(url, 301);
+      // FR-N-15: the redirect is a response too — it carries the headers.
+      return applySecurityHeaders(NextResponse.redirect(url, 301));
     }
   }
 
@@ -78,7 +80,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     requestHeaders.set(TENANT_HEADER, resolved);
   }
   requestHeaders.set(PATHNAME_HEADER, pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  // FR-N-15: emit the standard security headers on every pass-through response.
+  return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
 }
 
 export const config = {
