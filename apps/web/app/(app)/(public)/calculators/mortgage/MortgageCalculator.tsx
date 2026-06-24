@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { NumberField } from '@estate/ui';
+import { NumberField, Select } from '@estate/ui';
 import { mortgageInputSchema } from '@estate/validators';
 
 import {
@@ -9,9 +9,10 @@ import {
   computeMortgage,
   type MortgageRateConfig,
 } from '../../../lib/mortgage.js';
+import type { MortgageRatePreset } from '../../../lib/mortgage-rate-presets.js';
 import { PrintButton } from '../PrintButton.js';
 
-// EPIC-W FR-W-6/7 — the indicative mortgage calculator UI. Computes live from the
+// EPIC-W FR-W-6/7/8 — the indicative mortgage calculator UI. Computes live from the
 // inputs (no server round-trip): every change re-parses through
 // `mortgageInputSchema` and, when valid, runs `computeMortgage`. INDICATIVE ONLY
 // (PRODUCT.md §9) — the "not financial advice" disclosure (FR-W-10 / PRODUCT.md §8)
@@ -21,6 +22,10 @@ import { PrintButton } from '../PrintButton.js';
 // FR-W-7: the optional `config` prop carries the tenant's admin-configured defaults
 // (rate / term / deposit %) that seed the fields' initial values; it defaults to the
 // engine default so the component renders standalone (and keeps existing tests green).
+//
+// FR-W-8: the optional `presets` prop carries the tenant's admin-managed rate
+// snapshots ("2-year fixed", "5-year fixed"); choosing one in the dropdown applies its
+// rate + term to the inputs. The dropdown is omitted entirely when none are configured.
 
 /** The calculator's own default purchase price (UX seed; the config has no price). */
 const DEFAULT_PURCHASE_PRICE = 300_000;
@@ -47,8 +52,10 @@ function ResultRow({ label, value }: { label: string; value: string }) {
 
 export function MortgageCalculator({
   config = DEFAULT_MORTGAGE_RATE_CONFIG,
+  presets = [],
 }: {
   config?: MortgageRateConfig;
+  presets?: MortgageRatePreset[];
 }) {
   const initialDeposit = Math.round(
     (DEFAULT_PURCHASE_PRICE * config.defaultDepositPercent) / 100,
@@ -59,6 +66,7 @@ export function MortgageCalculator({
     String(config.defaultAnnualRatePercent),
   );
   const [termYears, setTermYears] = useState(String(config.defaultTermYears));
+  const [presetId, setPresetId] = useState('');
 
   const parsed = mortgageInputSchema.safeParse({
     purchasePrice,
@@ -68,9 +76,30 @@ export function MortgageCalculator({
   });
   const result = parsed.success ? computeMortgage(parsed.data) : null;
 
+  // FR-W-8 — applying a preset overwrites the rate + term with the admin snapshot.
+  const applyPreset = (id: string) => {
+    setPresetId(id);
+    const preset = presets.find((entry) => entry.id === id);
+    if (preset) {
+      setAnnualRatePercent(String(preset.annualRatePercent));
+      setTermYears(String(preset.termYears));
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
       <form className="flex flex-col gap-5" noValidate aria-label="Mortgage details">
+        {presets.length > 0 ? (
+          <Select
+            id="ratePreset"
+            label="Rate preset"
+            hint="Apply an indicative rate snapshot, then adjust if needed."
+            placeholder="Choose a preset…"
+            value={presetId}
+            onChange={(event) => applyPreset(event.target.value)}
+            options={presets.map((preset) => ({ value: preset.id, label: preset.label }))}
+          />
+        ) : null}
         <NumberField
           id="purchasePrice"
           label="Purchase price (£)"

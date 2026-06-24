@@ -113,6 +113,13 @@ export {
   type MortgageRateConfigInput,
 } from './mortgage-rate-config.js';
 export {
+  MORTGAGE_PRESET_LABEL_MAX,
+  mortgageRatePresetSchema,
+  mortgageRatePresetCreateSchema,
+  mortgageRatePresetListSchema,
+  type MortgageRatePresetInput,
+} from './mortgage-rate-preset.js';
+export {
   SDLT_BUYER_CATEGORIES,
   stampDutyInputSchema,
   type SdltBuyerCategory,
