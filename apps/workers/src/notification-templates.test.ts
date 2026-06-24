@@ -77,6 +77,15 @@ describe('renderNotification', () => {
     expect(message!.html).toContain('https://acme.test/repairs/contractor/tok.en.sig');
   });
 
+  it('renders the EPIC-N FR-N-5 password-reset email with the reset url', () => {
+    const message = renderNotification('auth.password_reset', {
+      url: 'https://acme.test/reset-password?token=aZ09aZ09aZ09aZ09aZ09aZ09',
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject.toLowerCase()).toMatch(/reset|password/);
+    expect(message!.html).toContain('https://acme.test/reset-password?token=aZ09aZ09aZ09aZ09aZ09aZ09');
+  });
+
   it('renders the FR-AC-1/12 post-repair feedback request with the feedback url', () => {
     const message = renderNotification('feedback.requested', {
       url: 'https://acme.test/feedback/seg.123.sig',
