@@ -56,6 +56,9 @@ model PlatformTenant {
   savedProperties      SavedProperty[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
+  redirects            Redirect[]
+  seoMetadata          SeoMetadata[]
+  importLogs           ImportLog[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -1015,6 +1018,127 @@ model PropertyStatusEvent {
   @@index([tenantId])
   @@index([tenantId, propertyId])
   @@map("property_status_events")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "Redirect", FR-J-1). A URL redirect
+/// rule: a source path (unique per tenant), a destination, the redirect type, plus a
+/// hit counter and the most-recent-hit timestamp maintained by the redirect handler.
+/// Storage layer only — the resolver/handler lands in its owning epic PR. Tenant-
+/// scoped, isolated by the tenant_isolation RLS policy in migrations/raw/0021_seo_ops_rls.sql.
+model Redirect {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  /// The incoming path to match (unique per tenant via @@unique below).
+  sourcePath      String       @map("source_path")
+  /// Where the request is sent. Empty for a 410 Gone, which serves no destination.
+  destinationPath String       @map("destination_path")
+  /// The redirect status — 301 / 302 / 307 / 410 (see RedirectType).
+  type            RedirectType
+  /// How many times this rule has fired; incremented by the handler.
+  hitCount        Int          @default(0) @map("hit_count")
+  /// The most-recent-hit timestamp; null until the rule first fires.
+  lastHitAt       DateTime?    @map("last_hit_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, sourcePath])
+  @@index([tenantId])
+  @@index([tenantId, sourcePath])
+  @@map("redirects")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "SEO metadata", FR-J-1). A per-page or
+/// per-entity SEO override: the scope (page / property / area guide / blog post /
+/// branch / "default"), the scope identifier (null for the tenant-wide "default"),
+/// meta title / description, canonical URL, Open Graph image, no-index / no-follow
+/// flags and any structured-data overrides. Storage layer only — the metadata
+/// resolver lands in EPIC-O's PR. Tenant-scoped, isolated by the tenant_isolation RLS
+/// policy in migrations/raw/0021_seo_ops_rls.sql.
+model SeoMetadata {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  /// What the override applies to (see SeoScope).
+  scope           SeoScope
+  /// The id of the scoped entity; null for the tenant-wide `default` scope.
+  scopeId         String?  @map("scope_id") @db.Uuid
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description")
+  canonicalUrl    String?  @map("canonical_url")
+  ogImage         String?  @map("og_image")
+  noIndex         Boolean  @default(false) @map("no_index")
+  noFollow        Boolean  @default(false) @map("no_follow")
+  /// Structured-data (JSON-LD) overrides merged into the emitted schema.org markup.
+  structuredData  Json?    @map("structured_data")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, scope, scopeId])
+  @@map("seo_metadata")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "Import log", FR-J-1). A record of every
+/// bulk-import run: the source (e.g. "portal_feed" / "csv_upload"), the user who
+/// triggered it, the per-run record counts (input / created / updated / skipped /
+/// failed), a structured error summary, and the start / finish timestamps. Storage
+/// layer only — the importer that writes these rows lands in its owning epic PR.
+/// Tenant-scoped, isolated by the tenant_isolation RLS policy in
+/// migrations/raw/0021_seo_ops_rls.sql.
+model ImportLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  /// The import source identifier, e.g. "portal_feed" or "csv_upload".
+  source         String
+  /// The id of the user who triggered the run; null for system / scheduled imports.
+  triggeredBy    String?   @map("triggered_by") @db.Uuid
+  recordsInput   Int       @default(0) @map("records_input")
+  recordsCreated Int       @default(0) @map("records_created")
+  recordsUpdated Int       @default(0) @map("records_updated")
+  recordsSkipped Int       @default(0) @map("records_skipped")
+  recordsFailed  Int       @default(0) @map("records_failed")
+  /// A structured summary of the errors encountered during the run.
+  errorSummary   Json?     @map("error_summary")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  /// Null while the run is in progress; set when it completes.
+  finishedAt     DateTime? @map("finished_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, source])
+  @@map("import_logs")
+}
+
+/// EPIC-J redirect status (master spec §J "Redirect"). The HTTP statuses the redirect
+/// handler may emit — 301 permanent, 302 found, 307 temporary, 410 gone. Prisma enum
+/// identifiers cannot start with a digit, so the numeric statuses are spelled `r3xx`
+/// and 410 Gone is `gone`; the DB enum is mapped via @@map.
+enum RedirectType {
+  r301
+  r302
+  r307
+  gone
+
+  @@map("redirect_type")
+}
+
+/// EPIC-J SEO-metadata scope (master spec §J "SEO metadata"). What an SEO override
+/// applies to. `default` is the tenant-wide fallback (its scope_id is null).
+enum SeoScope {
+  page
+  property
+  area_guide
+  blog_post
+  branch
+  default
+
+  @@map("seo_scope")
 }
 
 /// The vertical discriminator for a property (master spec §F; PRODUCT.md §2).
