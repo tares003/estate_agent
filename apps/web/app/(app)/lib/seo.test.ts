@@ -85,6 +85,24 @@ describe('propertyListingJsonLd', () => {
     expect((ld['address'] as Record<string, unknown>)['addressLocality']).toBeUndefined();
   });
 
+  it('emits the gallery image URLs as the schema image array (FR-O-5)', () => {
+    const ld = propertyListingJsonLd(base, 'https://acme.test/properties/palatine-road-m20', [
+      'https://acme.test/img/hero.jpg',
+      'https://acme.test/img/2.jpg',
+    ]);
+    expect(ld['image']).toEqual([
+      'https://acme.test/img/hero.jpg',
+      'https://acme.test/img/2.jpg',
+    ]);
+  });
+
+  it('omits the image field when no images are supplied', () => {
+    const none = propertyListingJsonLd(base, 'https://acme.test/p');
+    expect(none['image']).toBeUndefined();
+    const empty = propertyListingJsonLd(base, 'https://acme.test/p', []);
+    expect(empty['image']).toBeUndefined();
+  });
+
   it('reflects market status in offer availability', () => {
     const sold = propertyListingJsonLd({ ...base, marketStatus: 'sold' }, 'https://x.test/p');
     expect((sold['offers'] as Record<string, unknown>)['availability']).toBe(
