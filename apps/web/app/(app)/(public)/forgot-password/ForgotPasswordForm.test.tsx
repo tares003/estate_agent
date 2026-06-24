@@ -33,6 +33,9 @@ describe('ForgotPasswordForm', () => {
 
   it('shows a neutral check-your-email confirmation when the request succeeds', () => {
     render(<ForgotPasswordForm initialState={{ ok: true }} />);
-    expect(screen.getByText(/check your (email|inbox)|if .*account.*exists|sent/i)).toBeInTheDocument();
+    // The success heading is neutral — it never confirms whether the account exists.
+    expect(screen.getByRole('heading', { name: /check your (email|inbox)/i })).toBeInTheDocument();
+    // The supporting line is enumeration-safe ("if that email has an account…").
+    expect(screen.getByText(/if that email .*account|account.*we’ve sent|sent a link/i)).toBeInTheDocument();
   });
 });

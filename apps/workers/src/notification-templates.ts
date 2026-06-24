@@ -51,6 +51,20 @@ const AUTH_MAGIC_LINK: EmailTemplateInput = {
     '<p>If you didn’t request this, you can safely ignore this email.</p>',
 };
 
+/** EPIC-N (FR-N-5): the password-reset email. better-auth's emailAndPassword flow
+ *  queues this via the auth sendResetPassword callback; `url` is the opaque,
+ *  single-use reset link (the token expires 60 minutes after issue). */
+const AUTH_PASSWORD_RESET: EmailTemplateInput = {
+  subject: 'Reset your password',
+  preheader: 'Use this secure link to choose a new password — it expires in 60 minutes.',
+  html:
+    '<p>Hello,</p>' +
+    '<p>We received a request to reset your password. Use this secure link to choose a new ' +
+    'one. It expires in 60 minutes and can be used once:</p>' +
+    '<p><a href="{{url}}">Reset your password</a></p>' +
+    '<p>If you didn’t request this, you can safely ignore this email — your password won’t change.</p>',
+};
+
 /** EPIC-AC (FR-AC-1/FR-AC-12): the post-journey feedback request — a no-sign-in
  *  link to the brief feedback form. Queued (e.g.) when a repair ticket transitions
  *  to `completed`; `url` is the one-time signed /feedback/<token> link. */
@@ -68,6 +82,7 @@ const TEMPLATES: Record<string, EmailTemplateInput> = {
   'repair_request.received': REPAIR_RECEIVED,
   'repair.contractor_assigned': CONTRACTOR_ASSIGNED,
   'auth.magic_link': AUTH_MAGIC_LINK,
+  'auth.password_reset': AUTH_PASSWORD_RESET,
   'feedback.requested': FEEDBACK_REQUESTED,
 };
 

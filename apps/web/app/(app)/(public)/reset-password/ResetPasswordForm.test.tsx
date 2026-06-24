@@ -33,7 +33,9 @@ describe('ResetPasswordForm', () => {
 
   it('shows a success confirmation with a sign-in link when the reset succeeds', () => {
     render(<ResetPasswordForm token="tok123" initialState={{ ok: true }} />);
-    expect(screen.getByText(/password (has been )?(updated|reset|changed)|you can now sign in/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /password (has been )?(updated|reset|changed)/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /sign in/i })).toBeInTheDocument();
   });
 });
