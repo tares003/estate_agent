@@ -31,6 +31,12 @@ export {
   customerRegistrationSchema,
   type CustomerRegistration,
 } from './customer-registration.js';
+export {
+  passwordResetRequestSchema,
+  passwordResetSchema,
+  type PasswordResetRequest,
+  type PasswordReset,
+} from './password-reset.js';
 export { viewingRequestSchema, type ViewingRequest } from './viewing-request.js';
 export { valuationRequestSchema, type ValuationRequest } from './valuation-request.js';
 export {

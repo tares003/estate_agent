@@ -42,3 +42,24 @@ export function verificationEmailNotification(
     payload: { url },
   };
 }
+
+/**
+ * The queued-email {@link NotifyInput} for the EPIC-N FR-N-5 password-reset link.
+ * Same delivery path as the magic link (a `notification_logs` row the EPIC-U email
+ * worker renders + sends through the tenant's own SMTP); the distinct `event` lets
+ * the worker pick the `auth.password_reset` template. `url` is the opaque,
+ * single-use reset link better-auth minted (carrying the 60-min-expiry token).
+ */
+export function passwordResetNotification(
+  email: string,
+  url: string,
+  tenantId: string,
+): NotifyInput {
+  return {
+    tenantId,
+    event: 'auth.password_reset',
+    channel: 'email',
+    recipient: email,
+    payload: { url },
+  };
+}
