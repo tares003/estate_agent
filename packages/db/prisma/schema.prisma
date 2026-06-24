@@ -381,43 +381,127 @@ model Agent {
 }
 
 /// The catalogue entity (master spec §F/§J.3). NEVER named Listing/House. One
-/// row per property, discriminated by listingType; price is stored in pence.
+/// row per property, discriminated by listingType (FR-F-2 — there is NEVER a
+/// table per vertical); the per-vertical F.1–F.6 extensions hang on this same
+/// entity, validated conditionally on listingType (FR-F-3). FR-F-1: this entity
+/// captures EVERY master-spec Section F attribute. Money fields (price, deposits,
+/// ground rent, service charge) are stored in pence. The optional foreign-key
+/// columns (primaryAgentId / secondaryAgentId / created/updated user) are SOFT
+/// references (no hard FK) so the property survives an agent or staff member
+/// leaving — the relational @relation only binds branch.
 model Property {
-  id             String       @id @default(uuid()) @db.Uuid
-  tenantId       String       @map("tenant_id") @db.Uuid
-  branchId       String?      @map("branch_id") @db.Uuid
-  reference      String
-  slug           String
-  title          String?
-  displayAddress String       @map("display_address")
-  postcode       String
-  postcodePrefix String?      @map("postcode_prefix")
-  town           String?
-  county         String?
-  latitude       Float?
-  longitude      Float?
-  listingType    ListingType  @default(residential) @map("listing_type")
-  saleType       SaleType     @map("sale_type")
-  marketStatus   MarketStatus @default(for_sale) @map("market_status")
-  price          Int?
-  bedrooms       Int?
-  bathrooms      Int?
-  receptions     Int?
-  description    String?
-  publishedAt    DateTime?    @map("published_at")
-  deletedAt      DateTime?    @map("deleted_at")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  id       String  @id @default(uuid()) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  branchId String? @map("branch_id") @db.Uuid
+
+  // ── §F identification + lifecycle ──────────────────────────────────────────
+  reference         String
+  externalId        String?            @map("external_id")
+  slug              String
+  title             String?
+  listingType       ListingType        @default(residential) @map("listing_type")
+  saleType          SaleType           @map("sale_type")
+  publicationStatus PublicationStatus  @default(draft) @map("publication_status")
+  marketStatus      MarketStatus       @default(for_sale) @map("market_status")
+  isNewHome         Boolean            @default(false) @map("is_new_home")
+  isFeatured        Boolean            @default(false) @map("is_featured")
+  showOnHomepage    Boolean            @default(false) @map("show_on_homepage")
+  showPrice         Boolean            @default(true) @map("show_price")
+  displayOrder      Int                @default(0) @map("display_order")
+
+  // ── §F pricing ─────────────────────────────────────────────────────────────
+  price            Int?
+  priceQualifier   PriceQualifier @default(none) @map("price_qualifier")
+  rentFrequency    RentFrequency? @map("rent_frequency")
+  depositAmount    Int?           @map("deposit_amount")
+  holdingDeposit   Int?           @map("holding_deposit")
+  minTenancyMonths Int?           @map("min_tenancy_months")
+  letType          LetType?       @map("let_type")
+  availableFrom    DateTime?      @map("available_from")
+
+  // ── §F specification ─────────────────────────────────────────────────────────
+  category            PropertyCategory?
+  subCategory         String?           @map("sub_category")
+  bedrooms            Int?
+  bathrooms           Int?
+  receptions          Int?
+  internalSqft        Int?              @map("internal_sqft")
+  internalSqm         Int?              @map("internal_sqm")
+  plotSqft            Int?              @map("plot_sqft")
+  plotSqm             Int?              @map("plot_sqm")
+  tenure              Tenure?
+  leaseYearsRemaining Int?              @map("lease_years_remaining")
+  groundRent          Int?              @map("ground_rent")
+  serviceCharge       Int?              @map("service_charge")
+  councilTaxBand      CouncilTaxBand?   @map("council_tax_band")
+  epcRating           EpcRating?        @map("epc_rating")
+  epcScore            Int?              @map("epc_score")
+  furnishedStatus     FurnishedStatus?  @map("furnished_status")
+  parking             String?
+  outdoorSpace        String?           @map("outdoor_space")
+  chainStatus         String?           @map("chain_status")
+  heating             String?
+  constructionYear    Int?              @map("construction_year")
+  listedStatus        String?           @map("listed_status")
+
+  // ── §F location ──────────────────────────────────────────────────────────────
+  internalAddressLine1 String?  @map("internal_address_line1")
+  internalAddressLine2 String?  @map("internal_address_line2")
+  displayAddress       String   @map("display_address")
+  postcode             String
+  postcodePrefix       String?  @map("postcode_prefix")
+  town                 String?
+  city                 String?
+  county               String?
+  country              String   @default("United Kingdom")
+  latitude             Float?
+  longitude            Float?
+  hideExactAddress     Boolean  @default(false) @map("hide_exact_address")
+
+  // ── §F descriptions ──────────────────────────────────────────────────────────
+  shortDescription String?  @map("short_description")
+  description      String?
+  keyFeatures      Json     @default("[]") @map("key_features")
+  areaDescription  String?  @map("area_description")
+  additionalNotes  String?  @map("additional_notes")
+
+  // ── §F media (headline URLs; the gallery + paperwork rows are satellites) ────
+  mainImageUrl    String? @map("main_image_url")
+  videoTourUrl    String? @map("video_tour_url")
+  virtualTourUrl  String? @map("virtual_tour_url")
+  brochureUrl     String? @map("brochure_url")
+  materialInfoUrl String? @map("material_info_url")
+
+  // ── §F agent + branch assignment (soft refs; branch binds via @relation) ─────
+  primaryAgentId   String? @map("primary_agent_id") @db.Uuid
+  secondaryAgentId String? @map("secondary_agent_id") @db.Uuid
+  contactPhone     String? @map("contact_phone")
+  contactEmail     String? @map("contact_email")
+
+  // ── §F SEO ───────────────────────────────────────────────────────────────────
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description")
+  ogImageUrl      String?  @map("og_image_url")
+  canonicalUrl    String?  @map("canonical_url")
+  noIndex         Boolean  @default(false) @map("no_index")
+
+  // ── §F audit metadata + soft delete (FR-F-10) ────────────────────────────────
+  createdByUserId String?   @map("created_by_user_id") @db.Uuid
+  updatedByUserId String?   @map("updated_by_user_id") @db.Uuid
+  publishedAt     DateTime? @map("published_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   tenant       PlatformTenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch       Branch?               @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  enquiries       Enquiry[]
-  viewings        Viewing[]
-  repairs         RepairRequest[]
-  images          PropertyImage[]
-  documents       PropertyDocument[]
-  statusEvents    PropertyStatusEvent[]
-  savedBy         SavedProperty[]
+  enquiries    Enquiry[]
+  viewings     Viewing[]
+  repairs      RepairRequest[]
+  images       PropertyImage[]
+  documents    PropertyDocument[]
+  statusEvents PropertyStatusEvent[]
+  savedBy      SavedProperty[]
 
   @@unique([tenantId, reference])
   @@unique([tenantId, slug])
@@ -771,20 +855,27 @@ model Contact {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// A gallery image for a property (EPIC-F §F.1). Uploaded via pre-signed direct
-/// upload (FR-F-6); `width`/`height` are populated by the post-process job
-/// (FR-F-7) so are optional. `sortOrder` preserves gallery order across
-/// re-uploads; exactly one row per property is the `isPrimary` hero.
+/// upload (FR-F-6); the thumbnail/large variants, `width`/`height` and
+/// `fileSizeBytes` are populated by the post-process job (FR-F-7) so are optional.
+/// `sortOrder` preserves gallery order across re-uploads; exactly one row per
+/// property is the `isPrimary` hero, and `isFloorplan` flags a plan rendered in
+/// the floorplan tile rather than the photo gallery.
 model PropertyImage {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  propertyId String   @map("property_id") @db.Uuid
-  url        String
-  alt        String
-  sortOrder  Int      @default(0) @map("sort_order")
-  isPrimary  Boolean  @default(false) @map("is_primary")
-  width      Int?
-  height     Int?
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  propertyId    String   @map("property_id") @db.Uuid
+  url           String
+  thumbnailUrl  String?  @map("thumbnail_url")
+  largeUrl      String?  @map("large_url")
+  alt           String
+  caption       String?
+  sortOrder     Int      @default(0) @map("sort_order")
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  isFloorplan   Boolean  @default(false) @map("is_floorplan")
+  width         Int?
+  height        Int?
+  fileSizeBytes Int?     @map("file_size_bytes")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -794,16 +885,23 @@ model PropertyImage {
   @@map("property_images")
 }
 
-/// A document attached to a property — EPC, floorplan, brochure or other
-/// paperwork (EPIC-F §F.1). Discriminated by DocumentType.
+/// A document attached to a property — EPC, floorplan, brochure, material
+/// information, lease, planning, survey or other paperwork (EPIC-F §F.1).
+/// Discriminated by DocumentType. `isPublic` controls whether the document is
+/// downloadable from the public site; `fileName` / `fileSizeBytes` / `mimeType`
+/// are the §F.1 file metadata, optional until the upload post-process records them.
 model PropertyDocument {
-  id         String       @id @default(uuid()) @db.Uuid
-  tenantId   String       @map("tenant_id") @db.Uuid
-  propertyId String       @map("property_id") @db.Uuid
-  type       DocumentType
-  title      String
-  url        String
-  createdAt  DateTime     @default(now()) @map("created_at")
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @map("tenant_id") @db.Uuid
+  propertyId    String       @map("property_id") @db.Uuid
+  type          DocumentType
+  title         String
+  url           String
+  fileName      String?      @map("file_name")
+  fileSizeBytes Int?         @map("file_size_bytes")
+  mimeType      String?      @map("mime_type")
+  isPublic      Boolean      @default(true) @map("is_public")
+  createdAt     DateTime     @default(now()) @map("created_at")
 
   tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
@@ -1001,12 +1099,154 @@ enum FeedbackTrigger {
 
 /// The kind of document attached to a property (EPIC-F §F.1). `epc` is the
 /// Energy Performance Certificate; `floorplan` and `brochure` are the common
-/// marketing attachments; `other` is the catch-all for anything else.
+/// marketing attachments; `material_information` is the Trading Standards /
+/// Property Ombudsman Material Information document (PRODUCT.md §6); `lease`,
+/// `planning` and `survey` are the conveyancing paperwork; `other` is the
+/// catch-all for anything else.
 enum DocumentType {
   epc
   floorplan
   brochure
+  material_information
+  lease
+  planning
+  survey
   other
 
   @@map("document_type")
+}
+
+/// The publication lifecycle of a property (master spec §F identification +
+/// lifecycle). Distinct from MarketStatus (the sale/let state): a property is
+/// `draft` while being authored, `in_review` awaiting sign-off, `published` once
+/// live, `archived` when retired. Public surfaces show only `published` rows
+/// (FR-F-10 additionally hides soft-deleted rows).
+enum PublicationStatus {
+  draft
+  in_review
+  published
+  archived
+
+  @@map("publication_status")
+}
+
+/// The qualifier rendered adjacent to a property's price on every public surface
+/// (master spec §F pricing; PRODUCT.md §8 trust marker). `none` means a plain
+/// price; `poa` hides the figure ("Price on application"); `from` is the
+/// new-homes "from price" qualifier (new_homes pack).
+enum PriceQualifier {
+  none
+  offers_in_excess_of
+  offers_over
+  offers_in_region_of
+  guide_price
+  fixed_price
+  oiro
+  poa
+  from
+
+  @@map("price_qualifier")
+}
+
+/// Rent frequency for a lettings property (master spec §F.2; PRODUCT.md §8 — a
+/// rent figure must always show its frequency). `per_annum` also covers
+/// commercial rents (§F.4).
+enum RentFrequency {
+  per_calendar_month
+  per_week
+  per_annum
+
+  @@map("rent_frequency")
+}
+
+/// The let type for a lettings property (master spec §F.2 / §F lettings pricing).
+enum LetType {
+  long_let
+  short_let
+  student
+  room
+  hmo
+
+  @@map("let_type")
+}
+
+/// The property category (master spec §F specification). The vertical category
+/// (retail / office / industrial / leisure / business / care_home / mixed_use)
+/// is conditionally valid on listingType (FR-F-3) but lives on the one Property
+/// entity (FR-F-2).
+enum PropertyCategory {
+  house
+  flat
+  bungalow
+  studio
+  maisonette
+  commercial
+  land
+  room
+  retail
+  office
+  industrial
+  leisure
+  business
+  care_home
+  hmo
+  mixed_use
+
+  @@map("property_category")
+}
+
+/// Tenure of a property (master spec §F specification; surfaced as Material
+/// Information per PRODUCT.md §6).
+enum Tenure {
+  freehold
+  leasehold
+  share_of_freehold
+  commonhold
+  long_leasehold
+  virtual_freehold
+  unknown
+
+  @@map("tenure")
+}
+
+/// Council tax band (master spec §F specification; Material Information field
+/// per PRODUCT.md §6). Bands A–H plus exempt / unknown.
+enum CouncilTaxBand {
+  a
+  b
+  c
+  d
+  e
+  f
+  g
+  h
+  exempt
+  unknown
+
+  @@map("council_tax_band")
+}
+
+/// EPC rating (master spec §F specification; Material Information field per
+/// PRODUCT.md §6). Bands A–G plus `pending` while the certificate is awaited.
+enum EpcRating {
+  a
+  b
+  c
+  d
+  e
+  f
+  g
+  pending
+
+  @@map("epc_rating")
+}
+
+/// Furnished status of a lettings property (master spec §F.2 / §F specification).
+enum FurnishedStatus {
+  furnished
+  part_furnished
+  unfurnished
+  optional
+
+  @@map("furnished_status")
 }
