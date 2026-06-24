@@ -1,20 +1,23 @@
 import { withTenant } from '@estate/db';
 
 import { getDb } from '../../lib/db.js';
+import { agentRatingRollup, type AgentRatingReader } from '../../lib/agent-rating.js';
 import {
   enquiriesBySource,
   enquiryPipelineReport,
   type EnquiryReportReader,
 } from '../../lib/enquiry-reports.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
+import { AgentRatings } from './AgentRatings.js';
 import { PipelineReport } from './PipelineReport.js';
 import { parseReportRange, toDateInputValue } from './reports-params.js';
 
 // EPIC-H reports (FR-H-18) — the enquiry pipeline report at /admin/reports. URL-
-// driven date range; resolves the tenant, runs the (unit-tested) read model inside
-// the tenant RLS scope, and renders the funnel + by-source breakdown. Thin
-// composition; renders inside the admin shell's `main` landmark. The full report
-// suite + custom builder + export (FR-H-18) are deferred.
+// driven date range; resolves the tenant, runs the (unit-tested) read models inside
+// the tenant RLS scope, and renders the funnel + by-source breakdown plus the
+// EPIC-AC FR-AC-7 per-agent rating rollup. Thin composition; renders inside the
+// admin shell's `main` landmark. The full report suite + custom builder + export
+// (FR-H-18) are deferred.
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +28,14 @@ interface ReportsPageProps {
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const range = parseReportRange((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
-  const { report, sources } = await withTenant(getDb(), tenantId, async (rawTx) => {
-    const tx = rawTx as unknown as EnquiryReportReader;
-    const [pipelineReport, sourceCounts] = await Promise.all([
+  const { report, sources, agentRatings } = await withTenant(getDb(), tenantId, async (rawTx) => {
+    const tx = rawTx as unknown as EnquiryReportReader & AgentRatingReader;
+    const [pipelineReport, sourceCounts, ratings] = await Promise.all([
       enquiryPipelineReport(tx, range),
       enquiriesBySource(tx, range),
+      agentRatingRollup(tx),
     ]);
-    return { report: pipelineReport, sources: sourceCounts };
+    return { report: pipelineReport, sources: sourceCounts, agentRatings: ratings };
   });
 
   return (
@@ -66,6 +70,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       </form>
 
       <PipelineReport report={report} sources={sources} />
+      <AgentRatings rows={agentRatings} />
     </div>
   );
 }
