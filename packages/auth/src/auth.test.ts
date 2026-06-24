@@ -19,6 +19,9 @@ const dummyCreds: CreateAuthOptions = {
   sendMagicLink: async () => {
     /* no-op in the shape test */
   },
+  sendVerificationEmail: async () => {
+    /* no-op in the shape test */
+  },
 };
 
 describe('createAuth — configuration shape (no DB connection)', () => {
@@ -32,6 +35,32 @@ describe('createAuth — configuration shape (no DB connection)', () => {
 
   it('enables email-and-password authentication', () => {
     expect(auth.options.emailAndPassword?.enabled).toBe(true);
+  });
+
+  it('wires the email-verification magic link, sent automatically on sign up (EPIC-T FR-T-1)', () => {
+    // FR-T-1: registration sends an email-verification message; better-auth's
+    // verification link is delivered via the injected sendVerificationEmail
+    // callback and triggered automatically after sign up (sendOnSignUp).
+    expect(typeof auth.options.emailVerification?.sendVerificationEmail).toBe('function');
+    expect(auth.options.emailVerification?.sendOnSignUp).toBe(true);
+  });
+
+  it('routes the verification email through the supplied sendVerificationEmail callback', async () => {
+    const sent: Array<{ email: string; url: string }> = [];
+    const wired = createAuth(fakePrisma, {
+      secret: 'x',
+      sendMagicLink: async () => {},
+      sendVerificationEmail: async (data) => {
+        sent.push({ email: data.user.email, url: data.url });
+      },
+    });
+    const send = wired.options.emailVerification?.sendVerificationEmail;
+    expect(send).toBeTypeOf('function');
+    await send?.(
+      { user: { email: 'penny@example.invalid' }, url: 'https://acme.test/verify?token=abc', token: 'abc' } as never,
+      undefined as never,
+    );
+    expect(sent).toEqual([{ email: 'penny@example.invalid', url: 'https://acme.test/verify?token=abc' }]);
   });
 
   it('configures the Microsoft, Google and Apple social providers', () => {
