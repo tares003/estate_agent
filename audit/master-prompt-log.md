@@ -2290,3 +2290,17 @@ Integrated verification on main after merging all three: repo-wide `tsc` clean; 
 entity+RLS (B85) → submission validator (B86) → one-time token (B87a) → public submission flow (B87b) → moderation perms+schema (B88) → moderation backend (B89) → **moderation page (B90)** + **live reviews badge (FR-AC-6)** + **post-repair trigger (FR-AC-1/12)**. The "4.9/5" badge now reflects real collected feedback; staff moderate publishable entries (audited); a completed repair invites feedback. Remaining (later): the other trigger points (FR-AC-1 sale/tenancy), aggregate caching (FR-AC-6), agent league-table rating (FR-AC-7), external review cross-post (FR-AC-8), opt-out (FR-AC-9), vendor-portal surface (FR-AC-11). Activates with `FEEDBACK_LINK_SECRET` set.
 
 ---
+
+## Phase — second parallel-worktree batch: FR-AC-7 + FR-W-12 + FR-AC-10 (2026-06-15)
+
+User again asked to do the remaining tasks in parallel with multiple worktrees. Launched **three more worktree-isolated agents concurrently** (after a transient server rate-limit on the first attempt — re-issued and they ran), each a disjoint, spec'd, no-external-dependency slice; reviewed + merged all three; ran the integrated gate on main.
+
+- **FR-AC-7 — per-agent rating rollup** — PR #78. `lib/agent-rating.ts` `agentRatingRollup` (groups feedback by `agentActor` → average 1 dp + count, excludes null-agent, sorted; DB-free structural-reader test) + `AgentRatings` table surfaced on `/admin/reports` below the pipeline report. (Lifetime, not date-ranged — matches the FR-AC-6 aggregate precedent; the full league-table is EPIC-H H.21.)
+- **FR-W-12 — calculator print / save-as-PDF** — PR #79. A tiny `'use client'` `PrintButton` (wraps `@estate/ui` Button, calls `window.print()`, `print:hidden`) on both calculator pages — browser print-to-PDF satisfies "print or export for sharing".
+- **FR-AC-10 — needs-response feedback KPI** — PR #80. `lib/feedback-alerts.ts` `countFeedbackNeedsResponse` (counts `needsResponse: true`) surfaced as an admin-dashboard KPI card linking to `/admin/feedback`, so negative-sentiment feedback (rating ≤ 2, flagged at submission) is visible.
+
+Integrated verification on main after merging all three: repo-wide `tsc` clean; **web 780** (+14). Disjoint files (reports page / calculator components / dashboard page) → conflict-free. Worktrees removed, branches pruned. Spot note: the shipped agents' `pnpm guards` ran the diff-based subset (G1/G2/G10/G11) in-worktree; the integrated main re-verify (typecheck + 780 web tests) is the authoritative cross-slice check.
+
+EPIC-AC now also has the agent-rating data + the negative-feedback alert surfaced; EPIC-W calculators gained print/export. Still genuinely-later (need foundations I won't invent): other trigger points (sale/tenancy entities), aggregate caching, external cross-post (provider creds), opt-out (needs a person identifier on the token), vendor-portal surface (EPIC-Y).
+
+---
