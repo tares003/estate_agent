@@ -22,3 +22,23 @@ export function magicLinkNotification(email: string, url: string, tenantId: stri
     payload: { url },
   };
 }
+
+/**
+ * The queued-email {@link NotifyInput} for the EPIC-T FR-T-1 email-verification
+ * link. Same delivery path as the magic link (a `notification_logs` row the
+ * EPIC-U email worker renders + sends through the tenant's own SMTP); the
+ * distinct `event` lets the worker pick the `auth.verify_email` template.
+ */
+export function verificationEmailNotification(
+  email: string,
+  url: string,
+  tenantId: string,
+): NotifyInput {
+  return {
+    tenantId,
+    event: 'auth.verify_email',
+    channel: 'email',
+    recipient: email,
+    payload: { url },
+  };
+}

@@ -36,6 +36,24 @@ export const ukPhone = z
     return /^\+?\d{10,13}$/.test(compact);
   }, 'Enter a valid UK phone number.');
 
+/**
+ * The minimum customer password length. A floor, not a strength oracle — the
+ * register form surfaces a strength indicator (design brief §Authentication
+ * forms) and FR-N-1 hashes the value with a memory-hard algorithm; this rule
+ * only rejects trivially short input. 12 characters aligns with the OWASP
+ * passphrase-friendly minimum.
+ */
+export const PASSWORD_MIN_LENGTH = 12;
+
+/**
+ * An account password. Not trimmed (leading/trailing spaces are legitimate in a
+ * passphrase), required to meet {@link PASSWORD_MIN_LENGTH}. Hashing happens in
+ * the auth layer (FR-N-1); this validates only the input shape.
+ */
+export const password = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters.`);
+
 /** Matches a UK postcode (loose, case-insensitive) once internal spaces are removed. */
 const UK_POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/;
 

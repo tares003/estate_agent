@@ -8,7 +8,15 @@
  * Re-exports every schema, its inferred type, and the shared field helpers.
  */
 
-export { email, gdprConsent, nonEmptyString, ukPhone, ukPostcode } from './fields.js';
+export {
+  email,
+  gdprConsent,
+  nonEmptyString,
+  password,
+  PASSWORD_MIN_LENGTH,
+  ukPhone,
+  ukPostcode,
+} from './fields.js';
 
 export {
   COOKIE_CONSENT_CATEGORIES,
@@ -19,6 +27,10 @@ export {
 } from './cookie-consent.js';
 
 export { buyerEnquirySchema, type BuyerEnquiry } from './buyer-enquiry.js';
+export {
+  customerRegistrationSchema,
+  type CustomerRegistration,
+} from './customer-registration.js';
 export { viewingRequestSchema, type ViewingRequest } from './viewing-request.js';
 export { valuationRequestSchema, type ValuationRequest } from './valuation-request.js';
 export {

@@ -1,0 +1,14 @@
+/**
+ * The exact GDPR-consent affirmation for the customer-registration form
+ * (EPIC-T FR-T-1). Captured verbatim into the `consent_logs` row by the Server
+ * Action and rendered as the checkbox label by the form, so the persisted text
+ * and the text the data subject actually agreed to are guaranteed identical
+ * (master spec §S.7).
+ *
+ * Plain module (no 'use server') so it is safe to import into both the client
+ * component (the form) and the server action.
+ */
+export const REGISTER_CONSENT_TEXT =
+  'I agree to the creation of an account using my name and email address, and to ' +
+  'the processing of my personal data to operate that account, in line with the ' +
+  'agent’s privacy policy.';
