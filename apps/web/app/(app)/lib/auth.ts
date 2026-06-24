@@ -3,7 +3,7 @@ import { createAuth, type Auth, type SocialProviderCredentials } from '@estate/a
 
 import { getAuthDb } from './auth-db.js';
 import { getDb } from './db.js';
-import { magicLinkNotification } from './magic-link.js';
+import { magicLinkNotification, verificationEmailNotification } from './magic-link.js';
 
 // B78b glue — composes the platform's Better Auth instance (EPIC-N, CLAUDE.md §9).
 //
@@ -25,6 +25,23 @@ async function sendAuthMagicLink(data: { email: string; url: string }): Promise<
   const tenantId = requireAuthTenant();
   await withTenant(getDb(), tenantId, (tx) =>
     notify(tx as unknown as NotificationWriter, magicLinkNotification(data.email, data.url, tenantId)),
+  );
+}
+
+/**
+ * better-auth's emailVerification callback (EPIC-T FR-T-1) — queue the
+ * verification link as a per-tenant email, on the same path as the magic link.
+ */
+async function sendAuthVerificationEmail(data: {
+  user: { email: string };
+  url: string;
+}): Promise<void> {
+  const tenantId = requireAuthTenant();
+  await withTenant(getDb(), tenantId, (tx) =>
+    notify(
+      tx as unknown as NotificationWriter,
+      verificationEmailNotification(data.user.email, data.url, tenantId),
+    ),
   );
 }
 
@@ -65,6 +82,7 @@ export function getAuth(): Auth | null {
     secret,
     ...(process.env['BETTER_AUTH_URL'] ? { baseURL: process.env['BETTER_AUTH_URL'] } : {}),
     sendMagicLink: sendAuthMagicLink,
+    sendVerificationEmail: sendAuthVerificationEmail,
     social: socialFromEnv(),
   });
   return auth;

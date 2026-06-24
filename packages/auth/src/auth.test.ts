@@ -129,6 +129,7 @@ describe('createAuth — configuration shape (no DB connection)', () => {
     const partial = createAuth(fakePrisma, {
       secret: 'x',
       sendMagicLink: async () => {},
+      sendVerificationEmail: async () => {},
       social: { google: { clientId: 'g', clientSecret: 's' } },
     });
     const social = partial.options.socialProviders ?? {};

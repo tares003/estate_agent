@@ -89,6 +89,12 @@ model User {
   /// `customer`.
   type             String   @default("staff")
   emailVerified    Boolean  @default(false) @map("email_verified")
+  /// EPIC-T FR-T-1 — a customer's optional marketing opt-in, captured at
+  /// registration and editable later (FR-T-11). A SEPARATE decision from the
+  /// mandatory GDPR consent (which is logged in consent_logs, not here).
+  /// Defaults to false so existing staff rows + an opt-out registration are
+  /// unchanged; only an explicit opt-in flips it.
+  marketingOptIn   Boolean  @default(false) @map("marketing_opt_in")
   image            String?
   twoFactorEnabled Boolean? @map("two_factor_enabled")
   createdAt        DateTime @default(now()) @map("created_at")

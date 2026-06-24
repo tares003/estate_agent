@@ -19,10 +19,13 @@ beforeEach(() => {
 describe('RegisterForm', () => {
   it('renders the name, email and password fields with autocomplete hints (a11y)', () => {
     render(<RegisterForm />);
-    expect(screen.getByLabelText(/your name/i)).toBeInTheDocument();
-    const email = screen.getByLabelText(/^email/i);
+    expect(screen.getByRole('textbox', { name: /your name/i })).toBeInTheDocument();
+    // The marketing checkbox label also starts with "Email", so target the
+    // textbox role to disambiguate from the checkbox.
+    const email = screen.getByRole('textbox', { name: /^email/i });
     expect(email).toHaveAttribute('autocomplete', 'email');
-    const password = screen.getByLabelText(/^password/i);
+    // A password input has no implicit ARIA role, so query it by name + id.
+    const password = document.getElementById('password');
     expect(password).toHaveAttribute('type', 'password');
     expect(password).toHaveAttribute('autocomplete', 'new-password');
   });

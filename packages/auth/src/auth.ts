@@ -69,6 +69,18 @@ export interface CreateAuthOptions {
    * stays free of an email dependency.
    */
   sendMagicLink: (data: { email: string; url: string; token: string }) => Promise<void>;
+  /**
+   * Delivery callback for the email-verification link (EPIC-T FR-T-1 — sent on
+   * customer registration). better-auth invokes this with the verification URL
+   * (carrying the one-time token); the caller delivers it through the same
+   * per-tenant SMTP path as every other tenant email. Injected here so this
+   * package stays free of an email dependency, exactly like {@link sendMagicLink}.
+   */
+  sendVerificationEmail: (data: {
+    user: { email: string };
+    url: string;
+    token: string;
+  }) => Promise<void>;
 }
 
 /**
@@ -111,6 +123,15 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
     emailAndPassword: {
       enabled: true,
     },
+    // EPIC-T FR-T-1 — a customer who registers receives an email-verification
+    // message. better-auth mints the verification token + URL and hands them to
+    // our injected callback; `sendOnSignUp: true` fires it automatically after
+    // sign-up, so the registration action does not have to trigger it by hand.
+    // The FR-T-2 save gates read the resulting `emailVerified` flag.
+    emailVerification: {
+      sendVerificationEmail: (data) => options.sendVerificationEmail(data),
+      sendOnSignUp: true,
+    },
     socialProviders: buildSocialProviders(options.social),
     user: {
       additionalFields: {
@@ -120,6 +141,15 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
         // The staff RBAC role (one of STAFF_ROLES). The role→permission mapping
         // lives in `roles.ts`.
         role: { type: 'string', required: false, input: false },
+        // Discriminates a staff member from a registered customer (EPIC-T;
+        // PRODUCT.md §3). `input: true` so the customer-registration seam can set
+        // it to `customer` through signUpEmail; staff rows keep the schema
+        // default (`staff`). The customer-session seam admits only `customer`.
+        type: { type: 'string', required: false, input: true },
+        // The customer's optional marketing opt-in (EPIC-T FR-T-1). `input: true`
+        // so registration can persist the captured choice through signUpEmail;
+        // defaults to false at the schema level otherwise.
+        marketingOptIn: { type: 'boolean', required: false, input: true },
       },
     },
     session: {
