@@ -3,3 +3,21 @@
  * are imported ahead of this file in app/layout.tsx. */
 @tailwind components;
 @tailwind utilities;
+
+/* EPIC-T saved-property heart (FR-T-6 / design brief): the toggle pulses with a
+ * small scale on press over the motion-duration-fast token; disabled under
+ * reduced motion. Token-driven (G7) — no raw ms/easing literals. */
+.heart-toggle {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.heart-toggle:active {
+  transform: scale(1.1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .heart-toggle {
+    transition: none;
+  }
+  .heart-toggle:active {
+    transform: none;
+  }
+}
