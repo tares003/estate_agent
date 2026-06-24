@@ -6,6 +6,36 @@ import type { MortgageInput } from '@estate/validators';
 // (FR-W-10). The input is validated by `mortgageInputSchema` (@estate/validators)
 // at the form boundary, so this assumes well-formed numbers.
 
+/**
+ * Admin-editable mortgage defaults (FR-W-7). These pre-fill the public calculator's
+ * fields so the operator can offer up-to-date illustrative rate guidance without a
+ * redeploy. CONFIGURATION (no advice given); the figures are illustrative only and
+ * the operator MUST keep `lastReviewed` honest. Structurally the validator's
+ * `MortgageRateConfigInput`.
+ */
+export interface MortgageRateConfig {
+  /** Illustrative annual interest rate as a percentage (e.g. 4.5 for 4.5%). */
+  defaultAnnualRatePercent: number;
+  /** Default mortgage term in whole years. */
+  defaultTermYears: number;
+  /** Default deposit as a percentage of the purchase price. */
+  defaultDepositPercent: number;
+  /** ISO date the rate guidance was last reviewed (shown with the calculator). */
+  lastReviewed: string;
+}
+
+/**
+ * The illustrative defaults the calculator falls back to when a tenant has not
+ * configured its own (FR-W-7). The operator MUST review these against current rates;
+ * the specific figures are data, not a recommendation.
+ */
+export const DEFAULT_MORTGAGE_RATE_CONFIG: MortgageRateConfig = {
+  defaultAnnualRatePercent: 4.5,
+  defaultTermYears: 25,
+  defaultDepositPercent: 20,
+  lastReviewed: '2026-01-01',
+};
+
 /** The computed indicative-mortgage figures (money in GBP, rounded to the penny). */
 export interface MortgageResult {
   /** Amount borrowed = purchase price − deposit (never negative). */

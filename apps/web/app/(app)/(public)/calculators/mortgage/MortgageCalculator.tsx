@@ -4,15 +4,26 @@ import { useState } from 'react';
 import { NumberField } from '@estate/ui';
 import { mortgageInputSchema } from '@estate/validators';
 
-import { computeMortgage } from '../../../lib/mortgage.js';
+import {
+  DEFAULT_MORTGAGE_RATE_CONFIG,
+  computeMortgage,
+  type MortgageRateConfig,
+} from '../../../lib/mortgage.js';
 import { PrintButton } from '../PrintButton.js';
 
-// EPIC-W FR-W-6 — the indicative mortgage calculator UI. Computes live from the
+// EPIC-W FR-W-6/7 — the indicative mortgage calculator UI. Computes live from the
 // inputs (no server round-trip): every change re-parses through
 // `mortgageInputSchema` and, when valid, runs `computeMortgage`. INDICATIVE ONLY
 // (PRODUCT.md §9) — the "not financial advice" disclosure (FR-W-10 / PRODUCT.md §8)
 // sits adjacent to the result. The maths + schema are unit-tested in their own
 // modules; this composes them with the design-system field + typography tokens.
+//
+// FR-W-7: the optional `config` prop carries the tenant's admin-configured defaults
+// (rate / term / deposit %) that seed the fields' initial values; it defaults to the
+// engine default so the component renders standalone (and keeps existing tests green).
+
+/** The calculator's own default purchase price (UX seed; the config has no price). */
+const DEFAULT_PURCHASE_PRICE = 300_000;
 
 const gbp = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -34,11 +45,20 @@ function ResultRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MortgageCalculator() {
-  const [purchasePrice, setPurchasePrice] = useState('300000');
-  const [deposit, setDeposit] = useState('60000');
-  const [annualRatePercent, setAnnualRatePercent] = useState('4.5');
-  const [termYears, setTermYears] = useState('25');
+export function MortgageCalculator({
+  config = DEFAULT_MORTGAGE_RATE_CONFIG,
+}: {
+  config?: MortgageRateConfig;
+}) {
+  const initialDeposit = Math.round(
+    (DEFAULT_PURCHASE_PRICE * config.defaultDepositPercent) / 100,
+  );
+  const [purchasePrice, setPurchasePrice] = useState(String(DEFAULT_PURCHASE_PRICE));
+  const [deposit, setDeposit] = useState(String(initialDeposit));
+  const [annualRatePercent, setAnnualRatePercent] = useState(
+    String(config.defaultAnnualRatePercent),
+  );
+  const [termYears, setTermYears] = useState(String(config.defaultTermYears));
 
   const parsed = mortgageInputSchema.safeParse({
     purchasePrice,
