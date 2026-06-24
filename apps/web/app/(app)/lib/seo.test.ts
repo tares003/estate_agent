@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { breadcrumbJsonLd, propertyListingJsonLd, truncate, type PropertyForSeo } from './seo.js';
+import {
+  breadcrumbJsonLd,
+  organizationJsonLd,
+  propertyListingJsonLd,
+  truncate,
+  webSiteJsonLd,
+  type PropertyForSeo,
+} from './seo.js';
 
 const base: PropertyForSeo = {
   title: 'Edwardian semi · 4 bed',
@@ -86,6 +93,47 @@ describe('propertyListingJsonLd', () => {
     expect((stc['offers'] as Record<string, unknown>)['availability']).toBe(
       'https://schema.org/LimitedAvailability',
     );
+  });
+});
+
+describe('organizationJsonLd', () => {
+  it('emits a RealEstateAgent (Organization) with the agency name and origin url', () => {
+    const ld = organizationJsonLd('Acme Estates', 'https://acme.test');
+    expect(ld).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'RealEstateAgent',
+      name: 'Acme Estates',
+      url: 'https://acme.test',
+    });
+  });
+
+  it('uses an @id anchored to the origin so other entities can reference it', () => {
+    const ld = organizationJsonLd('Acme Estates', 'https://acme.test');
+    expect(ld['@id']).toBe('https://acme.test/#organisation');
+  });
+
+  it('does not leak a trailing slash from an origin that has one', () => {
+    const ld = organizationJsonLd('Acme Estates', 'https://acme.test/');
+    expect(ld['url']).toBe('https://acme.test');
+    expect(ld['@id']).toBe('https://acme.test/#organisation');
+  });
+});
+
+describe('webSiteJsonLd', () => {
+  it('emits a WebSite naming the site and pointing at the origin', () => {
+    const ld = webSiteJsonLd('Acme Estates', 'https://acme.test');
+    expect(ld).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Acme Estates',
+      url: 'https://acme.test',
+    });
+  });
+
+  it('links the WebSite publisher back to the Organization @id', () => {
+    const ld = webSiteJsonLd('Acme Estates', 'https://acme.test/');
+    expect(ld['url']).toBe('https://acme.test');
+    expect(ld['publisher']).toMatchObject({ '@id': 'https://acme.test/#organisation' });
   });
 });
 
