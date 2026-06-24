@@ -3,7 +3,11 @@
 import { randomUUID } from 'node:crypto';
 
 import { signObjectToken } from '@estate/storage';
-import { IMAGE_EXTENSIONS, propertyImageUploadSchema } from '@estate/validators';
+import {
+  IMAGE_EXTENSIONS,
+  propertyImageMetaSchema,
+  propertyImageUploadSchema,
+} from '@estate/validators';
 import { audit, withTenant, type AuditWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
@@ -107,13 +111,16 @@ export async function finalizePropertyImage(input: {
   key: string;
   alt: string;
 }): Promise<PropertyImageFinalizeState> {
-  const parsed = propertyImageUploadSchema
-    .pick({ propertyId: true })
-    .safeParse({ propertyId: input.propertyId });
-  const alt = input.alt.trim();
-  if (!parsed.success || alt === '' || input.key.trim() === '') {
+  // Mandatory alt (FR-O-13) is enforced by the shared schema — blank or
+  // whitespace-only alt is rejected here, exactly as in the public validators.
+  const parsed = propertyImageMetaSchema.safeParse({
+    propertyId: input.propertyId,
+    alt: input.alt,
+  });
+  if (!parsed.success || input.key.trim() === '') {
     return { ok: false, errors: [{ message: 'The upload could not be recorded.' }] };
   }
+  const alt = parsed.data.alt;
 
   // RBAC gate — fail closed BEFORE any read/write.
   try {

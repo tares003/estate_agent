@@ -16,6 +16,10 @@ describe('@estate/validators public surface', () => {
     expect(typeof validators.nonEmptyString.safeParse).toBe('function');
   });
 
+  it('re-exports the property-image meta schema (mandatory alt)', () => {
+    expect(typeof validators.propertyImageMetaSchema.safeParse).toBe('function');
+  });
+
   it('parses a known-good buyer enquiry through the re-exported schema', () => {
     const result = validators.buyerEnquirySchema.safeParse({
       name: 'Albert Aardvark',

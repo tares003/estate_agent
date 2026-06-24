@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { breadcrumbJsonLd, propertyListingJsonLd, truncate, type PropertyForSeo } from './seo.js';
+import {
+  breadcrumbJsonLd,
+  propertyListingJsonLd,
+  suggestImageAltText,
+  truncate,
+  type PropertyForSeo,
+} from './seo.js';
 
 const base: PropertyForSeo = {
   title: 'Edwardian semi · 4 bed',
@@ -86,6 +92,59 @@ describe('propertyListingJsonLd', () => {
     expect((stc['offers'] as Record<string, unknown>)['availability']).toBe(
       'https://schema.org/LimitedAvailability',
     );
+  });
+});
+
+describe('suggestImageAltText (FR-O-13 / §O.8)', () => {
+  it('follows the §O.8 pattern: "Photograph of [title], [location] — photo N"', () => {
+    expect(
+      suggestImageAltText({
+        propertyTitle: 'Edwardian semi · 4 bed',
+        addressLine: 'Palatine Road, Didsbury',
+        index: 0,
+      }),
+    ).toBe('Photograph of Edwardian semi · 4 bed, Palatine Road, Didsbury — photo 1');
+  });
+
+  it('numbers photos from one, not zero (index is zero-based)', () => {
+    expect(
+      suggestImageAltText({
+        propertyTitle: '3-bed terraced house',
+        addressLine: 'Acacia Avenue',
+        index: 1,
+      }),
+    ).toBe('Photograph of 3-bed terraced house, Acacia Avenue — photo 2');
+  });
+
+  it('collapses whitespace and trims the title and location', () => {
+    expect(
+      suggestImageAltText({
+        propertyTitle: '  Studio   flat ',
+        addressLine: ' Whitworth   St ',
+        index: 4,
+      }),
+    ).toBe('Photograph of Studio flat, Whitworth St — photo 5');
+  });
+
+  it('omits the location segment when no address line is available', () => {
+    expect(
+      suggestImageAltText({ propertyTitle: 'Riverside apartment', addressLine: '', index: 0 }),
+    ).toBe('Photograph of Riverside apartment — photo 1');
+    expect(
+      suggestImageAltText({ propertyTitle: 'Riverside apartment', addressLine: '   ', index: 0 }),
+    ).toBe('Photograph of Riverside apartment — photo 1');
+  });
+
+  it('falls back to a generic noun when the title is blank', () => {
+    expect(
+      suggestImageAltText({ propertyTitle: '   ', addressLine: 'High Street', index: 0 }),
+    ).toBe('Photograph of property, High Street — photo 1');
+  });
+
+  it('is non-empty for any input, so it always satisfies the mandatory-alt rule', () => {
+    expect(
+      suggestImageAltText({ propertyTitle: '', addressLine: '', index: 0 }).trim().length,
+    ).toBeGreaterThan(0);
   });
 });
 
