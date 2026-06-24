@@ -35,7 +35,7 @@ describe('MortgageRatePreset — schema (mortgage_rate_presets, FR-W-8)', () => 
     expect(model).toMatch(/label\s+String/);
     expect(model).toMatch(/annualRatePercent\s+Float\s+@map\("annual_rate_percent"\)/);
     expect(model).toMatch(/termYears\s+Int\s+@map\("term_years"\)/);
-    expect(model).toMatch(/sortOrder\s+Int\s+@map\("sort_order"\)/);
+    expect(model).toMatch(/sortOrder\s+Int\s+@default\(0\)\s+@map\("sort_order"\)/);
     expect(model).toMatch(/tenant\s+PlatformTenant\s+@relation/);
     expect(model).toContain('onDelete: Cascade');
   });
