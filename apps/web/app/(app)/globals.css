@@ -21,3 +21,23 @@
     transform: none;
   }
 }
+
+/* EPIC-C FR-C-12 / EPIC-N design brief: the cookie banner slides in from the
+ * bottom over the motion-duration-base token with the emphasis easing. Token-
+ * driven (G7) — no raw ms/easing literals; disabled under reduced motion. */
+@keyframes cookie-banner-slide-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.cookie-banner-enter {
+  animation: cookie-banner-slide-in var(--motion-duration-base) var(--motion-ease-emphasis);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cookie-banner-enter {
+    animation: none;
+  }
+}

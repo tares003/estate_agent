@@ -10,6 +10,14 @@
 
 export { email, gdprConsent, nonEmptyString, ukPhone, ukPostcode } from './fields.js';
 
+export {
+  COOKIE_CONSENT_CATEGORIES,
+  NON_ESSENTIAL_COOKIE_CATEGORIES,
+  cookieConsentSchema,
+  type CookieConsentCategory,
+  type CookieConsentDecision,
+} from './cookie-consent.js';
+
 export { buyerEnquirySchema, type BuyerEnquiry } from './buyer-enquiry.js';
 export { viewingRequestSchema, type ViewingRequest } from './viewing-request.js';
 export { valuationRequestSchema, type ValuationRequest } from './valuation-request.js';

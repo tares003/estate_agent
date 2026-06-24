@@ -41,6 +41,9 @@ export default defineConfig({
         // (constructing the clients pulls server-only/heavy deps into jsdom).
         'app/**/lib/db.ts',
         'app/**/lib/cms.ts',
+        // Request-bound cookie read (next/headers cookies()) — glue; the pure
+        // parse/gate logic lives in cookie-consent.ts and is unit-tested.
+        'app/**/lib/cookie-consent-server.ts',
         // Staff-session seam: a dev stub today, wired to Better Auth in EPIC-N
         // (reads the session). Glue — callers mock it; the RBAC logic lives in
         // @estate/auth.

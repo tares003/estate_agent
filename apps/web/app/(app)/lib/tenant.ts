@@ -56,6 +56,16 @@ export async function getRequestIp(): Promise<string | null> {
   return requestHeaders.get('x-real-ip')?.trim() || null;
 }
 
+/**
+ * The originating User-Agent for the current request, for consent-log + audit
+ * provenance (master spec §J: a consent record captures the client IP + UA).
+ * Returns null when absent (e.g. in tests) — provenance is best-effort.
+ */
+export async function getRequestUserAgent(): Promise<string | null> {
+  const requestHeaders = await headers();
+  return requestHeaders.get('user-agent')?.trim() || null;
+}
+
 /** The platform-tenant columns the public chrome / SEO needs. */
 export interface PlatformTenantRow {
   name: string;

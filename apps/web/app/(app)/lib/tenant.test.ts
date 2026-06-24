@@ -3,7 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 const get = vi.fn();
 vi.mock('next/headers', () => ({ headers: async () => ({ get }) }));
 
-const { getCurrentTenantId, getRequestIp, getRequestOrigin } = await import('./tenant.js');
+const {
+  getCurrentPathname,
+  getCurrentTenantId,
+  getRequestIp,
+  getRequestOrigin,
+  getRequestUserAgent,
+  getTenantName,
+  PATHNAME_HEADER,
+} = await import('./tenant.js');
 
 /** Drive the mocked `headers().get(name)` from a header map. */
 function headerMap(map: Record<string, string | null>): void {
@@ -39,6 +47,18 @@ describe('getRequestIp', () => {
   });
 });
 
+describe('getRequestUserAgent', () => {
+  it('returns the User-Agent header when present (consent-log provenance, master spec §J)', async () => {
+    headerMap({ 'user-agent': 'Mozilla/5.0 (Test Runner)' });
+    expect(await getRequestUserAgent()).toBe('Mozilla/5.0 (Test Runner)');
+  });
+
+  it('returns null when no User-Agent header is present', async () => {
+    headerMap({});
+    expect(await getRequestUserAgent()).toBeNull();
+  });
+});
+
 describe('getRequestOrigin', () => {
   it('builds the origin from the forwarded host + proto', async () => {
     headerMap({ 'x-forwarded-host': 'acme.estateplatform.co.uk', 'x-forwarded-proto': 'https' });
@@ -48,5 +68,31 @@ describe('getRequestOrigin', () => {
   it('falls back to the Host header and https', async () => {
     headerMap({ host: 'acme.test' });
     expect(await getRequestOrigin()).toBe('https://acme.test');
+  });
+});
+
+describe('getCurrentPathname', () => {
+  it('returns the proxy-set request path (for active-nav matching)', async () => {
+    headerMap({ [PATHNAME_HEADER]: '/properties' });
+    expect(await getCurrentPathname()).toBe('/properties');
+  });
+
+  it('returns null when the proxy did not set the path header', async () => {
+    headerMap({});
+    expect(await getCurrentPathname()).toBeNull();
+  });
+});
+
+describe('getTenantName', () => {
+  it('reads the agency display name from the un-RLS platform-tenant registry', async () => {
+    const findUnique = vi.fn().mockResolvedValue({ name: 'Acme Estates' });
+    const name = await getTenantName({ platformTenant: { findUnique } }, 'tenant-1');
+    expect(name).toBe('Acme Estates');
+    expect(findUnique).toHaveBeenCalledWith({ where: { id: 'tenant-1' } });
+  });
+
+  it('returns null when the tenant row is missing', async () => {
+    const findUnique = vi.fn().mockResolvedValue(null);
+    expect(await getTenantName({ platformTenant: { findUnique } }, 'gone')).toBeNull();
   });
 });
