@@ -8,9 +8,10 @@ vi.mock('../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' 
 vi.mock('../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const count = vi.fn();
+const feedbackCount = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ enquiry: { count } }),
+    fn({ enquiry: { count }, feedback: { count: feedbackCount } }),
 }));
 
 const { default: AdminDashboardPage } = await import('./page.js');
@@ -22,6 +23,8 @@ beforeEach(() => {
     const status = args.where?.status;
     return status === 'new' ? 5 : status === 'converted' ? 5 : 0;
   });
+  // 3 feedback rows flagged needsResponse (FR-AC-10)
+  feedbackCount.mockResolvedValue(3);
 });
 
 describe('AdminDashboardPage', () => {
@@ -32,6 +35,17 @@ describe('AdminDashboardPage', () => {
     expect(kpis.getByText('Total enquiries')).toBeInTheDocument();
     expect(kpis.getByText('10')).toBeInTheDocument();
     expect(kpis.getByText('50.0%')).toBeInTheDocument();
+  });
+
+  it('surfaces the needs-response feedback KPI linking to the moderation queue (FR-AC-10)', async () => {
+    render(await AdminDashboardPage());
+    const kpis = within(screen.getByRole('region', { name: 'At a glance' }));
+    expect(kpis.getByText('Feedback needs response')).toBeInTheDocument();
+    expect(kpis.getByText('3')).toBeInTheDocument();
+    expect(kpis.getByRole('link', { name: /Feedback needs response/ })).toHaveAttribute(
+      'href',
+      '/admin/feedback',
+    );
   });
 
   it('offers quick access to the live admin surfaces', async () => {
