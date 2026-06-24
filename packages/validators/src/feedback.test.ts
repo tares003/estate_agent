@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,
   feedbackDecisionStatus,
+  feedbackEditSchema,
   feedbackModerationSchema,
   feedbackSubmissionSchema,
 } from './feedback.js';
@@ -81,5 +83,27 @@ describe('feedbackModerationSchema', () => {
   it('feedbackDecisionStatus maps a decision to the terminal moderation status', () => {
     expect(feedbackDecisionStatus('publish')).toBe('published');
     expect(feedbackDecisionStatus('reject')).toBe('rejected');
+  });
+});
+
+// EPIC-AC FR-AC-5 — a minor edit to a pending entry's comment before it is
+// published. "Minor edits only": the comment text is the only editable field
+// (rating, trigger and respondent are immutable). A blank comment clears it.
+describe('feedbackEditSchema', () => {
+  it('accepts a trimmed comment edit', () => {
+    expect(feedbackEditSchema.parse({ comment: '  Tidied wording.  ' })).toEqual({
+      comment: 'Tidied wording.',
+    });
+  });
+
+  it('treats a blank / whitespace-only comment as a clear (null)', () => {
+    expect(feedbackEditSchema.parse({ comment: '   ' }).comment).toBeNull();
+    expect(feedbackEditSchema.parse({ comment: '' }).comment).toBeNull();
+    expect(feedbackEditSchema.parse({}).comment).toBeNull();
+  });
+
+  it('rejects an over-long comment (shares the submission cap)', () => {
+    const long = 'x'.repeat(FEEDBACK_COMMENT_MAX + 1);
+    expect(feedbackEditSchema.safeParse({ comment: long }).success).toBe(false);
   });
 });
