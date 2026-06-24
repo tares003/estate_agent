@@ -29,6 +29,7 @@ export default defineConfig({
         'components/**/*.{ts,tsx}',
         'payload/**/*.{ts,tsx}',
         'proxy.ts',
+        'security-headers.ts',
         'tenant-host.ts',
       ],
       exclude: [
