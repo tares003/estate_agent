@@ -11,6 +11,9 @@ vi.mock('./actions.js', () => ({
   submitSignIn: (...args: unknown[]) => submitSignIn(...args),
 }));
 
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+
 const { SignInForm } = await import('./SignInForm.js');
 
 beforeEach(() => {
@@ -56,5 +59,10 @@ describe('SignInForm', () => {
   it('shows a generic error summary when authentication fails', () => {
     render(<SignInForm initialState={{ ok: false, errors: [{ message: 'Email or password is incorrect.' }] }} />);
     expect(screen.getByText(/email or password is incorrect/i)).toBeInTheDocument();
+  });
+
+  it('navigates to the action-supplied redirect target on success (FR-T-3 return-to)', () => {
+    render(<SignInForm initialState={{ ok: true, redirectTo: '/account/saved' }} />);
+    expect(push).toHaveBeenCalledWith('/account/saved');
   });
 });

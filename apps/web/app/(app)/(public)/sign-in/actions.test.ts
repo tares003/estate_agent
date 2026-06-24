@@ -85,10 +85,13 @@ describe('submitSignIn', () => {
     const res = await submitSignIn({ ok: false }, form());
     expect(res.ok).toBe(false);
     expect(audit).not.toHaveBeenCalled();
-    // The error must NOT disclose whether the email or the password was wrong.
+    // The error must NOT disclose WHICH half of the credential was wrong: the
+    // standard non-enumerating phrasing names both factors ("email or password")
+    // so it reveals neither. It must never single out the account's existence.
     const message = res.errors?.map((e) => e.message).join(' ') ?? '';
-    expect(message).not.toMatch(/password/i);
-    expect(message).not.toMatch(/no account|not found|unknown email/i);
+    expect(message).not.toMatch(/no account|not found|unknown email|no such user|wrong password/i);
+    // And it must not carry a field link that would pin the blame on one input.
+    expect(res.errors?.every((e) => e.field === undefined)).toBe(true);
   });
 
   it('returns the sanitised next path (a same-origin relative route) on success', async () => {

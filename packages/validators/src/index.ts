@@ -31,6 +31,7 @@ export {
   customerRegistrationSchema,
   type CustomerRegistration,
 } from './customer-registration.js';
+export { customerSignInSchema, type CustomerSignIn } from './customer-sign-in.js';
 export { viewingRequestSchema, type ViewingRequest } from './viewing-request.js';
 export { valuationRequestSchema, type ValuationRequest } from './valuation-request.js';
 export {
