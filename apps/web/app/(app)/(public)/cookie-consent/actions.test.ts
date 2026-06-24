@@ -80,11 +80,13 @@ describe('recordCookieConsent', () => {
     );
 
     // the persisted cookie carries the decision so the banner stays dismissed
-    expect(cookieSet).toHaveBeenCalledTimes(1);
-    const [name, value, options] = cookieSet.mock.calls[0] ?? [];
-    expect(name).toBe('estate_cookie_consent');
+    const consentSet = cookieSet.mock.calls.find((c) => c[0] === 'estate_cookie_consent');
+    expect(consentSet).toBeDefined();
+    const [, value, options] = consentSet ?? [];
     expect(JSON.parse(value as string)).toMatchObject({ analytics: true, marketing: false });
     expect(options).toMatchObject({ httpOnly: false, sameSite: 'lax' });
+    // a fresh anonymous session id is minted (httpOnly) when none exists
+    expect(cookieSet.mock.calls.map((c) => c[0])).toContain('estate_anon_session');
   });
 
   it('reuses an existing anonymous session id when one is already set', async () => {

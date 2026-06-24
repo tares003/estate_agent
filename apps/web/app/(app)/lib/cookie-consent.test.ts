@@ -6,6 +6,7 @@ import {
   isCategoryGranted,
   parseConsentCookie,
   serialiseConsent,
+  type CookieConsentDecision,
 } from './cookie-consent.js';
 
 // EPIC-C FR-C-12 — pure cookie-consent helpers. The persisted decision lives in a
@@ -25,7 +26,12 @@ describe('DENY_ALL_CONSENT', () => {
 
 describe('serialiseConsent / parseConsentCookie', () => {
   it('round-trips a decision through the cookie value', () => {
-    const decision = { necessary: true, analytics: true, marketing: false, preferences: true };
+    const decision: CookieConsentDecision = {
+      necessary: true,
+      analytics: true,
+      marketing: false,
+      preferences: true,
+    };
     const round = parseConsentCookie(serialiseConsent(decision));
     expect(round).toEqual(decision);
   });
@@ -42,10 +48,7 @@ describe('serialiseConsent / parseConsentCookie', () => {
 
   it('coerces necessary back to true even if a tampered cookie set it false', () => {
     const parsed = parseConsentCookie(
-      serialiseConsent({ necessary: true, analytics: false, marketing: false, preferences: false }).replace(
-        '"necessary":true',
-        '"necessary":false',
-      ),
+      serialiseConsent(DENY_ALL_CONSENT).replace('"necessary":true', '"necessary":false'),
     );
     expect(parsed).not.toBeNull();
     expect(parsed?.necessary).toBe(true);
@@ -53,7 +56,12 @@ describe('serialiseConsent / parseConsentCookie', () => {
 });
 
 describe('isCategoryGranted', () => {
-  const decision = { necessary: true, analytics: true, marketing: false, preferences: false };
+  const decision: CookieConsentDecision = {
+    necessary: true,
+    analytics: true,
+    marketing: false,
+    preferences: false,
+  };
 
   it('necessary is always granted, even with no decision', () => {
     expect(isCategoryGranted(null, 'necessary')).toBe(true);
