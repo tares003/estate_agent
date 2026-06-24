@@ -20,6 +20,12 @@ const loadMortgageRateConfig = vi.fn(async () => ({
 vi.mock('../../../lib/mortgage-rate-config.js', () => ({
   loadMortgageRateConfig: () => loadMortgageRateConfig(),
 }));
+const loadMortgageRatePresets = vi.fn(async () => [
+  { id: 'p1', label: '2-year fixed', annualRatePercent: 4.79, termYears: 25 },
+]);
+vi.mock('../../../lib/mortgage-rate-presets.js', () => ({
+  loadMortgageRatePresets: () => loadMortgageRatePresets(),
+}));
 // The calculator is a client component (useState) — stub it so the page test
 // focuses on the shell.
 vi.mock('./MortgageCalculator.js', () => ({
@@ -36,6 +42,7 @@ describe('MortgageCalculatorPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('mortgage-calculator')).toBeInTheDocument();
     expect(loadMortgageRateConfig).toHaveBeenCalled();
+    expect(loadMortgageRatePresets).toHaveBeenCalled();
   });
 
   it('builds canonical metadata for the calculator page', async () => {

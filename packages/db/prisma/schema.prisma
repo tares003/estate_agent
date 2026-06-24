@@ -55,6 +55,7 @@ model PlatformTenant {
   sdltConfig           SdltConfig?
   savedProperties      SavedProperty[]
   mortgageRateConfig   MortgageRateConfig?
+  mortgageRatePresets  MortgageRatePreset[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -848,6 +849,33 @@ model MortgageRateConfig {
   tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("mortgage_rate_config")
+}
+
+/// EPIC-W FR-W-8 — an admin-managed mortgage rate preset (a named rate snapshot,
+/// e.g. "2-year fixed" / "5-year fixed") backing the public mortgage calculator's
+/// preset dropdown. Many per tenant (the @relation back to PlatformTenant); each
+/// carries a display label, an illustrative annual rate and a term, plus a
+/// sort_order for the dropdown. Tenant-scoped, isolated by the tenant_isolation RLS
+/// policy in migrations/raw/0017_mortgage_rate_presets_rls.sql. INDICATIVE ONLY
+/// (PRODUCT.md §9 — not financial advice).
+model MortgageRatePreset {
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  /// Display label shown in the dropdown (e.g. "2-year fixed").
+  label             String
+  /// Illustrative annual interest rate as a percentage (e.g. 4.79 for 4.79%).
+  annualRatePercent Float    @map("annual_rate_percent")
+  /// The preset's mortgage term in whole years.
+  termYears         Int      @map("term_years")
+  /// Ordering position in the dropdown (ascending).
+  sortOrder         Int      @default(0) @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, sortOrder])
+  @@map("mortgage_rate_presets")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role
