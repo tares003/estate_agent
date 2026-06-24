@@ -52,3 +52,20 @@ export type FeedbackModeration = z.infer<typeof feedbackModerationSchema>;
 export function feedbackDecisionStatus(decision: FeedbackDecision): 'published' | 'rejected' {
   return decision === 'publish' ? 'published' : 'rejected';
 }
+
+// EPIC-AC FR-AC-5 — a minor edit to a still-pending entry. "Minor edits only":
+// the comment text is the ONLY editable field (the rating, trigger and respondent
+// stay immutable). A blank / whitespace-only comment clears it (→ null), so the
+// schema normalises to `string | null` rather than an absent key.
+
+export const feedbackEditSchema = z.object({
+  /** The new comment text; blank / whitespace-only clears the comment (→ null). */
+  comment: z.preprocess((value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }, z.string().max(FEEDBACK_COMMENT_MAX).nullable().default(null)),
+});
+
+/** A validated minor edit (comment-only). */
+export type FeedbackEdit = z.infer<typeof feedbackEditSchema>;

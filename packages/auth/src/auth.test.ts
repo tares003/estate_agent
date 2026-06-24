@@ -22,6 +22,9 @@ const dummyCreds: CreateAuthOptions = {
   sendVerificationEmail: async () => {
     /* no-op in the shape test */
   },
+  sendResetPasswordEmail: async () => {
+    /* no-op in the shape test */
+  },
 };
 
 describe('createAuth — configuration shape (no DB connection)', () => {
@@ -53,6 +56,7 @@ describe('createAuth — configuration shape (no DB connection)', () => {
       sendVerificationEmail: async (data) => {
         sent.push({ email: data.user.email, url: data.url });
       },
+      sendResetPasswordEmail: async () => {},
     });
     const send = wired.options.emailVerification?.sendVerificationEmail;
     expect(send).toBeTypeOf('function');
@@ -61,6 +65,34 @@ describe('createAuth — configuration shape (no DB connection)', () => {
       undefined as never,
     );
     expect(sent).toEqual([{ email: 'penny@example.invalid', url: 'https://acme.test/verify?token=abc' }]);
+  });
+
+  it('wires the password-reset email callback and a 60-minute token expiry (FR-N-5)', () => {
+    // FR-N-5: reset tokens expire after 60 min. better-auth mints the opaque,
+    // single-use token (a `verification` row deleted on use) and hands the reset
+    // URL to the injected sendResetPassword callback; the expiry is configured in
+    // seconds.
+    expect(typeof auth.options.emailAndPassword?.sendResetPassword).toBe('function');
+    expect(auth.options.emailAndPassword?.resetPasswordTokenExpiresIn).toBe(60 * 60);
+  });
+
+  it('routes the reset-password email through the supplied sendResetPasswordEmail callback', async () => {
+    const sent: Array<{ email: string; url: string }> = [];
+    const wired = createAuth(fakePrisma, {
+      secret: 'x',
+      sendMagicLink: async () => {},
+      sendVerificationEmail: async () => {},
+      sendResetPasswordEmail: async (data) => {
+        sent.push({ email: data.user.email, url: data.url });
+      },
+    });
+    const send = wired.options.emailAndPassword?.sendResetPassword;
+    expect(send).toBeTypeOf('function');
+    await send?.(
+      { user: { email: 'penny@example.invalid' }, url: 'https://acme.test/reset-password?token=abc', token: 'abc' } as never,
+      undefined as never,
+    );
+    expect(sent).toEqual([{ email: 'penny@example.invalid', url: 'https://acme.test/reset-password?token=abc' }]);
   });
 
   it('configures the Microsoft, Google and Apple social providers', () => {
@@ -130,6 +162,7 @@ describe('createAuth — configuration shape (no DB connection)', () => {
       secret: 'x',
       sendMagicLink: async () => {},
       sendVerificationEmail: async () => {},
+      sendResetPasswordEmail: async () => {},
       social: { google: { clientId: 'g', clientSecret: 's' } },
     });
     const social = partial.options.socialProviders ?? {};
