@@ -33,3 +33,61 @@ export async function listAssignmentRules(
 ): Promise<AssignmentRuleRow[]> {
   return reader.assignmentRule.findMany({ orderBy: { position: 'asc' } });
 }
+
+/** A target the rule composer's THEN picker offers. */
+export interface AssignmentTargetOption {
+  targetType: 'agent' | 'branch';
+  targetId: string;
+  label: string;
+}
+
+/** Minimal read surface the target picker needs (a Prisma tx satisfies it). */
+export interface AssignmentTargetsReader {
+  agent: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      select?: Record<string, unknown>;
+      orderBy?: unknown;
+    }): Promise<{ id: string; name: string }[]>;
+  };
+  branch: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      select?: Record<string, unknown>;
+      orderBy?: unknown;
+    }): Promise<{ id: string; name: string }[]>;
+  };
+}
+
+/**
+ * List the assignment targets a rule can route to: the tenant's active agents,
+ * then its active branches (branch labels are suffixed so the two namespaces are
+ * distinguishable in one picker). Tenant isolation is applied by the caller via
+ * withTenant (RLS).
+ */
+export async function listAssignmentTargets(
+  reader: AssignmentTargetsReader,
+): Promise<AssignmentTargetOption[]> {
+  const agents = await reader.agent.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  const branches = await reader.branch.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+  return [
+    ...agents.map((agent) => ({
+      targetType: 'agent' as const,
+      targetId: agent.id,
+      label: agent.name,
+    })),
+    ...branches.map((branch) => ({
+      targetType: 'branch' as const,
+      targetId: branch.id,
+      label: `${branch.name} (branch)`,
+    })),
+  ];
+}
