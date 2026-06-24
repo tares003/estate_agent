@@ -130,8 +130,10 @@ export {
   FEEDBACK_DECISIONS,
   feedbackSubmissionSchema,
   feedbackModerationSchema,
+  feedbackEditSchema,
   feedbackDecisionStatus,
   type FeedbackSubmission,
   type FeedbackDecision,
   type FeedbackModeration,
+  type FeedbackEdit,
 } from './feedback.js';
