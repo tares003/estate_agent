@@ -31,6 +31,7 @@ export {
   customerRegistrationSchema,
   type CustomerRegistration,
 } from './customer-registration.js';
+export { customerSignInSchema, type CustomerSignIn } from './customer-sign-in.js';
 export {
   passwordResetRequestSchema,
   passwordResetSchema,
