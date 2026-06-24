@@ -90,10 +90,7 @@ describe('propertyListingJsonLd', () => {
       'https://acme.test/img/hero.jpg',
       'https://acme.test/img/2.jpg',
     ]);
-    expect(ld['image']).toEqual([
-      'https://acme.test/img/hero.jpg',
-      'https://acme.test/img/2.jpg',
-    ]);
+    expect(ld['image']).toEqual(['https://acme.test/img/hero.jpg', 'https://acme.test/img/2.jpg']);
   });
 
   it('omits the image field when no images are supplied', () => {
