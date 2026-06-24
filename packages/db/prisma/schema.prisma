@@ -56,6 +56,8 @@ model PlatformTenant {
   savedProperties      SavedProperty[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
+  areaGuides           AreaGuide[]
+  areaGuideSections    AreaGuideSection[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -902,6 +904,76 @@ model Contact {
   @@index([tenantId])
   @@index([tenantId, type])
   @@map("contacts")
+}
+
+/// EPIC-J (master spec §J "Area guide", FR-J-1) — a managed area-guide page. §J
+/// specifies it captures: slug, name, introduction, hero image, the postcode
+/// prefixes the area covers (used to filter properties), geographic coordinates,
+/// meta title, meta description, status and standard timestamps. `slug` is unique
+/// per tenant (the public URL key); `postcodePrefixes` is the String[] of covered
+/// prefixes that drives the "properties in this area" filter. The page-builder
+/// `sections` use the same structure as page sections (§J "Page section"). Tenant-
+/// scoped, isolated by the tenant_isolation RLS policy in migrations/raw/0020_area_guides_rls.sql.
+model AreaGuide {
+  id               String          @id @default(uuid()) @db.Uuid
+  tenantId         String          @map("tenant_id") @db.Uuid
+  slug             String
+  name             String
+  introduction     String
+  heroImage        String?         @map("hero_image")
+  postcodePrefixes String[]        @map("postcode_prefixes")
+  latitude         Float?
+  longitude        Float?
+  metaTitle        String?         @map("meta_title")
+  metaDescription  String?         @map("meta_description")
+  status           AreaGuideStatus @default(draft)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sections AreaGuideSection[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("area_guides")
+}
+
+/// EPIC-J (master spec §J — "Page-builder sections for the area guide use the same
+/// structure as page sections", §J "Page section"). A typed block within an area
+/// guide: a reference to its parent guide, the section `type` (hero, rich text,
+/// property carousel and so on — the §D catalogue), the section's typed `data`
+/// payload (a structured JSON whose shape matches the section type), the `sortOrder`
+/// and a `isVisible` visibility flag. Tenant-scoped, isolated by the tenant_isolation
+/// RLS policy in migrations/raw/0020_area_guides_rls.sql. Cascades with both its
+/// tenant and its parent guide.
+model AreaGuideSection {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  areaGuideId String   @map("area_guide_id") @db.Uuid
+  type        String
+  data        Json     @default("{}")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isVisible   Boolean  @default(true) @map("is_visible")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant    PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  areaGuide AreaGuide      @relation(fields: [areaGuideId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, areaGuideId])
+  @@map("area_guide_sections")
+}
+
+/// The publication lifecycle of an area guide (master spec §J "Area guide" status).
+/// `draft` while being authored; `published` once live. Public surfaces show only
+/// `published` rows.
+enum AreaGuideStatus {
+  draft
+  published
+
+  @@map("area_guide_status")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
