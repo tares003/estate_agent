@@ -137,3 +137,22 @@ export {
   type FeedbackModeration,
   type FeedbackEdit,
 } from './feedback.js';
+export {
+  ASSIGNMENT_RULE_CONDITION_FIELDS,
+  ASSIGNMENT_RULE_OPERATORS,
+  ASSIGNMENT_RULE_NAME_MAX,
+  ASSIGNMENT_TARGET_TYPES,
+  assignmentConditionSchema,
+  assignmentTargetSchema,
+  assignmentRuleSchema,
+  matchesAllConditions,
+  evaluateAssignmentRules,
+  type AssignmentRuleConditionField,
+  type AssignmentRuleOperator,
+  type AssignmentTargetType,
+  type AssignmentCondition,
+  type AssignmentTarget,
+  type AssignmentRule,
+  type SampleEnquiry,
+  type AssignmentEvaluation,
+} from './assignment-rule.js';

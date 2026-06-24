@@ -37,6 +37,7 @@ model PlatformTenant {
   agents               Agent[]
   properties           Property[]
   enquiries            Enquiry[]
+  assignmentRules      AssignmentRule[]
   viewings             Viewing[]
   valuations           Valuation[]
   repairRequests       RepairRequest[]
@@ -562,6 +563,33 @@ model EnquiryStatusEvent {
   @@index([tenantId])
   @@index([tenantId, enquiryId])
   @@map("enquiry_status_events")
+}
+
+/// EPIC-H FR-H-4 (master spec §H.6) — a no-code enquiry-assignment rule. Each row
+/// is one `IF <conditions> THEN <assignment>` rule composed in the admin editor.
+/// `conditions` (the IF — AND-ed comparisons against an enquiry's lead_type /
+/// status / source_url / message / property) and `assignment` (the THEN — an
+/// agent or branch target) are JSONB, validated by @estate/validators'
+/// assignmentRuleSchema on write. Rules are ordered by `position` per tenant so
+/// the runtime router evaluates them top-down, first-match-wins. Tenant-scoped
+/// (RLS, migration 0018). "Lead" is a UI label only — the entity is the canonical
+/// Enquiry (PRODUCT.md §2/§3).
+model AssignmentRule {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  name       String
+  conditions Json
+  assignment Json
+  position   Int      @default(0)
+  isEnabled  Boolean  @default(true) @map("is_enabled")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, position])
+  @@map("assignment_rules")
 }
 
 /// A request to view a property (viewing_request — master spec §J.4).
