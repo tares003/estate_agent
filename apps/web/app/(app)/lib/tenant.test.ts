@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 const get = vi.fn();
 vi.mock('next/headers', () => ({ headers: async () => ({ get }) }));
 
-const { getCurrentTenantId, getRequestIp, getRequestOrigin } = await import('./tenant.js');
+const { getCurrentTenantId, getRequestIp, getRequestOrigin, getRequestUserAgent } = await import(
+  './tenant.js'
+);
 
 /** Drive the mocked `headers().get(name)` from a header map. */
 function headerMap(map: Record<string, string | null>): void {
@@ -36,6 +38,18 @@ describe('getRequestIp', () => {
   it('returns null when no originating IP header is present', async () => {
     headerMap({});
     expect(await getRequestIp()).toBeNull();
+  });
+});
+
+describe('getRequestUserAgent', () => {
+  it('returns the User-Agent header when present (consent-log provenance, master spec §J)', async () => {
+    headerMap({ 'user-agent': 'Mozilla/5.0 (Test Runner)' });
+    expect(await getRequestUserAgent()).toBe('Mozilla/5.0 (Test Runner)');
+  });
+
+  it('returns null when no User-Agent header is present', async () => {
+    headerMap({});
+    expect(await getRequestUserAgent()).toBeNull();
   });
 });
 
