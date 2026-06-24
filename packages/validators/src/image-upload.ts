@@ -25,3 +25,16 @@ export const propertyImageUploadSchema = z.object({
 });
 
 export type PropertyImageUpload = z.infer<typeof propertyImageUploadSchema>;
+
+// FR-O-13 / master spec §O.8 — every property image MUST carry alt text for SEO
+// and accessibility (G9 — never decorative-by-default). The alt is trimmed and a
+// blank or whitespace-only value is rejected. This schema models the metadata
+// recorded when a finalized upload becomes a PropertyImage row; the admin UI
+// pre-fills `alt` with `suggestImageAltText(...)` but the value remains required.
+export const propertyImageMetaSchema = propertyImageUploadSchema
+  .pick({ propertyId: true })
+  .extend({
+    alt: z.string().trim().min(1, 'Describe the image so it has alt text.'),
+  });
+
+export type PropertyImageMeta = z.infer<typeof propertyImageMetaSchema>;

@@ -50,8 +50,10 @@ export {
   IMAGE_CONTENT_TYPES,
   IMAGE_EXTENSIONS,
   IMAGE_MAX_BYTES,
+  propertyImageMetaSchema,
   propertyImageUploadSchema,
   type ImageContentType,
+  type PropertyImageMeta,
   type PropertyImageUpload,
 } from './image-upload.js';
 export {
@@ -91,6 +93,7 @@ export {
   type SdltBuyerCategory,
   type StampDutyInput,
 } from './stamp-duty.js';
+export { sdltConfigSchema, type SdltConfigInput } from './sdlt-config.js';
 export {
   FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,

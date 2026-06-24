@@ -4,6 +4,7 @@ import {
   IMAGE_CONTENT_TYPES,
   IMAGE_EXTENSIONS,
   IMAGE_MAX_BYTES,
+  propertyImageMetaSchema,
   propertyImageUploadSchema,
 } from './image-upload.js';
 
@@ -39,5 +40,31 @@ describe('propertyImageUploadSchema', () => {
     expect(
       propertyImageUploadSchema.safeParse({ propertyId: 'nope', contentType: 'image/png' }).success,
     ).toBe(false);
+  });
+});
+
+describe('propertyImageMetaSchema (FR-O-13 — mandatory alt text)', () => {
+  it('accepts a non-empty alt, trimming surrounding whitespace', () => {
+    const result = propertyImageMetaSchema.safeParse({
+      propertyId,
+      alt: '  3-bed terraced house, Acacia Avenue — photo 1  ',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.alt).toBe('3-bed terraced house, Acacia Avenue — photo 1');
+    }
+  });
+
+  it('rejects a blank alt', () => {
+    expect(propertyImageMetaSchema.safeParse({ propertyId, alt: '' }).success).toBe(false);
+  });
+
+  it('rejects a whitespace-only alt (alt is mandatory for SEO + a11y)', () => {
+    expect(propertyImageMetaSchema.safeParse({ propertyId, alt: '   ' }).success).toBe(false);
+    expect(propertyImageMetaSchema.safeParse({ propertyId, alt: '\t\n ' }).success).toBe(false);
+  });
+
+  it('rejects a missing alt entirely', () => {
+    expect(propertyImageMetaSchema.safeParse({ propertyId }).success).toBe(false);
   });
 });

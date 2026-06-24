@@ -51,6 +51,7 @@ model PlatformTenant {
   repairCategories     RepairCategory[]
   contractors          Contractor[]
   feedback             Feedback[]
+  sdltConfig           SdltConfig?
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -660,6 +661,23 @@ model Feedback {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("feedback")
+}
+
+/// EPIC-W FR-W-3 — the per-tenant SDLT band configuration backing the indicative
+/// stamp-duty calculator. One row per tenant (the @unique on tenant_id) holds the
+/// admin-edited band set as JSON in the engine's SdltConfig shape; the public
+/// calculator falls back to the engine default when no row exists. Tenant-scoped,
+/// isolated by the tenant_isolation RLS policy in migrations/raw/0014_sdlt_config_rls.sql.
+model SdltConfig {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @unique @map("tenant_id") @db.Uuid
+  config    Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("sdlt_config")
 }
 
 /// A CRM contact record (master spec §J.5). One unified entity with a role

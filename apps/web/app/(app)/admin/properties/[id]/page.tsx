@@ -116,7 +116,12 @@ export default async function AdminPropertyDetailPage({
         <h2 id="images-heading" className="t-heading-sm">
           Images
         </h2>
-        <PropertyImagesManager propertyId={property.id} images={managedImages} />
+        <PropertyImagesManager
+          propertyId={property.id}
+          images={managedImages}
+          propertyTitle={property.title ?? ''}
+          addressLine={property.displayAddress}
+        />
       </section>
 
       <section aria-labelledby="activity-heading" className="flex flex-col gap-3">
