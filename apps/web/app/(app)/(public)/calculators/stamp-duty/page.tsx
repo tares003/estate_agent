@@ -1,11 +1,16 @@
 import type { Metadata } from 'next';
+import { withTenant } from '@estate/db';
 
-import { getRequestOrigin } from '../../../lib/tenant.js';
+import { getDb } from '../../../lib/db.js';
+import { loadSdltConfig, type SdltConfigReader } from '../../../lib/sdlt-config.js';
+import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
 import { StampDutyCalculator } from './StampDutyCalculator.js';
 
 // EPIC-W stamp-duty calculator page (FR-W-1/2/4). Server Component shell —
 // metadata (FR-O-4) + heading — around the client calculator, which computes
-// indicatively in the browser (PRODUCT.md §9, not financial advice).
+// indicatively in the browser (PRODUCT.md §9, not financial advice). Loads the
+// tenant's admin-configured SDLT bands (FR-W-3) inside the tenant RLS scope and
+// passes them to the calculator (it falls back to the engine default when unset).
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +29,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function StampDutyCalculatorPage() {
+export default async function StampDutyCalculatorPage() {
+  const tenantId = await getCurrentTenantId();
+  const config = await withTenant(getDb(), tenantId, (tx) =>
+    loadSdltConfig(tx as unknown as SdltConfigReader),
+  );
+
   return (
     <main id="main" className="container py-12">
       <header className="flex flex-col gap-2">
@@ -35,7 +45,7 @@ export default function StampDutyCalculatorPage() {
         </p>
       </header>
       <div className="mt-8">
-        <StampDutyCalculator />
+        <StampDutyCalculator config={config} />
       </div>
     </main>
   );

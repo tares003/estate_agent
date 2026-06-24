@@ -40,6 +40,10 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
     ],
   },
   { label: 'Team', items: [{ label: 'Users', href: '/admin/users' }] },
+  {
+    label: 'Settings',
+    items: [{ label: 'Stamp duty', href: '/admin/settings/stamp-duty' }],
+  },
 ];
 
 /**

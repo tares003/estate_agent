@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { NumberField, Select } from '@estate/ui';
 import { stampDutyInputSchema, type SdltBuyerCategory } from '@estate/validators';
 
-import { computeStampDuty, DEFAULT_SDLT_CONFIG } from '../../../lib/stamp-duty.js';
+import { computeStampDuty, DEFAULT_SDLT_CONFIG, type SdltConfig } from '../../../lib/stamp-duty.js';
 import { PrintButton } from '../PrintButton.js';
 
 // EPIC-W FR-W-2/4 — the indicative Stamp Duty (SDLT) calculator UI. Computes live
-// from DEFAULT_SDLT_CONFIG (an illustrative, operator-configurable band set —
-// FR-W-3). INDICATIVE ONLY (PRODUCT.md §9); the "not financial advice" disclosure
+// from the tenant's admin-configured band set (FR-W-3), passed in by the page from
+// loadSdltConfig and defaulting to DEFAULT_SDLT_CONFIG (the illustrative engine set)
+// when unset. INDICATIVE ONLY (PRODUCT.md §9); the "not financial advice" disclosure
 // (FR-W-10) and the bands' last-updated date (FR-W-4) sit with the result.
 
 const gbp = new Intl.NumberFormat('en-GB', {
@@ -34,12 +35,17 @@ function bandRange(from: number, to: number | null): string {
   return to == null ? `${gbpWhole.format(from)}+` : `${gbpWhole.format(from)}–${gbpWhole.format(to)}`;
 }
 
-export function StampDutyCalculator() {
+export function StampDutyCalculator({
+  config = DEFAULT_SDLT_CONFIG,
+}: {
+  /** The tenant's SDLT band config (FR-W-3). Defaults to the engine's illustrative set. */
+  config?: SdltConfig;
+} = {}) {
   const [purchasePrice, setPurchasePrice] = useState('300000');
   const [buyerCategory, setBuyerCategory] = useState<SdltBuyerCategory>('home_mover');
 
   const parsed = stampDutyInputSchema.safeParse({ purchasePrice, buyerCategory });
-  const result = parsed.success ? computeStampDuty(parsed.data, DEFAULT_SDLT_CONFIG) : null;
+  const result = parsed.success ? computeStampDuty(parsed.data, config) : null;
 
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">

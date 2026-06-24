@@ -60,6 +60,8 @@ export const PERMISSIONS = [
   // Platform settings and integrations
   'setting.read',
   'setting.manage',
+  // Calculator configuration (EPIC-W) — admin-editable SDLT/mortgage bands (FR-W-3)
+  'calculator_config.manage',
   // Audit log (FR-N-14, compliance review)
   'audit.read',
 ] as const;
@@ -141,6 +143,7 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
       'agent.read',
       'agent.write',
       'branch.read',
+      'calculator_config.manage',
       'audit.read',
     ],
   },
