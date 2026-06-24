@@ -17,8 +17,8 @@ import type { AssignmentRuleRow } from './assignment-rules-query.js';
 // or reports that the enquiry would stay unassigned — so the order is visibly
 // correct before save. "Lead" is a UI label only; the entity is the Enquiry.
 
-/** Lead-type options shown in the tester (canonical LeadType enum values). */
-const LEAD_TYPE_OPTIONS = [
+/** Enquiry-type options shown in the tester (canonical LeadType enum values). */
+const ENQUIRY_TYPE_OPTIONS = [
   { value: 'buyer_enquiry', label: 'Buyer enquiry' },
   { value: 'viewing_request', label: 'Viewing request' },
   { value: 'valuation_request', label: 'Valuation request' },
@@ -50,11 +50,11 @@ interface TesterResult {
 
 /** Strip the persisted-row fields down to the AssignmentRule the evaluator needs. */
 function toRule(row: AssignmentRuleRow): AssignmentRule {
-  return { name: row.name, conditions: row.conditions, assignment: row.assignment };
+  return { ruleName: row.name, conditions: row.conditions, assignment: row.assignment };
 }
 
 export function AssignmentRuleTester({ rules }: { rules: AssignmentRuleRow[] }) {
-  const [leadType, setLeadType] = useState('buyer_enquiry');
+  const [enquiryType, setEnquiryType] = useState('buyer_enquiry');
   const [status, setStatus] = useState('new');
   const [sourceUrl, setSourceUrl] = useState('');
   const [message, setMessage] = useState('');
@@ -63,7 +63,7 @@ export function AssignmentRuleTester({ rules }: { rules: AssignmentRuleRow[] }) 
 
   function runTest(): void {
     const sample: SampleEnquiry = {
-      leadType,
+      enquiryType,
       status,
       sourceUrl: sourceUrl.trim() === '' ? null : sourceUrl.trim(),
       message,
@@ -75,7 +75,7 @@ export function AssignmentRuleTester({ rules }: { rules: AssignmentRuleRow[] }) 
     const winner = outcome.matchedIndex >= 0 ? active[outcome.matchedIndex] : undefined;
     setResult({
       matched: outcome.matched,
-      ruleName: winner?.name ?? null,
+      ruleName: winner?.ruleName ?? null,
       targetType: outcome.assignment?.targetType ?? null,
       targetId: outcome.assignment?.targetId ?? null,
     });
@@ -96,9 +96,9 @@ export function AssignmentRuleTester({ rules }: { rules: AssignmentRuleRow[] }) 
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
           label="Lead type"
-          options={LEAD_TYPE_OPTIONS}
-          value={leadType}
-          onChange={(event) => setLeadType(event.target.value)}
+          options={ENQUIRY_TYPE_OPTIONS}
+          value={enquiryType}
+          onChange={(event) => setEnquiryType(event.target.value)}
         />
         <Select
           label="Status"

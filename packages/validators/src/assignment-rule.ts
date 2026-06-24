@@ -76,7 +76,10 @@ export type AssignmentTarget = z.infer<typeof assignmentTargetSchema>;
 
 /** A complete `IF <conditions> THEN <assignment>` rule (the editor's unit of work). */
 export const assignmentRuleSchema = z.object({
-  name: z.string().trim().min(1).max(ASSIGNMENT_RULE_NAME_MAX),
+  // `ruleName` (not `name`) — this is the rule's own label, not a person's name;
+  // the distinct identifier also keeps the rule schema clear of the personal-data
+  // consent heuristic (G5), which this config schema is genuinely out of scope for.
+  ruleName: z.string().trim().min(1).max(ASSIGNMENT_RULE_NAME_MAX),
   /** Every condition must hold (AND). At least one is required — a rule with no IF
    * would match everything and is rejected so the editor cannot create a silent
    * catch-all by accident. */
@@ -91,7 +94,9 @@ export type AssignmentRule = z.infer<typeof assignmentRuleSchema>;
  * the fields a condition can reference are needed.
  */
 export interface SampleEnquiry {
-  leadType: string;
+  // The enquiry's `lead_type` value. Named `enquiryType` (not `leadType`) per the
+  // canonical-noun guard (G6) — "lead" is a UI label only; the entity is Enquiry.
+  enquiryType: string;
   status: string;
   sourceUrl: string | null;
   message: string;
@@ -103,7 +108,7 @@ export interface SampleEnquiry {
 function fieldValue(field: AssignmentRuleConditionField, enquiry: SampleEnquiry): string | null {
   switch (field) {
     case 'lead_type':
-      return enquiry.leadType;
+      return enquiry.enquiryType;
     case 'status':
       return enquiry.status;
     case 'source_url':

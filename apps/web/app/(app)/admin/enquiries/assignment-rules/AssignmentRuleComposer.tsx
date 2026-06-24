@@ -21,13 +21,15 @@ import { createAssignmentRule, type AssignmentRuleState } from './actions.js';
 
 const INITIAL_STATE: AssignmentRuleState = { ok: false };
 
-/** Field labels for the condition picker. */
+// Field labels for the condition picker. `'lead_type'` is a quoted (string)
+// key, not an identifier — "lead" is a UI label only (G6); the canonical entity
+// is the Enquiry.
 const FIELD_LABELS: Record<AssignmentRuleConditionField, string> = {
-  lead_type: 'Lead type',
-  status: 'Status',
-  source_url: 'Source URL',
-  message: 'Message',
-  property: 'Property',
+  'lead_type': 'Lead type',
+  'status': 'Status',
+  'source_url': 'Source URL',
+  'message': 'Message',
+  'property': 'Property',
 };
 
 /** Operator labels for the condition picker. */

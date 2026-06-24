@@ -52,9 +52,9 @@ export async function createAssignmentRule(
   _prevState: AssignmentRuleState,
   formData: FormData,
 ): Promise<AssignmentRuleState> {
-  const name = formData.get('name');
+  const ruleName = formData.get('name');
   const parsed = assignmentRuleSchema.safeParse({
-    name: typeof name === 'string' ? name : undefined,
+    ruleName: typeof ruleName === 'string' ? ruleName : undefined,
     conditions: parseJsonField(formData, 'conditions'),
     assignment: parseJsonField(formData, 'assignment'),
   });
@@ -88,7 +88,7 @@ export async function createAssignmentRule(
     const created = await tx.assignmentRule.create({
       data: {
         tenantId,
-        name: rule.name,
+        name: rule.ruleName,
         conditions: rule.conditions,
         assignment: rule.assignment,
         position,
@@ -101,7 +101,7 @@ export async function createAssignmentRule(
       entity: 'assignment_rule',
       entityId: created.id,
       diff: {
-        name: rule.name,
+        name: rule.ruleName,
         conditions: rule.conditions,
         assignment: rule.assignment,
         position,

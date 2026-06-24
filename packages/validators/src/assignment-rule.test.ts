@@ -17,7 +17,7 @@ const BRANCH = '33333333-3333-3333-3333-333333333333';
 
 function rule(overrides: Partial<AssignmentRule> = {}): AssignmentRule {
   return {
-    name: 'Sales leads to agent A',
+    ruleName: 'Sales leads to agent A',
     conditions: [{ field: 'lead_type', operator: 'equals', value: 'buyer_enquiry' }],
     assignment: { targetType: 'agent', targetId: AGENT_A },
     ...overrides,
@@ -25,7 +25,7 @@ function rule(overrides: Partial<AssignmentRule> = {}): AssignmentRule {
 }
 
 const enquiry: SampleEnquiry = {
-  leadType: 'buyer_enquiry',
+  enquiryType: 'buyer_enquiry',
   status: 'new',
   sourceUrl: 'https://example.test/properties/flat',
   message: 'Interested in a viewing',
@@ -153,12 +153,12 @@ describe('evaluateAssignmentRules (top-down first-match-wins)', () => {
   it('returns the first matching rule, not a later one', () => {
     const rules: AssignmentRule[] = [
       rule({
-        name: 'New buyer enquiries to A',
+        ruleName: 'New buyer enquiries to A',
         conditions: [{ field: 'status', operator: 'equals', value: 'new' }],
         assignment: { targetType: 'agent', targetId: AGENT_A },
       }),
       rule({
-        name: 'All buyer enquiries to B',
+        ruleName: 'All buyer enquiries to B',
         conditions: [{ field: 'lead_type', operator: 'equals', value: 'buyer_enquiry' }],
         assignment: { targetType: 'agent', targetId: AGENT_B },
       }),
@@ -172,12 +172,12 @@ describe('evaluateAssignmentRules (top-down first-match-wins)', () => {
   it('falls through to a later rule when the earlier ones do not match', () => {
     const rules: AssignmentRule[] = [
       rule({
-        name: 'Lettings to branch',
+        ruleName: 'Lettings to branch',
         conditions: [{ field: 'lead_type', operator: 'equals', value: 'tenant_enquiry' }],
         assignment: { targetType: 'branch', targetId: BRANCH },
       }),
       rule({
-        name: 'Buyer to A',
+        ruleName: 'Buyer to A',
         conditions: [{ field: 'lead_type', operator: 'equals', value: 'buyer_enquiry' }],
         assignment: { targetType: 'agent', targetId: AGENT_A },
       }),
