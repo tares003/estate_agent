@@ -5,8 +5,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const moderateFeedback = vi.fn();
+const editFeedback = vi.fn();
 vi.mock('./actions.js', () => ({
   moderateFeedback: (...args: unknown[]) => moderateFeedback(...args),
+  editFeedback: (...args: unknown[]) => editFeedback(...args),
 }));
 
 const refresh = vi.fn();
@@ -17,6 +19,7 @@ const { FeedbackModerationControls } = await import('./FeedbackModerationControl
 beforeEach(() => {
   vi.clearAllMocks();
   moderateFeedback.mockResolvedValue({ ok: true });
+  editFeedback.mockResolvedValue({ ok: true });
 });
 
 describe('FeedbackModerationControls', () => {
@@ -79,5 +82,39 @@ describe('FeedbackModerationControls', () => {
     expect(
       await screen.findByText('A reason is required when rejecting feedback.'),
     ).toBeInTheDocument();
+  });
+
+  it('reveals an editable comment seeded with the current text before saving', async () => {
+    const user = userEvent.setup();
+    render(<FeedbackModerationControls feedbackId="fb-1" comment="Grate service." />);
+
+    // The editor is hidden until the edit path is opened.
+    expect(screen.queryByLabelText(/edit comment/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+
+    const editor = screen.getByLabelText(/edit comment/i) as HTMLInputElement;
+    expect(editor).toBeInTheDocument();
+    expect(editor.value).toBe('Grate service.');
+    // Opening the reveal does not submit on its own.
+    expect(editFeedback).not.toHaveBeenCalled();
+  });
+
+  it('edits — submits the feedback id and the new comment, then refreshes', async () => {
+    const user = userEvent.setup();
+    render(<FeedbackModerationControls feedbackId="fb-1" comment="Grate service." />);
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    const editor = screen.getByLabelText(/edit comment/i);
+    await user.clear(editor);
+    await user.type(editor, 'Great service.');
+    await user.click(screen.getByRole('button', { name: 'Save edit' }));
+
+    expect(editFeedback).toHaveBeenCalledTimes(1);
+    const fd = editFeedback.mock.calls[0]?.[1] as FormData;
+    expect(fd.get('feedbackId')).toBe('fb-1');
+    expect(fd.get('comment')).toBe('Great service.');
+    // The edited row stays in the queue with new text — refresh to re-read it.
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });

@@ -1,7 +1,11 @@
 'use server';
 
 import { audit, withTenant, type AuditWriter } from '@estate/db';
-import { feedbackDecisionStatus, feedbackModerationSchema } from '@estate/validators';
+import {
+  feedbackDecisionStatus,
+  feedbackEditSchema,
+  feedbackModerationSchema,
+} from '@estate/validators';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
@@ -16,7 +20,9 @@ import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 
 interface FeedbackModerateClient extends AuditWriter {
   feedback: {
-    findFirst(args: { where: Record<string, unknown> }): Promise<{ id: string; status: string } | null>;
+    findFirst(args: {
+      where: Record<string, unknown>;
+    }): Promise<{ id: string; status: string; comment: string | null } | null>;
     update(args: { where: Record<string, unknown>; data: Record<string, unknown> }): Promise<unknown>;
   };
 }
@@ -88,6 +94,74 @@ export async function moderateFeedback(
       entity: 'feedback',
       entityId: feedbackId,
       diff: { status: { from: 'pending', to: status }, reason },
+      ip,
+    });
+    result = { ok: true };
+  });
+  return result;
+}
+
+// EPIC-AC FR-AC-5 — a staff member makes a MINOR edit to a publishable feedback
+// entry's comment before deciding it (e.g. fixing a typo). "Minor edits only": the
+// comment text is the sole editable field; the rating, trigger and respondent stay
+// immutable. RBAC fail-closed first (requireStaffPermission('feedback.moderate'));
+// the entry must still be `pending` (no editing a decided entry); the new comment +
+// an audit row carrying the before/after diff are written in one tenant transaction
+// (G4). A blank edit clears the comment (→ null).
+
+export async function editFeedback(
+  _prevState: FeedbackModerateState,
+  formData: FormData,
+): Promise<FeedbackModerateState> {
+  try {
+    await requireStaffPermission('feedback.moderate');
+  } catch {
+    return deny('You do not have permission to moderate feedback.');
+  }
+
+  const parsed = feedbackEditSchema.safeParse({ comment: formData.get('comment') ?? undefined });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      errors: parsed.error.issues.map((issue) => {
+        const field = issue.path.join('.');
+        return field ? { field, message: issue.message } : { message: issue.message };
+      }),
+    };
+  }
+
+  const feedbackId = formData.get('feedbackId');
+  if (typeof feedbackId !== 'string' || feedbackId.length === 0) {
+    return deny('This feedback could not be found.');
+  }
+
+  const nextComment = parsed.data.comment;
+  const tenantId = await getCurrentTenantId();
+  const actor = await getStaffActor();
+  const ip = await getRequestIp();
+
+  let result: FeedbackModerateState = deny('This feedback could not be found.');
+  await withTenant(getDb(), tenantId, async (rawTx) => {
+    const tx = rawTx as unknown as FeedbackModerateClient;
+    const existing = await tx.feedback.findFirst({ where: { id: feedbackId } });
+    if (!existing) {
+      return; // not-found default
+    }
+    if (existing.status !== 'pending') {
+      result = deny('This feedback has already been moderated.');
+      return;
+    }
+    await tx.feedback.update({
+      where: { id: feedbackId },
+      data: { comment: nextComment },
+    });
+    await audit(tx, {
+      tenantId,
+      actor,
+      action: 'feedback.edited',
+      entity: 'feedback',
+      entityId: feedbackId,
+      diff: { comment: { from: existing.comment, to: nextComment } },
       ip,
     });
     result = { ok: true };

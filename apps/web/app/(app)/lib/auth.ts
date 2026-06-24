@@ -3,7 +3,11 @@ import { createAuth, type Auth, type SocialProviderCredentials } from '@estate/a
 
 import { getAuthDb } from './auth-db.js';
 import { getDb } from './db.js';
-import { magicLinkNotification, verificationEmailNotification } from './magic-link.js';
+import {
+  magicLinkNotification,
+  passwordResetNotification,
+  verificationEmailNotification,
+} from './magic-link.js';
 
 // B78b glue — composes the platform's Better Auth instance (EPIC-N, CLAUDE.md §9).
 //
@@ -41,6 +45,23 @@ async function sendAuthVerificationEmail(data: {
     notify(
       tx as unknown as NotificationWriter,
       verificationEmailNotification(data.user.email, data.url, tenantId),
+    ),
+  );
+}
+
+/**
+ * better-auth's sendResetPassword callback (EPIC-N FR-N-5) — queue the
+ * password-reset link as a per-tenant email, on the same path as the magic link.
+ */
+async function sendAuthResetPasswordEmail(data: {
+  user: { email: string };
+  url: string;
+}): Promise<void> {
+  const tenantId = requireAuthTenant();
+  await withTenant(getDb(), tenantId, (tx) =>
+    notify(
+      tx as unknown as NotificationWriter,
+      passwordResetNotification(data.user.email, data.url, tenantId),
     ),
   );
 }
@@ -83,6 +104,7 @@ export function getAuth(): Auth | null {
     ...(process.env['BETTER_AUTH_URL'] ? { baseURL: process.env['BETTER_AUTH_URL'] } : {}),
     sendMagicLink: sendAuthMagicLink,
     sendVerificationEmail: sendAuthVerificationEmail,
+    sendResetPasswordEmail: sendAuthResetPasswordEmail,
     social: socialFromEnv(),
   });
   return auth;

@@ -80,7 +80,7 @@ export default async function FeedbackModerationPage() {
                   {triggerLabel(row.triggerType)}
                 </td>
                 <td className="py-3">
-                  <FeedbackModerationControls feedbackId={row.id} />
+                  <FeedbackModerationControls feedbackId={row.id} comment={row.comment} />
                 </td>
               </tr>
             ))}

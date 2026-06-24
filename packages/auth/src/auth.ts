@@ -9,7 +9,10 @@
  *
  * Wiring, per CLAUDE.md §9:
  *   - `prismaAdapter(prisma, { provider: 'postgresql' })` as the data layer.
- *   - `emailAndPassword` enabled (staff fallback + reset, FR-N-1/FR-N-5).
+ *   - `emailAndPassword` enabled (staff fallback + reset, FR-N-1/FR-N-5). The
+ *     password-reset request flow is wired via `sendResetPassword` (the reset URL
+ *     is delivered through the injected `sendResetPasswordEmail` callback) with a
+ *     60-minute `resetPasswordTokenExpiresIn`, satisfying FR-N-5.
  *   - `socialProviders` Microsoft / Google / Apple for staff OAuth sign-in,
  *     keyed from the supplied credentials (a provider is only registered when
  *     its credentials are supplied).
@@ -81,6 +84,20 @@ export interface CreateAuthOptions {
     url: string;
     token: string;
   }) => Promise<void>;
+  /**
+   * Delivery callback for the password-reset link (EPIC-N FR-N-5). better-auth's
+   * emailAndPassword flow mints an opaque, single-use reset token (a `verification`
+   * row, deleted on use) and the reset URL, then invokes this callback; the caller
+   * delivers it through the same per-tenant SMTP path as every other tenant email.
+   * Injected here so this package stays free of an email dependency, exactly like
+   * {@link sendMagicLink} and {@link sendVerificationEmail}. The 60-minute expiry
+   * (FR-N-5) is configured on the `emailAndPassword` block, not here.
+   */
+  sendResetPasswordEmail: (data: {
+    user: { email: string };
+    url: string;
+    token: string;
+  }) => Promise<void>;
 }
 
 /**
@@ -122,6 +139,16 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
     },
     emailAndPassword: {
       enabled: true,
+      // EPIC-N FR-N-5 — the password-reset request flow. better-auth mints an
+      // opaque, single-use reset token (a `verification` row it deletes when the
+      // token is consumed, so a token cannot be replayed) and the reset URL, then
+      // invokes this callback; we deliver the link the same way as the magic link.
+      sendResetPassword: (data) =>
+        options.sendResetPasswordEmail({ user: data.user, url: data.url, token: data.token }),
+      // FR-N-5: the reset token expires 60 minutes after issue. Configured in
+      // seconds (better-auth's default is also 1 hour; we pin it explicitly so the
+      // requirement is enforced regardless of upstream default changes).
+      resetPasswordTokenExpiresIn: 60 * 60,
     },
     // EPIC-T FR-T-1 — a customer who registers receives an email-verification
     // message. better-auth mints the verification token + URL and hands them to

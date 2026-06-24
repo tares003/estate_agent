@@ -31,6 +31,13 @@ export {
   customerRegistrationSchema,
   type CustomerRegistration,
 } from './customer-registration.js';
+export { customerSignInSchema, type CustomerSignIn } from './customer-sign-in.js';
+export {
+  passwordResetRequestSchema,
+  passwordResetSchema,
+  type PasswordResetRequest,
+  type PasswordReset,
+} from './password-reset.js';
 export { viewingRequestSchema, type ViewingRequest } from './viewing-request.js';
 export { valuationRequestSchema, type ValuationRequest } from './valuation-request.js';
 export {
@@ -51,6 +58,22 @@ export {
 } from './enquiry-status.js';
 export { enquiryNoteCreateSchema, type EnquiryNoteCreate } from './enquiry-note.js';
 export { propertyUpdateSchema, type PropertyUpdate } from './property-update.js';
+export {
+  PUBLISH_MIN_PHOTOS,
+  PUBLISH_MIN_KEY_FEATURES,
+  PUBLISH_MIN_DESCRIPTION_WORDS,
+  PUBLISH_OVERRIDE_REASON_MAX,
+  PUBLISH_PREFLIGHT_ITEMS,
+  PUBLISH_PREFLIGHT_LABELS,
+  evaluatePublishPreflight,
+  isPublishReady,
+  unmetPreflightKeys,
+  publishOverrideSchema,
+  type PublishPreflightKey,
+  type PublishPreflightInput,
+  type PublishPreflightItem,
+  type PublishOverride,
+} from './property-publish.js';
 export {
   MARKET_STATUSES,
   marketStatusUpdateSchema,
@@ -131,8 +154,29 @@ export {
   FEEDBACK_DECISIONS,
   feedbackSubmissionSchema,
   feedbackModerationSchema,
+  feedbackEditSchema,
   feedbackDecisionStatus,
   type FeedbackSubmission,
   type FeedbackDecision,
   type FeedbackModeration,
+  type FeedbackEdit,
 } from './feedback.js';
+export {
+  ASSIGNMENT_RULE_CONDITION_FIELDS,
+  ASSIGNMENT_RULE_OPERATORS,
+  ASSIGNMENT_RULE_NAME_MAX,
+  ASSIGNMENT_TARGET_TYPES,
+  assignmentConditionSchema,
+  assignmentTargetSchema,
+  assignmentRuleSchema,
+  matchesAllConditions,
+  evaluateAssignmentRules,
+  type AssignmentRuleConditionField,
+  type AssignmentRuleOperator,
+  type AssignmentTargetType,
+  type AssignmentCondition,
+  type AssignmentTarget,
+  type AssignmentRule,
+  type SampleEnquiry,
+  type AssignmentEvaluation,
+} from './assignment-rule.js';
