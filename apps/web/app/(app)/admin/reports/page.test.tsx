@@ -9,9 +9,10 @@ vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const count = vi.fn();
 const groupBy = vi.fn();
+const findMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ enquiry: { count, groupBy } }),
+    fn({ enquiry: { count, groupBy }, feedback: { findMany } }),
 }));
 
 const { default: ReportsPage } = await import('./page.js');
@@ -28,6 +29,7 @@ beforeEach(() => {
     return status === 'new' ? 5 : status === 'converted' ? 5 : 0;
   });
   groupBy.mockResolvedValue([{ sourceUrl: '/buy', _count: { _all: 10 } }]);
+  findMany.mockResolvedValue([{ agentActor: 'Avery Adams', rating: 5 }]);
 });
 
 describe('ReportsPage', () => {
@@ -38,7 +40,15 @@ describe('ReportsPage', () => {
     const funnel = within(screen.getByRole('region', { name: 'Conversion funnel' }));
     expect(funnel.getByText('10')).toBeInTheDocument(); // total = 5 new + 5 converted
     expect(funnel.getByText('50.0%')).toBeInTheDocument(); // 5 converted / 10 total
-    expect(within(screen.getByRole('table')).getByText('/buy')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'By source' })).getByText('/buy')).toBeInTheDocument();
+  });
+
+  it('renders the per-agent rating rollup from the tenant-scoped feedback', async () => {
+    render(await ReportsPage(params({})));
+
+    const agents = within(screen.getByRole('region', { name: 'Agent ratings' }));
+    expect(agents.getByText('Avery Adams')).toBeInTheDocument();
+    expect(agents.getByText('5 / 5')).toBeInTheDocument();
   });
 
   it('passes the parsed date range into the queries and reflects it in the filter', async () => {
