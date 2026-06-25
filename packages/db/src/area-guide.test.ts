@@ -176,9 +176,7 @@ describe('RLS tenant isolation on area_guides (pglite — mirrors 0020)', () => 
     const db = await setup();
     await db.exec(`SET app.current_tenant_id = '${TENANT_A}'`);
     await expect(
-      db.exec(
-        `INSERT INTO area_guides (tenant_id, slug, name) VALUES ('${TENANT_B}', 'x', 'X')`,
-      ),
+      db.exec(`INSERT INTO area_guides (tenant_id, slug, name) VALUES ('${TENANT_B}', 'x', 'X')`),
     ).rejects.toThrow();
     await db.close();
   });
