@@ -186,4 +186,10 @@ describe('publishOverrideSchema', () => {
     const parsed = publishOverrideSchema.parse({ override: false });
     expect('reason' in parsed && parsed.reason !== undefined).toBe(false);
   });
+
+  it('defaults override to false when the field is omitted', () => {
+    const parsed = publishOverrideSchema.safeParse({});
+    expect(parsed.success).toBe(true);
+    expect(parsed.success && parsed.data.override).toBe(false);
+  });
 });

@@ -57,6 +57,15 @@ model PlatformTenant {
   savedSearches        SavedSearch[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
+  blogAuthors          BlogAuthor[]
+  blogCategories       BlogCategory[]
+  blogPostTags         BlogPostTag[]
+  blogPosts            BlogPost[]
+  areaGuides           AreaGuide[]
+  areaGuideSections    AreaGuideSection[]
+  redirects            Redirect[]
+  seoMetadata          SeoMetadata[]
+  importLogs           ImportLog[]
   sessions             Session[]
   accounts             Account[]
   verifications        Verification[]
@@ -911,6 +920,109 @@ model MortgageRatePreset {
   @@map("mortgage_rate_presets")
 }
 
+/// EPIC-J knowledge-hub author (master spec §J "Blog author"; §H Blog tab).
+/// A by-line for blog posts. Tenant-scoped; the slug is unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogAuthor {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  slug      String
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_authors")
+}
+
+/// EPIC-J knowledge-hub category (master spec §J "Blog category" — slug, label,
+/// description, sort order). Tenant-scoped; the slug is unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_categories")
+}
+
+/// EPIC-J knowledge-hub tag (master spec §J "Blog post tag" — the tag entity in a
+/// many-to-many tag-to-post relationship). Tenant-scoped; slug unique per tenant.
+/// The posts <-> tags m-n uses Prisma's idiomatic implicit join table.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogPostTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_post_tags")
+}
+
+/// EPIC-J knowledge-hub article (master spec §J "Blog post"; §H Blog tab —
+/// title, body, category, tags, author, schedule). The `body` is the block-based
+/// source payload (Json, mirroring how the page-builder stores typed sections);
+/// `excerpt`, `heroImageUrl` and the `metaTitle`/`metaDescription` SEO fields are
+/// nullable. The lifecycle is draft -> scheduled -> published (BlogPostStatus);
+/// `scheduledFor` carries the scheduled publication time and `publishedAt` the
+/// actual one. Category (m-1) and author (m-1) are nullable and SetNull on delete;
+/// tags are a m-n via the implicit join. Tenant-scoped; slug unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogPost {
+  id                String         @id @default(uuid()) @db.Uuid
+  tenantId          String         @map("tenant_id") @db.Uuid
+  title             String
+  slug              String
+  body              Json
+  // §J — the pre-rendered HTML cache of `body`, populated on publish (nullable
+  // until first render). The source body above is the rich-text/Markdown master.
+  renderedHtmlCache String?        @map("rendered_html_cache")
+  excerpt           String?
+  heroImageUrl      String?        @map("hero_image_url")
+  status            BlogPostStatus @default(draft)
+  publishedAt       DateTime?      @map("published_at")
+  scheduledFor      DateTime?      @map("scheduled_for")
+  metaTitle         String?        @map("meta_title")
+  metaDescription   String?        @map("meta_description")
+  categoryId        String?        @map("category_id") @db.Uuid
+  authorId          String?        @map("author_id") @db.Uuid
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category BlogCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   BlogAuthor?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  tags     BlogPostTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("blog_posts")
+}
+
 /// A CRM contact record (master spec §J.5). One unified entity with a role
 /// discriminator (landlord / tenant / vendor / buyer) per the brief's open
 /// question 1 default-to-separate note; the role is captured on `type`.
@@ -935,6 +1047,76 @@ model Contact {
   @@index([tenantId])
   @@index([tenantId, type])
   @@map("contacts")
+}
+
+/// EPIC-J (master spec §J "Area guide", FR-J-1) — a managed area-guide page. §J
+/// specifies it captures: slug, name, introduction, hero image, the postcode
+/// prefixes the area covers (used to filter properties), geographic coordinates,
+/// meta title, meta description, status and standard timestamps. `slug` is unique
+/// per tenant (the public URL key); `postcodePrefixes` is the String[] of covered
+/// prefixes that drives the "properties in this area" filter. The page-builder
+/// `sections` use the same structure as page sections (§J "Page section"). Tenant-
+/// scoped, isolated by the tenant_isolation RLS policy in migrations/raw/0020_area_guides_rls.sql.
+model AreaGuide {
+  id               String          @id @default(uuid()) @db.Uuid
+  tenantId         String          @map("tenant_id") @db.Uuid
+  slug             String
+  name             String
+  introduction     String
+  heroImage        String?         @map("hero_image")
+  postcodePrefixes String[]        @map("postcode_prefixes")
+  latitude         Float?
+  longitude        Float?
+  metaTitle        String?         @map("meta_title")
+  metaDescription  String?         @map("meta_description")
+  status           AreaGuideStatus @default(draft)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sections AreaGuideSection[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("area_guides")
+}
+
+/// EPIC-J (master spec §J — "Page-builder sections for the area guide use the same
+/// structure as page sections", §J "Page section"). A typed block within an area
+/// guide: a reference to its parent guide, the section `type` (hero, rich text,
+/// property carousel and so on — the §D catalogue), the section's typed `data`
+/// payload (a structured JSON whose shape matches the section type), the `sortOrder`
+/// and a `isVisible` visibility flag. Tenant-scoped, isolated by the tenant_isolation
+/// RLS policy in migrations/raw/0020_area_guides_rls.sql. Cascades with both its
+/// tenant and its parent guide.
+model AreaGuideSection {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  areaGuideId String   @map("area_guide_id") @db.Uuid
+  type        String
+  data        Json     @default("{}")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isVisible   Boolean  @default(true) @map("is_visible")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant    PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  areaGuide AreaGuide      @relation(fields: [areaGuideId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, areaGuideId])
+  @@map("area_guide_sections")
+}
+
+/// The publication lifecycle of an area guide (master spec §J "Area guide" status).
+/// `draft` while being authored; `published` once live. Public surfaces show only
+/// `published` rows.
+enum AreaGuideStatus {
+  draft
+  published
+
+  @@map("area_guide_status")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1048,6 +1230,127 @@ model PropertyStatusEvent {
   @@index([tenantId])
   @@index([tenantId, propertyId])
   @@map("property_status_events")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "Redirect", FR-J-1). A URL redirect
+/// rule: a source path (unique per tenant), a destination, the redirect type, plus a
+/// hit counter and the most-recent-hit timestamp maintained by the redirect handler.
+/// Storage layer only — the resolver/handler lands in its owning epic PR. Tenant-
+/// scoped, isolated by the tenant_isolation RLS policy in migrations/raw/0021_seo_ops_rls.sql.
+model Redirect {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  /// The incoming path to match (unique per tenant via @@unique below).
+  sourcePath      String       @map("source_path")
+  /// Where the request is sent. Empty for a 410 Gone, which serves no destination.
+  destinationPath String       @map("destination_path")
+  /// The redirect status — 301 / 302 / 307 / 410 (see RedirectType).
+  type            RedirectType
+  /// How many times this rule has fired; incremented by the handler.
+  hitCount        Int          @default(0) @map("hit_count")
+  /// The most-recent-hit timestamp; null until the rule first fires.
+  lastHitAt       DateTime?    @map("last_hit_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, sourcePath])
+  @@index([tenantId])
+  @@index([tenantId, sourcePath])
+  @@map("redirects")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "SEO metadata", FR-J-1). A per-page or
+/// per-entity SEO override: the scope (page / property / area guide / blog post /
+/// branch / "default"), the scope identifier (null for the tenant-wide "default"),
+/// meta title / description, canonical URL, Open Graph image, no-index / no-follow
+/// flags and any structured-data overrides. Storage layer only — the metadata
+/// resolver lands in EPIC-O's PR. Tenant-scoped, isolated by the tenant_isolation RLS
+/// policy in migrations/raw/0021_seo_ops_rls.sql.
+model SeoMetadata {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  /// What the override applies to (see SeoScope).
+  scope           SeoScope
+  /// The id of the scoped entity; null for the tenant-wide `default` scope.
+  scopeId         String?  @map("scope_id") @db.Uuid
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description")
+  canonicalUrl    String?  @map("canonical_url")
+  ogImage         String?  @map("og_image")
+  noIndex         Boolean  @default(false) @map("no_index")
+  noFollow        Boolean  @default(false) @map("no_follow")
+  /// Structured-data (JSON-LD) overrides merged into the emitted schema.org markup.
+  structuredData  Json?    @map("structured_data")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, scope, scopeId])
+  @@map("seo_metadata")
+}
+
+/// EPIC-J SEO / ops foundation (master spec §J "Import log", FR-J-1). A record of every
+/// bulk-import run: the source (e.g. "portal_feed" / "csv_upload"), the user who
+/// triggered it, the per-run record counts (input / created / updated / skipped /
+/// failed), a structured error summary, and the start / finish timestamps. Storage
+/// layer only — the importer that writes these rows lands in its owning epic PR.
+/// Tenant-scoped, isolated by the tenant_isolation RLS policy in
+/// migrations/raw/0021_seo_ops_rls.sql.
+model ImportLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  /// The import source identifier, e.g. "portal_feed" or "csv_upload".
+  source         String
+  /// The id of the user who triggered the run; null for system / scheduled imports.
+  triggeredBy    String?   @map("triggered_by") @db.Uuid
+  recordsInput   Int       @default(0) @map("records_input")
+  recordsCreated Int       @default(0) @map("records_created")
+  recordsUpdated Int       @default(0) @map("records_updated")
+  recordsSkipped Int       @default(0) @map("records_skipped")
+  recordsFailed  Int       @default(0) @map("records_failed")
+  /// A structured summary of the errors encountered during the run.
+  errorSummary   Json?     @map("error_summary")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  /// Null while the run is in progress; set when it completes.
+  finishedAt     DateTime? @map("finished_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, source])
+  @@map("import_logs")
+}
+
+/// EPIC-J redirect status (master spec §J "Redirect"). The HTTP statuses the redirect
+/// handler may emit — 301 permanent, 302 found, 307 temporary, 410 gone. Prisma enum
+/// identifiers cannot start with a digit, so the numeric statuses are spelled `r3xx`
+/// and 410 Gone is `gone`; the DB enum is mapped via @@map.
+enum RedirectType {
+  r301
+  r302
+  r307
+  gone
+
+  @@map("redirect_type")
+}
+
+/// EPIC-J SEO-metadata scope (master spec §J "SEO metadata"). What an SEO override
+/// applies to. `default` is the tenant-wide fallback (its scope_id is null).
+enum SeoScope {
+  page
+  property
+  area_guide
+  blog_post
+  branch
+  default
+
+  @@map("seo_scope")
 }
 
 /// The vertical discriminator for a property (master spec §F; PRODUCT.md §2).
@@ -1356,4 +1659,15 @@ enum AlertFrequency {
   weekly
 
   @@map("alert_frequency")
+}
+
+/// EPIC-J blog-post publication lifecycle (master spec §J "Blog post" status —
+/// draft, published or scheduled). `scheduled` carries a future scheduledFor;
+/// `published` carries the actual publishedAt.
+enum BlogPostStatus {
+  draft
+  scheduled
+  published
+
+  @@map("blog_post_status")
 }
