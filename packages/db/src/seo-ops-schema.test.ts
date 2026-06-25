@@ -19,10 +19,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 
 const schema = readFileSync(join(root, 'prisma', 'schema.prisma'), 'utf8');
-const rlsMigration = readFileSync(
-  join(root, 'migrations', 'raw', '0021_seo_ops_rls.sql'),
-  'utf8',
-);
+const rlsMigration = readFileSync(join(root, 'migrations', 'raw', '0021_seo_ops_rls.sql'), 'utf8');
 
 function block(name: string, kind: 'model' | 'enum'): string {
   const match = schema.match(new RegExp(`${kind} ${name} \\{[\\s\\S]*?\\n\\}`, 'm'));
