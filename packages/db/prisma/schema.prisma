@@ -103,12 +103,12 @@ model User {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenant           PlatformTenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  sessions         Session[]
-  accounts         Account[]
-  twoFactors       TwoFactor[]
-  savedProperties  SavedProperty[]
-  savedSearches    SavedSearch[]
+  tenant          PlatformTenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessions        Session[]
+  accounts        Account[]
+  twoFactors      TwoFactor[]
+  savedProperties SavedProperty[]
+  savedSearches   SavedSearch[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -151,15 +151,15 @@ model SavedProperty {
 /// PHASE-B foundation slice: the storage layer only; the alert cron + account UI
 /// consumers land in their owning epic PRs.
 model SavedSearch {
-  id             String         @id @default(uuid()) @db.Uuid
-  tenantId       String         @map("tenant_id") @db.Uuid
-  userId         String         @map("user_id") @db.Uuid
-  name           String
-  filters        Json
-  alertFrequency AlertFrequency @default(off) @map("alert_frequency")
-  lastAlertSentAt DateTime?     @map("last_alert_sent_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  id              String         @id @default(uuid()) @db.Uuid
+  tenantId        String         @map("tenant_id") @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  name            String
+  filters         Json
+  alertFrequency  AlertFrequency @default(off) @map("alert_frequency")
+  lastAlertSentAt DateTime?      @map("last_alert_sent_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -437,18 +437,18 @@ model Property {
 
   // ── §F identification + lifecycle ──────────────────────────────────────────
   reference         String
-  externalId        String?            @map("external_id")
+  externalId        String?           @map("external_id")
   slug              String
   title             String?
-  listingType       ListingType        @default(residential) @map("listing_type")
-  saleType          SaleType           @map("sale_type")
-  publicationStatus PublicationStatus  @default(draft) @map("publication_status")
-  marketStatus      MarketStatus       @default(for_sale) @map("market_status")
-  isNewHome         Boolean            @default(false) @map("is_new_home")
-  isFeatured        Boolean            @default(false) @map("is_featured")
-  showOnHomepage    Boolean            @default(false) @map("show_on_homepage")
-  showPrice         Boolean            @default(true) @map("show_price")
-  displayOrder      Int                @default(0) @map("display_order")
+  listingType       ListingType       @default(residential) @map("listing_type")
+  saleType          SaleType          @map("sale_type")
+  publicationStatus PublicationStatus @default(draft) @map("publication_status")
+  marketStatus      MarketStatus      @default(for_sale) @map("market_status")
+  isNewHome         Boolean           @default(false) @map("is_new_home")
+  isFeatured        Boolean           @default(false) @map("is_featured")
+  showOnHomepage    Boolean           @default(false) @map("show_on_homepage")
+  showPrice         Boolean           @default(true) @map("show_price")
+  displayOrder      Int               @default(0) @map("display_order")
 
   // ── §F pricing ─────────────────────────────────────────────────────────────
   price            Int?
@@ -486,25 +486,25 @@ model Property {
   listedStatus        String?           @map("listed_status")
 
   // ── §F location ──────────────────────────────────────────────────────────────
-  internalAddressLine1 String?  @map("internal_address_line1")
-  internalAddressLine2 String?  @map("internal_address_line2")
-  displayAddress       String   @map("display_address")
+  internalAddressLine1 String? @map("internal_address_line1")
+  internalAddressLine2 String? @map("internal_address_line2")
+  displayAddress       String  @map("display_address")
   postcode             String
-  postcodePrefix       String?  @map("postcode_prefix")
+  postcodePrefix       String? @map("postcode_prefix")
   town                 String?
   city                 String?
   county               String?
-  country              String   @default("United Kingdom")
+  country              String  @default("United Kingdom")
   latitude             Float?
   longitude            Float?
-  hideExactAddress     Boolean  @default(false) @map("hide_exact_address")
+  hideExactAddress     Boolean @default(false) @map("hide_exact_address")
 
   // ── §F descriptions ──────────────────────────────────────────────────────────
-  shortDescription String?  @map("short_description")
+  shortDescription String? @map("short_description")
   description      String?
-  keyFeatures      Json     @default("[]") @map("key_features")
-  areaDescription  String?  @map("area_description")
-  additionalNotes  String?  @map("additional_notes")
+  keyFeatures      Json    @default("[]") @map("key_features")
+  areaDescription  String? @map("area_description")
+  additionalNotes  String? @map("additional_notes")
 
   // ── §F media (headline URLs; the gallery + paperwork rows are satellites) ────
   mainImageUrl    String? @map("main_image_url")
@@ -520,11 +520,11 @@ model Property {
   contactEmail     String? @map("contact_email")
 
   // ── §F SEO ───────────────────────────────────────────────────────────────────
-  metaTitle       String?  @map("meta_title")
-  metaDescription String?  @map("meta_description")
-  ogImageUrl      String?  @map("og_image_url")
-  canonicalUrl    String?  @map("canonical_url")
-  noIndex         Boolean  @default(false) @map("no_index")
+  metaTitle       String? @map("meta_title")
+  metaDescription String? @map("meta_description")
+  ogImageUrl      String? @map("og_image_url")
+  canonicalUrl    String? @map("canonical_url")
+  noIndex         Boolean @default(false) @map("no_index")
 
   // ── §F audit metadata + soft delete (FR-F-10) ────────────────────────────────
   createdByUserId String?   @map("created_by_user_id") @db.Uuid
