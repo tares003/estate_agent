@@ -56,6 +56,10 @@ model PlatformTenant {
   savedProperties      SavedProperty[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
+  blogAuthors          BlogAuthor[]
+  blogCategories       BlogCategory[]
+  blogPostTags         BlogPostTag[]
+  blogPosts            BlogPost[]
   areaGuides           AreaGuide[]
   areaGuideSections    AreaGuideSection[]
   sessions             Session[]
@@ -880,6 +884,109 @@ model MortgageRatePreset {
   @@map("mortgage_rate_presets")
 }
 
+/// EPIC-J knowledge-hub author (master spec §J "Blog author"; §H Blog tab).
+/// A by-line for blog posts. Tenant-scoped; the slug is unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogAuthor {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  slug      String
+  bio       String?
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_authors")
+}
+
+/// EPIC-J knowledge-hub category (master spec §J "Blog category" — slug, label,
+/// description, sort order). Tenant-scoped; the slug is unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogCategory {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String
+  slug        String
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_categories")
+}
+
+/// EPIC-J knowledge-hub tag (master spec §J "Blog post tag" — the tag entity in a
+/// many-to-many tag-to-post relationship). Tenant-scoped; slug unique per tenant.
+/// The posts <-> tags m-n uses Prisma's idiomatic implicit join table.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogPostTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPost[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("blog_post_tags")
+}
+
+/// EPIC-J knowledge-hub article (master spec §J "Blog post"; §H Blog tab —
+/// title, body, category, tags, author, schedule). The `body` is the block-based
+/// source payload (Json, mirroring how the page-builder stores typed sections);
+/// `excerpt`, `heroImageUrl` and the `metaTitle`/`metaDescription` SEO fields are
+/// nullable. The lifecycle is draft -> scheduled -> published (BlogPostStatus);
+/// `scheduledFor` carries the scheduled publication time and `publishedAt` the
+/// actual one. Category (m-1) and author (m-1) are nullable and SetNull on delete;
+/// tags are a m-n via the implicit join. Tenant-scoped; slug unique per tenant.
+/// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
+model BlogPost {
+  id                String         @id @default(uuid()) @db.Uuid
+  tenantId          String         @map("tenant_id") @db.Uuid
+  title             String
+  slug              String
+  body              Json
+  // §J — the pre-rendered HTML cache of `body`, populated on publish (nullable
+  // until first render). The source body above is the rich-text/Markdown master.
+  renderedHtmlCache String?        @map("rendered_html_cache")
+  excerpt           String?
+  heroImageUrl      String?        @map("hero_image_url")
+  status            BlogPostStatus @default(draft)
+  publishedAt       DateTime?      @map("published_at")
+  scheduledFor      DateTime?      @map("scheduled_for")
+  metaTitle         String?        @map("meta_title")
+  metaDescription   String?        @map("meta_description")
+  categoryId        String?        @map("category_id") @db.Uuid
+  authorId          String?        @map("author_id") @db.Uuid
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category BlogCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   BlogAuthor?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  tags     BlogPostTag[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("blog_posts")
+}
+
 /// A CRM contact record (master spec §J.5). One unified entity with a role
 /// discriminator (landlord / tenant / vendor / buyer) per the brief's open
 /// question 1 default-to-separate note; the role is captured on `type`.
@@ -1383,4 +1490,15 @@ enum FurnishedStatus {
   optional
 
   @@map("furnished_status")
+}
+
+/// EPIC-J blog-post publication lifecycle (master spec §J "Blog post" status —
+/// draft, published or scheduled). `scheduled` carries a future scheduledFor;
+/// `published` carries the actual publishedAt.
+enum BlogPostStatus {
+  draft
+  scheduled
+  published
+
+  @@map("blog_post_status")
 }
