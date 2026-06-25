@@ -84,7 +84,9 @@ describe('0013 RLS migration — tenant isolation on feedback', () => {
     expect(rlsMigration).toContain('ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;');
     expect(rlsMigration).toContain('ALTER TABLE feedback FORCE ROW LEVEL SECURITY;');
     expect(rlsMigration).toContain('CREATE POLICY tenant_isolation ON feedback');
-    expect(rlsMigration).toContain("NULLIF(current_setting('app.current_tenant_id', true), '')::uuid");
+    expect(rlsMigration).toContain(
+      "NULLIF(current_setting('app.current_tenant_id', true), '')::uuid",
+    );
   });
 });
 

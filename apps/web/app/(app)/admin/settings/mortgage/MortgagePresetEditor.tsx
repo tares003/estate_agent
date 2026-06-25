@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, FormError, FormSuccess, NumberField, TextField } from '@estate/ui';
 
 import type { MortgageRatePreset } from '../../../lib/mortgage-rate-presets.js';
-import {
-  saveMortgageRatePresets,
-  type MortgageRatePresetActionState,
-} from './presets-actions.js';
+import { saveMortgageRatePresets, type MortgageRatePresetActionState } from './presets-actions.js';
 
 // EPIC-W FR-W-8 — the mortgage rate preset editor. Lists the tenant's curated rate
 // snapshots and lets an admin add / edit / remove them. On submit it serialises the

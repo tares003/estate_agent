@@ -63,3 +63,6 @@ Thumbs.db
 
 # Agent runtime lock files (never commit)
 .claude/*.lock
+# Transient agent worktree checkouts (each is its own git repo — never commit;
+# they would otherwise be picked up as embedded-repo gitlinks by `git add -A`).
+.claude/worktrees/

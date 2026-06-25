@@ -8,7 +8,10 @@ import { loadMortgageRatePresets, type MortgageRatePresetReader } from './mortga
 // simply offers nothing to apply). Tenant isolation is applied by the caller via
 // withTenant (RLS); the structural reader keeps this DB-free for unit tests.
 
-function reader(rows: unknown[]): { reader: MortgageRatePresetReader; findMany: ReturnType<typeof vi.fn> } {
+function reader(rows: unknown[]): {
+  reader: MortgageRatePresetReader;
+  findMany: ReturnType<typeof vi.fn>;
+} {
   const findMany = vi.fn(async () => rows);
   return {
     findMany,

@@ -41,9 +41,7 @@ export type SignInCustomerResult =
  * rejected credential, or any other sign-in failure) — the action treats every
  * failure as a denied sign-in and reveals nothing about the cause.
  */
-export async function signInCustomer(
-  input: SignInCustomerInput,
-): Promise<SignInCustomerResult> {
+export async function signInCustomer(input: SignInCustomerInput): Promise<SignInCustomerResult> {
   const auth = getAuth();
   if (!auth) return { ok: false, reason: 'unavailable' };
 

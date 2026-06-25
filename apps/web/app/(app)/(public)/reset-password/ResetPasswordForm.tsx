@@ -23,10 +23,7 @@ export interface ResetPasswordFormProps {
  * rides along as a hidden field — it is the authorisation for the reset, so there
  * is no consent / anti-spam row here (CLAUDE.md §9 — the token is the gate).
  */
-export function ResetPasswordForm({
-  token,
-  initialState = INITIAL_STATE,
-}: ResetPasswordFormProps) {
+export function ResetPasswordForm({ token, initialState = INITIAL_STATE }: ResetPasswordFormProps) {
   const [state, formAction, pending] = useActionState(submitResetPassword, initialState);
 
   if (state.ok) {

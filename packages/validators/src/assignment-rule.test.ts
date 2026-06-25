@@ -129,9 +129,9 @@ describe('matchesAllConditions (IF = AND of every condition)', () => {
   });
 
   it('evaluates the property field by assignment presence', () => {
-    expect(
-      matchesAllConditions([{ field: 'property', operator: 'is_not_empty' }], enquiry),
-    ).toBe(true);
+    expect(matchesAllConditions([{ field: 'property', operator: 'is_not_empty' }], enquiry)).toBe(
+      true,
+    );
     expect(
       matchesAllConditions([{ field: 'property', operator: 'is_empty' }], {
         ...enquiry,
@@ -143,9 +143,9 @@ describe('matchesAllConditions (IF = AND of every condition)', () => {
   it('treats a missing source_url as empty for presence checks', () => {
     const noUrl: SampleEnquiry = { ...enquiry, sourceUrl: null };
     expect(matchesAllConditions([{ field: 'source_url', operator: 'is_empty' }], noUrl)).toBe(true);
-    expect(
-      matchesAllConditions([{ field: 'source_url', operator: 'is_not_empty' }], noUrl),
-    ).toBe(false);
+    expect(matchesAllConditions([{ field: 'source_url', operator: 'is_not_empty' }], noUrl)).toBe(
+      false,
+    );
   });
 });
 

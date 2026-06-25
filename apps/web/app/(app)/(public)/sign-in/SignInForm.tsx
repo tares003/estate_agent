@@ -47,13 +47,7 @@ export function SignInForm({ next, initialState = INITIAL_STATE }: SignInFormPro
 
       {next ? <input type="hidden" name="next" value={next} /> : null}
 
-      <EmailField
-        id="email"
-        name="email"
-        label="Email"
-        autoComplete="email"
-        required
-      />
+      <EmailField id="email" name="email" label="Email" autoComplete="email" required />
       <TextField
         id="password"
         name="password"

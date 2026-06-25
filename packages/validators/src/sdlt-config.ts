@@ -41,9 +41,7 @@ const sdltBandsSchema = z
       }
     }
     // Finite ceilings must be strictly ascending.
-    const ceilings = bands
-      .map((band) => band.upTo)
-      .filter((upTo): upTo is number => upTo !== null);
+    const ceilings = bands.map((band) => band.upTo).filter((upTo): upTo is number => upTo !== null);
     for (let index = 1; index < ceilings.length; index += 1) {
       if (ceilings[index]! <= ceilings[index - 1]!) {
         ctx.addIssue({

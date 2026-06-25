@@ -60,12 +60,16 @@ describe.skipIf(!DOCKER)('auth tenant-scope on real Postgres (Testcontainers)', 
     // db push. We deliberately do NOT apply the 0012 RLS-enable migration: the auth
     // adapter connects on a BYPASSRLS role, so isolation must come purely from the
     // $extends hook — which is exactly what this test pins down.
-    execFileSync('pnpm', ['exec', 'prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'], {
-      cwd: root,
-      env: { ...process.env, DATABASE_URL: uri },
-      stdio: 'ignore',
-      shell: process.platform === 'win32',
-    });
+    execFileSync(
+      'pnpm',
+      ['exec', 'prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'],
+      {
+        cwd: root,
+        env: { ...process.env, DATABASE_URL: uri },
+        stdio: 'ignore',
+        shell: process.platform === 'win32',
+      },
+    );
 
     // Seed the two tenants the auth rows' tenant FK references.
     admin = new Client({ connectionString: uri });

@@ -57,7 +57,11 @@ describe('SignInForm', () => {
   });
 
   it('shows a generic error summary when authentication fails', () => {
-    render(<SignInForm initialState={{ ok: false, errors: [{ message: 'Email or password is incorrect.' }] }} />);
+    render(
+      <SignInForm
+        initialState={{ ok: false, errors: [{ message: 'Email or password is incorrect.' }] }}
+      />,
+    );
     expect(screen.getByText(/email or password is incorrect/i)).toBeInTheDocument();
   });
 

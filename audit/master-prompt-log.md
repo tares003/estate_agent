@@ -2370,3 +2370,23 @@ Merge handling: GitHub auto-merged the shipped trio (#97→#96→#98; barrel add
 This batch advanced the auth surface (password reset + customer sign-in join registration — all live once the runtime is env-activated), feedback moderation (edit), the property publish gate (FR-F-8), CRM auto-assignment editor (FR-H-4), and the mortgage calculator (presets). Genuinely-blocked items unchanged (portals/operator/bulk-import/CMS-collections/MapBackend need foundations or creds).
 
 ---
+
+## Phase — EPIC-J foundation entities (the spec-defined §J data model) via Workflow (2026-06-25)
+
+The user chose "build the EPIC-J foundations" as the next direction (the blocker for portals / bulk import / managed redirects / per-entity JSON-LD). I grounded the entity definitions directly in master spec §J (read the verbatim "Blog post" / "Area guide" / "Redirect" / "SEO metadata" / "Import log" / "Saved search" definitions) — and deliberately did NOT build a separate Tenancy/Vendor/Landlord table: §J does not define them, and the codebase already committed to the unified `Contact` entity, so separate tables would contradict the architecture. A 4-unit deterministic Workflow built each as a PHASE-B storage-only slice (Prisma models + RLS migration + schema-shape tests, NO consumers per EPIC-J), with migration numbers 0019–0022 pre-assigned to avoid collisions:
+
+- **#103 blog** (0019) — BlogAuthor / BlogCategory / BlogPostTag / BlogPost (+ BlogPostStatus enum), category m-1, author m-1, tags m-n. The adversarial verifier caught a REAL §J gap (line 1402 lists "rendered HTML cache"); I added `BlogPost.renderedHtmlCache` + its assertion before merge.
+- **#106 area-guide** (0020) — AreaGuide + AreaGuideSection (page-section shape).
+- **#104 seo-ops** (0021) — Redirect (+ RedirectType enum) + SeoMetadata (+ SeoScope enum) + ImportLog.
+- **#105 saved-search** (0022) — SavedSearch (+ AlertFrequency enum), back-related on both PlatformTenant and User (unblocks EPIC-T FR-T-7/8).
+
+All four touch schema.prisma, so they merged sequentially with additive PlatformTenant back-relation conflict resolution (kept every relation; verified both new enums present exactly once). Integrated gate on main: repo-wide `tsc` clean; **db 399**, validators 275, auth 59, web 1009; diff guards green.
+
+**Repo-health fixes uncovered while landing this (shipped together):**
+1. **CI `format:check` was failing on a 57-file source backlog** that accumulated across earlier batches — I had been spot-checking individual files with `prettier --check <file>`, never the full `pnpm run format:check` (ci.yml's first hard gate). Ran `prettier --write` across the repo to clear it. (The scarier "321 files" first seen was inflated by the lingering agent **worktree checkouts** under `.claude/worktrees/` being scanned — a local artifact CI never sees.)
+2. **prettier `quoteProps: as-needed` vs the G6 naming guard:** the sweep stripped the *defensive quotes* from `'lead_type'` keys (a snake_case §J field name; "lead" is a forbidden noun the guard only permits as a quoted UI-label string), turning them into flagged identifiers. Fixed by setting **`quoteProps: "preserve"`** in `.prettierrc.json` (lets the naming-guard quoting coexist with prettier) + restoring the one stripped key.
+3. **`.claude/worktrees/` added to `.gitignore` + `.prettierignore`** — it was untracked, so a `git add -A` during a merge had grabbed the worktree dirs as embedded-repo gitlinks (caught + reverted before it reached main); now it cannot recur, and prettier no longer descends into transient checkouts.
+
+Net: the §J foundation layer for blog, area guides, redirects/SEO-metadata/import-logs, and saved searches now exists (storage + RLS only); CI's format gate is green for the first time in a while; and the worktree-pollution / gitlink traps are closed. Next-unblocked consumers (not built here): EPIC-T saved-search CRUD (FR-T-7/8), EPIC-O managed redirects (FR-O-11/12) + blog/area JSON-LD (FR-O-7), EPIC-X bulk import, the knowledge-hub + area-guide public pages.
+
+---

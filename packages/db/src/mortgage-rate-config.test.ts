@@ -90,9 +90,7 @@ describe('RLS tenant isolation on mortgage_rate_config (pglite — mirrors 0015)
     const db = await setup();
     await db.exec(`SET app.current_tenant_id = '${TENANT_A}'`);
     await expect(
-      db.exec(
-        `INSERT INTO mortgage_rate_config (tenant_id, config) VALUES ('${TENANT_B}', '{}')`,
-      ),
+      db.exec(`INSERT INTO mortgage_rate_config (tenant_id, config) VALUES ('${TENANT_B}', '{}')`),
     ).rejects.toThrow();
     await db.close();
   });

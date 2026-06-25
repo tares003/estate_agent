@@ -19,7 +19,9 @@ vi.mock('../../lib/tenant.js', () => ({
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const verifyTurnstile = vi.fn();
-vi.mock('../../lib/turnstile.js', () => ({ verifyTurnstile: (...a: unknown[]) => verifyTurnstile(...a) }));
+vi.mock('../../lib/turnstile.js', () => ({
+  verifyTurnstile: (...a: unknown[]) => verifyTurnstile(...a),
+}));
 
 const requestPasswordReset = vi.fn();
 vi.mock('../../lib/password-reset.js', () => ({
@@ -95,7 +97,9 @@ describe('submitForgotPassword', () => {
   it('requests the reset for the validated (lowercased) email (FR-N-5)', async () => {
     await submitForgotPassword({ ok: false }, form({ email: '  Penny@Example.Invalid ' }));
     expect(requestPasswordReset).toHaveBeenCalledTimes(1);
-    expect(requestPasswordReset.mock.calls[0]![0]).toMatchObject({ email: 'penny@example.invalid' });
+    expect(requestPasswordReset.mock.calls[0]![0]).toMatchObject({
+      email: 'penny@example.invalid',
+    });
   });
 
   it('records consent + an audit row in one tenant transaction on success (G4/G5)', async () => {

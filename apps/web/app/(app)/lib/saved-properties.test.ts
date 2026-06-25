@@ -107,24 +107,21 @@ describe('listSavedProperties', () => {
   });
 
   it('drops a saved row whose property is no longer visible (unpublished / removed)', async () => {
-    const { r } = reader(
-      [{ propertyId: 'p1' }, { propertyId: 'gone' }],
-      [
-        {
-          id: 'p1',
-          slug: 'one',
-          displayAddress: '1 Road',
-          postcode: 'M1 1AA',
-          title: 'One',
-          saleType: 'sale',
-          marketStatus: 'for_sale',
-          price: 25000000,
-          bedrooms: 3,
-          bathrooms: 1,
-          receptions: 1,
-        },
-      ] as never,
-    );
+    const { r } = reader([{ propertyId: 'p1' }, { propertyId: 'gone' }], [
+      {
+        id: 'p1',
+        slug: 'one',
+        displayAddress: '1 Road',
+        postcode: 'M1 1AA',
+        title: 'One',
+        saleType: 'sale',
+        marketStatus: 'for_sale',
+        price: 25000000,
+        bedrooms: 3,
+        bathrooms: 1,
+        receptions: 1,
+      },
+    ] as never);
     const result = await listSavedProperties(r, USER);
     expect(result.items.map((item) => item.id)).toEqual(['p1']);
   });

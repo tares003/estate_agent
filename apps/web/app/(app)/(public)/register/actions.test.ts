@@ -17,7 +17,9 @@ vi.mock('../../lib/tenant.js', () => ({
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const verifyTurnstile = vi.fn();
-vi.mock('../../lib/turnstile.js', () => ({ verifyTurnstile: (...a: unknown[]) => verifyTurnstile(...a) }));
+vi.mock('../../lib/turnstile.js', () => ({
+  verifyTurnstile: (...a: unknown[]) => verifyTurnstile(...a),
+}));
 
 const registerCustomer = vi.fn();
 vi.mock('../../lib/customer-register.js', () => ({

@@ -8,10 +8,7 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 
 import { getDb } from '../../lib/db.js';
 import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
-import {
-  COOKIE_CONSENT_COOKIE,
-  serialiseConsent,
-} from '../../lib/cookie-consent.js';
+import { COOKIE_CONSENT_COOKIE, serialiseConsent } from '../../lib/cookie-consent.js';
 
 // EPIC-C FR-C-12 — persist the cookie-banner consent decision. This is the GDPR
 // consent primitive itself (master spec §J "Consent log"), NOT a personal-data

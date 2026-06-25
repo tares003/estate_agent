@@ -16,19 +16,24 @@ describe('stampDutyInputSchema', () => {
   });
 
   it('accepts a valid purchase price + buyer category', () => {
-    const parsed = stampDutyInputSchema.parse({ purchasePrice: 450_000, buyerCategory: 'home_mover' });
+    const parsed = stampDutyInputSchema.parse({
+      purchasePrice: 450_000,
+      buyerCategory: 'home_mover',
+    });
     expect(parsed).toEqual({ purchasePrice: 450_000, buyerCategory: 'home_mover' });
   });
 
   it('coerces a numeric-string price from the form input', () => {
-    expect(stampDutyInputSchema.parse({ purchasePrice: '450000', buyerCategory: 'home_mover' })
-      .purchasePrice).toBe(450_000);
+    expect(
+      stampDutyInputSchema.parse({ purchasePrice: '450000', buyerCategory: 'home_mover' })
+        .purchasePrice,
+    ).toBe(450_000);
   });
 
   it('rejects a non-positive price and an unknown buyer category', () => {
-    expect(stampDutyInputSchema.safeParse({ purchasePrice: 0, buyerCategory: 'home_mover' }).success).toBe(
-      false,
-    );
+    expect(
+      stampDutyInputSchema.safeParse({ purchasePrice: 0, buyerCategory: 'home_mover' }).success,
+    ).toBe(false);
     expect(
       stampDutyInputSchema.safeParse({ purchasePrice: 450_000, buyerCategory: 'investor' }).success,
     ).toBe(false);

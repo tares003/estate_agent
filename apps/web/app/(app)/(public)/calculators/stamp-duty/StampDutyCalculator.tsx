@@ -32,7 +32,9 @@ const BUYER_OPTIONS: { value: SdltBuyerCategory; label: string }[] = [
 
 /** Format a band's range as "£from–£to" (or "£from+" for the open-ended top band). */
 function bandRange(from: number, to: number | null): string {
-  return to == null ? `${gbpWhole.format(from)}+` : `${gbpWhole.format(from)}–${gbpWhole.format(to)}`;
+  return to == null
+    ? `${gbpWhole.format(from)}+`
+    : `${gbpWhole.format(from)}–${gbpWhole.format(to)}`;
 }
 
 export function StampDutyCalculator({

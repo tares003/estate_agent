@@ -89,7 +89,9 @@ describe('submitResetPassword', () => {
 
   it('never logs the new password in the audit diff (no secret leak)', async () => {
     await submitResetPassword({ ok: false }, form());
-    expect(JSON.stringify(audit.mock.calls[0]![1].diff ?? {})).not.toContain('correct horse battery');
+    expect(JSON.stringify(audit.mock.calls[0]![1].diff ?? {})).not.toContain(
+      'correct horse battery',
+    );
   });
 
   it('fails closed when the token is invalid or expired — no audit row', async () => {

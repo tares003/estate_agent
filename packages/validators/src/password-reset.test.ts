@@ -23,7 +23,10 @@ describe('passwordResetRequestSchema', () => {
   });
 
   it('lowercases and trims the email', () => {
-    const parsed = passwordResetRequestSchema.safeParse({ ...GOOD, email: '  Penny@Example.Invalid ' });
+    const parsed = passwordResetRequestSchema.safeParse({
+      ...GOOD,
+      email: '  Penny@Example.Invalid ',
+    });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.email).toBe('penny@example.invalid');
   });
@@ -33,7 +36,9 @@ describe('passwordResetRequestSchema', () => {
   });
 
   it('rejects a request with GDPR consent unticked (G5 — fail-closed)', () => {
-    expect(passwordResetRequestSchema.safeParse({ ...GOOD, gdpr_consent: false }).success).toBe(false);
+    expect(passwordResetRequestSchema.safeParse({ ...GOOD, gdpr_consent: false }).success).toBe(
+      false,
+    );
   });
 
   it('rejects a request with GDPR consent missing entirely', () => {

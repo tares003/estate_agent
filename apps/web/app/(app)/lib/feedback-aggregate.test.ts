@@ -7,10 +7,10 @@ import { feedbackAggregate, type FeedbackAggregateReader } from './feedback-aggr
 // applied by the caller (withTenant); this just shapes the aggregate query and
 // rounds the result. DB-free: a Prisma tx satisfies the structural reader.
 
-function reader(result: {
-  _avg: { rating: number | null };
-  _count: number;
-}): { r: FeedbackAggregateReader; aggregate: ReturnType<typeof vi.fn> } {
+function reader(result: { _avg: { rating: number | null }; _count: number }): {
+  r: FeedbackAggregateReader;
+  aggregate: ReturnType<typeof vi.fn>;
+} {
   const aggregate = vi.fn().mockResolvedValue(result);
   return { r: { feedback: { aggregate } } as unknown as FeedbackAggregateReader, aggregate };
 }

@@ -50,9 +50,9 @@ export default async function MortgageRateConfigPage() {
         <div className="flex flex-col gap-2">
           <h2 className="t-heading-lg">Rate presets</h2>
           <p className="t-body-sm text-text-secondary max-w-[55ch]">
-            Named rate snapshots (e.g. 2-year fixed, 5-year fixed) a visitor can apply with one
-            tap in the calculator. Indicative only — not financial advice. Changes are recorded in
-            the audit log.
+            Named rate snapshots (e.g. 2-year fixed, 5-year fixed) a visitor can apply with one tap
+            in the calculator. Indicative only — not financial advice. Changes are recorded in the
+            audit log.
           </p>
         </div>
         <MortgagePresetEditor presets={presets} />

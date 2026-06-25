@@ -40,7 +40,9 @@ describe('ReportsPage', () => {
     const funnel = within(screen.getByRole('region', { name: 'Conversion funnel' }));
     expect(funnel.getByText('10')).toBeInTheDocument(); // total = 5 new + 5 converted
     expect(funnel.getByText('50.0%')).toBeInTheDocument(); // 5 converted / 10 total
-    expect(within(screen.getByRole('region', { name: 'By source' })).getByText('/buy')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'By source' })).getByText('/buy'),
+    ).toBeInTheDocument();
   });
 
   it('renders the per-agent rating rollup from the tenant-scoped feedback', async () => {

@@ -9,11 +9,7 @@ import { Button } from '@estate/ui';
 
 export function PrintButton() {
   return (
-    <Button
-      variant="secondary"
-      className="print:hidden"
-      onClick={() => window.print()}
-    >
+    <Button variant="secondary" className="print:hidden" onClick={() => window.print()}>
       Print / save as PDF
     </Button>
   );

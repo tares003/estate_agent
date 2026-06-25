@@ -31,7 +31,10 @@ describe('signFeedbackToken / verifyFeedbackToken', () => {
   });
 
   it('round-trips a minimal context (just tenant + trigger type)', () => {
-    const minimal: FeedbackContext = { tenantId: CONTEXT.tenantId, triggerType: 'repair_completed' };
+    const minimal: FeedbackContext = {
+      tenantId: CONTEXT.tenantId,
+      triggerType: 'repair_completed',
+    };
     const token = signFeedbackToken(minimal, NOW + 60_000, SECRET);
     expect(verifyFeedbackToken(token, SECRET, NOW)).toEqual(minimal);
   });

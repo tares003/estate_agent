@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  mortgageRateConfigSchema,
-  type MortgageRateConfigInput,
-} from './mortgage-rate-config.js';
+import { mortgageRateConfigSchema, type MortgageRateConfigInput } from './mortgage-rate-config.js';
 
 // EPIC-W FR-W-7 — the admin-editable mortgage-default configuration schema. Validates
 // the defaults the public mortgage calculator pre-fills: the illustrative annual

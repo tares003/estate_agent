@@ -61,10 +61,16 @@ describe('createAuth — configuration shape (no DB connection)', () => {
     const send = wired.options.emailVerification?.sendVerificationEmail;
     expect(send).toBeTypeOf('function');
     await send?.(
-      { user: { email: 'penny@example.invalid' }, url: 'https://acme.test/verify?token=abc', token: 'abc' } as never,
+      {
+        user: { email: 'penny@example.invalid' },
+        url: 'https://acme.test/verify?token=abc',
+        token: 'abc',
+      } as never,
       undefined as never,
     );
-    expect(sent).toEqual([{ email: 'penny@example.invalid', url: 'https://acme.test/verify?token=abc' }]);
+    expect(sent).toEqual([
+      { email: 'penny@example.invalid', url: 'https://acme.test/verify?token=abc' },
+    ]);
   });
 
   it('wires the password-reset email callback and a 60-minute token expiry (FR-N-5)', () => {
@@ -89,10 +95,16 @@ describe('createAuth — configuration shape (no DB connection)', () => {
     const send = wired.options.emailAndPassword?.sendResetPassword;
     expect(send).toBeTypeOf('function');
     await send?.(
-      { user: { email: 'penny@example.invalid' }, url: 'https://acme.test/reset-password?token=abc', token: 'abc' } as never,
+      {
+        user: { email: 'penny@example.invalid' },
+        url: 'https://acme.test/reset-password?token=abc',
+        token: 'abc',
+      } as never,
       undefined as never,
     );
-    expect(sent).toEqual([{ email: 'penny@example.invalid', url: 'https://acme.test/reset-password?token=abc' }]);
+    expect(sent).toEqual([
+      { email: 'penny@example.invalid', url: 'https://acme.test/reset-password?token=abc' },
+    ]);
   });
 
   it('configures the Microsoft, Google and Apple social providers', () => {

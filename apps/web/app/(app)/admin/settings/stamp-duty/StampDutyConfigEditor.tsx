@@ -25,7 +25,9 @@ const gbpWhole = new Intl.NumberFormat('en-GB', {
 
 /** "£from–£to" / "£from+" for the open-ended top band, given the previous ceiling. */
 function bandRange(from: number, to: number | null): string {
-  return to === null ? `${gbpWhole.format(from)}+` : `${gbpWhole.format(from)}–${gbpWhole.format(to)}`;
+  return to === null
+    ? `${gbpWhole.format(from)}+`
+    : `${gbpWhole.format(from)}–${gbpWhole.format(to)}`;
 }
 
 /** A controlled rate value per band, keyed by `<set>-<index>`. */
