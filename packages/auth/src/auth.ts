@@ -17,7 +17,8 @@
  *     keyed from the supplied credentials (a provider is only registered when
  *     its credentials are supplied).
  *   - `magicLink` plugin for the vendor / landlord / tenant / contractor
- *     portals.
+ *     portals, configured with a `generateToken` that mints an opaque, URL-safe
+ *     ≥32-byte token (FR-N-5) instead of the plugin's ~183-bit default.
  *   - `twoFactor` plugin (TOTP + backup codes) for staff 2FA (FR-N-2).
  *   - The session cookie carries the tenant identifier via a `tenantId`
  *     `additionalField`, and the user carries `role` + `tenantId`.
@@ -44,6 +45,8 @@ import { magicLink, twoFactor } from 'better-auth/plugins';
 import { nextCookies } from 'better-auth/next-js';
 import { betterAuth } from 'better-auth';
 import type { Auth as BetterAuth, BetterAuthOptions } from 'better-auth';
+
+import { generateAuthToken } from './tokens.js';
 
 /** OAuth client credentials for a single social provider. */
 export interface SocialProviderCredentials {
@@ -143,6 +146,10 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
       // opaque, single-use reset token (a `verification` row it deletes when the
       // token is consumed, so a token cannot be replayed) and the reset URL, then
       // invokes this callback; we deliver the link the same way as the magic link.
+      // NOTE: unlike the magic link, better-auth exposes no override for the reset
+      // token's generation — it is `generateId(24)` (~143 bits), cryptographically
+      // strong but below FR-N-5's literal 32-byte floor; see tokens.ts for the full
+      // rationale and why the only available hook cannot fix it safely.
       sendResetPassword: (data) =>
         options.sendResetPasswordEmail({ user: data.user, url: data.url, token: data.token }),
       // FR-N-5: the reset token expires 60 minutes after issue. Configured in
@@ -190,7 +197,18 @@ export function createAuth(prisma: object, options: CreateAuthOptions): BetterAu
     // next-cookies MUST be last: it bridges Set-Cookie into next/headers so that
     // session cookies set during a Server-Action / RSC `auth.api` call (e.g. a
     // session refresh on read) actually land. better-auth warns if it is not last.
-    plugins: [magicLink({ sendMagicLink: options.sendMagicLink }), twoFactor(), nextCookies()],
+    plugins: [
+      // FR-N-5: mint the magic-link token ourselves via `generateToken` — an
+      // opaque, URL-safe ≥32-byte CSPRNG value (`generateAuthToken`, base64url) —
+      // instead of the plugin default `generateRandomString(32, "a-z", "A-Z")`
+      // (32 base52 chars ≈ 183 bits). The plugin uses our value for BOTH the URL
+      // and the stored verification row, so they stay in sync. (The reset /
+      // verification tokens have no equivalent override in better-auth — see
+      // tokens.ts for why; both remain cryptographically strong.)
+      magicLink({ sendMagicLink: options.sendMagicLink, generateToken: () => generateAuthToken() }),
+      twoFactor(),
+      nextCookies(),
+    ],
   } satisfies BetterAuthOptions;
 
   // The full inferred return type of `betterAuth(config)` references zod's
