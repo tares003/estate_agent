@@ -36,3 +36,5 @@ export {
   type CreateAuthOptions,
   type SocialProviderCredentials,
 } from './auth.js';
+
+export { AUTH_TOKEN_BYTES, generateAuthToken } from './tokens.js';
