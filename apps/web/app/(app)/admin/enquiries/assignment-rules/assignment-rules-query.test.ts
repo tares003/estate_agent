@@ -10,7 +10,10 @@ import {
 const AGENT = '11111111-1111-1111-1111-111111111111';
 const BRANCH = '22222222-2222-2222-2222-222222222222';
 
-function reader(rows: unknown[]): { reader: AssignmentRulesReader; findMany: ReturnType<typeof vi.fn> } {
+function reader(rows: unknown[]): {
+  reader: AssignmentRulesReader;
+  findMany: ReturnType<typeof vi.fn>;
+} {
   const findMany = vi.fn().mockResolvedValue(rows);
   return { reader: { assignmentRule: { findMany } }, findMany };
 }
@@ -44,12 +47,8 @@ describe('listAssignmentRules (FR-H-4 read model)', () => {
 
 describe('listAssignmentTargets (FR-H-4 — THEN picker options)', () => {
   it('lists active agents then branches as labelled targets', async () => {
-    const agentFindMany = vi
-      .fn()
-      .mockResolvedValue([{ id: AGENT, name: 'Agent A' }]);
-    const branchFindMany = vi
-      .fn()
-      .mockResolvedValue([{ id: BRANCH, name: 'High Street' }]);
+    const agentFindMany = vi.fn().mockResolvedValue([{ id: AGENT, name: 'Agent A' }]);
+    const branchFindMany = vi.fn().mockResolvedValue([{ id: BRANCH, name: 'High Street' }]);
     const r: AssignmentTargetsReader = {
       agent: { findMany: agentFindMany },
       branch: { findMany: branchFindMany },

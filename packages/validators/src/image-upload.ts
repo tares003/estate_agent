@@ -31,10 +31,8 @@ export type PropertyImageUpload = z.infer<typeof propertyImageUploadSchema>;
 // blank or whitespace-only value is rejected. This schema models the metadata
 // recorded when a finalized upload becomes a PropertyImage row; the admin UI
 // pre-fills `alt` with `suggestImageAltText(...)` but the value remains required.
-export const propertyImageMetaSchema = propertyImageUploadSchema
-  .pick({ propertyId: true })
-  .extend({
-    alt: z.string().trim().min(1, 'Describe the image so it has alt text.'),
-  });
+export const propertyImageMetaSchema = propertyImageUploadSchema.pick({ propertyId: true }).extend({
+  alt: z.string().trim().min(1, 'Describe the image so it has alt text.'),
+});
 
 export type PropertyImageMeta = z.infer<typeof propertyImageMetaSchema>;

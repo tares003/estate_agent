@@ -139,9 +139,7 @@ export function AssignmentRuleTester({ rules }: { rules: AssignmentRuleRow[] }) 
         className="border-divider rounded-lg border p-4"
       >
         {result === null ? (
-          <p className="t-body-sm text-text-secondary">
-            Run the test to see the routing outcome.
-          </p>
+          <p className="t-body-sm text-text-secondary">Run the test to see the routing outcome.</p>
         ) : result.matched ? (
           <div className="flex flex-col gap-2">
             <Badge tone="success">Matched</Badge>

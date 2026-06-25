@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_SDLT_CONFIG,
-  computeStampDuty,
-  type SdltConfig,
-} from './stamp-duty.js';
+import { DEFAULT_SDLT_CONFIG, computeStampDuty, type SdltConfig } from './stamp-duty.js';
 
 // EPIC-W FR-W-2/4 — the indicative SDLT engine. The BAND-APPLICATION logic is what
 // matters and is proven here against SYNTHETIC bands, so the test asserts the
@@ -50,13 +46,19 @@ describe('computeStampDuty — progressive band application', () => {
   });
 
   it('uses the first-time-buyer bands when the price is within the relief cap', () => {
-    const r = computeStampDuty({ purchasePrice: 250_000, buyerCategory: 'first_time_buyer' }, CONFIG);
+    const r = computeStampDuty(
+      { purchasePrice: 250_000, buyerCategory: 'first_time_buyer' },
+      CONFIG,
+    );
     // FTB: 0% of 150k + 5% of 100k = 5000.
     expect(r.totalTax).toBe(5000);
   });
 
   it('falls back to standard bands when a first-time buyer exceeds the relief cap', () => {
-    const r = computeStampDuty({ purchasePrice: 400_000, buyerCategory: 'first_time_buyer' }, CONFIG);
+    const r = computeStampDuty(
+      { purchasePrice: 400_000, buyerCategory: 'first_time_buyer' },
+      CONFIG,
+    );
     // Over maxPrice 300k → standard bands: 0 + 5000 + 10% of 200k = 25000.
     expect(r.totalTax).toBe(25_000);
   });

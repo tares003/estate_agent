@@ -26,10 +26,10 @@ const INITIAL_STATE: AssignmentRuleState = { ok: false };
 // is the Enquiry.
 const FIELD_LABELS: Record<AssignmentRuleConditionField, string> = {
   'lead_type': 'Lead type',
-  'status': 'Status',
-  'source_url': 'Source URL',
-  'message': 'Message',
-  'property': 'Property',
+  status: 'Status',
+  source_url: 'Source URL',
+  message: 'Message',
+  property: 'Property',
 };
 
 /** Operator labels for the condition picker. */
@@ -89,9 +89,7 @@ export function AssignmentRuleComposer({ targets }: { targets: AssignmentTargetO
   }, [state, router]);
 
   function updateCondition(index: number, patch: Partial<ConditionDraft>): void {
-    setConditions((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, ...patch } : row)),
-    );
+    setConditions((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
 
   function addCondition(): void {

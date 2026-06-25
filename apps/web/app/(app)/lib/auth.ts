@@ -28,7 +28,10 @@ import {
 async function sendAuthMagicLink(data: { email: string; url: string }): Promise<void> {
   const tenantId = requireAuthTenant();
   await withTenant(getDb(), tenantId, (tx) =>
-    notify(tx as unknown as NotificationWriter, magicLinkNotification(data.email, data.url, tenantId)),
+    notify(
+      tx as unknown as NotificationWriter,
+      magicLinkNotification(data.email, data.url, tenantId),
+    ),
   );
 }
 

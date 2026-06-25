@@ -19,7 +19,9 @@ describe('Better Auth route mount', () => {
   it('404s when Better Auth is unconfigured — fail-soft, no DB touched', async () => {
     const res = await GET(new Request('http://acme.test/api/auth/get-session'));
     expect(res.status).toBe(404);
-    const post = await POST(new Request('http://acme.test/api/auth/sign-in/email', { method: 'POST' }));
+    const post = await POST(
+      new Request('http://acme.test/api/auth/sign-in/email', { method: 'POST' }),
+    );
     expect(post.status).toBe(404);
   });
 });

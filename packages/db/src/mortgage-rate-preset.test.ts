@@ -49,12 +49,8 @@ describe('MortgageRatePreset — schema (mortgage_rate_presets, FR-W-8)', () => 
 
 describe('0017 RLS migration — tenant isolation on mortgage_rate_presets', () => {
   it('enables + forces RLS with a fail-closed tenant_isolation policy', () => {
-    expect(rlsMigration).toContain(
-      'ALTER TABLE mortgage_rate_presets ENABLE ROW LEVEL SECURITY;',
-    );
-    expect(rlsMigration).toContain(
-      'ALTER TABLE mortgage_rate_presets FORCE ROW LEVEL SECURITY;',
-    );
+    expect(rlsMigration).toContain('ALTER TABLE mortgage_rate_presets ENABLE ROW LEVEL SECURITY;');
+    expect(rlsMigration).toContain('ALTER TABLE mortgage_rate_presets FORCE ROW LEVEL SECURITY;');
     expect(rlsMigration).toContain('CREATE POLICY tenant_isolation ON mortgage_rate_presets');
     expect(rlsMigration).toContain(
       "NULLIF(current_setting('app.current_tenant_id', true), '')::uuid",

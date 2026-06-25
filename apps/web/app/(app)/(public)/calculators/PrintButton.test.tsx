@@ -13,9 +13,7 @@ import { PrintButton } from './PrintButton.js';
 describe('PrintButton', () => {
   it('renders the "Print / save as PDF" button', () => {
     render(<PrintButton />);
-    expect(
-      screen.getByRole('button', { name: /print \/ save as pdf/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /print \/ save as pdf/i })).toBeInTheDocument();
   });
 
   it('calls window.print() when clicked', async () => {

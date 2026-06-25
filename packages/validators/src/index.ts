@@ -27,10 +27,7 @@ export {
 } from './cookie-consent.js';
 
 export { buyerEnquirySchema, type BuyerEnquiry } from './buyer-enquiry.js';
-export {
-  customerRegistrationSchema,
-  type CustomerRegistration,
-} from './customer-registration.js';
+export { customerRegistrationSchema, type CustomerRegistration } from './customer-registration.js';
 export { customerSignInSchema, type CustomerSignIn } from './customer-sign-in.js';
 export {
   passwordResetRequestSchema,
@@ -131,10 +128,7 @@ export {
 } from './repair-file.js';
 export { DEFAULT_REPAIR_CATEGORIES, type DefaultRepairCategory } from './repair-category.js';
 export { mortgageInputSchema, type MortgageInput } from './mortgage.js';
-export {
-  mortgageRateConfigSchema,
-  type MortgageRateConfigInput,
-} from './mortgage-rate-config.js';
+export { mortgageRateConfigSchema, type MortgageRateConfigInput } from './mortgage-rate-config.js';
 export {
   MORTGAGE_PRESET_LABEL_MAX,
   mortgageRatePresetSchema,

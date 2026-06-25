@@ -138,7 +138,9 @@ describe('FR-F-1 new Section F enums — presence + canonical naming', () => {
   it.each(NEW_ENUMS)('enum $name carries every Section F value', ({ name, values }) => {
     const block = enumBlock(name);
     for (const value of values) {
-      expect(block, `${name} should carry "${value}"`).toMatch(new RegExp(`^\\s*${value}\\s*$`, 'm'));
+      expect(block, `${name} should carry "${value}"`).toMatch(
+        new RegExp(`^\\s*${value}\\s*$`, 'm'),
+      );
     }
   });
 });
@@ -177,7 +179,9 @@ describe('FR-F-1 §F identification + lifecycle attributes', () => {
 
   it('carries the publication status (draft / in_review / published / archived)', () => {
     const block = modelBlock('Property');
-    expect(block).toMatch(/publicationStatus\s+PublicationStatus\s+@default\(draft\)\s+@map\("publication_status"\)/);
+    expect(block).toMatch(
+      /publicationStatus\s+PublicationStatus\s+@default\(draft\)\s+@map\("publication_status"\)/,
+    );
   });
 
   it('carries the new-home flag (filters the new-homes-only search)', () => {
@@ -188,7 +192,9 @@ describe('FR-F-1 §F identification + lifecycle attributes', () => {
   it('carries the featured / show-on-homepage / show-price / display-order flags', () => {
     const block = modelBlock('Property');
     expect(block).toMatch(/isFeatured\s+Boolean\s+@default\(false\)\s+@map\("is_featured"\)/);
-    expect(block).toMatch(/showOnHomepage\s+Boolean\s+@default\(false\)\s+@map\("show_on_homepage"\)/);
+    expect(block).toMatch(
+      /showOnHomepage\s+Boolean\s+@default\(false\)\s+@map\("show_on_homepage"\)/,
+    );
     // when showPrice is off the public display reads "POA"
     expect(block).toMatch(/showPrice\s+Boolean\s+@default\(true\)\s+@map\("show_price"\)/);
     expect(block).toMatch(/displayOrder\s+Int\s+@default\(0\)\s+@map\("display_order"\)/);
@@ -199,7 +205,9 @@ describe('FR-F-1 §F pricing attributes', () => {
   it('keeps the asking price (pence) and adds the price qualifier', () => {
     const block = modelBlock('Property');
     expect(block).toMatch(/price\s+Int\?/);
-    expect(block).toMatch(/priceQualifier\s+PriceQualifier\s+@default\(none\)\s+@map\("price_qualifier"\)/);
+    expect(block).toMatch(
+      /priceQualifier\s+PriceQualifier\s+@default\(none\)\s+@map\("price_qualifier"\)/,
+    );
   });
 
   it('captures the lettings pricing fields (rent frequency / deposits / min tenancy / let type)', () => {
@@ -212,9 +220,7 @@ describe('FR-F-1 §F pricing attributes', () => {
   });
 
   it('captures the availability date', () => {
-    expect(modelBlock('Property')).toMatch(
-      /availableFrom\s+DateTime\?\s+@map\("available_from"\)/,
-    );
+    expect(modelBlock('Property')).toMatch(/availableFrom\s+DateTime\?\s+@map\("available_from"\)/);
   });
 });
 
@@ -293,7 +299,9 @@ describe('FR-F-1 §F location attributes', () => {
     const block = modelBlock('Property');
     expect(block).toMatch(/latitude\s+Float\?/);
     expect(block).toMatch(/longitude\s+Float\?/);
-    expect(block).toMatch(/hideExactAddress\s+Boolean\s+@default\(false\)\s+@map\("hide_exact_address"\)/);
+    expect(block).toMatch(
+      /hideExactAddress\s+Boolean\s+@default\(false\)\s+@map\("hide_exact_address"\)/,
+    );
   });
 });
 

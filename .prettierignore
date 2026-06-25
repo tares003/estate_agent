@@ -1,5 +1,7 @@
 # Generated / vendored — never reformat
 node_modules/
+# Transient agent worktree checkouts (each a full repo clone) — not our source.
+.claude/worktrees/
 .next/
 out/
 dist/

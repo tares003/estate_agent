@@ -57,9 +57,7 @@ export function MortgageCalculator({
   config?: MortgageRateConfig;
   presets?: MortgageRatePreset[];
 }) {
-  const initialDeposit = Math.round(
-    (DEFAULT_PURCHASE_PRICE * config.defaultDepositPercent) / 100,
-  );
+  const initialDeposit = Math.round((DEFAULT_PURCHASE_PRICE * config.defaultDepositPercent) / 100);
   const [purchasePrice, setPurchasePrice] = useState(String(DEFAULT_PURCHASE_PRICE));
   const [deposit, setDeposit] = useState(String(initialDeposit));
   const [annualRatePercent, setAnnualRatePercent] = useState(

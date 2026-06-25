@@ -45,8 +45,8 @@ export default async function FeedbackModerationPage() {
 
       {rows.length === 0 ? (
         <p className="t-body-lg text-text-secondary max-w-[55ch]">
-          No feedback is waiting for a decision. Entries appear here when someone asks you to publish
-          their feedback as a testimonial.
+          No feedback is waiting for a decision. Entries appear here when someone asks you to
+          publish their feedback as a testimonial.
         </p>
       ) : (
         <table className="w-full border-collapse text-left">

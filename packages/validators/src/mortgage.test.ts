@@ -28,7 +28,9 @@ describe('mortgageInputSchema', () => {
   it('rejects a non-positive price, a negative rate, and a zero / non-integer term', () => {
     expect(mortgageInputSchema.safeParse({ ...VALID, purchasePrice: 0 }).success).toBe(false);
     expect(mortgageInputSchema.safeParse({ ...VALID, deposit: -1 }).success).toBe(false);
-    expect(mortgageInputSchema.safeParse({ ...VALID, annualRatePercent: -0.1 }).success).toBe(false);
+    expect(mortgageInputSchema.safeParse({ ...VALID, annualRatePercent: -0.1 }).success).toBe(
+      false,
+    );
     expect(mortgageInputSchema.safeParse({ ...VALID, termYears: 0 }).success).toBe(false);
     expect(mortgageInputSchema.safeParse({ ...VALID, termYears: 25.5 }).success).toBe(false);
   });

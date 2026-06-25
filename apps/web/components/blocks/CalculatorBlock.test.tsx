@@ -22,14 +22,14 @@ describe('CalculatorBlock', () => {
 
   it('renders the optional heading above the calculator', () => {
     render(<CalculatorBlock data={{ kind: 'mortgage', heading: 'Work out your repayments' }} />);
-    expect(
-      screen.getByRole('heading', { name: 'Work out your repayments' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Work out your repayments' })).toBeInTheDocument();
   });
 
   it('schema requires a known kind and leaves heading optional', () => {
     expect(calculatorBlockSchema.safeParse({ kind: 'mortgage' }).success).toBe(true);
-    expect(calculatorBlockSchema.safeParse({ kind: 'stamp_duty', heading: 'h' }).success).toBe(true);
+    expect(calculatorBlockSchema.safeParse({ kind: 'stamp_duty', heading: 'h' }).success).toBe(
+      true,
+    );
     expect(calculatorBlockSchema.safeParse({ kind: 'unknown' }).success).toBe(false);
     expect(calculatorBlockSchema.safeParse({}).success).toBe(false);
   });

@@ -6,7 +6,9 @@ import { render, screen } from '@testing-library/react';
 import { signFeedbackToken } from '../../../lib/feedback-access.js';
 
 vi.mock('./FeedbackForm.js', () => ({
-  FeedbackForm: ({ token }: { token: string }) => <div data-testid="feedback-form" data-token={token} />,
+  FeedbackForm: ({ token }: { token: string }) => (
+    <div data-testid="feedback-form" data-token={token} />
+  ),
 }));
 
 const { default: FeedbackPage } = await import('./page.js');
@@ -31,12 +33,16 @@ describe('FeedbackPage', () => {
     );
     const ui = await FeedbackPage({ params: Promise.resolve({ token }) });
     render(ui);
-    expect(screen.getByRole('heading', { level: 1, name: /share your feedback/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: /share your feedback/i }),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('feedback-form')).toHaveAttribute('data-token', token);
   });
 
   it('404s (notFound) on an invalid / expired token', async () => {
     // next/navigation's notFound() throws a control-flow error.
-    await expect(FeedbackPage({ params: Promise.resolve({ token: 'not-a-real-token' }) })).rejects.toThrow();
+    await expect(
+      FeedbackPage({ params: Promise.resolve({ token: 'not-a-real-token' }) }),
+    ).rejects.toThrow();
   });
 });

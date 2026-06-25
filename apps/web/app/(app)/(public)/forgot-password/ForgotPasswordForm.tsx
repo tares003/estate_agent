@@ -1,7 +1,14 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { AntiSpamChallenge, Button, Checkbox, EmailField, FormError, FormSuccess } from '@estate/ui';
+import {
+  AntiSpamChallenge,
+  Button,
+  Checkbox,
+  EmailField,
+  FormError,
+  FormSuccess,
+} from '@estate/ui';
 
 import { submitForgotPassword, type ForgotPasswordFormState } from './actions.js';
 import { FORGOT_PASSWORD_CONSENT_TEXT } from './consent-text.js';
@@ -23,9 +30,7 @@ export interface ForgotPasswordFormProps {
  * the exact affirmation the action persists (G5); the anti-spam challenge sits
  * between consent and submit (CLAUDE.md §9).
  */
-export function ForgotPasswordForm({
-  initialState = INITIAL_STATE,
-}: ForgotPasswordFormProps = {}) {
+export function ForgotPasswordForm({ initialState = INITIAL_STATE }: ForgotPasswordFormProps = {}) {
   const [state, formAction, pending] = useActionState(submitForgotPassword, initialState);
 
   const [turnstileToken, setTurnstileToken] = useState('');

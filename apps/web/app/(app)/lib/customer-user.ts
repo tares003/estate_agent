@@ -38,7 +38,11 @@ export interface CustomerSession {
  */
 export function customerSessionFromUser(user: CustomerUserRow): CustomerSession | null {
   if (user.type !== 'customer') return null;
-  return { userId: user.id, emailVerified: user.emailVerified === true, actor: `customer:${user.id}` };
+  return {
+    userId: user.id,
+    emailVerified: user.emailVerified === true,
+    actor: `customer:${user.id}`,
+  };
 }
 
 /**

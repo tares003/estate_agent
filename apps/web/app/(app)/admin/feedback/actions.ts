@@ -23,7 +23,10 @@ interface FeedbackModerateClient extends AuditWriter {
     findFirst(args: {
       where: Record<string, unknown>;
     }): Promise<{ id: string; status: string; comment: string | null } | null>;
-    update(args: { where: Record<string, unknown>; data: Record<string, unknown> }): Promise<unknown>;
+    update(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<unknown>;
   };
 }
 

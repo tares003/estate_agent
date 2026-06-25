@@ -109,7 +109,9 @@ describe('RLS tenant isolation on saved_properties (pglite — mirrors 0015)', (
       `INSERT INTO saved_properties (tenant_id, user_id, property_id) VALUES ('${TENANT_A}', '${USER}', '${PROPERTY}')`,
     );
     await db.exec(`SET app.current_tenant_id = '${TENANT_B}'`);
-    const none = await db.query<{ property_id: string }>(`SELECT property_id FROM saved_properties`);
+    const none = await db.query<{ property_id: string }>(
+      `SELECT property_id FROM saved_properties`,
+    );
     expect(none.rows).toEqual([]);
     await db.close();
   });

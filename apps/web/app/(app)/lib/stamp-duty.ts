@@ -51,8 +51,14 @@ export interface StampDutyResult {
 const round2 = (value: number): number => Math.round(value * 100) / 100;
 
 /** Pick the band set + per-band rate adjustment for the buyer category. */
-function bandsFor(input: StampDutyInput, config: SdltConfig): { bands: SdltBand[]; surcharge: number } {
-  if (input.buyerCategory === 'first_time_buyer' && input.purchasePrice <= config.firstTimeBuyer.maxPrice) {
+function bandsFor(
+  input: StampDutyInput,
+  config: SdltConfig,
+): { bands: SdltBand[]; surcharge: number } {
+  if (
+    input.buyerCategory === 'first_time_buyer' &&
+    input.purchasePrice <= config.firstTimeBuyer.maxPrice
+  ) {
     return { bands: config.firstTimeBuyer.bands, surcharge: 0 };
   }
   const surcharge =

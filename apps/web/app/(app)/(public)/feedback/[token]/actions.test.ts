@@ -104,7 +104,10 @@ describe('submitFeedback', () => {
       needsResponse: false,
     });
     expect(audit).toHaveBeenCalledTimes(1);
-    expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'feedback.submitted', entity: 'feedback' });
+    expect(audit.mock.calls[0]![1]).toMatchObject({
+      action: 'feedback.submitted',
+      entity: 'feedback',
+    });
   });
 
   it('flags needsResponse for a low rating (FR-AC-10) and defaults publish off', async () => {

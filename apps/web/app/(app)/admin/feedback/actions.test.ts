@@ -61,11 +61,17 @@ describe('moderateFeedback', () => {
       data: { status: 'published', rejectedReason: null },
     });
     expect(audit).toHaveBeenCalledTimes(1);
-    expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'feedback.moderated', entity: 'feedback' });
+    expect(audit.mock.calls[0]![1]).toMatchObject({
+      action: 'feedback.moderated',
+      entity: 'feedback',
+    });
   });
 
   it('rejects with a captured reason', async () => {
-    const res = await moderateFeedback({ ok: false }, form({ decision: 'reject', reason: 'Off-topic.' }));
+    const res = await moderateFeedback(
+      { ok: false },
+      form({ decision: 'reject', reason: 'Off-topic.' }),
+    );
     expect(res.ok).toBe(true);
     expect(feedbackUpdate).toHaveBeenCalledWith({
       where: { id: FEEDBACK },
@@ -105,14 +111,20 @@ describe('editFeedback', () => {
 
   it('denies when the staff role lacks feedback.moderate (fail-closed)', async () => {
     requireStaffPermission.mockRejectedValue(new Error('forbidden'));
-    const res = await editFeedback({ ok: false }, form({ comment: 'Original comment with typos.' }));
+    const res = await editFeedback(
+      { ok: false },
+      form({ comment: 'Original comment with typos.' }),
+    );
     expect(res.ok).toBe(false);
     expect(feedbackUpdate).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
   });
 
   it('applies a minor comment edit and audits the before/after diff', async () => {
-    const res = await editFeedback({ ok: false }, form({ comment: '  Original comment, typos fixed.  ' }));
+    const res = await editFeedback(
+      { ok: false },
+      form({ comment: '  Original comment, typos fixed.  ' }),
+    );
     expect(res.ok).toBe(true);
     expect(feedbackUpdate).toHaveBeenCalledWith({
       where: { id: FEEDBACK },

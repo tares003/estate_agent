@@ -47,10 +47,7 @@ export function PublishPreflight({
             data-satisfied={item.satisfied ? 'true' : 'false'}
             className="flex items-center gap-2"
           >
-            <span
-              aria-hidden="true"
-              className={item.satisfied ? 'text-success' : 'text-danger'}
-            >
+            <span aria-hidden="true" className={item.satisfied ? 'text-success' : 'text-danger'}>
               {item.satisfied ? '✓' : '✗'}
             </span>
             <span className="t-body-sm">{item.label}</span>

@@ -4,7 +4,11 @@ import { runWithAuthTenant, withTenant } from '@estate/db';
 
 import { getAuth } from './auth.js';
 import { customerAuthLookup, type AuthSessionShape } from './customer-session-resolve.js';
-import { loadCustomerSession, type CustomerSession, type CustomerUserReader } from './customer-user.js';
+import {
+  loadCustomerSession,
+  type CustomerSession,
+  type CustomerUserReader,
+} from './customer-user.js';
 import { getDb } from './db.js';
 import { getCurrentTenantId } from './tenant.js';
 

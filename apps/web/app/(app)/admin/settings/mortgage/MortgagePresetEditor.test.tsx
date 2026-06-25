@@ -22,7 +22,7 @@ beforeEach(() => {
 describe('MortgagePresetEditor', () => {
   it('lists the existing presets', () => {
     render(<MortgagePresetEditor presets={PRESETS} />);
-    expect((screen.getByDisplayValue('2-year fixed') as HTMLInputElement)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2-year fixed') as HTMLInputElement).toBeInTheDocument();
   });
 
   it('can add a new preset row', () => {

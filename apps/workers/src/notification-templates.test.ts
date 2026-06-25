@@ -83,7 +83,9 @@ describe('renderNotification', () => {
     });
     expect(message).not.toBeNull();
     expect(message!.subject.toLowerCase()).toMatch(/reset|password/);
-    expect(message!.html).toContain('https://acme.test/reset-password?token=aZ09aZ09aZ09aZ09aZ09aZ09');
+    expect(message!.html).toContain(
+      'https://acme.test/reset-password?token=aZ09aZ09aZ09aZ09aZ09aZ09',
+    );
   });
 
   it('renders the FR-AC-1/12 post-repair feedback request with the feedback url', () => {

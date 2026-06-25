@@ -23,7 +23,10 @@ describe('customerRegistrationSchema', () => {
   });
 
   it('lowercases and trims the email', () => {
-    const parsed = customerRegistrationSchema.safeParse({ ...GOOD, email: '  Penny@Example.Invalid ' });
+    const parsed = customerRegistrationSchema.safeParse({
+      ...GOOD,
+      email: '  Penny@Example.Invalid ',
+    });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.email).toBe('penny@example.invalid');
   });
