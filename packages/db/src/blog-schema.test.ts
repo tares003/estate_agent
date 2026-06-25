@@ -21,10 +21,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 
 const schema = readFileSync(join(root, 'prisma', 'schema.prisma'), 'utf8');
-const rlsMigration = readFileSync(
-  join(root, 'migrations', 'raw', '0019_blog_rls.sql'),
-  'utf8',
-);
+const rlsMigration = readFileSync(join(root, 'migrations', 'raw', '0019_blog_rls.sql'), 'utf8');
 
 function block(name: string, kind: 'model' | 'enum'): string {
   const match = schema.match(new RegExp(`${kind} ${name} \\{[\\s\\S]*?\\n\\}`, 'm'));
@@ -115,6 +112,8 @@ describe('BlogPost — schema (blog_posts, master spec §J)', () => {
     expect(model).toMatch(/title\s+String/);
     expect(model).toMatch(/slug\s+String/);
     expect(model).toMatch(/body\s+Json/);
+    // §J — a pre-rendered HTML cache of the source body (nullable until published).
+    expect(model).toMatch(/renderedHtmlCache\s+String\?\s+@map\("rendered_html_cache"\)/);
     expect(model).toContain('@@unique([tenantId, slug])');
   });
 
