@@ -154,7 +154,6 @@ export function unmetPreflightKeys(items: PublishPreflightItem[]): PublishPrefli
 // publish anyway" WITH a typed reason that goes into the audit log. This schema
 // validates that override gesture. It captures no personal data (it is an admin
 // staff action over business data), so no GDPR-consent affirmation applies.
-// eslint-disable-next-line estate/gdpr-consent
 export const publishOverrideSchema = z
   .object({
     /** Whether the staff member is overriding a failing checklist. */
