@@ -183,3 +183,35 @@ export function webSiteJsonLd(name: string, origin: string): Record<string, unkn
     publisher: { '@id': organisationId(origin) },
   };
 }
+
+/** The area-guide fields the `Place` structured data needs. */
+export interface AreaGuideForSeo {
+  name: string;
+  introduction: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/**
+ * `Place` JSON-LD for an area guide (FR-O-7, master spec §O.3). Emits the guide
+ * `name` + `description` (the guide introduction) and, when both coordinates are
+ * present, a `GeoCoordinates` node. Geo is omitted rather than faked when either
+ * coordinate is absent. Pure + IO-free, so it unit-tests in isolation.
+ */
+export function areaGuideJsonLd(guide: AreaGuideForSeo, url: string): Record<string, unknown> {
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Place',
+    name: guide.name,
+    description: guide.introduction,
+    url,
+  };
+  if (guide.latitude != null && guide.longitude != null) {
+    jsonLd['geo'] = {
+      '@type': 'GeoCoordinates',
+      latitude: guide.latitude,
+      longitude: guide.longitude,
+    };
+  }
+  return jsonLd;
+}

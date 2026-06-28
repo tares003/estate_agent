@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  areaGuideJsonLd,
   breadcrumbJsonLd,
   organizationJsonLd,
   propertyListingJsonLd,
@@ -203,6 +204,36 @@ describe('suggestImageAltText (FR-O-13 / §O.8)', () => {
     expect(
       suggestImageAltText({ propertyTitle: '', addressLine: '', index: 0 }).trim().length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('areaGuideJsonLd (FR-O-7)', () => {
+  const guide = {
+    name: 'Didsbury',
+    introduction: 'A leafy suburb in south Manchester.',
+    latitude: 53.41,
+    longitude: -2.23,
+  };
+
+  it('emits a Place with name, description (the introduction), url and geo', () => {
+    const ld = areaGuideJsonLd(guide, 'https://acme.test/locations/didsbury');
+    expect(ld).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'Place',
+      name: 'Didsbury',
+      description: 'A leafy suburb in south Manchester.',
+      url: 'https://acme.test/locations/didsbury',
+      geo: { '@type': 'GeoCoordinates', latitude: 53.41, longitude: -2.23 },
+    });
+  });
+
+  it('omits geo when either coordinate is absent', () => {
+    expect(
+      areaGuideJsonLd({ ...guide, latitude: null }, 'https://acme.test/locations/didsbury')['geo'],
+    ).toBeUndefined();
+    expect(
+      areaGuideJsonLd({ ...guide, longitude: null }, 'https://acme.test/locations/didsbury')['geo'],
+    ).toBeUndefined();
   });
 });
 
