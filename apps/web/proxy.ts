@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getDb } from './app/(app)/lib/db.js';
+import { bumpRedirectHit, consultRedirect } from './redirect-consult.js';
 import { applySecurityHeaders } from './security-headers.js';
 import { createTenantRegistry, resolveTenantIdByHost } from './tenant-host.js';
 
@@ -80,6 +81,28 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     requestHeaders.set(TENANT_HEADER, resolved);
   }
   requestHeaders.set(PATHNAME_HEADER, pathname);
+
+  // FR-O-11: BEFORE the normal pass-through, consult the tenant's managed redirect
+  // rules for this exact (canonical) path. A match emits a 301/302/307 (or 410 gone).
+  // FAIL-OPEN: consultRedirect swallows its own errors and returns null on failure, so
+  // a redirect-lookup error can never break the request — we fall through to the
+  // pass-through below. Only public GET/HEAD paths are consulted (the API + CMS own
+  // their URLs; mutating methods must not be turned into a body-dropping redirect).
+  if (resolved && (method === 'GET' || method === 'HEAD') && !ownsItsOwnUrls(pathname)) {
+    const match = await consultRedirect(getDb(), resolved, pathname);
+    if (match) {
+      // Best-effort hit bump — fire-and-forget; never block or break the redirect.
+      void bumpRedirectHit(getDb(), resolved, match.id);
+      if (match.status === 410) {
+        // A `gone` rule serves no destination — a 410, not a location redirect.
+        return applySecurityHeaders(new NextResponse(null, { status: 410 }));
+      }
+      const target = new URL(match.destinationPath, request.url);
+      // FR-N-15: the redirect is a response too — it carries the headers.
+      return applySecurityHeaders(NextResponse.redirect(target, match.status));
+    }
+  }
+
   // FR-N-15: emit the standard security headers on every pass-through response.
   return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
 }

@@ -11,6 +11,18 @@ vi.mock('./app/(app)/lib/db.js', () => ({
   getDb: () => ({ platformTenant: { findFirst } }),
 }));
 
+// The redirect consult (FR-O-11) is unit-tested in redirect-consult.test.ts; here we
+// mock it so the proxy's wiring (consult → emit redirect / fall through) is the unit
+// under test. `consultRedirect` defaults to no-match; a test overrides it per case.
+const consultRedirect = vi.fn<
+  () => Promise<{ id: string; destinationPath: string; status: number } | null>
+>(async () => null);
+const bumpRedirectHit = vi.fn(async () => undefined);
+vi.mock('./redirect-consult.js', () => ({
+  consultRedirect: (...a: unknown[]) => consultRedirect(...(a as [])),
+  bumpRedirectHit: (...a: unknown[]) => bumpRedirectHit(...(a as [])),
+}));
+
 const { DEV_TENANT_ID, TENANT_HEADER, PATHNAME_HEADER, canonicalPath, proxy } =
   await import('./proxy.js');
 
@@ -122,5 +134,60 @@ describe('proxy tenant resolution (EPIC-S FR-S-1)', () => {
   it('exposes the request path for active-nav matching', async () => {
     const res = await proxy(get('http://localhost:3000/properties'));
     expect(forwarded(res, PATHNAME_HEADER)).toBe('/properties');
+  });
+});
+
+describe('proxy managed redirects (EPIC-O FR-O-11)', () => {
+  it('emits a 301 to the rule destination when a redirect matches', async () => {
+    consultRedirect.mockResolvedValueOnce({ id: 'r1', destinationPath: '/new-path', status: 301 });
+    const res = await proxy(get('http://localhost:3000/old-path'));
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('http://localhost:3000/new-path');
+  });
+
+  it('honours the rule status (302 found)', async () => {
+    consultRedirect.mockResolvedValueOnce({ id: 'r2', destinationPath: '/elsewhere', status: 302 });
+    const res = await proxy(get('http://localhost:3000/temp'));
+    expect(res.status).toBe(302);
+  });
+
+  it('serves a 410 (no location) for a `gone` rule', async () => {
+    consultRedirect.mockResolvedValueOnce({ id: 'r3', destinationPath: '', status: 410 });
+    const res = await proxy(get('http://localhost:3000/retired'));
+    expect(res.status).toBe(410);
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('best-effort bumps the hit counter on a match', async () => {
+    bumpRedirectHit.mockClear();
+    consultRedirect.mockResolvedValueOnce({ id: 'r1', destinationPath: '/new-path', status: 301 });
+    await proxy(get('http://localhost:3000/old-path'));
+    expect(bumpRedirectHit).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls through to the pass-through when no rule matches', async () => {
+    consultRedirect.mockResolvedValueOnce(null);
+    const res = await proxy(get('http://localhost:3000/properties'));
+    expect(res.status).not.toBe(301);
+    expect(forwarded(res, PATHNAME_HEADER)).toBe('/properties');
+  });
+
+  it('carries the FR-N-15 security headers on a redirect-rule response', async () => {
+    consultRedirect.mockResolvedValueOnce({ id: 'r1', destinationPath: '/new-path', status: 301 });
+    const res = await proxy(get('http://localhost:3000/old-path'));
+    expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(res.headers.get('X-Frame-Options')).toBe('DENY');
+  });
+
+  it('never consults a redirect for a non-GET request', async () => {
+    consultRedirect.mockClear();
+    await proxy(get('http://localhost:3000/old-path', 'POST'));
+    expect(consultRedirect).not.toHaveBeenCalled();
+  });
+
+  it('never consults a redirect on the API surface', async () => {
+    consultRedirect.mockClear();
+    await proxy(get('http://localhost:3000/api/old-path'));
+    expect(consultRedirect).not.toHaveBeenCalled();
   });
 });

@@ -153,6 +153,15 @@ export {
 } from './stamp-duty.js';
 export { sdltConfigSchema, type SdltConfigInput } from './sdlt-config.js';
 export {
+  REDIRECT_TYPES,
+  REDIRECT_PATH_MAX,
+  redirectCreateSchema,
+  redirectUpdateSchema,
+  type RedirectType,
+  type RedirectCreate,
+  type RedirectUpdate,
+} from './redirect.js';
+export {
   FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,
   feedbackSubmissionSchema,
