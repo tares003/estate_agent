@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blogPostingJsonLd,
   breadcrumbJsonLd,
   organizationJsonLd,
   propertyListingJsonLd,
   suggestImageAltText,
   truncate,
   webSiteJsonLd,
+  type BlogPostForSeo,
   type PropertyForSeo,
 } from './seo.js';
 
@@ -203,6 +205,50 @@ describe('suggestImageAltText (FR-O-13 / §O.8)', () => {
     expect(
       suggestImageAltText({ propertyTitle: '', addressLine: '', index: 0 }).trim().length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('blogPostingJsonLd (FR-O-7)', () => {
+  const post: BlogPostForSeo = {
+    title: 'The spring market in 2026',
+    description: 'What buyers and sellers can expect this spring.',
+    publishedAt: new Date('2026-03-01T09:00:00Z'),
+    authorName: 'Jo Bloggs',
+    imageUrl: 'https://acme.test/img/spring.jpg',
+  };
+
+  it('emits a BlogPosting with headline, url, datePublished, author and image', () => {
+    const ld = blogPostingJsonLd(post, 'https://acme.test/news/spring-market-2026');
+    expect(ld).toMatchObject({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: 'The spring market in 2026',
+      url: 'https://acme.test/news/spring-market-2026',
+      description: 'What buyers and sellers can expect this spring.',
+      datePublished: '2026-03-01T09:00:00.000Z',
+      author: { '@type': 'Person', name: 'Jo Bloggs' },
+      image: 'https://acme.test/img/spring.jpg',
+      mainEntityOfPage: { '@type': 'WebPage', '@id': 'https://acme.test/news/spring-market-2026' },
+    });
+  });
+
+  it('omits description, datePublished, author and image when their data is absent', () => {
+    const ld = blogPostingJsonLd(
+      {
+        title: 'Untitled draft',
+        description: null,
+        publishedAt: null,
+        authorName: null,
+        imageUrl: null,
+      },
+      'https://acme.test/news/untitled',
+    );
+    expect(ld['@type']).toBe('BlogPosting');
+    expect(ld['headline']).toBe('Untitled draft');
+    expect(ld['description']).toBeUndefined();
+    expect(ld['datePublished']).toBeUndefined();
+    expect(ld['author']).toBeUndefined();
+    expect(ld['image']).toBeUndefined();
   });
 });
 
