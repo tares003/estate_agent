@@ -88,6 +88,15 @@ export {
 export { repairPropertyLinkSchema, type RepairPropertyLink } from './repair-property.js';
 export { savedPropertyToggleSchema, type SavedPropertyToggle } from './saved-property.js';
 export {
+  ALERT_FREQUENCIES,
+  SAVED_SEARCH_NAME_MAX,
+  savedSearchCreateSchema,
+  savedSearchUpdateSchema,
+  type AlertFrequency,
+  type SavedSearchCreate,
+  type SavedSearchUpdate,
+} from './saved-search.js';
+export {
   IMAGE_CONTENT_TYPES,
   IMAGE_EXTENSIONS,
   IMAGE_MAX_BYTES,
@@ -143,6 +152,15 @@ export {
   type StampDutyInput,
 } from './stamp-duty.js';
 export { sdltConfigSchema, type SdltConfigInput } from './sdlt-config.js';
+export {
+  REDIRECT_TYPES,
+  REDIRECT_PATH_MAX,
+  redirectCreateSchema,
+  redirectUpdateSchema,
+  type RedirectType,
+  type RedirectCreate,
+  type RedirectUpdate,
+} from './redirect.js';
 export {
   FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,
