@@ -86,6 +86,99 @@ const TEMPLATES: Record<string, EmailTemplateInput> = {
   'feedback.requested': FEEDBACK_REQUESTED,
 };
 
+/** The event the EPIC-U saved-search digest worker queues (FR-T-7/8). */
+export const SAVED_SEARCH_DIGEST_EVENT = 'saved_search.digest';
+
+/** One matched property as the digest payload carries it. */
+interface DigestPropertyPayload {
+  title: string;
+  address: string;
+  price: string;
+  href: string;
+}
+
+/** HTML-escape a value destined for markup (mirrors @estate/email's escaper). */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Read a string field from an unknown record, defaulting to ''. */
+function stringField(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/** Pull the well-formed property entries out of a digest payload's `properties`. */
+function digestProperties(payload: unknown): DigestPropertyPayload[] {
+  if (typeof payload !== 'object' || payload === null) return [];
+  const list = (payload as Record<string, unknown>)['properties'];
+  if (!Array.isArray(list)) return [];
+  const properties: DigestPropertyPayload[] = [];
+  for (const entry of list) {
+    if (typeof entry !== 'object' || entry === null) continue;
+    const record = entry as Record<string, unknown>;
+    properties.push({
+      title: stringField(record, 'title'),
+      address: stringField(record, 'address'),
+      price: stringField(record, 'price'),
+      href: stringField(record, 'href'),
+    });
+  }
+  return properties;
+}
+
+/**
+ * Render one matched property as a digest card row. `href` is joined to the
+ * tenant's base URL when one is supplied (so the email links to the live listing),
+ * falling back to the relative path. Every interpolated field is HTML-escaped.
+ */
+function digestPropertyHtml(property: DigestPropertyPayload, baseUrl: string): string {
+  const url = baseUrl !== '' ? `${baseUrl}${property.href}` : property.href;
+  return (
+    '<li style="margin-bottom:1rem">' +
+    `<a href="${escapeHtml(url)}"><strong>${escapeHtml(property.title)}</strong></a>` +
+    `<br />${escapeHtml(property.address)}` +
+    `<br />${escapeHtml(property.price)}` +
+    '</li>'
+  );
+}
+
+/**
+ * Render the EPIC-T FR-T-7/8 saved-search digest. Unlike the scalar templates this
+ * one lists a variable number of matched properties, so it is built directly rather
+ * than through the {@link renderTemplate} placeholder engine (which has no loop
+ * construct). Returns null when there are no matches — the digest worker never
+ * queues an empty digest, so a null here also fails closed if one slips through.
+ */
+function renderSavedSearchDigest(payload: unknown): RenderedNotification | null {
+  const properties = digestProperties(payload);
+  if (properties.length === 0) return null;
+
+  const record =
+    typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+  const searchName = stringField(record, 'searchName');
+  const baseUrl = stringField(record, 'baseUrl');
+  const noun = properties.length === 1 ? 'new property' : 'new properties';
+
+  const items = properties.map((property) => digestPropertyHtml(property, baseUrl)).join('');
+  const heading = searchName !== '' ? escapeHtml(searchName) : 'your saved search';
+
+  return {
+    subject: `${properties.length} ${noun} for “${searchName}”`,
+    html:
+      `<p>Hello,</p>` +
+      `<p>There ${properties.length === 1 ? 'is' : 'are'} <strong>${properties.length}</strong> ` +
+      `${noun} matching <strong>${heading}</strong>:</p>` +
+      `<ul style="list-style:none;padding:0">${items}</ul>` +
+      `<p>Manage this saved search and its alerts from your account.</p>`,
+  };
+}
+
 /** Pull the string/number/boolean entries out of a queued row's JSON payload. */
 function templateValues(payload: unknown): TemplateValues {
   const values: Record<string, string | number | boolean> = {};
@@ -101,6 +194,9 @@ function templateValues(payload: unknown): TemplateValues {
 
 /** Render the message for a queued event, or null when no template exists. */
 export function renderNotification(event: string, payload: unknown): RenderedNotification | null {
+  // The saved-search digest lists a variable number of properties, so it renders
+  // outside the scalar placeholder engine (which has no loop construct).
+  if (event === SAVED_SEARCH_DIGEST_EVENT) return renderSavedSearchDigest(payload);
   const template = TEMPLATES[event];
   if (!template) return null;
   return renderTemplate(template, templateValues(payload));
