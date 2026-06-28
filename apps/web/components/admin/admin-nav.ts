@@ -45,6 +45,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
     items: [
       { label: 'Stamp duty', href: '/admin/settings/stamp-duty' },
       { label: 'Mortgage', href: '/admin/settings/mortgage' },
+      { label: 'SEO', href: '/admin/settings/seo' },
       { label: 'Redirects', href: '/admin/settings/redirects' },
     ],
   },

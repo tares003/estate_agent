@@ -163,6 +163,15 @@ export {
   type RedirectUpdate,
 } from './redirect.js';
 export {
+  SEO_SCOPES,
+  SEO_META_TITLE_MAX,
+  SEO_META_DESCRIPTION_MAX,
+  SEO_URL_MAX,
+  seoMetadataUpsertSchema,
+  type SeoScope,
+  type SeoMetadataUpsert,
+} from './seo-metadata.js';
+export {
   FEEDBACK_COMMENT_MAX,
   FEEDBACK_DECISIONS,
   feedbackSubmissionSchema,
