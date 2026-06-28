@@ -17,8 +17,10 @@ import {
   type PropertySearchResult,
 } from '../../lib/properties.js';
 import { signedObjectPath } from '../../lib/storage.js';
+import { getCustomerSession } from '../../lib/customer-session.js';
 import { getCurrentTenantId, getRequestOrigin } from '../../lib/tenant.js';
 import { PropertyFilters } from './PropertyFilters.js';
+import { SaveSearchControl } from './SaveSearchControl.js';
 import { activeChips, toSearchQuery } from './search-params.js';
 
 export const dynamic = 'force-dynamic';
@@ -68,6 +70,12 @@ function toOptions(search: PropertySearch): PropertySearchOptions {
 export default async function CataloguePage({ searchParams }: CataloguePageProps) {
   const search = parsePropertySearch((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
+  // FR-T-7 — a verified customer may save the active filter combination. The
+  // session decides which affordance the save control shows (the action is the
+  // fail-closed gate); the filter object is the single source of truth.
+  const session = await getCustomerSession();
+  const canSaveSearch = Boolean(session?.emailVerified);
+  const currentPath = `/properties${toSearchQuery(search)}`;
   const { lat, lng, radius, unit } = search;
   const { result, heroes } = await withTenant(getDb(), tenantId, async (tx) => {
     // A centre point + radius switches to the PostGIS distance query (nearest-first);
@@ -106,6 +114,14 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
       <h1 className="t-display-sm">{heading}</h1>
 
       <PropertyFilters current={search} />
+
+      <div className="mb-6">
+        <SaveSearchControl
+          filtersJson={JSON.stringify(search)}
+          signedIn={canSaveSearch}
+          currentPath={currentPath}
+        />
+      </div>
 
       {chips.length > 0 ? (
         <ul aria-label="Active filters" className="mb-6 flex flex-wrap gap-2">
