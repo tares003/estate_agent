@@ -12,6 +12,12 @@ import {
 } from './notification-dispatcher.js';
 import { renderNotification } from './notification-templates.js';
 import { resolveTenantMailer } from './payload-email-settings.js';
+import {
+  runSavedSearchDigestTick,
+  type DigestCadence,
+  type SavedSearchDigestClient,
+  type SavedSearchTenantRunner,
+} from './saved-search-digest.js';
 import { transformImage } from './sharp-transform.js';
 import { runSmsTick, type SmsQueueClient, type SmsTenantRunner } from './sms-dispatcher.js';
 
@@ -28,9 +34,18 @@ const logger = createLogger({ name: 'workers' });
 const EMAIL_SEND_QUEUE = 'email-send';
 const IMAGE_QUEUE = 'image-processing';
 const SMS_SEND_QUEUE = 'sms-send';
+const SAVED_SEARCH_ALERTS_QUEUE = 'saved-search-alerts';
 const TICK_EVERY_MS = 30_000;
 const IMAGE_TICK_EVERY_MS = 60_000;
 const SMS_TICK_EVERY_MS = 30_000;
+
+// EPIC-U worker catalogue cadences for the saved-search digests (FR-T-7/8). cron
+// patterns are minute hour dom month dow; both run server-time daily/weekly. The
+// per-tenant-local-time refinement (FR-U-9) is a later slice — V1 fires one digest
+// per cadence at a fixed server hour, which still satisfies "emailed only when
+// there are new matches" (the worker's core acceptance rule).
+const SAVED_SEARCH_DAILY_CRON = '0 7 * * *'; // daily 07:00
+const SAVED_SEARCH_WEEKLY_CRON = '0 8 * * 1'; // Monday 08:00
 
 function storageDir(): string {
   const raw = process.env['STORAGE_DIR'];
@@ -38,6 +53,12 @@ function storageDir(): string {
     throw new Error('STORAGE_DIR is not set');
   }
   return raw;
+}
+
+/** The public site origin used to build absolute links in digest emails. */
+function siteBaseUrl(): string | undefined {
+  const raw = process.env['BETTER_AUTH_URL'];
+  return raw === undefined || raw === '' ? undefined : raw.replace(/\/$/, '');
 }
 
 /** BullMQ connection options from REDIS_URL (fails closed when unset). */
@@ -143,10 +164,54 @@ async function main(): Promise<void> {
     logger.error({ queue: SMS_SEND_QUEUE, jobId: job?.id, err: error }, 'job failed');
   });
 
+  // EPIC-U + EPIC-T FR-T-7/8 — the saved-search alert digest worker. Two repeatable
+  // jobs (daily 07:00 / weekly Mon 08:00) feed one Worker; the job's data carries
+  // the cadence so the consumer runs the right digest. The heavy lifting is in the
+  // pure + read-model layer (saved-search-digest.ts); this only wires Redis + the
+  // tenant-scoped runner, mirroring the email/image/sms ticks above.
+  const baseUrl = siteBaseUrl();
+  const savedSearchQueue = new Queue(SAVED_SEARCH_ALERTS_QUEUE, { connection });
+  await savedSearchQueue.upsertJobScheduler(
+    'saved-search-alerts-daily',
+    { pattern: SAVED_SEARCH_DAILY_CRON },
+    { data: { cadence: 'daily' satisfies DigestCadence } },
+  );
+  await savedSearchQueue.upsertJobScheduler(
+    'saved-search-alerts-weekly',
+    { pattern: SAVED_SEARCH_WEEKLY_CRON },
+    { data: { cadence: 'weekly' satisfies DigestCadence } },
+  );
+  const runSavedSearchTenantFor =
+    (tenantId: string): SavedSearchTenantRunner =>
+    (fn) =>
+      withTenant(prisma, tenantId, (tx) => fn(tx as unknown as SavedSearchDigestClient));
+  const savedSearchWorker = new Worker(
+    SAVED_SEARCH_ALERTS_QUEUE,
+    async (job) => {
+      const cadence: DigestCadence = job.data?.cadence === 'weekly' ? 'weekly' : 'daily';
+      const counts = await runSavedSearchDigestTick({
+        cadence,
+        now: new Date(),
+        listActiveTenants: () =>
+          prisma.platformTenant.findMany({ where: { status: 'active' }, select: { id: true } }),
+        runTenantFor: runSavedSearchTenantFor,
+        ...(baseUrl !== undefined ? { baseUrl } : {}),
+      });
+      if (counts.emailed > 0 || counts.advanced > 0) {
+        logger.info({ queue: SAVED_SEARCH_ALERTS_QUEUE, cadence, ...counts }, 'digest tick');
+      }
+    },
+    { connection },
+  );
+  savedSearchWorker.on('failed', (job, error) => {
+    logger.error({ queue: SAVED_SEARCH_ALERTS_QUEUE, jobId: job?.id, err: error }, 'job failed');
+  });
+
   logger.info(
     {
-      queues: [EMAIL_SEND_QUEUE, IMAGE_QUEUE, SMS_SEND_QUEUE],
+      queues: [EMAIL_SEND_QUEUE, IMAGE_QUEUE, SMS_SEND_QUEUE, SAVED_SEARCH_ALERTS_QUEUE],
       everyMs: [TICK_EVERY_MS, IMAGE_TICK_EVERY_MS, SMS_TICK_EVERY_MS],
+      cron: [SAVED_SEARCH_DAILY_CRON, SAVED_SEARCH_WEEKLY_CRON],
     },
     'worker started',
   );
@@ -156,9 +221,11 @@ async function main(): Promise<void> {
     await worker.close();
     await imageWorker.close();
     await smsWorker.close();
+    await savedSearchWorker.close();
     await queue.close();
     await imageQueue.close();
     await smsQueue.close();
+    await savedSearchQueue.close();
     await prisma.$disconnect();
     process.exit(0);
   };
