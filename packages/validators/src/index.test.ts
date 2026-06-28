@@ -20,6 +20,12 @@ describe('@estate/validators public surface', () => {
     expect(typeof validators.propertyImageMetaSchema.safeParse).toBe('function');
   });
 
+  it('re-exports the saved-search schemas (FR-T-7/8)', () => {
+    expect(typeof validators.savedSearchCreateSchema.safeParse).toBe('function');
+    expect(typeof validators.savedSearchUpdateSchema.safeParse).toBe('function');
+    expect(validators.ALERT_FREQUENCIES).toEqual(['off', 'instant', 'daily', 'weekly']);
+  });
+
   it('parses a known-good buyer enquiry through the re-exported schema', () => {
     const result = validators.buyerEnquirySchema.safeParse({
       name: 'Albert Aardvark',
