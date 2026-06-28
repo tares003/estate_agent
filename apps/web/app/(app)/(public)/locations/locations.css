@@ -1,0 +1,24 @@
+/* Locations index — EPIC-C C.13 (FR-C-8). The area cards "lift" on hover per the
+ * design brief ("tile grid of area cards. Hover lifts cards."). Every value is a
+ * motion / shadow design token (no raw ms / px), mirroring PropertyCard.css; the
+ * lift is disabled under prefers-reduced-motion. */
+
+.area-card {
+  transition:
+    transform var(--motion-duration-fast) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+}
+.area-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .area-card {
+    transition: none;
+  }
+  .area-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}

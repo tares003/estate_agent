@@ -95,6 +95,56 @@ export async function getPublishedAreaGuideBySlug(
   };
 }
 
+/** One AreaGuide row the locations index reads (a real row satisfies it). */
+export interface AreaGuideListRow {
+  slug: string;
+  name: string;
+  introduction: string;
+  heroImage: string | null;
+}
+
+/** An area-guide card: the fields the locations index renders per guide. */
+export interface AreaGuideCard {
+  slug: string;
+  name: string;
+  introduction: string;
+  heroImage: string | null;
+}
+
+/** The structural client the locations-index read needs (a real PrismaClient satisfies it). */
+export interface AreaGuideListReader {
+  areaGuide: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      select?: Record<string, boolean>;
+    }): Promise<AreaGuideListRow[]>;
+  };
+}
+
+/**
+ * List every PUBLISHED area guide for the locations index (FR-C-8), alphabetical
+ * by name. Drafts never appear (the read filters status = published). Returns the
+ * card fields the index grid renders — slug, name, introduction (the page renders
+ * a snippet) and the optional hero image key. The query runs tenant-scoped (RLS)
+ * via withTenant in the /locations route; here the client is structural so it is
+ * DB-free to unit-test.
+ */
+export async function listPublishedAreaGuides(db: AreaGuideListReader): Promise<AreaGuideCard[]> {
+  const rows = await db.areaGuide.findMany({
+    where: { status: 'published' },
+    orderBy: { name: 'asc' },
+    select: { slug: true, name: true, introduction: true, heroImage: true },
+  });
+
+  return rows.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    introduction: row.introduction,
+    heroImage: row.heroImage,
+  }));
+}
+
 /** The reader the area-property feed needs (the catalogue's property table). */
 export interface AreaPropertyReader {
   property: {
