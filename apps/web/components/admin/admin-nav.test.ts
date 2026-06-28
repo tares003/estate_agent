@@ -16,6 +16,7 @@ describe('ADMIN_NAV', () => {
     expect(hrefs).toContain('/admin/reports');
     expect(hrefs).toContain('/admin/audit');
     expect(hrefs).toContain('/admin/users');
+    expect(hrefs).toContain('/admin/settings/redirects');
   });
 
   it('every item has a non-empty label and an /admin-rooted href', () => {
