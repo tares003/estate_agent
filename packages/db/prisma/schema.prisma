@@ -107,6 +107,18 @@ model User {
   /// Defaults to false so existing staff rows + an opt-out registration are
   /// unchanged; only an explicit opt-in flips it.
   marketingOptIn   Boolean  @default(false) @map("marketing_opt_in")
+  /// EPIC-T FR-T-11 — a customer's optional contact phone number, editable from
+  /// /account/profile. Nullable: a customer need not give a phone, and existing
+  /// rows (staff + customers who registered without one) have none. Personal data,
+  /// so it lives behind the same per-tenant RLS as the rest of the user row.
+  phone            String?
+  /// EPIC-T FR-T-11 — the customer's communication preferences: whether the agency
+  /// may contact them about their account / enquiries by email and/or SMS. Distinct
+  /// from `marketingOptIn` (which governs marketing only). Default email-on / sms-off
+  /// so existing rows keep a sensible, least-surprising posture; the customer edits
+  /// them from /account/profile.
+  contactByEmail   Boolean  @default(true) @map("contact_by_email")
+  contactBySms     Boolean  @default(false) @map("contact_by_sms")
   image            String?
   twoFactorEnabled Boolean? @map("two_factor_enabled")
   createdAt        DateTime @default(now()) @map("created_at")

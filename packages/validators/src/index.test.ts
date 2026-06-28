@@ -26,6 +26,10 @@ describe('@estate/validators public surface', () => {
     expect(validators.ALERT_FREQUENCIES).toEqual(['off', 'instant', 'daily', 'weekly']);
   });
 
+  it('re-exports the customer profile-update schema (FR-T-11)', () => {
+    expect(typeof validators.customerProfileUpdateSchema.safeParse).toBe('function');
+  });
+
   it('parses a known-good buyer enquiry through the re-exported schema', () => {
     const result = validators.buyerEnquirySchema.safeParse({
       name: 'Albert Aardvark',
