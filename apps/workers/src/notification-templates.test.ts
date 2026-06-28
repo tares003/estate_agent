@@ -96,4 +96,85 @@ describe('renderNotification', () => {
     expect(message!.subject.toLowerCase()).toMatch(/feedback|how did we do|rate/);
     expect(message!.html).toContain('https://acme.test/feedback/seg.123.sig');
   });
+
+  it('renders the EPIC-T FR-T-7/8 saved-search digest with the search name and each match', () => {
+    const message = renderNotification('saved_search.digest', {
+      searchName: 'Didsbury 2-beds',
+      baseUrl: 'https://acme.test',
+      properties: [
+        {
+          title: 'A lovely flat',
+          address: '1 High Street, M20 2AB',
+          price: '£250,000',
+          href: '/properties/a-flat',
+        },
+        {
+          title: 'A semi',
+          address: '2 Low Road, M20 3CD',
+          price: 'POA',
+          href: '/properties/a-semi',
+        },
+      ],
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject).toContain('Didsbury 2-beds');
+    expect(message!.subject).toMatch(/2/); // the count of new matches
+    expect(message!.html).toContain('A lovely flat');
+    expect(message!.html).toContain('1 High Street, M20 2AB');
+    expect(message!.html).toContain('£250,000');
+    expect(message!.html).toContain('https://acme.test/properties/a-flat');
+    expect(message!.html).toContain('A semi');
+    expect(message!.html).toContain('POA');
+  });
+
+  it('HTML-escapes saved-search digest property fields that land in markup', () => {
+    const message = renderNotification('saved_search.digest', {
+      searchName: '<b>x</b>',
+      baseUrl: 'https://acme.test',
+      properties: [
+        {
+          title: '<script>alert(1)</script>',
+          address: 'Doors & locks',
+          price: '£1',
+          href: '/properties/x',
+        },
+      ],
+    });
+    expect(message!.html).not.toContain('<script>');
+    expect(message!.html).toContain('&lt;script&gt;');
+    expect(message!.html).toContain('Doors &amp; locks');
+  });
+
+  it('falls back to a relative href when no baseUrl is supplied for the digest', () => {
+    const message = renderNotification('saved_search.digest', {
+      searchName: 'Any',
+      properties: [{ title: 'T', address: 'A', price: '£1', href: '/properties/t' }],
+    });
+    expect(message!.html).toContain('/properties/t');
+  });
+
+  it('returns null for a saved-search digest with no matches (the worker never queues one)', () => {
+    expect(
+      renderNotification('saved_search.digest', {
+        searchName: 'Empty',
+        properties: [],
+      }),
+    ).toBeNull();
+  });
+
+  it('uses the singular noun and a fallback heading for a one-match, unnamed digest', () => {
+    const message = renderNotification('saved_search.digest', {
+      properties: [{ title: 'T', address: 'A', price: '£1', href: '/properties/t' }],
+    });
+    expect(message).not.toBeNull();
+    expect(message!.subject).toContain('1 new property');
+    expect(message!.html).toContain('your saved search');
+  });
+
+  it('returns null for a malformed saved-search digest payload (no usable properties)', () => {
+    expect(renderNotification('saved_search.digest', null)).toBeNull();
+    expect(renderNotification('saved_search.digest', 'garbage')).toBeNull();
+    expect(renderNotification('saved_search.digest', { properties: 'nope' })).toBeNull();
+    expect(renderNotification('saved_search.digest', { properties: [null, 7] })).toBeNull();
+  });
 });
