@@ -41,3 +41,16 @@
     animation: none;
   }
 }
+
+/* EPIC-O design brief: the SEO meta-title / description character counter shifts
+ * colour from neutral to warning to danger as the input nears / exceeds its limit.
+ * The colour change transitions over the motion-duration-fast token. Token-driven
+ * (G7) — no raw ms/easing literals; disabled under reduced motion. */
+.seo-character-counter {
+  transition: color var(--motion-duration-fast) var(--motion-ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .seo-character-counter {
+    transition: none;
+  }
+}
