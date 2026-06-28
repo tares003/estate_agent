@@ -5,6 +5,8 @@ import {
   AREA_PROPERTY_LIMIT,
   getPublishedAreaGuideBySlug,
   listPropertiesForArea,
+  listPublishedAreaGuides,
+  type AreaGuideListReader,
   type AreaGuideReader,
   type AreaPropertyReader,
 } from './area-guides.js';
@@ -93,6 +95,63 @@ describe('getPublishedAreaGuideBySlug', () => {
     const { r } = guideReader(GUIDE, []);
     const result = await getPublishedAreaGuideBySlug(r, 'didsbury');
     expect(result?.sections).toEqual([]);
+  });
+});
+
+function listReader(guides: Array<Record<string, unknown>> = []): {
+  r: AreaGuideListReader;
+  findMany: ReturnType<typeof vi.fn>;
+} {
+  const findMany = vi.fn(async () => guides);
+  return {
+    r: { areaGuide: { findMany } } as unknown as AreaGuideListReader,
+    findMany,
+  };
+}
+
+describe('listPublishedAreaGuides', () => {
+  it('returns published guide cards alphabetically, drafts excluded', async () => {
+    const { r, findMany } = listReader([
+      {
+        slug: 'chorlton',
+        name: 'Chorlton',
+        introduction: 'A bohemian quarter.',
+        heroImage: 'tenants/t1/area-guides/g2/hero.jpg',
+      },
+      {
+        slug: 'didsbury',
+        name: 'Didsbury',
+        introduction: 'A leafy suburb in south Manchester.',
+        heroImage: null,
+      },
+    ]);
+
+    const cards = await listPublishedAreaGuides(r);
+
+    expect(cards).toEqual([
+      {
+        slug: 'chorlton',
+        name: 'Chorlton',
+        introduction: 'A bohemian quarter.',
+        heroImage: 'tenants/t1/area-guides/g2/hero.jpg',
+      },
+      {
+        slug: 'didsbury',
+        name: 'Didsbury',
+        introduction: 'A leafy suburb in south Manchester.',
+        heroImage: null,
+      },
+    ]);
+    // only PUBLISHED guides are public, ordered by name
+    expect(findMany.mock.calls[0]![0]).toMatchObject({
+      where: { status: 'published' },
+      orderBy: { name: 'asc' },
+    });
+  });
+
+  it('returns an empty list when there are no published guides', async () => {
+    const { r } = listReader([]);
+    expect(await listPublishedAreaGuides(r)).toEqual([]);
   });
 });
 
