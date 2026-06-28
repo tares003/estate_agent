@@ -92,6 +92,45 @@ export function propertyListingJsonLd(
   return jsonLd;
 }
 
+/** The blog-post fields the `Article` structured data needs (a PublishedPost satisfies it). */
+export interface BlogPostForSeo {
+  /** The post headline (`BlogPost.title`). */
+  title: string;
+  /** A short summary for `description` (the post excerpt or meta description). */
+  description: string | null;
+  /** ISO publication date for `datePublished`; null until published. */
+  publishedAt: Date | null;
+  /** The by-line author name, or null when the post has no author. */
+  authorName: string | null;
+  /** An absolute hero-image URL for `image`, or null when the post has no hero. */
+  imageUrl: string | null;
+}
+
+/**
+ * `BlogPosting` JSON-LD for a knowledge-hub article (FR-O-7; master spec §O.3).
+ * A `BlogPosting` is the `Article` subtype Google's Article rich result accepts.
+ * Emits headline, the canonical URL (also `mainEntityOfPage`), datePublished,
+ * author and image only when their data is present — absent fields are omitted
+ * rather than faked. Pure + IO-free, so it unit-tests in isolation; the caller
+ * resolves `url` / `imageUrl` to absolute, render-time URLs.
+ */
+export function blogPostingJsonLd(post: BlogPostForSeo, url: string): Record<string, unknown> {
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+  };
+  if (post.description) jsonLd['description'] = post.description;
+  if (post.publishedAt) jsonLd['datePublished'] = post.publishedAt.toISOString();
+  if (post.authorName) {
+    jsonLd['author'] = { '@type': 'Person', name: post.authorName };
+  }
+  if (post.imageUrl) jsonLd['image'] = post.imageUrl;
+  return jsonLd;
+}
+
 /** The inputs the alt-text suggester needs for one gallery photo. */
 export interface ImageAltSuggestionInput {
   /** The listing title (`Property.title`), e.g. "3-bed terraced house". */
