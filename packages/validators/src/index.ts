@@ -29,6 +29,7 @@ export {
 export { buyerEnquirySchema, type BuyerEnquiry } from './buyer-enquiry.js';
 export { customerRegistrationSchema, type CustomerRegistration } from './customer-registration.js';
 export { customerSignInSchema, type CustomerSignIn } from './customer-sign-in.js';
+export { customerProfileUpdateSchema, type CustomerProfileUpdate } from './customer-profile.js';
 export {
   passwordResetRequestSchema,
   passwordResetSchema,
