@@ -37,4 +37,20 @@ describe('User — customer-account fields (EPIC-T FR-T-1)', () => {
       /marketingOptIn\s+Boolean\s+@default\(false\)\s+@map\("marketing_opt_in"\)/,
     );
   });
+
+  // EPIC-T FR-T-11 — the profile-editable fields a customer manages from
+  // /account/profile, alongside the marketing opt-in already asserted above.
+  it('carries an OPTIONAL phone the customer can set on their profile (nullable)', () => {
+    expect(user).toMatch(/phone\s+String\?/);
+  });
+
+  it('carries the email contact preference, defaulting to true (separate from marketing opt-in)', () => {
+    expect(user).toMatch(
+      /contactByEmail\s+Boolean\s+@default\(true\)\s+@map\("contact_by_email"\)/,
+    );
+  });
+
+  it('carries the SMS contact preference, defaulting to false', () => {
+    expect(user).toMatch(/contactBySms\s+Boolean\s+@default\(false\)\s+@map\("contact_by_sms"\)/);
+  });
 });
