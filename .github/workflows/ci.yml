@@ -26,6 +26,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # The Prisma client is generated at build time (it lives in node_modules and
+      # is NOT committed), so every downstream typecheck/test that imports
+      # `@prisma/client` (or @estate/db, which re-exports it) needs it materialised
+      # first. Without this, `@estate/db` typecheck fails with "no exported member
+      # PlatformTenant / User / …" and the whole static-gates job goes red.
+      - name: Generate Prisma client
+        run: pnpm --filter @estate/db run db:generate
+
       - name: Format check (Prettier)
         run: pnpm run format:check
 
