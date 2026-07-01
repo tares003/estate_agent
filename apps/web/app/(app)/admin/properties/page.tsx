@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { withTenant } from '@estate/db';
+import { buttonClassName } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { listAdminProperties, type AdminPropertyReader } from '../../lib/admin-properties.js';
@@ -30,7 +32,15 @@ export default async function AdminPropertiesPage({ searchParams }: AdminPropert
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="t-display-sm">Properties</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="t-display-sm">Properties</h1>
+        <Link
+          href="/admin/properties/new"
+          className={buttonClassName({ variant: 'primary', size: 'md' })}
+        >
+          New property
+        </Link>
+      </div>
       <AdminPropertiesTable result={result} />
     </div>
   );

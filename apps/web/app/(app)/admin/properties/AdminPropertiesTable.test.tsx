@@ -38,6 +38,11 @@ describe('AdminPropertiesTable', () => {
     expect(table.getByText('Under offer')).toBeInTheDocument(); // humanised marketStatus
     expect(table.getByText('£525,000')).toBeInTheDocument();
     expect(table.getByText('Published')).toBeInTheDocument();
+    // a per-row Edit link to the edit form
+    expect(table.getByRole('link', { name: /Edit/i })).toHaveAttribute(
+      'href',
+      '/admin/properties/p1/edit',
+    );
   });
 
   it('marks an unpublished listing as a Draft and shows POA for no price', () => {
