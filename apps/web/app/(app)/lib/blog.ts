@@ -293,3 +293,30 @@ export async function listPublishedPostsByTag(
   const { category: _ignoredCategory, tag: _ignoredTag, ...paging } = options;
   return listPublishedPosts(db, { ...paging, tag: tagSlug });
 }
+
+// ── Sitemap read model (EPIC-O FR-O-8 — the `/news/[slug]` child sitemap). The
+// narrowest reader the sitemap touches (slug + last-modified per published post),
+// mirroring properties.ts' listPropertiesForSitemap. Published-only (drafts /
+// scheduled never appear); RLS scopes it in the route via withTenant.
+
+/** Minimal reader for the sitemap (slug + last-modified per published post). */
+export interface BlogPostSitemapReader {
+  blogPost: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      select?: Record<string, boolean>;
+    }): Promise<Array<{ slug: string; updatedAt: Date }>>;
+  };
+}
+
+/** Published knowledge-hub posts for the sitemap (FR-O-8), newest-modified first. */
+export async function listPublishedPostsForSitemap(
+  db: BlogPostSitemapReader,
+): Promise<Array<{ slug: string; updatedAt: Date }>> {
+  return db.blogPost.findMany({
+    where: { status: 'published' },
+    orderBy: { updatedAt: 'desc' },
+    select: { slug: true, updatedAt: true },
+  });
+}

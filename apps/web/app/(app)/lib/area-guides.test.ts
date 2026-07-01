@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AREA_PROPERTY_LIMIT,
   getPublishedAreaGuideBySlug,
+  listAreaGuidesForSitemap,
   listPropertiesForArea,
   listPublishedAreaGuides,
   type AreaGuideListReader,
@@ -209,5 +210,19 @@ describe('listPropertiesForArea', () => {
     const { r, findMany } = propertyReader([]);
     expect(await listPropertiesForArea(r, [])).toEqual([]);
     expect(findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('listAreaGuidesForSitemap', () => {
+  it('selects published slugs + last-modified, newest-modified first', async () => {
+    const rows = [{ slug: 'didsbury', updatedAt: new Date('2026-06-07') }];
+    const findMany = vi.fn().mockResolvedValue(rows);
+    const result = await listAreaGuidesForSitemap({ areaGuide: { findMany } });
+    expect(findMany).toHaveBeenCalledWith({
+      where: { status: 'published' },
+      orderBy: { updatedAt: 'desc' },
+      select: { slug: true, updatedAt: true },
+    });
+    expect(result).toEqual(rows);
   });
 });

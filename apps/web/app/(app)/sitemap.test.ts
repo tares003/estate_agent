@@ -7,9 +7,15 @@ vi.mock('./lib/tenant.js', () => ({
 vi.mock('./lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findMany = vi.fn();
+const blogFindMany = vi.fn();
+const areaFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findMany } }),
+    fn({
+      property: { findMany },
+      blogPost: { findMany: blogFindMany },
+      areaGuide: { findMany: areaFindMany },
+    }),
 }));
 
 const listPublishedPages = vi.fn();
@@ -25,32 +31,40 @@ const child = (id: string) => sitemap({ id: Promise.resolve(id) });
 beforeEach(() => {
   vi.clearAllMocks();
   findMany.mockResolvedValue([]);
+  blogFindMany.mockResolvedValue([]);
+  areaFindMany.mockResolvedValue([]);
   listPublishedPages.mockResolvedValue([]);
 });
 
 describe('generateSitemaps (FR-O-8 sitemap index)', () => {
-  it('declares the static, properties and pages child sitemaps', async () => {
+  it('declares the static, properties, pages, blog and areas child sitemaps', async () => {
     expect(await generateSitemaps()).toEqual([
       { id: 'static' },
       { id: 'properties' },
       { id: 'pages' },
+      { id: 'blog' },
+      { id: 'areas' },
     ]);
   });
 });
 
 describe('static child sitemap', () => {
-  it('lists the public static routes (home, catalogue, calculators)', async () => {
+  it('lists the public static routes (home, catalogue, calculators, hub indexes)', async () => {
     const entries = await child('static');
     const urls = entries.map((e) => e.url);
 
     expect(urls).toContain('https://acme.test/');
     expect(urls).toContain('https://acme.test/properties');
     expect(urls).toContain('https://acme.test/calculators');
+    expect(urls).toContain('https://acme.test/news');
+    expect(urls).toContain('https://acme.test/locations');
   });
 
-  it('does not touch the property or page data loaders', async () => {
+  it('does not touch the property, page, blog or area data loaders', async () => {
     await child('static');
     expect(findMany).not.toHaveBeenCalled();
+    expect(blogFindMany).not.toHaveBeenCalled();
+    expect(areaFindMany).not.toHaveBeenCalled();
     expect(listPublishedPages).not.toHaveBeenCalled();
   });
 });
@@ -92,6 +106,50 @@ describe('pages child sitemap', () => {
       new Date('2026-02-03'),
     );
     expect(listPublishedPages).toHaveBeenCalledWith('tenant-1');
+  });
+});
+
+describe('blog child sitemap', () => {
+  it('lists published knowledge-hub posts under /news with last-modified', async () => {
+    blogFindMany.mockResolvedValue([
+      { slug: 'first-time-buyer-guide', updatedAt: new Date('2026-04-05') },
+    ]);
+
+    const entries = await child('blog');
+    const urls = entries.map((e) => e.url);
+
+    expect(urls).toContain('https://acme.test/news/first-time-buyer-guide');
+    expect(entries.find((e) => e.url.endsWith('first-time-buyer-guide'))?.lastModified).toEqual(
+      new Date('2026-04-05'),
+    );
+  });
+
+  it('queries only published posts', async () => {
+    await child('blog');
+    expect(blogFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'published' } }),
+    );
+  });
+});
+
+describe('areas child sitemap', () => {
+  it('lists published area guides under /locations with last-modified', async () => {
+    areaFindMany.mockResolvedValue([{ slug: 'didsbury', updatedAt: new Date('2026-06-07') }]);
+
+    const entries = await child('areas');
+    const urls = entries.map((e) => e.url);
+
+    expect(urls).toContain('https://acme.test/locations/didsbury');
+    expect(entries.find((e) => e.url.endsWith('/didsbury'))?.lastModified).toEqual(
+      new Date('2026-06-07'),
+    );
+  });
+
+  it('queries only published guides', async () => {
+    await child('areas');
+    expect(areaFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'published' } }),
+    );
   });
 });
 
