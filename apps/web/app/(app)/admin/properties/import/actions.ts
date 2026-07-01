@@ -177,6 +177,21 @@ export async function importPropertiesFromCsv(
       ip,
     });
 
+    // FR-X-9 — PLUS one audit entry per FAILED row, so each rejected row is traceable
+    // to its run and reason (the run summary alone does not name the individual
+    // failures). All emitted inside the same tenant transaction as the run event.
+    for (const rowError of parseResult.errors) {
+      await audit(tx, {
+        tenantId,
+        actor,
+        action: 'property.import_row_failed',
+        entity: 'import_log',
+        entityId: importLog.id,
+        diff: { rowNumber: rowError.rowNumber, error: formatRowError(rowError) },
+        ip,
+      });
+    }
+
     result = {
       ok: true,
       importLogId: importLog.id,

@@ -170,6 +170,13 @@ describe('importPropertiesFromCsv', () => {
     expect(res.errorSummary![0]).toContain('Row 2');
     const data = importLogCreate.mock.calls[0]![0].data as { errorSummary: unknown };
     expect(data.errorSummary).toEqual({ rows: res.errorSummary });
+    // FR-X-9 — the failed row is audited individually (one audit entry per failed
+    // row), not only the run summary.
+    const rowFailAudit = audit.mock.calls.find(
+      (call) => (call[1] as { action: string }).action === 'property.import_row_failed',
+    );
+    expect(rowFailAudit).toBeDefined();
+    expect((rowFailAudit![1] as { diff: { rowNumber: number } }).diff.rowNumber).toBe(2);
   });
 
   it('seeds slug de-duplication from the tenant existing slugs', async () => {
