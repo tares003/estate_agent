@@ -231,9 +231,9 @@ describe('validatePropertyVerticalFields (conditional-by-listing-type isolation)
     expect(
       validatePropertyVerticalFields('care_home', { bedCount: 40, cqcRating: 'good' }),
     ).toEqual([]);
-    expect(
-      validatePropertyVerticalFields('business_transfer', { annualTurnover: 100000 }),
-    ).toEqual([]);
+    expect(validatePropertyVerticalFields('business_transfer', { annualTurnover: 100000 })).toEqual(
+      [],
+    );
     expect(validatePropertyVerticalFields('commercial', { useClass: 'e' })).toEqual([]);
     expect(validatePropertyVerticalFields('new_home', { isOffPlan: true })).toEqual([]);
   });

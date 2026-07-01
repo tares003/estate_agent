@@ -520,6 +520,30 @@ model Property {
   longitude            Float?
   hideExactAddress     Boolean @default(false) @map("hide_exact_address")
 
+  // ── §F.3 new-home extension (FR-F-3; gated by the new_homes pack) ─────────────
+  isOffPlan       Boolean @default(false) @map("is_off_plan")
+  developmentName String? @map("development_name")
+
+  // ── §F.4 commercial extension (FR-F-3; gated by the commercial pack) ─────────
+  vatPayable          Boolean?            @map("vat_payable")
+  annualBusinessRates Int?                @map("annual_business_rates")
+  useClass            CommercialUseClass? @map("use_class")
+
+  // ── §F.5 business-transfer extension (FR-F-3; gated by the business_transfer pack) ─
+  annualTurnover    Int?    @map("annual_turnover")
+  grossProfit       Int?    @map("gross_profit")
+  netProfit         Int?    @map("net_profit")
+  yearsTrading      Int?    @map("years_trading")
+  staffCount        Int?    @map("staff_count")
+  currentAnnualRent Int?    @map("current_annual_rent")
+  isConfidential    Boolean @default(false) @map("is_confidential")
+
+  // ── §F.6 care-home extension (FR-F-3; gated by the care_homes pack) ──────────
+  bedCount         Int?       @map("bed_count")
+  cqcRating        CqcRating? @map("cqc_rating")
+  cqcInspectionUrl String?    @map("cqc_inspection_url")
+  isGoingConcern   Boolean    @default(false) @map("is_going_concern")
+
   // ── §F descriptions ──────────────────────────────────────────────────────────
   shortDescription String? @map("short_description")
   description      String?
@@ -1649,6 +1673,34 @@ enum EpcRating {
   pending
 
   @@map("epc_rating")
+}
+
+/// Commercial use class (master spec §F.4; FR-F-3 per-vertical extension). The
+/// English planning use classes surfaced on commercial listings: E (commercial,
+/// business, service), B2 (general industrial), B8 (storage / distribution),
+/// C1 (hotels), Sui Generis (its own class), plus `other` as a catch-all.
+enum CommercialUseClass {
+  e
+  b2
+  b8
+  c1
+  sui_generis
+  other
+
+  @@map("commercial_use_class")
+}
+
+/// CQC (Care Quality Commission) rating (master spec §F.6; FR-F-3 per-vertical
+/// extension). The four published inspection ratings plus `not_yet_rated` for a
+/// home awaiting its first inspection.
+enum CqcRating {
+  outstanding
+  good
+  requires_improvement
+  inadequate
+  not_yet_rated
+
+  @@map("cqc_rating")
 }
 
 /// Furnished status of a lettings property (master spec §F.2 / §F specification).

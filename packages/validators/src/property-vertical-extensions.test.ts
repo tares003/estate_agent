@@ -86,7 +86,12 @@ describe('validatePropertyVerticalFields — every vertical accepts only its own
     },
     {
       listingType: 'care_home',
-      own: { bedCount: 40, cqcRating: 'good', cqcInspectionUrl: 'https://x.test', isGoingConcern: true },
+      own: {
+        bedCount: 40,
+        cqcRating: 'good',
+        cqcInspectionUrl: 'https://x.test',
+        isGoingConcern: true,
+      },
       foreign: { useClass: 'e' },
     },
   ];

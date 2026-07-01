@@ -24,6 +24,46 @@ export interface PropertyRow {
   town?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  // ── FR-F-3 per-vertical extension columns (§F.3–§F.6). Present on the detail read;
+  //    the catalogue card ignores them. ─────────────────────────────────────────────
+  listingType?: string | null;
+  isOffPlan?: boolean | null;
+  developmentName?: string | null;
+  vatPayable?: boolean | null;
+  annualBusinessRates?: number | null;
+  useClass?: string | null;
+  annualTurnover?: number | null;
+  grossProfit?: number | null;
+  netProfit?: number | null;
+  yearsTrading?: number | null;
+  staffCount?: number | null;
+  currentAnnualRent?: number | null;
+  isConfidential?: boolean | null;
+  bedCount?: number | null;
+  cqcRating?: string | null;
+  cqcInspectionUrl?: string | null;
+  isGoingConcern?: boolean | null;
+}
+
+/** The per-vertical extension facts surfaced on the public detail page (FR-F-3). */
+export interface PropertyVerticalFacts {
+  listingType: string;
+  isOffPlan: boolean;
+  developmentName: string | null;
+  vatPayable: boolean | null;
+  annualBusinessRates: number | null;
+  useClass: string | null;
+  annualTurnover: number | null;
+  grossProfit: number | null;
+  netProfit: number | null;
+  yearsTrading: number | null;
+  staffCount: number | null;
+  currentAnnualRent: number | null;
+  isConfidential: boolean;
+  bedCount: number | null;
+  cqcRating: string | null;
+  cqcInspectionUrl: string | null;
+  isGoingConcern: boolean;
 }
 
 export interface PropertyListReader {
@@ -61,6 +101,8 @@ export interface PropertyDetail extends PropertyCardProps {
   /** Asking price in whole pounds (GBP) for JSON-LD offers; null for POA. */
   priceValue: number | null;
   marketStatus: string;
+  /** FR-F-3 — the per-vertical extension facts, discriminated by listingType. */
+  vertical: PropertyVerticalFacts;
 }
 
 /** The catalogue filter / sort / pagination inputs (master spec §C.10 / §K.1). */
@@ -298,6 +340,30 @@ export async function getPropertyBySlug(
     longitude: row.longitude ?? null,
     priceValue: row.price != null ? row.price / 100 : null,
     marketStatus: row.marketStatus,
+    vertical: toVerticalFacts(row),
+  };
+}
+
+/** Map a §J Property row's per-vertical extension columns to the public facts (FR-F-3). */
+export function toVerticalFacts(row: PropertyRow): PropertyVerticalFacts {
+  return {
+    listingType: row.listingType ?? 'residential',
+    isOffPlan: row.isOffPlan ?? false,
+    developmentName: row.developmentName ?? null,
+    vatPayable: row.vatPayable ?? null,
+    annualBusinessRates: row.annualBusinessRates ?? null,
+    useClass: row.useClass ?? null,
+    annualTurnover: row.annualTurnover ?? null,
+    grossProfit: row.grossProfit ?? null,
+    netProfit: row.netProfit ?? null,
+    yearsTrading: row.yearsTrading ?? null,
+    staffCount: row.staffCount ?? null,
+    currentAnnualRent: row.currentAnnualRent ?? null,
+    isConfidential: row.isConfidential ?? false,
+    bedCount: row.bedCount ?? null,
+    cqcRating: row.cqcRating ?? null,
+    cqcInspectionUrl: row.cqcInspectionUrl ?? null,
+    isGoingConcern: row.isGoingConcern ?? false,
   };
 }
 

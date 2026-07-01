@@ -1,6 +1,8 @@
 import type {
   PropertyCategory,
+  PropertyCommercialUseClass,
   PropertyCouncilTaxBand,
+  PropertyCqcRating,
   PropertyEpcRating,
   PropertyListingType,
   PropertyMarketStatus,
@@ -49,6 +51,23 @@ export interface PropertyEditModel {
   metaTitle: string | null;
   metaDescription: string | null;
   publicationStatus: PropertyPublicationStatus | null;
+  // ── FR-F-3 per-vertical extension fields (§F.3–§F.6). ────────────────────────
+  isOffPlan: boolean;
+  developmentName: string | null;
+  vatPayable: boolean | null;
+  annualBusinessRates: number | null;
+  useClass: PropertyCommercialUseClass | null;
+  annualTurnover: number | null;
+  grossProfit: number | null;
+  netProfit: number | null;
+  yearsTrading: number | null;
+  staffCount: number | null;
+  currentAnnualRent: number | null;
+  isConfidential: boolean;
+  bedCount: number | null;
+  cqcRating: PropertyCqcRating | null;
+  cqcInspectionUrl: string | null;
+  isGoingConcern: boolean;
 }
 
 /** The raw Property row shape the read touches (a real PrismaClient satisfies it). */
@@ -76,6 +95,22 @@ interface PropertyEditRow {
   metaTitle: string | null;
   metaDescription: string | null;
   publicationStatus: PropertyPublicationStatus | null;
+  isOffPlan: boolean;
+  developmentName: string | null;
+  vatPayable: boolean | null;
+  annualBusinessRates: number | null;
+  useClass: PropertyCommercialUseClass | null;
+  annualTurnover: number | null;
+  grossProfit: number | null;
+  netProfit: number | null;
+  yearsTrading: number | null;
+  staffCount: number | null;
+  currentAnnualRent: number | null;
+  isConfidential: boolean;
+  bedCount: number | null;
+  cqcRating: PropertyCqcRating | null;
+  cqcInspectionUrl: string | null;
+  isGoingConcern: boolean;
 }
 
 /** The structural client the read model needs (a real PrismaClient satisfies it). */
@@ -126,5 +161,21 @@ export async function getPropertyForEdit(
     metaTitle: row.metaTitle,
     metaDescription: row.metaDescription,
     publicationStatus: row.publicationStatus,
+    isOffPlan: row.isOffPlan,
+    developmentName: row.developmentName,
+    vatPayable: row.vatPayable,
+    annualBusinessRates: row.annualBusinessRates,
+    useClass: row.useClass,
+    annualTurnover: row.annualTurnover,
+    grossProfit: row.grossProfit,
+    netProfit: row.netProfit,
+    yearsTrading: row.yearsTrading,
+    staffCount: row.staffCount,
+    currentAnnualRent: row.currentAnnualRent,
+    isConfidential: row.isConfidential,
+    bedCount: row.bedCount,
+    cqcRating: row.cqcRating,
+    cqcInspectionUrl: row.cqcInspectionUrl,
+    isGoingConcern: row.isGoingConcern,
   };
 }

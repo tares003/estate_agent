@@ -7,74 +7,76 @@ import { render, screen } from '@testing-library/react';
 import { VerticalExtensionsForm } from './VerticalExtensionsForm.js';
 
 // EPIC-F FR-F-3 — the per-vertical extension subsections (new home / commercial /
-// business transfer / care home). Each subsection is gated behind its pack (EPIC-AD,
-// G12): the fieldset only renders when the owning pack is enabled AND the current
-// listing type matches. A residential listing surfaces none of them.
+// business transfer / care home). Each subsection renders only when its listing type is
+// in the server-resolved authorable-verticals allow-list (EPIC-AD entitlement decided
+// upstream via isPackEnabled; this component never names a pack slug). A residential
+// listing surfaces none of them.
 
-const NEW_HOME_PACK = ['new_homes'];
-const COMMERCIAL_PACK = ['commercial'];
-const BUSINESS_PACK = ['business_transfer'];
-const CARE_PACK = ['care_homes'];
-const ALL_PACKS = ['new_homes', 'commercial', 'business_transfer', 'care_homes'];
+const ALL_VERTICALS = ['new_home', 'commercial', 'business_transfer', 'care_home'];
 
-describe('VerticalExtensionsForm — pack + listing-type gating', () => {
-  it('renders nothing for a residential listing even with every pack enabled', () => {
+describe('VerticalExtensionsForm — vertical allow-list gating', () => {
+  it('renders nothing for a residential listing even when every vertical is authorable', () => {
     const { container } = render(
-      <VerticalExtensionsForm listingType="residential" enabledPacks={ALL_PACKS} />,
+      <VerticalExtensionsForm listingType="residential" enabledVerticals={ALL_VERTICALS} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('renders the new-home subsection for a new_home listing when the pack is on', () => {
-    render(<VerticalExtensionsForm listingType="new_home" enabledPacks={NEW_HOME_PACK} />);
-    expect(screen.getByText('New home')).toBeInTheDocument();
+  it('renders the new-home subsection for a new_home listing when it is authorable', () => {
+    render(<VerticalExtensionsForm listingType="new_home" enabledVerticals={['new_home']} />);
+    expect(screen.getByText('New home details')).toBeInTheDocument();
     expect(screen.getByLabelText(/Development name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Off-plan/i)).toBeInTheDocument();
   });
 
-  it('hides the new-home subsection when the new_homes pack is not enabled', () => {
-    render(<VerticalExtensionsForm listingType="new_home" enabledPacks={[]} />);
-    expect(screen.queryByText('New home')).not.toBeInTheDocument();
+  it('hides the new-home subsection when the vertical is not authorable', () => {
+    render(<VerticalExtensionsForm listingType="new_home" enabledVerticals={[]} />);
+    expect(screen.queryByText('New home details')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Development name/i)).not.toBeInTheDocument();
   });
 
-  it('renders the commercial subsection for a commercial listing when the pack is on', () => {
-    render(<VerticalExtensionsForm listingType="commercial" enabledPacks={COMMERCIAL_PACK} />);
-    expect(screen.getByText('Commercial')).toBeInTheDocument();
+  it('renders the commercial subsection for a commercial listing when it is authorable', () => {
+    render(<VerticalExtensionsForm listingType="commercial" enabledVerticals={['commercial']} />);
+    expect(screen.getByText('Commercial details')).toBeInTheDocument();
     expect(screen.getByLabelText(/Use class/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/business rates/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/VAT payable/i)).toBeInTheDocument();
   });
 
   it('renders the business-transfer subsection for a business_transfer listing', () => {
-    render(<VerticalExtensionsForm listingType="business_transfer" enabledPacks={BUSINESS_PACK} />);
-    expect(screen.getByText('Business transfer')).toBeInTheDocument();
+    render(
+      <VerticalExtensionsForm
+        listingType="business_transfer"
+        enabledVerticals={['business_transfer']}
+      />,
+    );
+    expect(screen.getByText('Business transfer details')).toBeInTheDocument();
     expect(screen.getByLabelText(/Annual turnover/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Net profit/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Confidential/i)).toBeInTheDocument();
   });
 
-  it('renders the care-home subsection for a care_home listing when the pack is on', () => {
-    render(<VerticalExtensionsForm listingType="care_home" enabledPacks={CARE_PACK} />);
-    expect(screen.getByText('Care home')).toBeInTheDocument();
+  it('renders the care-home subsection for a care_home listing when it is authorable', () => {
+    render(<VerticalExtensionsForm listingType="care_home" enabledVerticals={['care_home']} />);
+    expect(screen.getByText('Care home details')).toBeInTheDocument();
     expect(screen.getByLabelText(/Bed count/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/CQC rating/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Going concern/i)).toBeInTheDocument();
   });
 
   it('shows only the subsection matching the listing type, not the others', () => {
-    render(<VerticalExtensionsForm listingType="commercial" enabledPacks={ALL_PACKS} />);
-    expect(screen.getByText('Commercial')).toBeInTheDocument();
-    expect(screen.queryByText('Care home')).not.toBeInTheDocument();
-    expect(screen.queryByText('Business transfer')).not.toBeInTheDocument();
-    expect(screen.queryByText('New home')).not.toBeInTheDocument();
+    render(<VerticalExtensionsForm listingType="commercial" enabledVerticals={ALL_VERTICALS} />);
+    expect(screen.getByText('Commercial details')).toBeInTheDocument();
+    expect(screen.queryByText('Care home details')).not.toBeInTheDocument();
+    expect(screen.queryByText('Business transfer details')).not.toBeInTheDocument();
+    expect(screen.queryByText('New home details')).not.toBeInTheDocument();
   });
 
   it('pre-fills the extension fields from the initial values in edit mode', () => {
     render(
       <VerticalExtensionsForm
         listingType="care_home"
-        enabledPacks={CARE_PACK}
+        enabledVerticals={['care_home']}
         initial={{ bedCount: 42, cqcRating: 'good', cqcInspectionUrl: null, isGoingConcern: true }}
       />,
     );

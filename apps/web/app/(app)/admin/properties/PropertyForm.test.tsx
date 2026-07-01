@@ -162,7 +162,7 @@ describe('PropertyForm — edit mode', () => {
         mode="edit"
         action={action}
         initial={{ ...initial, listingType: 'care_home' }}
-        enabledPacks={['care_homes']}
+        enabledVerticals={['care_home']}
         verticalInitial={{
           bedCount: 40,
           cqcRating: 'good',
@@ -171,7 +171,7 @@ describe('PropertyForm — edit mode', () => {
         }}
       />,
     );
-    expect(screen.getByText('Care home')).toBeInTheDocument();
+    expect(screen.getByText('Care home details')).toBeInTheDocument();
     expect(screen.getByLabelText(/Bed count/i)).toHaveValue(40);
   });
 
@@ -182,10 +182,10 @@ describe('PropertyForm — edit mode', () => {
         mode="edit"
         action={action}
         initial={{ ...initial, listingType: 'care_home' }}
-        enabledPacks={[]}
+        enabledVerticals={[]}
       />,
     );
-    expect(screen.queryByText('Care home')).not.toBeInTheDocument();
+    expect(screen.queryByText('Care home details')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Bed count/i)).not.toBeInTheDocument();
   });
 
