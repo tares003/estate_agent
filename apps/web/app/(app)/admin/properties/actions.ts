@@ -42,7 +42,7 @@ function propertyPath(slug: string): string {
 }
 
 /** The minimal Property + Redirect write surface these actions need. */
-interface PropertyCreateClient extends AuditWriter {
+export interface PropertyCreateClient extends AuditWriter {
   property: {
     findFirst(args: {
       where: Record<string, unknown>;
@@ -144,6 +144,68 @@ function coreData(input: PropertyCreate | PropertyWriteUpdate): Record<string, u
   return data;
 }
 
+/** The identity + provenance context a single property insert needs. */
+export interface PropertyInsertContext {
+  tenantId: string;
+  /** The audit actor string (`agent:<id>`). */
+  actor: string;
+  /** The staff user id for the created/updated FK columns; null for the dev fallback. */
+  createdByUserId: string | null;
+  /** Originating IP for the audit row, when known. */
+  ip: string | null;
+}
+
+/**
+ * Insert ONE validated property + its `property.created` audit row on an already-open
+ * tenant transaction (FR-F-1 / FR-F-4). The slug is taken from the submission when
+ * present, else derived from title/town/postcode (falling back to the reference), then
+ * made unique against `taken` — the caller-supplied set of slugs already claimed in the
+ * same transaction. When inserting a batch, the caller adds each returned slug to
+ * `taken` so successive rows in the SAME run don't collide (FR-F-11).
+ *
+ * Extracted so bulk import (EPIC-X) creates properties through the EXACT create path —
+ * same disambiguation, same column mapping, same audit event — rather than a parallel
+ * insert. Pure of session/tenant resolution: every I/O input is a parameter, so it is
+ * unit-testable with a fake `tx`.
+ */
+export async function insertPropertyRow(
+  tx: PropertyCreateClient,
+  ctx: PropertyInsertContext,
+  input: PropertyCreate,
+  taken: Set<string>,
+): Promise<{ id: string; slug: string }> {
+  const postcodePrefix = input.postcode.split(' ')[0];
+  const desiredBase =
+    (input.slug ?? propertySlugBase({ title: input.title, town: input.town, postcodePrefix })) ||
+    slugify(input.reference);
+  const slug = disambiguateSlug(desiredBase, taken);
+
+  const created = await tx.property.create({
+    data: {
+      tenantId: ctx.tenantId,
+      reference: input.reference,
+      listingType: input.listingType,
+      saleType: input.saleType,
+      slug,
+      createdByUserId: ctx.createdByUserId,
+      updatedByUserId: ctx.createdByUserId,
+      ...coreData(input),
+    },
+  });
+  await audit(tx, {
+    tenantId: ctx.tenantId,
+    actor: ctx.actor,
+    action: 'property.created',
+    entity: 'property',
+    entityId: created.id,
+    diff: { reference: input.reference, slug, listingType: input.listingType },
+    ip: ctx.ip,
+  });
+  // Reserve the minted slug so a following row in the same batch disambiguates past it.
+  taken.add(slug);
+  return { id: created.id, slug };
+}
+
 // FR-F-1 / FR-F-4 — create a property. The slug is taken from the submission when
 // provided, else auto-generated from title/town/postcode; either way it is made unique
 // within the tenant before the insert.
@@ -185,43 +247,18 @@ export async function createProperty(
   const createdByUserId = await getStaffUserId();
   const ip = await getRequestIp();
 
-  // The desired base slug: an explicit submission, else derived (FR-F-4) from title,
-  // town and the postcode's outward code (the part before the space in the normalised
-  // `M21 9WN`). Fall back to the reference when those yield nothing usable.
-  const postcodePrefix = input.postcode.split(' ')[0];
-  const desiredBase =
-    (input.slug ?? propertySlugBase({ title: input.title, town: input.town, postcodePrefix })) ||
-    slugify(input.reference);
-
   let result: PropertyWriteState = deny('The property could not be created.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as PropertyCreateClient;
     const existing = await tx.property.findMany({ where: {}, select: { slug: true } });
     const taken = new Set(existing.map((row) => row.slug));
-    const slug = disambiguateSlug(desiredBase, taken);
-
-    const created = await tx.property.create({
-      data: {
-        tenantId,
-        reference: input.reference,
-        listingType: input.listingType,
-        saleType: input.saleType,
-        slug,
-        createdByUserId,
-        updatedByUserId: createdByUserId,
-        ...coreData(input),
-      },
-    });
-    await audit(tx, {
-      tenantId,
-      actor,
-      action: 'property.created',
-      entity: 'property',
-      entityId: created.id,
-      diff: { reference: input.reference, slug, listingType: input.listingType },
-      ip,
-    });
-    result = { ok: true, id: created.id, slug };
+    const { id, slug } = await insertPropertyRow(
+      tx,
+      { tenantId, actor, createdByUserId, ip },
+      input,
+      taken,
+    );
+    result = { ok: true, id, slug };
   });
   return result;
 }
