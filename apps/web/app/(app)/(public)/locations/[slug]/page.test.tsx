@@ -18,6 +18,7 @@ const guideFindFirst = vi.fn();
 const sectionFindMany = vi.fn();
 const propertyFindMany = vi.fn();
 const imageFindMany = vi.fn();
+const seoFindFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
@@ -25,6 +26,7 @@ vi.mock('@estate/db', () => ({
       areaGuideSection: { findMany: sectionFindMany },
       property: { findMany: propertyFindMany },
       propertyImage: { findMany: imageFindMany },
+      seoMetadata: { findFirst: seoFindFirst },
     }),
 }));
 
@@ -68,6 +70,7 @@ function params(slug: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  seoFindFirst.mockResolvedValue(null);
   guideFindFirst.mockResolvedValue(GUIDE);
   sectionFindMany.mockResolvedValue([
     { type: 'rich_text', data: { html: '<p>Transport links</p>' } },
@@ -165,5 +168,33 @@ describe('AreaGuidePage', () => {
     guideFindFirst.mockResolvedValue(null);
     const meta = await generateMetadata(params('nope'));
     expect(meta.title).toBe('Area guide not found');
+  });
+
+  it('generateMetadata applies a per-area-guide SEO override over the defaults (FR-O-4)', async () => {
+    seoFindFirst.mockResolvedValue({
+      id: 's1',
+      scope: 'area_guide',
+      scopeId: GUIDE.id,
+      metaTitle: 'Override guide title',
+      metaDescription: 'Override guide description.',
+      canonicalUrl: 'https://acme.test/canonical/didsbury',
+      ogImage: 'https://acme.test/social/didsbury.jpg',
+      noIndex: true,
+      noFollow: true,
+      structuredData: null,
+    });
+
+    const meta = await generateMetadata(params('didsbury'));
+
+    expect(seoFindFirst).toHaveBeenCalledWith({
+      where: { scope: 'area_guide', scopeId: GUIDE.id },
+    });
+    expect(meta.title).toBe('Override guide title');
+    expect(meta.description).toBe('Override guide description.');
+    expect(meta.alternates?.canonical).toBe('https://acme.test/canonical/didsbury');
+    expect((meta.openGraph as { images?: unknown[] }).images).toEqual([
+      'https://acme.test/social/didsbury.jpg',
+    ]);
+    expect(meta.robots).toEqual({ index: false, follow: false });
   });
 });

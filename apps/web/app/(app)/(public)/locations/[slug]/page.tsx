@@ -21,6 +21,8 @@ import {
   type HeroImageRow,
 } from '../../../lib/property-images.js';
 import { areaGuideJsonLd, breadcrumbJsonLd, truncate } from '../../../lib/seo.js';
+import { resolveSeoMetadata, type SeoMetadataReader } from '../../../lib/seo-metadata.js';
+import { applySeoOverride } from '../../../lib/seo-override.js';
 import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
 
@@ -71,13 +73,21 @@ export async function generateMetadata({ params }: AreaGuidePageProps): Promise<
   const title = truncate(guide.metaTitle ?? `${guide.name} area guide`, 60);
   const description = truncate(guide.metaDescription ?? guide.introduction, 160);
 
-  return {
+  const base: Metadata = {
     title,
     description,
     alternates: { canonical: url },
     openGraph: { title, description, url, type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
   };
+
+  // EPIC-O FR-O-4 — a per-entity (else tenant-wide default) SEO override wins over
+  // the page default when present; the resolve runs tenant-scoped (RLS) via withTenant.
+  const tenantId = await getCurrentTenantId();
+  const override = await withTenant(getDb(), tenantId, (tx) =>
+    resolveSeoMetadata(tx as unknown as SeoMetadataReader, 'area_guide', guide.id),
+  );
+  return applySeoOverride(base, override);
 }
 
 /**
