@@ -44,6 +44,32 @@ export interface BlogReader {
   };
 }
 
+/** A category / tag term row — the identifying fields an archive heading needs. */
+export interface BlogTermRow {
+  name: string;
+  slug: string;
+}
+
+/**
+ * The structural client the category / tag ARCHIVE lookups need (a real
+ * PrismaClient satisfies it). Kept separate from {@link BlogReader} so the list
+ * routes can pass the narrowest reader each read model actually touches.
+ */
+export interface BlogTaxonomyReader {
+  blogCategory: {
+    findFirst(args: {
+      where?: Record<string, unknown>;
+      select?: Record<string, unknown>;
+    }): Promise<BlogTermRow | null>;
+  };
+  blogPostTag: {
+    findFirst(args: {
+      where?: Record<string, unknown>;
+      select?: Record<string, unknown>;
+    }): Promise<BlogTermRow | null>;
+  };
+}
+
 /** A knowledge-hub card: the fields the list surface renders per post. */
 export interface BlogPostCard {
   slug: string;
@@ -204,4 +230,66 @@ export function postBodyToSections(body: unknown): PageSection[] {
     }
   }
   return sections;
+}
+
+// ── Category / tag ARCHIVE read models (master spec §C.14 — the /news/category
+// and /news/tag archive surfaces). Each archive first resolves the term by slug
+// (so an unknown slug 404s and its name can head the page), then lists the
+// published posts filtered to it, reusing listPublishedPosts' published-only,
+// newest-first, paginated discipline. The `page`/`pageSize` from BlogListOptions
+// still apply; category / tag on the options are ignored (the slug argument wins).
+
+/** The identifying fields an archive term (category / tag) exposes. */
+const TERM_SELECT = { name: true, slug: true } as const;
+
+/**
+ * Resolve a PUBLISHED-facing knowledge-hub category by slug, or null if none.
+ * The category itself has no draft state — a null result means the archive slug
+ * is unknown and the route should 404. RLS scopes the lookup to the tenant.
+ */
+export async function getPublishedCategoryBySlug(
+  db: BlogTaxonomyReader,
+  slug: string,
+): Promise<BlogTermRow | null> {
+  return db.blogCategory.findFirst({ where: { slug }, select: TERM_SELECT });
+}
+
+/**
+ * List the PUBLISHED posts in a category, newest-published first, one page at a
+ * time (master spec §C.14). The category slug is fixed by the archive route; any
+ * category / tag on `options` is ignored. Drafts and scheduled posts never leak
+ * (listPublishedPosts always ANDs status = published). RLS scopes the query.
+ */
+export async function listPublishedPostsByCategory(
+  db: BlogReader,
+  categorySlug: string,
+  options: BlogListOptions = {},
+): Promise<BlogListResult> {
+  const { category: _ignoredCategory, tag: _ignoredTag, ...paging } = options;
+  return listPublishedPosts(db, { ...paging, category: categorySlug });
+}
+
+/**
+ * Resolve a knowledge-hub post tag by slug, or null if none (an unknown slug
+ * 404s the tag archive). RLS scopes the lookup to the tenant.
+ */
+export async function getPublishedPostTagBySlug(
+  db: BlogTaxonomyReader,
+  slug: string,
+): Promise<BlogTermRow | null> {
+  return db.blogPostTag.findFirst({ where: { slug }, select: TERM_SELECT });
+}
+
+/**
+ * List the PUBLISHED posts carrying a tag, newest-published first, one page at a
+ * time (master spec §C.14). The tag slug is fixed by the archive route; any
+ * category / tag on `options` is ignored. Drafts never leak. RLS scopes the query.
+ */
+export async function listPublishedPostsByTag(
+  db: BlogReader,
+  tagSlug: string,
+  options: BlogListOptions = {},
+): Promise<BlogListResult> {
+  const { category: _ignoredCategory, tag: _ignoredTag, ...paging } = options;
+  return listPublishedPosts(db, { ...paging, tag: tagSlug });
 }
