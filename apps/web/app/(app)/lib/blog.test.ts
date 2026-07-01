@@ -7,6 +7,7 @@ import {
   listPublishedPosts,
   listPublishedPostsByCategory,
   listPublishedPostsByTag,
+  listPublishedPostsForSitemap,
   postBodyToSections,
   type BlogPostRow,
   type BlogReader,
@@ -278,5 +279,19 @@ describe('postBodyToSections', () => {
     expect(postBodyToSections([{ data: { x: 1 } }, null, 'nope'])).toEqual([]);
     expect(postBodyToSections(null)).toEqual([]);
     expect(postBodyToSections({ type: 'rich_text' })).toEqual([]);
+  });
+});
+
+describe('listPublishedPostsForSitemap', () => {
+  it('selects published slugs + last-modified, newest-modified first', async () => {
+    const rows = [{ slug: 'spring-market-2026', updatedAt: new Date('2026-03-02') }];
+    const findMany = vi.fn().mockResolvedValue(rows);
+    const result = await listPublishedPostsForSitemap({ blogPost: { findMany } });
+    expect(findMany).toHaveBeenCalledWith({
+      where: { status: 'published' },
+      orderBy: { updatedAt: 'desc' },
+      select: { slug: true, updatedAt: true },
+    });
+    expect(result).toEqual(rows);
   });
 });

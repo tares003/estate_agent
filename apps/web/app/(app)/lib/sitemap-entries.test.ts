@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  areaGuideSitemapEntries,
+  blogPostSitemapEntries,
   pageSitemapEntries,
   propertySitemapEntries,
   sitemapIds,
   staticSitemapEntries,
   SITEMAP_CHILD_IDS,
+  type SitemapAreaGuideEntry,
+  type SitemapBlogPostEntry,
   type SitemapPageEntry,
   type SitemapPropertyEntry,
 } from './sitemap-entries.js';
@@ -12,12 +16,18 @@ import {
 const ORIGIN = 'https://acme.test';
 
 describe('sitemapIds (FR-O-8 index)', () => {
-  it('lists the three child sitemap ids the index points at', () => {
-    expect(sitemapIds()).toEqual([{ id: 'static' }, { id: 'properties' }, { id: 'pages' }]);
+  it('lists the five child sitemap ids the index points at', () => {
+    expect(sitemapIds()).toEqual([
+      { id: 'static' },
+      { id: 'properties' },
+      { id: 'pages' },
+      { id: 'blog' },
+      { id: 'areas' },
+    ]);
   });
 
   it('exposes the same ids as a flat tuple for the route to dispatch on', () => {
-    expect(SITEMAP_CHILD_IDS).toEqual(['static', 'properties', 'pages']);
+    expect(SITEMAP_CHILD_IDS).toEqual(['static', 'properties', 'pages', 'blog', 'areas']);
   });
 });
 
@@ -37,6 +47,11 @@ describe('staticSitemapEntries', () => {
     expect(urls).toContain('https://acme.test/valuation');
     expect(urls).toContain('https://acme.test/contact');
     expect(urls).toContain('https://acme.test/report-a-repair');
+  });
+
+  it('includes the knowledge-hub and area-guide index routes', () => {
+    expect(urls).toContain('https://acme.test/news');
+    expect(urls).toContain('https://acme.test/locations');
   });
 
   it('gives the home page top priority and the catalogue a high one', () => {
@@ -111,5 +126,63 @@ describe('pageSitemapEntries', () => {
 
   it('returns an empty list for no pages', () => {
     expect(pageSitemapEntries([], ORIGIN)).toEqual([]);
+  });
+});
+
+describe('blogPostSitemapEntries', () => {
+  const posts: SitemapBlogPostEntry[] = [
+    { slug: 'first-time-buyer-guide', updatedAt: new Date('2026-04-05') },
+    { slug: 'autumn-market-review', updatedAt: new Date('2026-05-06') },
+  ];
+
+  it('builds one weekly, priority-0.6 entry per published post under /news with last-modified', () => {
+    const entries = blogPostSitemapEntries(posts, ORIGIN);
+    expect(entries).toEqual([
+      {
+        url: 'https://acme.test/news/first-time-buyer-guide',
+        lastModified: new Date('2026-04-05'),
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      },
+      {
+        url: 'https://acme.test/news/autumn-market-review',
+        lastModified: new Date('2026-05-06'),
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      },
+    ]);
+  });
+
+  it('returns an empty list for no posts', () => {
+    expect(blogPostSitemapEntries([], ORIGIN)).toEqual([]);
+  });
+});
+
+describe('areaGuideSitemapEntries', () => {
+  const guides: SitemapAreaGuideEntry[] = [
+    { slug: 'didsbury', updatedAt: new Date('2026-06-07') },
+    { slug: 'chorlton', updatedAt: new Date('2026-06-08') },
+  ];
+
+  it('builds one weekly, priority-0.7 entry per published guide under /locations with last-modified', () => {
+    const entries = areaGuideSitemapEntries(guides, ORIGIN);
+    expect(entries).toEqual([
+      {
+        url: 'https://acme.test/locations/didsbury',
+        lastModified: new Date('2026-06-07'),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      },
+      {
+        url: 'https://acme.test/locations/chorlton',
+        lastModified: new Date('2026-06-08'),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      },
+    ]);
+  });
+
+  it('returns an empty list for no guides', () => {
+    expect(areaGuideSitemapEntries([], ORIGIN)).toEqual([]);
   });
 });

@@ -186,3 +186,30 @@ export async function listPropertiesForArea(
 
   return rows.map((row) => ({ id: row.id, ...toCardProps(row) }));
 }
+
+// ── Sitemap read model (EPIC-O FR-O-8 — the `/locations/[slug]` child sitemap).
+// The narrowest reader the sitemap touches (slug + last-modified per published
+// guide), mirroring properties.ts' listPropertiesForSitemap. Published-only
+// (drafts never appear); RLS scopes it in the route via withTenant.
+
+/** Minimal reader for the sitemap (slug + last-modified per published guide). */
+export interface AreaGuideSitemapReader {
+  areaGuide: {
+    findMany(args: {
+      where?: Record<string, unknown>;
+      orderBy?: unknown;
+      select?: Record<string, boolean>;
+    }): Promise<Array<{ slug: string; updatedAt: Date }>>;
+  };
+}
+
+/** Published area guides for the sitemap (FR-O-8), newest-modified first. */
+export async function listAreaGuidesForSitemap(
+  db: AreaGuideSitemapReader,
+): Promise<Array<{ slug: string; updatedAt: Date }>> {
+  return db.areaGuide.findMany({
+    where: { status: 'published' },
+    orderBy: { updatedAt: 'desc' },
+    select: { slug: true, updatedAt: true },
+  });
+}
