@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   BLOG_PAGE_SIZE,
+  getPublishedCategoryBySlug,
   getPublishedPostBySlug,
+  getPublishedPostTagBySlug,
   listPublishedPosts,
+  listPublishedPostsByCategory,
+  listPublishedPostsByTag,
   postBodyToSections,
   type BlogPostRow,
   type BlogReader,
+  type BlogTaxonomyReader,
+  type BlogTermRow,
 } from './blog.js';
 
 const row: BlogPostRow = {
@@ -128,6 +134,131 @@ describe('getPublishedPostBySlug', () => {
     const { db } = makeReader([]);
 
     expect(await getPublishedPostBySlug(db, 'ghost')).toBeNull();
+  });
+});
+
+/** A structural taxonomy reader backed by vi fns, returning the supplied terms. */
+function makeTaxonomyReader(category: BlogTermRow | null, tag: BlogTermRow | null) {
+  const categoryFindFirst = vi.fn().mockResolvedValue(category);
+  const tagFindFirst = vi.fn().mockResolvedValue(tag);
+  const db: BlogTaxonomyReader = {
+    blogCategory: { findFirst: categoryFindFirst },
+    blogPostTag: { findFirst: tagFindFirst },
+  };
+  return { db, categoryFindFirst, tagFindFirst };
+}
+
+describe('getPublishedCategoryBySlug', () => {
+  it('resolves the category term by slug (name + slug for the heading)', async () => {
+    const { db, categoryFindFirst } = makeTaxonomyReader(
+      { name: 'Market insight', slug: 'market-insight' },
+      null,
+    );
+
+    const term = await getPublishedCategoryBySlug(db, 'market-insight');
+
+    expect(categoryFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { slug: 'market-insight' } }),
+    );
+    expect(term).toEqual({ name: 'Market insight', slug: 'market-insight' });
+  });
+
+  it('returns null for an unknown category slug (the archive 404s)', async () => {
+    const { db } = makeTaxonomyReader(null, null);
+    expect(await getPublishedCategoryBySlug(db, 'ghost')).toBeNull();
+  });
+});
+
+describe('getPublishedPostTagBySlug', () => {
+  it('resolves the tag term by slug', async () => {
+    const { db, tagFindFirst } = makeTaxonomyReader(null, { name: 'Sales', slug: 'sales' });
+
+    const term = await getPublishedPostTagBySlug(db, 'sales');
+
+    expect(tagFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { slug: 'sales' } }),
+    );
+    expect(term).toEqual({ name: 'Sales', slug: 'sales' });
+  });
+
+  it('returns null for an unknown tag slug (the archive 404s)', async () => {
+    const { db } = makeTaxonomyReader(null, null);
+    expect(await getPublishedPostTagBySlug(db, 'ghost')).toBeNull();
+  });
+});
+
+describe('listPublishedPostsByCategory', () => {
+  it('lists published posts filtered to the category slug, newest-first, paginated', async () => {
+    const { db, findMany, count } = makeReader([row], 1);
+
+    const result = await listPublishedPostsByCategory(db, 'market-insight', {
+      page: 2,
+      pageSize: 9,
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'published', category: { slug: 'market-insight' } },
+        orderBy: { publishedAt: 'desc' },
+        skip: 9,
+        take: 9,
+      }),
+    );
+    expect(count).toHaveBeenCalledWith({
+      where: { status: 'published', category: { slug: 'market-insight' } },
+    });
+    expect(result).toMatchObject({ total: 1, page: 2, pageSize: 9 });
+  });
+
+  it('ignores any category / tag on the options — the slug argument wins', async () => {
+    const { db, findMany } = makeReader([row], 1);
+
+    await listPublishedPostsByCategory(db, 'market-insight', {
+      category: 'other',
+      tag: 'sales',
+    });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'published', category: { slug: 'market-insight' } },
+      }),
+    );
+  });
+
+  it('reports an empty page (still one page) when the category has no posts', async () => {
+    const { db } = makeReader([], 0);
+
+    const result = await listPublishedPostsByCategory(db, 'market-insight');
+
+    expect(result.items).toHaveLength(0);
+    expect(result.totalPages).toBe(1);
+  });
+});
+
+describe('listPublishedPostsByTag', () => {
+  it('lists published posts filtered to the tag slug via a some-relation predicate', async () => {
+    const { db, findMany } = makeReader([row], 1);
+
+    await listPublishedPostsByTag(db, 'sales', { page: 1 });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+        orderBy: { publishedAt: 'desc' },
+      }),
+    );
+  });
+
+  it('ignores any category / tag on the options — the slug argument wins', async () => {
+    const { db, findMany } = makeReader([row], 1);
+
+    await listPublishedPostsByTag(db, 'sales', { category: 'market-insight', tag: 'other' });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+      }),
+    );
   });
 });
 
