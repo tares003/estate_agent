@@ -51,6 +51,9 @@ export function AdminPropertiesTable({ result }: { result: AdminPropertyResult }
                   {heading}
                 </th>
               ))}
+              <th scope="col" className="py-2">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -82,12 +85,21 @@ export function AdminPropertiesTable({ result }: { result: AdminPropertyResult }
                     </span>
                   </td>
                   <td className="t-body-md py-3 pr-4">{humanise(property.marketStatus)}</td>
-                  <td className="py-3">
+                  <td className="py-3 pr-4">
                     {property.publishedAt ? (
                       <Badge tone="success">Published</Badge>
                     ) : (
                       <Badge tone="neutral">Draft</Badge>
                     )}
+                  </td>
+                  <td className="py-3 text-right">
+                    <Link
+                      href={`/admin/properties/${property.id}/edit`}
+                      className="t-body-sm text-brand-primary"
+                      aria-label={`Edit ${property.displayAddress}`}
+                    >
+                      Edit
+                    </Link>
                   </td>
                 </tr>
               );

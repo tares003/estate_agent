@@ -39,6 +39,10 @@ describe('AdminPropertiesPage', () => {
   it('renders the heading + a draft listing from the tenant-scoped read (drafts included)', async () => {
     render(await AdminPropertiesPage(params({})));
     expect(screen.getByRole('heading', { level: 1, name: 'Properties' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'New property' })).toHaveAttribute(
+      'href',
+      '/admin/properties/new',
+    );
     const table = within(screen.getByRole('table'));
     expect(table.getByText('Palatine Road, Didsbury')).toBeInTheDocument();
     expect(table.getByText('Draft')).toBeInTheDocument();
