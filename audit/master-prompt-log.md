@@ -2420,3 +2420,20 @@ Merge handling: #117 + #115 disjoint; #116 (schema + validators barrel); #118 (v
 The saved-search loop is now end-to-end (save → cadence → digest of new matches); customers can manage their profile; the area-guide hub + per-entity SEO overrides are in. Genuinely-remaining buildable work now needs a foundation that isn't built (a property admin create/edit path → unblocks FR-O-12 auto-301 + EPIC-X bulk import) or the auth runtime env-activated; the portals (Y/Z/AA) + operator admin (AB) need design decisions. Flagged to the user as the next fork.
 
 ---
+
+## Phase — property write path + completions via Workflow, AND a real CI fix uncovered (2026-06-25)
+
+A 4-unit Workflow built the property admin WRITE keystone + three disjoint completions:
+
+- **#123 EPIC-F/O — property create/update actions + FR-O-12 auto-301** (the logic keystone). `propertyCreateSchema` + `propertyWriteUpdateSchema` over the coherent core §J/FR-F-1 field set (enums mirrored from Prisma) + deterministic slugify; audited `createProperty` (RBAC `property.write`, unique-slug-per-tenant, audit) and `updateProperty` (on slug change, creates a managed **301 Redirect** from the old /properties/<slug> to the new — FR-O-12 — auditing BOTH in one tenant tx, G4). DB-free injected-reader tests. The admin edit FORM UI + the per-vertical extension fields (FR-F-3) are the noted follow-ons; this is the tested action layer that unblocks bulk import + auto-redirects.
+- **#122 EPIC-O — SEO override wiring**. A pure `applySeoOverride(base, override)` merge applied in generateMetadata on /properties/[slug], /news/[slug], /locations/[slug] + the CMS `/[...slug]` route (tenant-wide default), so a per-entity override wins (title/description/canonical/OG/robots). (Per-CMS-page overrides need a UUID page key — Payload uses integer ids — noted as a follow-on.)
+- **#121 EPIC-C — /news category + tag archive pages** (C.14). Four new blog read models + /news/category/[slug] + /news/tag/[slug] with a shared PostCardGrid, 404 on unknown term, published-only.
+- **#120 EPIC-T — /account dashboard** landing tying saved/searches/viewings/profile together with counts, gated via the customer-session seam.
+
+**A genuine CI bug uncovered (and fixed):** #123's PR CI failed — and when I actually inspected `gh pr checks`/`gh run --log-failed` (rather than trusting the build agent's local-only gate), the failure was `@estate/db#typecheck: @prisma/client has no exported member PlatformTenant/User/…`. Root cause: **`prisma generate` was never wired into `.github/workflows/ci.yml`** — the generated client lives in node_modules (not committed), so CI's typecheck (and any test importing it) had been failing on EVERY PR. This is exactly what the earlier verify agents kept flagging as a "typecheck failure" — I had been dismissing it as a false alarm because my LOCAL gate runs `db:generate` first. Fixed by adding a `Generate Prisma client` step (pnpm --filter @estate/db run db:generate) right after `pnpm install`, before format:check/typecheck/test. Lesson recorded: verify a PR's ACTUAL CI status, not just a local gate — the two diverged for a real reason.
+
+#123's code itself is sound (integrated `tsc` on main, with the client generated, is clean). Merge handling: #120/#121/#122 disjoint (auto-merged), then #123 (validators barrel; auto-merged). Integrated gate on main (client generated): repo-wide `tsc` clean; **validators 334, web 1191**; format:check green; lint clean; guards green. With the CI fix, the static-gates job goes green for real for the first time.
+
+Property admin now has a tested write path (create/update + auto-301); SEO overrides apply to page metadata; the knowledge hub has category/tag archives; the account dashboard ties the customer area together. Next: the property admin edit FORM (fast follow on #123), then EPIC-X bulk import (can now call createProperty) + instant saved-search alerts. Still needs the user: auth-runtime env activation; portal/operator design decisions.
+
+---
