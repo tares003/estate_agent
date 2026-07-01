@@ -12,6 +12,7 @@ import {
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { insertPropertyRow, type PropertyCreateClient } from '../actions.js';
 import { formatRowError, parsePropertyImportCsv, type RowError } from './csv-import-core.js';
+import { readImportCsv } from './read-csv.js';
 
 // EPIC-X FR-X-1 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
 //
@@ -33,9 +34,6 @@ import { formatRowError, parsePropertyImportCsv, type RowError } from './csv-imp
 
 /** The import source identifier stored on the `import_logs` row (schema doc: "csv_upload"). */
 const IMPORT_SOURCE = 'csv_upload';
-
-/** Max upload size accepted inline (larger catalogues use scheduled feeds — FR-X-7). */
-export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 
 /** The `import_logs` write surface this action needs (a Prisma tx satisfies it). */
 interface ImportLogClient extends PropertyCreateClient {
@@ -69,22 +67,6 @@ function deny(message: string): ImportActionState {
   return { ok: false, errors: [{ message }] };
 }
 
-/** Read the uploaded CSV file from the submission, or null when absent/oversized/wrong-type. */
-async function readCsv(formData: FormData): Promise<{ text: string } | { error: string }> {
-  const file = formData.get('file');
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: 'Choose a CSV file to import.' };
-  }
-  if (file.size > IMPORT_MAX_BYTES) {
-    return { error: 'The file is larger than 5 MB. Use a scheduled feed for larger imports.' };
-  }
-  const name = file.name.toLowerCase();
-  if (!name.endsWith('.csv') && file.type !== 'text/csv') {
-    return { error: 'The file must be a .csv file.' };
-  }
-  return { text: await file.text() };
-}
-
 /** Build the stored + displayed error summary lines from the failed rows. */
 function summariseErrors(rowErrors: RowError[]): string[] {
   return rowErrors.map(formatRowError);
@@ -101,7 +83,7 @@ export async function importPropertiesFromCsv(
     return deny('You do not have permission to import listings.');
   }
 
-  const upload = await readCsv(formData);
+  const upload = await readImportCsv(formData);
   if ('error' in upload) {
     return deny(upload.error);
   }

@@ -36,8 +36,18 @@ const CLEAN_PREVIEW: ImportPreviewState = {
   preview: {
     counts: { input: 2, valid: 2, invalid: 0 },
     sample: [
-      { reference: 'REF-001', displayAddress: '12 Acacia Ave', price: null, listingType: 'residential' },
-      { reference: 'REF-002', displayAddress: '14 Acacia Ave', price: null, listingType: 'residential' },
+      {
+        reference: 'REF-001',
+        displayAddress: '12 Acacia Ave',
+        price: null,
+        listingType: 'residential',
+      },
+      {
+        reference: 'REF-002',
+        displayAddress: '14 Acacia Ave',
+        price: null,
+        listingType: 'residential',
+      },
     ],
     errors: [],
     recognisedColumns: ['reference', 'postcode'],
@@ -69,8 +79,8 @@ describe('PropertyImportForm', () => {
   it('shows the dry-run preview counts and a sample after a preview', () => {
     previewState = CLEAN_PREVIEW;
     render(<PropertyImportForm />);
-    // A clear "preview / dry run" heading distinguishes it from a completed import.
-    expect(screen.getByText(/preview/i)).toBeTruthy();
+    // A clear "dry-run preview" heading distinguishes it from a completed import.
+    expect(screen.getByRole('heading', { name: /dry-run preview/i })).toBeTruthy();
     const counts = screen.getByLabelText(/preview counts/i);
     expect(counts.textContent).toContain('2'); // valid
     // The mapped sample surfaces the first records' references.
