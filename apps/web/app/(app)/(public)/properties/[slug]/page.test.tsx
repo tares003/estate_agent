@@ -12,9 +12,14 @@ vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findFirst = vi.fn();
 const imageFindMany = vi.fn();
+const seoFindFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
-    fn({ property: { findFirst }, propertyImage: { findMany: imageFindMany } }),
+    fn({
+      property: { findFirst },
+      propertyImage: { findMany: imageFindMany },
+      seoMetadata: { findFirst: seoFindFirst },
+    }),
 }));
 vi.mock('../../../lib/storage.js', () => ({
   signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
@@ -52,6 +57,7 @@ const saleRow = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  seoFindFirst.mockResolvedValue(null);
   imageFindMany.mockResolvedValue([
     {
       id: 'i1',
@@ -175,6 +181,51 @@ describe('PropertyDetailPage', () => {
       findFirst.mockResolvedValue(null);
       const meta = await generateMetadata({ params: Promise.resolve({ slug: 'ghost' }) });
       expect(meta.title).toBe('Property not found');
+    });
+
+    it('applies a per-property SEO override over the defaults (FR-O-4)', async () => {
+      findFirst.mockResolvedValue(saleRow);
+      seoFindFirst.mockResolvedValue({
+        id: 's1',
+        scope: 'property',
+        scopeId: saleRow.id,
+        metaTitle: 'Curated headline',
+        metaDescription: 'Curated description.',
+        canonicalUrl: 'https://acme.test/canonical/palatine',
+        ogImage: 'https://acme.test/social/palatine.jpg',
+        noIndex: true,
+        noFollow: false,
+        structuredData: null,
+      });
+
+      const meta = await generateMetadata({
+        params: Promise.resolve({ slug: 'palatine-road-m20' }),
+      });
+
+      // The resolve keys on the property scope + id, tenant-scoped via withTenant.
+      expect(seoFindFirst).toHaveBeenCalledWith({
+        where: { scope: 'property', scopeId: saleRow.id },
+      });
+      expect(meta.title).toBe('Curated headline');
+      expect(meta.description).toBe('Curated description.');
+      expect(meta.alternates?.canonical).toBe('https://acme.test/canonical/palatine');
+      expect((meta.openGraph as { images?: unknown[] }).images).toEqual([
+        'https://acme.test/social/palatine.jpg',
+      ]);
+      expect(meta.robots).toEqual({ index: false, follow: true });
+    });
+
+    it('keeps the defaults when no override resolves', async () => {
+      findFirst.mockResolvedValue(saleRow);
+      seoFindFirst.mockResolvedValue(null);
+
+      const meta = await generateMetadata({
+        params: Promise.resolve({ slug: 'palatine-road-m20' }),
+      });
+
+      expect(meta.title).toBe('Edwardian semi · 4 bed');
+      expect(meta.alternates?.canonical).toBe('https://acme.test/properties/palatine-road-m20');
+      expect(meta.robots).toBeUndefined();
     });
   });
 });

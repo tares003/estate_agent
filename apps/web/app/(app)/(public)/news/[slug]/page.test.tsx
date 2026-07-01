@@ -12,9 +12,10 @@ vi.mock('../../../lib/tenant.js', () => ({
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findFirst = vi.fn();
+const seoFindFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
-    fn({ blogPost: { findFirst } }),
+    fn({ blogPost: { findFirst }, seoMetadata: { findFirst: seoFindFirst } }),
 }));
 
 const notFound = vi.fn(() => {
@@ -49,6 +50,7 @@ const post = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  seoFindFirst.mockResolvedValue(null);
 });
 
 describe('NewsArticlePage', () => {
@@ -129,6 +131,37 @@ describe('NewsArticlePage', () => {
       findFirst.mockResolvedValue(null);
       const meta = await generateMetadata({ params: Promise.resolve({ slug: 'ghost' }) });
       expect(meta.title).toBe('Article not found');
+    });
+
+    it('applies a per-post SEO override over the defaults (FR-O-4)', async () => {
+      findFirst.mockResolvedValue(post);
+      seoFindFirst.mockResolvedValue({
+        id: 's1',
+        scope: 'blog_post',
+        scopeId: post.id,
+        metaTitle: 'Override headline',
+        metaDescription: 'Override snippet.',
+        canonicalUrl: 'https://acme.test/canonical/spring',
+        ogImage: 'https://acme.test/social/spring.jpg',
+        noIndex: false,
+        noFollow: true,
+        structuredData: null,
+      });
+
+      const meta = await generateMetadata({
+        params: Promise.resolve({ slug: 'spring-market-2026' }),
+      });
+
+      expect(seoFindFirst).toHaveBeenCalledWith({
+        where: { scope: 'blog_post', scopeId: post.id },
+      });
+      expect(meta.title).toBe('Override headline');
+      expect(meta.description).toBe('Override snippet.');
+      expect(meta.alternates?.canonical).toBe('https://acme.test/canonical/spring');
+      expect((meta.openGraph as { images?: unknown[] }).images).toEqual([
+        'https://acme.test/social/spring.jpg',
+      ]);
+      expect(meta.robots).toEqual({ index: true, follow: false });
     });
   });
 });

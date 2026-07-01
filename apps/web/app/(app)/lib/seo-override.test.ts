@@ -18,7 +18,11 @@ const BASE: Metadata = {
     url: 'https://acme.test/properties/palatine-road-m20',
     type: 'website',
   },
-  twitter: { card: 'summary_large_image', title: 'Default title', description: 'Default description' },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Default title',
+    description: 'Default description',
+  },
 };
 
 function override(over: Partial<SeoOverride> = {}): SeoOverride {
@@ -78,16 +82,11 @@ describe('applySeoOverride', () => {
 
   it('keeps the default canonical when the override omits it', () => {
     const meta = applySeoOverride(BASE, override({ metaTitle: 'X' }));
-    expect(meta.alternates?.canonical).toBe(
-      'https://acme.test/properties/palatine-road-m20',
-    );
+    expect(meta.alternates?.canonical).toBe('https://acme.test/properties/palatine-road-m20');
   });
 
   it('sets the OG + Twitter image from the override ogImage', () => {
-    const meta = applySeoOverride(
-      BASE,
-      override({ ogImage: 'https://acme.test/social/hero.jpg' }),
-    );
+    const meta = applySeoOverride(BASE, override({ ogImage: 'https://acme.test/social/hero.jpg' }));
     expect((meta.openGraph as { images?: unknown[] }).images).toEqual([
       'https://acme.test/social/hero.jpg',
     ]);
@@ -139,7 +138,9 @@ describe('applySeoOverride', () => {
     expect(meta.title).toBe('All override');
     expect(meta.description).toBe('All description');
     expect(meta.alternates?.canonical).toBe('https://acme.test/all');
-    expect((meta.openGraph as { images?: unknown[] }).images).toEqual(['https://acme.test/all.jpg']);
+    expect((meta.openGraph as { images?: unknown[] }).images).toEqual([
+      'https://acme.test/all.jpg',
+    ]);
     expect(meta.robots).toEqual({ index: false, follow: true });
   });
 });

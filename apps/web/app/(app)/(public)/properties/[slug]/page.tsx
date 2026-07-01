@@ -17,6 +17,8 @@ import {
 import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
 import { breadcrumbJsonLd, propertyListingJsonLd, truncate } from '../../../lib/seo.js';
+import { resolveSeoMetadata, type SeoMetadataReader } from '../../../lib/seo-metadata.js';
+import { applySeoOverride } from '../../../lib/seo-override.js';
 import { EnquiryForm } from './EnquiryForm.js';
 
 export const dynamic = 'force-dynamic';
@@ -58,13 +60,21 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
     160,
   );
 
-  return {
+  const base: Metadata = {
     title,
     description,
     alternates: { canonical: url },
     openGraph: { title, description, url, type: 'website' },
     twitter: { card: 'summary_large_image', title, description },
   };
+
+  // EPIC-O FR-O-4 — a per-entity (else tenant-wide default) SEO override wins over
+  // the page default when present; the resolve runs tenant-scoped (RLS) via withTenant.
+  const tenantId = await getCurrentTenantId();
+  const override = await withTenant(getDb(), tenantId, (tx) =>
+    resolveSeoMetadata(tx as unknown as SeoMetadataReader, 'property', property.id),
+  );
+  return applySeoOverride(base, override);
 }
 
 /** One key fact rendered in the spec list, when the value is present. */

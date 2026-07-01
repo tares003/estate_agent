@@ -11,6 +11,8 @@ import {
 } from '../../../lib/blog.js';
 import { getDb } from '../../../lib/db.js';
 import { blogPostingJsonLd, breadcrumbJsonLd, truncate } from '../../../lib/seo.js';
+import { resolveSeoMetadata, type SeoMetadataReader } from '../../../lib/seo-metadata.js';
+import { applySeoOverride } from '../../../lib/seo-override.js';
 import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
 import { formatPublishedDate, toNewsQuery } from '../search-params.js';
 
@@ -42,7 +44,7 @@ export async function generateMetadata({ params }: NewsArticlePageProps): Promis
   const title = truncate(post.metaTitle ?? post.title, 60);
   const description = truncate(post.metaDescription ?? post.excerpt ?? post.title, 160);
 
-  return {
+  const base: Metadata = {
     title,
     description,
     alternates: { canonical: url },
@@ -55,6 +57,14 @@ export async function generateMetadata({ params }: NewsArticlePageProps): Promis
     },
     twitter: { card: 'summary_large_image', title, description },
   };
+
+  // EPIC-O FR-O-4 — a per-entity (else tenant-wide default) SEO override wins over
+  // the page default when present; the resolve runs tenant-scoped (RLS) via withTenant.
+  const tenantId = await getCurrentTenantId();
+  const override = await withTenant(getDb(), tenantId, (tx) =>
+    resolveSeoMetadata(tx as unknown as SeoMetadataReader, 'blog_post', post.id),
+  );
+  return applySeoOverride(base, override);
 }
 
 /**
