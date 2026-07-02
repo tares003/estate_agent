@@ -2,28 +2,43 @@
 
 import { useActionState, useState } from 'react';
 import { Badge, Button, FormError, FormSuccess } from '@estate/ui';
+import type { ColumnMapping } from '@estate/validators';
 
 import { importPropertiesFromCsv, type ImportActionState } from './actions.js';
 import { previewPropertyImport, type ImportPreviewState } from './preview-action.js';
 import { IMPORT_COLUMNS } from './csv-import-core.js';
+import { ColumnMappingEditor } from './ColumnMappingEditor.js';
 
-// EPIC-X FR-X-1 / FR-X-2 — the admin CSV bulk-import form with a DRY-RUN preview step.
+// EPIC-X FR-X-1 / FR-X-2 / FR-X-3 — the admin CSV bulk-import form with a DRY-RUN preview
+// AND a column-mapping step.
 //
 // The admin never creates listings on the first click. The primary action posts the
 // upload to the dry-run `previewPropertyImport` action (which writes NOTHING) and the
 // form shows the outcome: total records detected, valid / invalid counts, a sample of
 // the first records mapped to canonical attributes, and the per-row validation errors.
-// Only when the admin presses "Confirm and import" does the SAME file post to the
-// audited `importPropertiesFromCsv` action, which creates the properties and records the
-// run. "Cancel" discards the preview and returns to the upload step.
+// The preview also AUTO-DETECTS a CRM preset from the file's headers (FR-X-3); the admin
+// can accept it or adjust the mapping in the `ColumnMappingEditor`, then re-preview. The
+// chosen mapping travels with the file (a hidden `mapping` JSON field) to BOTH the preview
+// and the audited import, so the confirmed run parses identically to what was previewed.
+// Only when the admin presses "Confirm and import" does the SAME file + mapping post to
+// the audited `importPropertiesFromCsv` action. "Cancel" discards the preview.
 //
-// Both submissions share one hidden file input inside one form: the primary submit
-// button triggers the preview action, the confirm button (a `formAction` override)
-// triggers the real import — so the file is submitted once, previewed, then committed
-// without re-selecting it. Token-driven classes only (G7).
+// All submissions share one file input inside one form: the primary submit button
+// triggers the preview action, the confirm button (a `formAction` override) triggers the
+// real import — so the file is submitted once, mapped, previewed, then committed without
+// re-selecting it. Token-driven classes only (G7).
 
 const INITIAL_PREVIEW_STATE: ImportPreviewState = { ok: false };
 const INITIAL_IMPORT_STATE: ImportActionState = { ok: false };
+
+/** Friendly CRM names for the detected-preset notice (mirrors the editor's labels). */
+const PRESET_LABELS: Record<string, string> = {
+  reapit: 'Reapit',
+  alto: 'Alto',
+  jupix: 'Jupix',
+  vebra: 'Vebra',
+  rex: 'Rex',
+};
 
 export function PropertyImportForm() {
   const [previewState, previewAction, previewPending] = useActionState(
@@ -37,14 +52,27 @@ export function PropertyImportForm() {
 
   // Lets the admin dismiss a shown preview and start over without a completed import.
   const [cancelled, setCancelled] = useState(false);
+  // The admin's chosen column mapping (preset or hand-mapped). Serialised into a hidden
+  // field so it travels with the file to both the preview and the import actions (FR-X-3).
+  const [mapping, setMapping] = useState<ColumnMapping>({});
 
   const preview = previewState.ok ? previewState.preview : undefined;
   const showPreview = preview !== undefined && !cancelled && !importState.ok;
+  const detectedPreset = preview?.detectedPreset ?? null;
+  // The source headers the mapping editor works over: recognised targets plus the ignored
+  // source headers reconstruct the file's header row for mapping.
+  const sourceColumns = preview
+    ? [...preview.recognisedColumns, ...preview.ignoredColumns]
+    : [];
 
   return (
     <form action={previewAction} className="flex max-w-[46rem] flex-col gap-6">
       <FormError errors={previewState.errors ?? []} />
       <FormError errors={importState.errors ?? []} />
+
+      {/* The chosen column mapping travels with the file to both actions (FR-X-3). */}
+      <input type="hidden" name="mapping" value={JSON.stringify(mapping)} />
+
 
       <div className="flex flex-col gap-2">
         <label htmlFor="import-file" className="t-body-md font-semibold">
@@ -94,9 +122,27 @@ export function PropertyImportForm() {
             Dry-run preview
           </h2>
           <p className="t-body-sm text-text-secondary max-w-[60ch]">
-            Nothing has been created yet. Check the counts and the sample below, then confirm to
-            import.
+            Nothing has been created yet. Check the counts and the sample below, adjust the column
+            mapping if needed, then confirm to import.
           </p>
+
+          {detectedPreset !== null ? (
+            <p className="t-body-sm text-text-secondary">
+              Detected a{' '}
+              <span className="font-semibold">{PRESET_LABELS[detectedPreset] ?? detectedPreset}</span>{' '}
+              export — the matching preset has been suggested below. Adjust it if anything looks
+              wrong, then re-preview.
+            </p>
+          ) : null}
+
+          {sourceColumns.length > 0 ? (
+            <ColumnMappingEditor
+              detectedColumns={sourceColumns}
+              mapping={mapping}
+              onMappingChange={setMapping}
+            />
+          ) : null}
+
           <dl className="flex flex-wrap items-center gap-3" aria-label="Preview counts">
             <div className="flex items-center gap-2">
               <dt className="t-body-sm text-text-secondary">Records detected</dt>
