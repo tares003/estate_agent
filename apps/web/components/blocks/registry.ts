@@ -7,6 +7,10 @@ import { FaqBlock, faqBlockSchema } from './FaqBlock.js';
 import { ThreePillarBlock, threePillarBlockSchema } from './ThreePillarBlock.js';
 import { StatsRowBlock, statsRowBlockSchema } from './StatsRowBlock.js';
 import { TestimonialsBlock, testimonialsBlockSchema } from './TestimonialsBlock.js';
+import {
+  TestimonialsBlockDataDriven,
+  testimonialsDataDrivenBlockSchema,
+} from './TestimonialsBlockDataDriven.js';
 import { TwoColumnBlock, twoColumnBlockSchema } from './TwoColumnBlock.js';
 import { PropertyGridBlock } from './PropertyGridBlock.js';
 import { propertyGridBlockSchema } from './property-grid-options.js';
@@ -42,6 +46,10 @@ export const BLOCK_REGISTRY: Readonly<Record<string, RegisteredBlock>> = {
   three_pillar: defineBlock(threePillarBlockSchema, ThreePillarBlock),
   stats_row: defineBlock(statsRowBlockSchema, StatsRowBlock),
   testimonials: defineBlock(testimonialsBlockSchema, TestimonialsBlock),
+  testimonials_feedback: defineBlock(
+    testimonialsDataDrivenBlockSchema,
+    TestimonialsBlockDataDriven,
+  ),
   two_column: defineBlock(twoColumnBlockSchema, TwoColumnBlock),
   property_grid: defineBlock(propertyGridBlockSchema, PropertyGridBlock),
 };

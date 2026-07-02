@@ -10,6 +10,7 @@ import { heroBlockSchema } from '../../components/blocks/HeroBlock.js';
 import { propertyGridBlockSchema } from '../../components/blocks/property-grid-options.js';
 import { statsRowBlockSchema } from '../../components/blocks/StatsRowBlock.js';
 import { testimonialsBlockSchema } from '../../components/blocks/TestimonialsBlock.js';
+import { testimonialsDataDrivenBlockSchema } from '../../components/blocks/TestimonialsBlockDataDriven.js';
 import { threePillarBlockSchema } from '../../components/blocks/ThreePillarBlock.js';
 import { twoColumnBlockSchema } from '../../components/blocks/TwoColumnBlock.js';
 import { BLOCK_REGISTRY } from '../../components/blocks/registry.js';
@@ -23,6 +24,7 @@ import { propertyGridBlock } from './propertyGrid.js';
 import { richTextBlock } from './richText.js';
 import { statsRowBlock } from './statsRow.js';
 import { testimonialsBlock } from './testimonials.js';
+import { testimonialsFeedbackBlock } from './testimonialsFeedback.js';
 import { threePillarBlock } from './threePillar.js';
 import { twoColumnBlock } from './twoColumn.js';
 
@@ -47,6 +49,13 @@ const DIRECT: { block: Block; schema: { shape: Record<string, ZodTypeAny> }; typ
   { block: threePillarBlock, schema: threePillarBlockSchema, type: 'three_pillar' },
   { block: statsRowBlock, schema: statsRowBlockSchema, type: 'stats_row' },
   { block: testimonialsBlock, schema: testimonialsBlockSchema, type: 'testimonials' },
+  // testimonials_feedback stores DISPLAY config; the renderer fetches published
+  // feedback. The config still mirrors the Payload fields 1:1 (parity contract).
+  {
+    block: testimonialsFeedbackBlock,
+    schema: testimonialsDataDrivenBlockSchema,
+    type: 'testimonials_feedback',
+  },
   { block: twoColumnBlock, schema: twoColumnBlockSchema, type: 'two_column' },
   // property_grid's data is filter CONFIG; the renderer fetches. The config still
   // mirrors the Payload fields 1:1, so it belongs in the parity contract.

@@ -14,6 +14,7 @@ export default defineConfig({
       'app/**/*.test.{ts,tsx}',
       'components/**/*.test.{ts,tsx}',
       'payload/**/*.test.{ts,tsx}',
+      '__tests__/**/*.test.{ts,tsx}',
       'proxy.test.{ts,tsx}',
       'security-headers.test.{ts,tsx}',
       'tenant-host.test.{ts,tsx}',
