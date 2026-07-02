@@ -52,6 +52,20 @@ const CLEAN_PREVIEW: ImportPreviewState = {
     errors: [],
     recognisedColumns: ['reference', 'postcode'],
     ignoredColumns: [],
+    detectedPreset: null,
+  },
+};
+
+/** A preview whose upload was recognised as a Reapit export (a CRM was detected). */
+const REAPIT_PREVIEW: ImportPreviewState = {
+  ok: true,
+  preview: {
+    counts: { input: 1, valid: 0, invalid: 1 },
+    sample: [],
+    errors: ['Row 1 — postcode: Enter a valid UK postcode.'],
+    recognisedColumns: [],
+    ignoredColumns: ['Agency Reference', 'Postcode', 'Property Type', 'Sale/Let', 'Display Address'],
+    detectedPreset: 'reapit',
   },
 };
 
@@ -104,6 +118,7 @@ describe('PropertyImportForm', () => {
         errors: ['Row 1 — postcode: Enter a valid UK postcode.'],
         recognisedColumns: ['reference'],
         ignoredColumns: [],
+        detectedPreset: null,
       },
     };
     render(<PropertyImportForm />);
@@ -140,6 +155,32 @@ describe('PropertyImportForm', () => {
     const counts = screen.getByLabelText(/import counts/i);
     expect(counts.textContent).toContain('2'); // created
     expect(counts.textContent).toContain('1'); // failed
+  });
+
+  it('shows the column-mapping editor once a preview is available (FR-X-3)', () => {
+    previewState = CLEAN_PREVIEW;
+    render(<PropertyImportForm />);
+    // The mapping editor lets the admin adjust the mapping and re-preview.
+    expect(screen.getByRole('heading', { name: /map your columns/i })).toBeTruthy();
+    // A re-preview action is offered so a changed mapping can be validated again.
+    expect(screen.getByRole('button', { name: /re-?preview|preview import/i })).toBeTruthy();
+  });
+
+  it('announces the auto-detected CRM preset (FR-X-3)', () => {
+    previewState = REAPIT_PREVIEW;
+    render(<PropertyImportForm />);
+    // The detected preset is surfaced to the admin in a "Detected a … export" notice.
+    expect(screen.getByText(/detected a/i)).toBeTruthy();
+    expect(screen.getByText(/detected a/i).textContent?.toLowerCase()).toContain('reapit');
+  });
+
+  it('carries the chosen mapping to the actions via a hidden field (FR-X-3)', () => {
+    previewState = CLEAN_PREVIEW;
+    const { container } = render(<PropertyImportForm />);
+    // A hidden `mapping` input travels with the file to both the preview and import
+    // actions, so the confirmed run parses identically to the preview.
+    const hidden = container.querySelector('input[name="mapping"]');
+    expect(hidden).not.toBeNull();
   });
 
   it('lists the per-row error summary after a confirmed run with failures', () => {
