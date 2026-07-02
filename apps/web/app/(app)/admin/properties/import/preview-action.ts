@@ -1,5 +1,6 @@
 'use server';
 
+import { detectCrmPreset, type PresetName } from '@estate/validators';
 import type { FormErrorItem } from '@estate/ui';
 
 import { requireStaffPermission } from '../../../lib/staff-session.js';
@@ -9,7 +10,7 @@ import {
   type ImportColumn,
   type ValidRow,
 } from './csv-import-core.js';
-import { readImportCsv } from './read-csv.js';
+import { readImportCsv, readImportMapping } from './read-csv.js';
 
 // EPIC-X FR-X-2 — the DRY-RUN preview of a bulk CSV property import.
 //
@@ -62,6 +63,13 @@ export interface ImportPreview {
   recognisedColumns: ImportColumn[];
   /** Headers present in the file the importer does not recognise (ignored). */
   ignoredColumns: string[];
+  /**
+   * The CRM preset auto-detected from the upload's headers (FR-X-3), or `null` when no
+   * preset matched (a canonical CSV, or a bespoke export the admin maps by hand). The
+   * form uses this to pre-select the mapping. Detection runs on the RAW headers, so it
+   * still suggests a preset even when the current preview used a custom mapping.
+   */
+  detectedPreset: PresetName | null;
 }
 
 /** The result of a preview, consumed by `useActionState`. */
@@ -102,10 +110,22 @@ export async function previewPropertyImport(
     return deny(upload.error);
   }
 
-  const parseResult = parsePropertyImportCsv(upload.text);
+  // FR-X-3 — apply the admin's chosen mapping (preset or custom) before validation. Absent
+  // / malformed mapping falls back to the header-as-is convention (see `readImportMapping`).
+  const mapping = readImportMapping(formData);
+
+  const parseResult = parsePropertyImportCsv(upload.text, mapping);
   if (parseResult.parseError !== undefined) {
     return deny(parseResult.parseError);
   }
+
+  // Suggest a CRM preset from the RAW header row (recognised targets + ignored source
+  // headers reconstruct the file's headers when no mapping was applied), so the form can
+  // pre-select it. Returns null for a canonical CSV or an unknown export.
+  const detectedPreset = detectCrmPreset([
+    ...parseResult.recognisedColumns,
+    ...parseResult.ignoredColumns,
+  ]);
 
   const preview: ImportPreview = {
     counts: {
@@ -117,6 +137,7 @@ export async function previewPropertyImport(
     errors: parseResult.errors.map(formatRowError),
     recognisedColumns: parseResult.recognisedColumns,
     ignoredColumns: parseResult.ignoredColumns,
+    detectedPreset,
   };
 
   return { ok: true, preview };
