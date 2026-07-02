@@ -70,6 +70,19 @@ describe('PropertyCard', () => {
     expect(screen.getByText('2 baths')).toBeInTheDocument();
   });
 
+  it('renders the property type in the meta row when provided (design-brief §F card)', () => {
+    render(<PropertyCard {...base} status="for_sale" bedrooms={4} propertyType="Semi-detached" />);
+    expect(screen.getByText('Semi-detached')).toBeInTheDocument();
+  });
+
+  it('omits the property type from the meta row when it is not provided', () => {
+    const { container } = render(<PropertyCard {...base} status="for_sale" bedrooms={4} />);
+    // The meta row carries the bed count but no property-type span.
+    const meta = container.querySelector('.meta');
+    expect(meta?.textContent).toContain('4 beds');
+    expect(meta?.textContent).not.toContain('Semi-detached');
+  });
+
   it('renders the placeholder when there is no image, and an alt image when there is', () => {
     const { container, rerender } = render(<PropertyCard {...base} status="for_sale" />);
     expect(container.querySelector('.roof .ph-house')).toBeInTheDocument();
