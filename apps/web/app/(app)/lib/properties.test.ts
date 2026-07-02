@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   getPropertyBySlug,
   listPropertiesForSitemap,
+  propertyTypeLabel,
   searchProperties,
   searchPropertiesNear,
   toCardProps,
@@ -68,6 +69,47 @@ describe('toCardProps', () => {
     const card = toCardProps({ ...saleRow, price: null });
     expect(card.price).toBe('POA');
   });
+
+  it('surfaces the property type on the card from the §F category (design-brief meta row)', () => {
+    const card = toCardProps({ ...saleRow, category: 'house' });
+    expect(card.propertyType).toBe('House');
+  });
+
+  it('omits the property type when the §F category is absent', () => {
+    const card = toCardProps({ ...saleRow, category: null });
+    expect(card.propertyType).toBeUndefined();
+    const noCategory = toCardProps(saleRow);
+    expect(noCategory.propertyType).toBeUndefined();
+  });
+});
+
+describe('propertyTypeLabel', () => {
+  it.each<[string, string]>([
+    ['house', 'House'],
+    ['flat', 'Flat'],
+    ['bungalow', 'Bungalow'],
+    ['studio', 'Studio'],
+    ['maisonette', 'Maisonette'],
+    ['commercial', 'Commercial'],
+    ['land', 'Land'],
+    ['room', 'Room'],
+    ['retail', 'Retail'],
+    ['office', 'Office'],
+    ['industrial', 'Industrial'],
+    ['leisure', 'Leisure'],
+    ['business', 'Business'],
+    ['care_home', 'Care home'],
+    ['hmo', 'HMO'],
+    ['mixed_use', 'Mixed use'],
+  ])('maps the §F PropertyCategory %s to the display label %s', (category, label) => {
+    expect(propertyTypeLabel(category)).toBe(label);
+  });
+
+  it('returns undefined for an absent or unknown category (fails soft)', () => {
+    expect(propertyTypeLabel(null)).toBeUndefined();
+    expect(propertyTypeLabel(undefined)).toBeUndefined();
+    expect(propertyTypeLabel('not_a_category')).toBeUndefined();
+  });
 });
 
 describe('searchProperties', () => {
@@ -94,6 +136,12 @@ describe('searchProperties', () => {
     expect(result.items[0]?.href).toBe('/properties/palatine-road-m20');
     // the hero-image join needs the property id alongside the card props
     expect(result.items[0]?.id).toBe('11111111-1111-1111-1111-111111111111');
+  });
+
+  it('hydrates the property type on each card from the row category', async () => {
+    const { db } = reader([{ ...saleRow, category: 'house' }], 1);
+    const result = await searchProperties(db);
+    expect(result.items[0]?.propertyType).toBe('House');
   });
 
   it('composes every filter into the where clause', async () => {
