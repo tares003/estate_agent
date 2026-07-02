@@ -249,6 +249,37 @@ describe('updateProperty', () => {
     expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'property.updated' });
   });
 
+  it('clears a per-vertical boolean flag when its checkbox is unticked on edit (FR-F-3)', async () => {
+    propertyFindFirst.mockResolvedValue({
+      id: PROPERTY_ID,
+      slug: 'existing-slug',
+      listingType: 'care_home',
+    });
+    // The form pairs each checkbox with a hidden `false` companion, so an unticked box
+    // still posts "false". The edit must persist isGoingConcern:false — not drop the
+    // field and leave a previously-true column unchanged.
+    const fd = updateForm();
+    fd.set('isGoingConcern', 'false');
+    const res = await updateProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyUpdate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.isGoingConcern).toBe(false);
+  });
+
+  it('sets a per-vertical boolean flag when its checkbox is ticked on edit (FR-F-3)', async () => {
+    propertyFindFirst.mockResolvedValue({
+      id: PROPERTY_ID,
+      slug: 'existing-slug',
+      listingType: 'care_home',
+    });
+    const fd = updateForm();
+    fd.set('isGoingConcern', 'on');
+    const res = await updateProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyUpdate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.isGoingConcern).toBe(true);
+  });
+
   it('disambiguates a slug change that collides with another property (FR-F-11)', async () => {
     propertyFindFirst.mockResolvedValue({ id: PROPERTY_ID, slug: 'old-slug' });
     propertyFindMany.mockResolvedValue([{ slug: 'new-slug' }]);

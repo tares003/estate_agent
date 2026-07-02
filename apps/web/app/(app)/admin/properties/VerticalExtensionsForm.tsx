@@ -104,6 +104,40 @@ function OptionalEnumField({
   );
 }
 
+/**
+ * A checkbox that always posts an explicit value. A native checkbox submits nothing
+ * when unticked, so on an EDIT a previously-true flag could never be cleared — the
+ * action would not see the field and would leave the column unchanged. The hidden
+ * `false` companion is posted whenever the subsection renders; the checkbox's own
+ * `on` overrides it when ticked (the action reads the LAST value for the name).
+ */
+function BooleanField({
+  id,
+  name,
+  label,
+  description,
+  defaultChecked,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  description: string;
+  defaultChecked: boolean;
+}) {
+  return (
+    <>
+      <input type="hidden" name={name} value="false" />
+      <Checkbox
+        id={id}
+        name={name}
+        label={label}
+        description={description}
+        defaultChecked={defaultChecked}
+      />
+    </>
+  );
+}
+
 /** Format a nullable number for a NumberField default value ('' when unset). */
 function num(value: number | null | undefined): string {
   return value === null || value === undefined ? '' : String(value);
@@ -128,7 +162,7 @@ function NewHomeFields({ v, err }: SubsectionProps) {
         defaultValue={v.developmentName ?? ''}
         error={err('developmentName')}
       />
-      <Checkbox
+      <BooleanField
         id="isOffPlan"
         name="isOffPlan"
         label="Off-plan"
@@ -159,7 +193,7 @@ function CommercialFields({ v, err }: SubsectionProps) {
         defaultValue={num(v.annualBusinessRates)}
         error={err('annualBusinessRates')}
       />
-      <Checkbox
+      <BooleanField
         id="vatPayable"
         name="vatPayable"
         label="VAT payable"
@@ -217,7 +251,7 @@ function BusinessTransferFields({ v, err }: SubsectionProps) {
         defaultValue={num(v.currentAnnualRent)}
         error={err('currentAnnualRent')}
       />
-      <Checkbox
+      <BooleanField
         id="isConfidential"
         name="isConfidential"
         label="Confidential"
@@ -256,7 +290,7 @@ function CareHomeFields({ v, err }: SubsectionProps) {
         defaultValue={v.cqcInspectionUrl ?? ''}
         error={err('cqcInspectionUrl')}
       />
-      <Checkbox
+      <BooleanField
         id="isGoingConcern"
         name="isGoingConcern"
         label="Going concern"

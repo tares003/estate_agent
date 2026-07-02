@@ -84,4 +84,17 @@ describe('VerticalExtensionsForm — vertical allow-list gating', () => {
     expect(screen.getByLabelText(/CQC rating/i)).toHaveValue('good');
     expect(screen.getByLabelText(/Going concern/i)).toBeChecked();
   });
+
+  it('pairs each vertical checkbox with a hidden `false` companion so unticking clears it (FR-F-3)', () => {
+    const { container } = render(
+      <VerticalExtensionsForm listingType="care_home" enabledVerticals={['care_home']} />,
+    );
+    // A bare checkbox posts nothing when unticked, which would leave a previously-true
+    // flag unchanged on edit. The hidden companion always posts "false"; the checkbox's
+    // own "on" overrides it (last value wins) when ticked.
+    const hidden = container.querySelector('input[type="hidden"][name="isGoingConcern"]');
+    expect(hidden).not.toBeNull();
+    expect(hidden).toHaveValue('false');
+    expect(screen.getByLabelText(/Going concern/i)).toHaveAttribute('name', 'isGoingConcern');
+  });
 });

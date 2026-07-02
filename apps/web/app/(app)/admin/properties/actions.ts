@@ -165,7 +165,11 @@ const VERTICAL_NUMBER_FIELDS = [
   'bedCount',
 ] as const;
 
-/** The extension fields submitted as checkboxes (present ⇒ true, absent ⇒ false). */
+/**
+ * The extension fields submitted as checkboxes. Each is paired in the form with a
+ * hidden `false` companion so an unticked box still posts a value (a bare checkbox
+ * submits nothing when unticked), letting an edit clear a previously-true flag.
+ */
 const VERTICAL_BOOLEAN_FIELDS = [
   'isOffPlan',
   'vatPayable',
@@ -175,10 +179,11 @@ const VERTICAL_BOOLEAN_FIELDS = [
 
 /**
  * FR-F-3 — coerce the raw per-vertical form values into the shapes the write schema
- * expects: numeric inputs to numbers (blank ⇒ omitted), checkboxes to booleans (a
- * checkbox posts its name only when ticked, so an absent field is `false`). Only the
- * subsection matching the listing type is rendered, so at most one vertical's fields
- * arrive; the isolation check still guards against a crafted submission.
+ * expects: numeric inputs to numbers (blank ⇒ omitted), checkboxes to booleans. Each
+ * checkbox is paired with a hidden `false` companion in the form, so a rendered
+ * subsection posts an explicit "on"/"false" the edit path uses to SET or CLEAR the
+ * flag. Only the subsection matching the listing type is rendered, so at most one
+ * vertical's fields arrive; the isolation check still guards a crafted submission.
  */
 function parseVerticalFields(raw: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -187,8 +192,13 @@ function parseVerticalFields(raw: Record<string, unknown>): Record<string, unkno
     if (value !== undefined && value !== '') out[field] = Number(value);
   }
   for (const field of VERTICAL_BOOLEAN_FIELDS) {
-    // A ticked checkbox posts a truthy value ("on"); an unticked one posts nothing.
-    if (raw[field] !== undefined) out[field] = true;
+    // The form pairs each checkbox with a hidden `false` companion, so a rendered
+    // subsection always posts an explicit value: "on" when ticked, "false" when not.
+    // Reading the value (not mere presence) lets an EDIT clear a flag that was true.
+    // An absent field means the subsection was not rendered (a foreign vertical) and
+    // is left untouched, so the isolation check does not reject it.
+    const value = raw[field];
+    if (value !== undefined) out[field] = value === 'on' || value === 'true';
   }
   // Text / enum extension fields pass through as-is when present and non-blank.
   for (const field of ['developmentName', 'useClass', 'cqcRating', 'cqcInspectionUrl'] as const) {
