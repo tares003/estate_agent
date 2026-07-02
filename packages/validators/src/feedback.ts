@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
-// EPIC-AC FR-AC-3 — the brief feedback form's input. A 1–5 rating, an optional
-// short comment, and a publish-as-testimonial toggle. The respondent is anonymous
-// (the one-time token identifies them, FR-AC-2/4), so this captures NO personal
-// data and carries no GDPR-consent affirmation; `publishAsTestimonial` is a
-// publishing consent, not a personal-data one.
+// EPIC-AC FR-AC-3/4 — the brief feedback form's input. A 1–5 rating, an optional
+// short comment, and a publish-as-testimonial toggle. The one-time token identifies
+// the respondent (FR-AC-2/4), but the free-text comment can carry personal data and
+// the submission may be published as a testimonial, so this IS a public personal-data
+// form: it carries an explicit GDPR-consent affirmation (`gdpr_consent`, G5 / master
+// spec §S.7). `publishAsTestimonial` is a separate publishing consent.
 
 /** Max length of the free-text comment (kept short per the brief — "a short comment"). */
 export const FEEDBACK_COMMENT_MAX = 2000;
@@ -20,6 +21,8 @@ export const feedbackSubmissionSchema = z.object({
   }, z.string().max(FEEDBACK_COMMENT_MAX).optional()),
   /** "May we publish this as a testimonial?" — the action coerces the checkbox. */
   publishAsTestimonial: z.boolean().default(false),
+  /** GDPR-consent affirmation — must be explicitly `true` (G5 / master spec §S.7). */
+  gdpr_consent: z.literal(true),
 });
 
 /** A validated feedback submission. */
