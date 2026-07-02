@@ -73,6 +73,23 @@ function csvForm(csvText: string, name = 'catalogue.csv', type = 'text/csv'): Fo
   return fd;
 }
 
+/** A FormData carrying a CSV plus a JSON-stringified column mapping (FR-X-3). */
+function csvFormWithMapping(csvText: string, mapping: Record<string, string>): FormData {
+  const fd = csvForm(csvText);
+  fd.set('mapping', JSON.stringify(mapping));
+  return fd;
+}
+
+const REAPIT_HEADER = 'Agency Reference,Property Type,Sale/Let,Display Address,Postcode';
+const REAPIT_ROW = 'REF-100,residential,sale,12 Acacia Ave,M21 9WN';
+const REAPIT_MAP = {
+  'Agency Reference': 'reference',
+  'Property Type': 'listingType',
+  'Sale/Let': 'saleType',
+  'Display Address': 'displayAddress',
+  Postcode: 'postcode',
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   requireStaffPermission.mockResolvedValue(undefined);
@@ -184,6 +201,35 @@ describe('importPropertiesFromCsv', () => {
     await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
     const taken = insertPropertyRow.mock.calls[0]![3] as Set<string>;
     expect(taken.has('existing-one')).toBe(true);
+  });
+
+  it('applies a preset mapping so a CRM export creates properties with mapped fields (FR-X-3)', async () => {
+    const res = await importPropertiesFromCsv(
+      { ok: false },
+      csvFormWithMapping(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`, REAPIT_MAP),
+    );
+    expect(res.ok).toBe(true);
+    expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+    // The mapped, validated candidate reaches the shared insert path under canonical names.
+    const inserted = insertPropertyRow.mock.calls[0]![2] as {
+      reference: string;
+      postcode: string;
+      listingType: string;
+    };
+    expect(inserted.reference).toBe('REF-100');
+    expect(inserted.postcode).toBe('M21 9WN');
+    expect(inserted.listingType).toBe('residential');
+    expect(res.counts).toMatchObject({ input: 1, created: 1, failed: 0 });
+  });
+
+  it('without a mapping a raw CRM export fails every row (backward compat)', async () => {
+    const res = await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`),
+    );
+    expect(res.ok).toBe(true);
+    expect(insertPropertyRow).not.toHaveBeenCalled();
+    expect(res.counts).toMatchObject({ input: 1, created: 0, failed: 1 });
   });
 
   it('stores a null errorSummary when no rows failed', async () => {
