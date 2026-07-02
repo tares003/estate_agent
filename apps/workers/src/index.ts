@@ -18,6 +18,11 @@ import {
   type SavedSearchDigestClient,
   type SavedSearchTenantRunner,
 } from './saved-search-digest.js';
+import {
+  runInstantAlertsTick,
+  type SavedSearchInstantClient,
+  type SavedSearchInstantTenantRunner,
+} from './saved-search-instant.js';
 import { transformImage } from './sharp-transform.js';
 import { runSmsTick, type SmsQueueClient, type SmsTenantRunner } from './sms-dispatcher.js';
 
@@ -35,9 +40,13 @@ const EMAIL_SEND_QUEUE = 'email-send';
 const IMAGE_QUEUE = 'image-processing';
 const SMS_SEND_QUEUE = 'sms-send';
 const SAVED_SEARCH_ALERTS_QUEUE = 'saved-search-alerts';
+const SAVED_SEARCH_INSTANT_QUEUE = 'saved-search-alerts-instant';
 const TICK_EVERY_MS = 30_000;
 const IMAGE_TICK_EVERY_MS = 60_000;
 const SMS_TICK_EVERY_MS = 30_000;
+// FR-U instant alerts — a short poll stands in for an event-pushed trigger (there
+// is no enqueue-from-web BullMQ path in V1). 1 minute is the V1 "instant" latency.
+const INSTANT_POLL_EVERY_MS = 60_000;
 
 // EPIC-U worker catalogue cadences for the saved-search digests (FR-T-7/8). cron
 // patterns are minute hour dom month dow; both run server-time daily/weekly. The
@@ -207,10 +216,46 @@ async function main(): Promise<void> {
     logger.error({ queue: SAVED_SEARCH_ALERTS_QUEUE, jobId: job?.id, err: error }, 'job failed');
   });
 
+  // FR-U instant saved-search alerts — a repeatable ~1-minute poll of newly
+  // published properties, matched against the instant-cadence saved searches. The
+  // heavy lifting is in the pure + read-model layer (saved-search-instant.ts); this
+  // only wires Redis + the tenant-scoped runner, mirroring the digest tick above.
+  const instantQueue = new Queue(SAVED_SEARCH_INSTANT_QUEUE, { connection });
+  await instantQueue.upsertJobScheduler('instant-poll', { every: INSTANT_POLL_EVERY_MS });
+  const runInstantTenantFor =
+    (tenantId: string): SavedSearchInstantTenantRunner =>
+    (fn) =>
+      withTenant(prisma, tenantId, (tx) => fn(tx as unknown as SavedSearchInstantClient));
+  const instantWorker = new Worker(
+    SAVED_SEARCH_INSTANT_QUEUE,
+    async () => {
+      const counts = await runInstantAlertsTick({
+        now: new Date(),
+        listActiveTenants: () =>
+          prisma.platformTenant.findMany({ where: { status: 'active' }, select: { id: true } }),
+        runTenantFor: runInstantTenantFor,
+        ...(baseUrl !== undefined ? { baseUrl } : {}),
+      });
+      if (counts.emailed > 0 || counts.advanced > 0) {
+        logger.info({ queue: SAVED_SEARCH_INSTANT_QUEUE, ...counts }, 'instant tick');
+      }
+    },
+    { connection },
+  );
+  instantWorker.on('failed', (job, error) => {
+    logger.error({ queue: SAVED_SEARCH_INSTANT_QUEUE, jobId: job?.id, err: error }, 'job failed');
+  });
+
   logger.info(
     {
-      queues: [EMAIL_SEND_QUEUE, IMAGE_QUEUE, SMS_SEND_QUEUE, SAVED_SEARCH_ALERTS_QUEUE],
-      everyMs: [TICK_EVERY_MS, IMAGE_TICK_EVERY_MS, SMS_TICK_EVERY_MS],
+      queues: [
+        EMAIL_SEND_QUEUE,
+        IMAGE_QUEUE,
+        SMS_SEND_QUEUE,
+        SAVED_SEARCH_ALERTS_QUEUE,
+        SAVED_SEARCH_INSTANT_QUEUE,
+      ],
+      everyMs: [TICK_EVERY_MS, IMAGE_TICK_EVERY_MS, SMS_TICK_EVERY_MS, INSTANT_POLL_EVERY_MS],
       cron: [SAVED_SEARCH_DAILY_CRON, SAVED_SEARCH_WEEKLY_CRON],
     },
     'worker started',
@@ -222,10 +267,12 @@ async function main(): Promise<void> {
     await imageWorker.close();
     await smsWorker.close();
     await savedSearchWorker.close();
+    await instantWorker.close();
     await queue.close();
     await imageQueue.close();
     await smsQueue.close();
     await savedSearchQueue.close();
+    await instantQueue.close();
     await prisma.$disconnect();
     process.exit(0);
   };
