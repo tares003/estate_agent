@@ -24,6 +24,11 @@ export interface PropertyRow {
   town?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  // §F specification: the property category discriminator (PropertyCategory enum)
+  // surfaced as the card's "property type" meta value; sub_category is the free-text
+  // refinement kept for the detail surface.
+  category?: string | null;
+  subCategory?: string | null;
   // ── FR-F-3 per-vertical extension columns (§F.3–§F.6). Present on the detail read;
   //    the catalogue card ignores them. ─────────────────────────────────────────────
   listingType?: string | null;
@@ -177,6 +182,37 @@ function buildWhere(options: PropertySearchOptions): Record<string, unknown> {
   return where;
 }
 
+/**
+ * §F `PropertyCategory` enum value → the human "property type" shown in the card
+ * meta row (design-brief §F: "beds · baths · property type"). Mirrors the Prisma
+ * `PropertyCategory` enum 1:1; an absent or unrecognised value yields no label so
+ * the card simply omits the type rather than rendering a raw enum token.
+ */
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  house: 'House',
+  flat: 'Flat',
+  bungalow: 'Bungalow',
+  studio: 'Studio',
+  maisonette: 'Maisonette',
+  commercial: 'Commercial',
+  land: 'Land',
+  room: 'Room',
+  retail: 'Retail',
+  office: 'Office',
+  industrial: 'Industrial',
+  leisure: 'Leisure',
+  business: 'Business',
+  care_home: 'Care home',
+  hmo: 'HMO',
+  mixed_use: 'Mixed use',
+};
+
+/** The display label for a §F property category, or undefined if absent/unknown (fails soft). */
+export function propertyTypeLabel(category: string | null | undefined): string | undefined {
+  if (category == null) return undefined;
+  return PROPERTY_TYPE_LABELS[category];
+}
+
 /** Map one §J Property row to PropertyCard props (trust markers applied). */
 export function toCardProps(row: PropertyRow): PropertyCardProps {
   const card: PropertyCardProps = {
@@ -191,6 +227,8 @@ export function toCardProps(row: PropertyRow): PropertyCardProps {
   if (freq) card.rentFrequency = freq;
   if (row.bedrooms != null) card.bedrooms = row.bedrooms;
   if (row.bathrooms != null) card.bathrooms = row.bathrooms;
+  const type = propertyTypeLabel(row.category);
+  if (type) card.propertyType = type;
   return card;
 }
 
@@ -245,7 +283,8 @@ export interface NearSearchOptions extends PropertySearchOptions {
 /** Columns the radius query selects, aliased to PropertyRow's camelCase shape. */
 const RADIUS_SELECT =
   'id, slug, display_address AS "displayAddress", postcode, title, ' +
-  'sale_type AS "saleType", market_status AS "marketStatus", price, bedrooms, bathrooms, receptions';
+  'sale_type AS "saleType", market_status AS "marketStatus", price, bedrooms, bathrooms, receptions, ' +
+  'category::text AS category';
 
 /**
  * Geographic radius search (master spec §K.1 "search radius"). Returns published,
