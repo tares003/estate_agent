@@ -120,11 +120,22 @@ describe('listInstantSavedSearches', () => {
 
 describe('processInstantMatches', () => {
   it('returns the candidates that match the filters and are new since the cutoff', () => {
-    const search = instantSearch({ lastAlertSentAt: new Date('2026-06-28T07:00:00Z') });
+    const search = instantSearch({
+      lastAlertSentAt: new Date('2026-06-28T07:00:00Z'),
+      filters: {
+        unit: 'mi',
+        sort: 'newest',
+        page: 1,
+        bedroomsMin: 2,
+      } as InstantSavedSearch['filters'],
+    });
     const matches = processInstantMatches(search, [
-      property({ id: 'fresh', publishedAt: new Date('2026-06-28T07:03:00Z') }),
-      property({ id: 'stale', publishedAt: new Date('2026-06-28T06:50:00Z') }),
-      property({ id: 'wrong-beds', bedrooms: 0, publishedAt: new Date('2026-06-28T07:04:00Z') }),
+      // matches the filter AND is new since the cursor
+      property({ id: 'fresh', bedrooms: 2, publishedAt: new Date('2026-06-28T07:03:00Z') }),
+      // matches the filter but was published before the cursor (not new)
+      property({ id: 'stale', bedrooms: 2, publishedAt: new Date('2026-06-28T06:50:00Z') }),
+      // new since the cursor but FAILS the bedroomsMin filter
+      property({ id: 'wrong-beds', bedrooms: 1, publishedAt: new Date('2026-06-28T07:04:00Z') }),
     ]);
     expect(matches.map((p) => p.id)).toEqual(['fresh']);
   });
