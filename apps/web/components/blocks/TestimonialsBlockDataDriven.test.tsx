@@ -16,10 +16,8 @@ vi.mock('@estate/db', () => ({
 vi.mock('../../app/(app)/lib/db.js', () => ({ getDb: () => ({}) }));
 vi.mock('../../app/(app)/lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 
-const {
-  TestimonialsBlockDataDriven,
-  testimonialsDataDrivenBlockSchema,
-} = await import('./TestimonialsBlockDataDriven.js');
+const { TestimonialsBlockDataDriven, testimonialsDataDrivenBlockSchema } =
+  await import('./TestimonialsBlockDataDriven.js');
 
 const fbRow = {
   id: 'f1',
@@ -37,7 +35,9 @@ describe('TestimonialsBlockDataDriven', () => {
     findMany.mockResolvedValue([fbRow]);
     count.mockResolvedValue(1);
 
-    const ui = await TestimonialsBlockDataDriven({ data: { heading: 'What clients say', limit: 6 } });
+    const ui = await TestimonialsBlockDataDriven({
+      data: { heading: 'What clients say', limit: 6 },
+    });
     render(ui);
 
     expect(screen.getByRole('heading', { name: 'What clients say' })).toBeInTheDocument();
@@ -55,9 +55,7 @@ describe('TestimonialsBlockDataDriven', () => {
     findMany.mockResolvedValue([fbRow]);
     count.mockResolvedValue(1);
 
-    const { container } = render(
-      await TestimonialsBlockDataDriven({ data: {} }),
-    );
+    const { container } = render(await TestimonialsBlockDataDriven({ data: {} }));
 
     expect(container.innerHTML).not.toContain('anon-42');
     expect(container.innerHTML).not.toContain('sale_completed');
@@ -102,8 +100,6 @@ describe('TestimonialsBlockDataDriven', () => {
     expect(
       testimonialsDataDrivenBlockSchema.safeParse({ heading: 'Reviews', limit: 3 }).success,
     ).toBe(true);
-    expect(
-      testimonialsDataDrivenBlockSchema.safeParse({ limit: 'lots' }).success,
-    ).toBe(false);
+    expect(testimonialsDataDrivenBlockSchema.safeParse({ limit: 'lots' }).success).toBe(false);
   });
 });

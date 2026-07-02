@@ -50,9 +50,7 @@ function store(rows: StoredFeedback[], tenantId: string): PublishedFeedbackReade
         );
         const skip = args.skip ?? 0;
         const take = args.take ?? matched.length;
-        return matched
-          .slice(skip, skip + take)
-          .map((r) => r as unknown as PublishedFeedbackRow);
+        return matched.slice(skip, skip + take).map((r) => r as unknown as PublishedFeedbackRow);
       },
       async count(args) {
         return scoped(args.where ?? {}).length;
@@ -140,8 +138,8 @@ describe('published-feedback surface (integration)', () => {
   });
 
   it('the data-driven block schema accepts the CMS toggle config it is given', () => {
-    expect(testimonialsDataDrivenBlockSchema.safeParse({ heading: 'Reviews', limit: 6 }).success).toBe(
-      true,
-    );
+    expect(
+      testimonialsDataDrivenBlockSchema.safeParse({ heading: 'Reviews', limit: 6 }).success,
+    ).toBe(true);
   });
 });

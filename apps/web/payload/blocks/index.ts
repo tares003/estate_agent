@@ -8,6 +8,7 @@ import { richTextBlock } from './richText.js';
 import { propertyGridBlock } from './propertyGrid.js';
 import { statsRowBlock } from './statsRow.js';
 import { testimonialsBlock } from './testimonials.js';
+import { testimonialsFeedbackBlock } from './testimonialsFeedback.js';
 import { threePillarBlock } from './threePillar.js';
 import { twoColumnBlock } from './twoColumn.js';
 
@@ -20,6 +21,7 @@ export {
   richTextBlock,
   statsRowBlock,
   testimonialsBlock,
+  testimonialsFeedbackBlock,
   threePillarBlock,
   twoColumnBlock,
 };
@@ -36,6 +38,7 @@ export const pageBlocks: Block[] = [
   threePillarBlock,
   statsRowBlock,
   testimonialsBlock,
+  testimonialsFeedbackBlock,
   twoColumnBlock,
   propertyGridBlock,
 ];
