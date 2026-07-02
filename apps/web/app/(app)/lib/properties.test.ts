@@ -25,6 +25,9 @@ const saleRow: PropertyRow = {
   town: 'Manchester',
   latitude: 53.41,
   longitude: -2.23,
+  // §F property-type category is nullable; a row without one must render a card with no
+  // property-type meta (the default fixture pins that fail-soft path).
+  category: null,
 };
 
 const rentRow: PropertyRow = {
@@ -142,6 +145,12 @@ describe('searchProperties', () => {
     const { db } = reader([{ ...saleRow, category: 'house' }], 1);
     const result = await searchProperties(db);
     expect(result.items[0]?.propertyType).toBe('House');
+  });
+
+  it('leaves the property type off a card whose row has no §F category', async () => {
+    const { db } = reader([{ ...saleRow, category: null }], 1);
+    const result = await searchProperties(db);
+    expect(result.items[0]?.propertyType).toBeUndefined();
   });
 
   it('composes every filter into the where clause', async () => {

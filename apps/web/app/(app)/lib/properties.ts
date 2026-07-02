@@ -249,6 +249,11 @@ export async function searchProperties(
   const skip = (page - 1) * pageSize;
 
   const [rows, total] = await Promise.all([
+    // No explicit `select`: Prisma returns every scalar column, so each row carries the
+    // full PropertyRow shape the card needs — including `category` (the §F property-type
+    // meta value). The shape is pinned by the PropertyRow type + this module's tests; the
+    // radius path (searchPropertiesNear) selects the same columns explicitly via
+    // RADIUS_SELECT only because a raw SQL query has no default projection.
     db.property.findMany({ where, orderBy, skip, take: pageSize }),
     db.property.count({ where }),
   ]);
