@@ -4,6 +4,7 @@ import { detectCrmPreset, type PresetName } from '@estate/validators';
 import type { FormErrorItem } from '@estate/ui';
 
 import { requireStaffPermission } from '../../../lib/staff-session.js';
+import { readActiveListingUsage } from '../../../lib/import-quota.js';
 import {
   formatRowError,
   parsePropertyImportCsv,
@@ -52,6 +53,24 @@ export interface ImportPreviewSampleRow {
   listingType: string;
 }
 
+/**
+ * The plan-quota outcome for this upload (FR-X-10), so the admin sees whether the
+ * import fits BEFORE committing. `limit` is Infinity for an enterprise (unlimited)
+ * tenant, in which case `wouldExceed` is always false.
+ */
+export interface ImportPreviewQuota {
+  /** The plan-tier active-listing cap (Infinity for enterprise). */
+  limit: number;
+  /** The tenant's current active (published) listings. */
+  existingActive: number;
+  /** Valid rows this upload would create. */
+  incoming: number;
+  /** Whether committing this upload would push the tenant past the cap. */
+  wouldExceed: boolean;
+  /** Headroom left after a within-quota import (0 when at/over the cap). */
+  remainingAfterImport: number;
+}
+
 /** The dry-run outcome surfaced to the admin. */
 export interface ImportPreview {
   counts: ImportPreviewCounts;
@@ -70,6 +89,13 @@ export interface ImportPreview {
    * still suggests a preset even when the current preview used a custom mapping.
    */
   detectedPreset: PresetName | null;
+  /**
+   * FR-X-10 — the plan-quota outcome for this upload, so the admin sees the cap, the
+   * current active count and whether committing would exceed it BEFORE running the
+   * import. Absent only when the quota could not be read (best-effort; the real
+   * import still enforces the cap authoritatively).
+   */
+  quota?: ImportPreviewQuota;
 }
 
 /** The result of a preview, consumed by `useActionState`. */
@@ -127,6 +153,28 @@ export async function previewPropertyImport(
     ...parseResult.ignoredColumns,
   ]);
 
+  // FR-X-10 — surface the plan-quota outcome so the admin sees whether the upload
+  // fits BEFORE committing. Only the VALID rows would be created, so they are the
+  // "incoming" count against the cap. A read only — no insert, no import_logs write,
+  // no audit. Best-effort: a quota-read failure must not break the (read-only) dry run.
+  const incoming = parseResult.valid.length;
+  let quota: ImportPreviewQuota | undefined;
+  try {
+    const usage = await readActiveListingUsage();
+    const wouldExceed = usage.existingActive + incoming > usage.limit;
+    quota = {
+      limit: usage.limit,
+      existingActive: usage.existingActive,
+      incoming,
+      wouldExceed,
+      remainingAfterImport: wouldExceed
+        ? 0
+        : Math.max(0, usage.limit - usage.existingActive - incoming),
+    };
+  } catch {
+    quota = undefined;
+  }
+
   const preview: ImportPreview = {
     counts: {
       input: parseResult.recordsInput,
@@ -138,6 +186,7 @@ export async function previewPropertyImport(
     recognisedColumns: parseResult.recognisedColumns,
     ignoredColumns: parseResult.ignoredColumns,
     detectedPreset,
+    ...(quota !== undefined ? { quota } : {}),
   };
 
   return { ok: true, preview };

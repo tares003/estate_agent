@@ -11,4 +11,11 @@ describe('@estate/entitlement public API', () => {
     expect(typeof api.PackNotEnabledError).toBe('function');
     expect(typeof api.RequirePack).toBe('function');
   });
+
+  it('re-exports the plan-tier active-listing quota helpers (FR-X-10)', () => {
+    expect(api.PLAN_TIERS).toBeDefined();
+    expect(api.ACTIVE_LISTING_QUOTA).toBeDefined();
+    expect(typeof api.getActiveListingQuota).toBe('function');
+    expect(typeof api.resolvePlanTier).toBe('function');
+  });
 });

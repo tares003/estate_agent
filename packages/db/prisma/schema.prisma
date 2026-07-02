@@ -28,6 +28,7 @@ model PlatformTenant {
   name         String
   customDomain String?      @unique @map("custom_domain")
   status       TenantStatus @default(active)
+  planTier     PlanTier     @default(starter) @map("plan_tier")
   enabledPacks Json         @default("[]") @map("enabled_packs")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
@@ -80,6 +81,19 @@ enum TenantStatus {
   deprovisioned
 
   @@map("tenant_status")
+}
+
+/// A tenant's plan tier (PRODUCT.md §5b). Sets the base metering quotas — most
+/// notably the active-listing cap a bulk import may not exceed (EPIC-X FR-X-10):
+/// starter = 100, professional = 500, enterprise = unlimited. Defaults to the
+/// strictest tier (`starter`) so a newly-provisioned tenant is never over-quota by
+/// omission; the operator admin (EPIC-AB) sets the real tier.
+enum PlanTier {
+  starter
+  professional
+  enterprise
+
+  @@map("plan_tier")
 }
 
 /// A staff user belonging to a tenant agency. Tenant-scoped (RLS). This is also

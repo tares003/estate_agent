@@ -15,5 +15,12 @@ export {
 } from './packs.js';
 export { createInMemoryPackSource, type EnabledPacksByTenant, type PackSource } from './source.js';
 export { isPackEnabled } from './isPackEnabled.js';
+export {
+  ACTIVE_LISTING_QUOTA,
+  getActiveListingQuota,
+  PLAN_TIERS,
+  type PlanTier,
+  resolvePlanTier,
+} from './plan-quotas.js';
 export { PackNotEnabledError, requirePack } from './requirePack.js';
 export { RequirePack, type RequirePackProps } from './RequirePack.jsx';

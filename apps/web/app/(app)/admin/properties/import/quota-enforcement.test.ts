@@ -33,11 +33,18 @@ vi.mock('../../../lib/tenant.js', () => ({
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
 // The active-listing quota the import must respect for the current tenant. Stubbed
-// so the test can put the tenant on any tier without a real plan-tier source.
+// so the test can put the tenant on any tier without a real plan-tier source. The
+// real `activeListingWhere` is kept so the count `where` is asserted end-to-end.
 const getTenantActiveListingQuota = vi.fn();
-vi.mock('../../../lib/import-quota.js', () => ({
-  getTenantActiveListingQuota: (...a: unknown[]) => getTenantActiveListingQuota(...a),
-}));
+vi.mock('../../../lib/import-quota.js', async () => {
+  const actual = await vi.importActual<typeof import('../../../lib/import-quota.js')>(
+    '../../../lib/import-quota.js',
+  );
+  return {
+    ...actual,
+    getTenantActiveListingQuota: (...a: unknown[]) => getTenantActiveListingQuota(...a),
+  };
+});
 
 const insertPropertyRow = vi.fn(
   async (_tx: unknown, _ctx: unknown, input: { reference: string }, taken: Set<string>) => {
