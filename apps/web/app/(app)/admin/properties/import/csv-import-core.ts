@@ -1,51 +1,36 @@
 import { parse } from 'csv-parse/sync';
-import { propertyCreateSchema, type PropertyCreate } from '@estate/validators';
+import {
+  IMPORT_COLUMNS,
+  propertyCreateSchema,
+  type ColumnMapping,
+  type ImportColumn,
+  type PropertyCreate,
+} from '@estate/validators';
 
-// EPIC-X FR-X-1 / FR-X-6 — the PURE, DB-free core of the bulk CSV property import.
-// Parses a CSV string, maps each column to a property-create field BY HEADER NAME
-// (the header must equal the schema field name — the documented V1 convention; the
-// arbitrary-header column-MAPPING UI in FR-X-3 is deferred), validates every row
-// against `propertyCreateSchema`, and partitions the file into {valid rows,
-// per-row errors}. No I/O, no session, no DB — the audited action layer feeds this a
-// string and persists the result; this module is exhaustively unit-tested.
+// EPIC-X FR-X-1 / FR-X-6 / FR-X-3 — the PURE, DB-free core of the bulk CSV property
+// import. Parses a CSV string, translates each source header onto a canonical
+// property-create field (via an optional column MAPPING; falling back to the header AS-IS
+// when no mapping entry applies — the documented V1 convention), validates every row
+// against `propertyCreateSchema`, and partitions the file into {valid rows, per-row
+// errors}. No I/O, no session, no DB — the audited action layer feeds this a string (and
+// a mapping) and persists the result; this module is exhaustively unit-tested.
 //
-// V1 slice: this CREATES properties (FR-X-1). The dry-run preview (FR-X-2), preset CRM
-// mappings (FR-X-3), upsert / external-id matching (FR-X-4/5), quota enforcement
-// (FR-X-10) and image post-processing (FR-X-11) are later slices of this epic.
+// V1 slice: this CREATES properties (FR-X-1) and now applies a configurable / preset
+// column mapping (FR-X-3). The dry-run preview (FR-X-2), upsert / external-id matching
+// (FR-X-4/5), quota enforcement (FR-X-10) and image post-processing (FR-X-11) are later
+// slices of this epic.
 
 /**
- * The CSV column headers the importer understands. Each equals a `propertyCreateSchema`
- * field name (the documented V1 header convention). `reference`, `listingType`,
- * `saleType`, `displayAddress` and `postcode` are REQUIRED by the schema; the rest are
- * optional. Any column whose header is not in this set is ignored (surfaced as a run
- * note), so a raw CRM export with extra columns still imports its recognised fields.
+ * The canonical column set the importer understands, re-exported from `@estate/validators`
+ * (the single source of truth shared with the mapping presets + schema). Each equals a
+ * `propertyCreateSchema` field name. `reference`, `listingType`, `saleType`,
+ * `displayAddress` and `postcode` are REQUIRED by the schema; the rest are optional. A
+ * source header that neither has a mapping entry nor equals a canonical name is ignored
+ * (surfaced as a run note), so a raw CRM export with extra columns still imports its
+ * recognised fields.
  */
-export const IMPORT_COLUMNS = [
-  'reference',
-  'listingType',
-  'saleType',
-  'slug',
-  'title',
-  'description',
-  'price',
-  'priceQualifier',
-  'marketStatus',
-  'bedrooms',
-  'bathrooms',
-  'category',
-  'tenure',
-  'councilTaxBand',
-  'epcRating',
-  'metaTitle',
-  'metaDescription',
-  'publicationStatus',
-  'displayAddress',
-  'postcode',
-  'town',
-] as const;
-
-/** A recognised import column header. */
-export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
+export { IMPORT_COLUMNS };
+export type { ImportColumn };
 
 /** The columns whose CSV string cell must be coerced to a number before validation. */
 const NUMERIC_COLUMNS = new Set<ImportColumn>(['price', 'bedrooms', 'bathrooms']);
@@ -105,25 +90,51 @@ function coerceCell(column: ImportColumn, rawValue: string): unknown {
   return value;
 }
 
-/** Shape a parsed CSV record (header -> cell) into the schema's typed input object. */
-function toCandidate(record: Record<string, string>): Record<string, unknown> {
+/**
+ * Resolve a source CSV header to a canonical `ImportColumn`, or `undefined` when the
+ * header maps to nothing the importer understands (FR-X-3). Precedence: an explicit
+ * mapping entry wins; otherwise the header is used AS-IS if it already equals a canonical
+ * field name (the V1 header convention); otherwise the column is unrecognised (ignored).
+ */
+function resolveColumn(
+  header: string,
+  mapping: ColumnMapping | undefined,
+): ImportColumn | undefined {
+  const mapped = mapping?.[header];
+  if (mapped !== undefined) return mapped;
+  return IMPORT_COLUMN_SET.has(header) ? (header as ImportColumn) : undefined;
+}
+
+/**
+ * Shape a parsed CSV record (source-header -> cell) into the schema's typed input object,
+ * applying the column mapping so each cell lands under its CANONICAL field name before
+ * coercion + validation (FR-X-3).
+ */
+function toCandidate(
+  record: Record<string, string>,
+  mapping: ColumnMapping | undefined,
+): Record<string, unknown> {
   const candidate: Record<string, unknown> = {};
   for (const [header, rawValue] of Object.entries(record)) {
-    if (!IMPORT_COLUMN_SET.has(header)) continue;
-    const coerced = coerceCell(header as ImportColumn, rawValue);
-    if (coerced !== undefined) candidate[header] = coerced;
+    const canonical = resolveColumn(header, mapping);
+    if (canonical === undefined) continue;
+    const coerced = coerceCell(canonical, rawValue);
+    if (coerced !== undefined) candidate[canonical] = coerced;
   }
   return candidate;
 }
 
 /**
- * Parse + validate a bulk-import CSV string (FR-X-1). Returns every DATA row
- * partitioned into {valid, errors}. A row that fails validation is isolated with its
- * per-field reasons and the run continues (FR-X-5). A malformed file (bad CSV, or no
- * data rows) returns a `parseError` and no rows — the caller reports it without a
- * partial import.
+ * Parse + validate a bulk-import CSV string (FR-X-1), applying an optional column
+ * `mapping` that translates arbitrary source headers onto canonical fields BEFORE
+ * per-row validation (FR-X-3). Without a mapping (or for any header the mapping omits)
+ * the source header is used as-is, so a canonical-header CSV imports unchanged
+ * (backward-compatible). Returns every DATA row partitioned into {valid, errors}. A row
+ * that fails validation is isolated with its per-field reasons and the run continues
+ * (FR-X-5). A malformed file (bad CSV, or no data rows) returns a `parseError` and no
+ * rows — the caller reports it without a partial import.
  */
-export function parsePropertyImportCsv(csvText: string): CsvImportParse {
+export function parsePropertyImportCsv(csvText: string, mapping?: ColumnMapping): CsvImportParse {
   let records: Record<string, string>[];
   let headers: string[] = [];
   try {
@@ -147,8 +158,18 @@ export function parsePropertyImportCsv(csvText: string): CsvImportParse {
     };
   }
 
-  const recognisedColumns = IMPORT_COLUMNS.filter((column) => headers.includes(column));
-  const ignoredColumns = headers.filter((header) => !IMPORT_COLUMN_SET.has(header));
+  // A header is RECOGNISED when it resolves to a canonical column (via the mapping or as
+  // a canonical name), IGNORED otherwise. `recognisedColumns` lists the canonical targets
+  // actually present, de-duplicated and in canonical order.
+  const resolvedByHeader = new Map<string, ImportColumn | undefined>(
+    headers.map((header) => [header, resolveColumn(header, mapping)]),
+  );
+  const presentTargets = new Set<ImportColumn>();
+  for (const target of resolvedByHeader.values()) {
+    if (target !== undefined) presentTargets.add(target);
+  }
+  const recognisedColumns = IMPORT_COLUMNS.filter((column) => presentTargets.has(column));
+  const ignoredColumns = headers.filter((header) => resolvedByHeader.get(header) === undefined);
 
   if (records.length === 0) {
     return {
@@ -166,7 +187,7 @@ export function parsePropertyImportCsv(csvText: string): CsvImportParse {
 
   records.forEach((record, index) => {
     const rowNumber = index + 1;
-    const candidate = toCandidate(record);
+    const candidate = toCandidate(record, mapping);
     const parsed = propertyCreateSchema.safeParse(candidate);
     if (parsed.success) {
       valid.push({ rowNumber, data: parsed.data });

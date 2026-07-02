@@ -56,6 +56,23 @@ function csvForm(csvText: string, name = 'catalogue.csv', type = 'text/csv'): Fo
   return fd;
 }
 
+/** A FormData carrying a CSV plus a JSON-stringified column mapping (FR-X-3). */
+function csvFormWithMapping(csvText: string, mapping: Record<string, string>): FormData {
+  const fd = csvForm(csvText);
+  fd.set('mapping', JSON.stringify(mapping));
+  return fd;
+}
+
+const REAPIT_HEADER = 'Agency Reference,Property Type,Sale/Let,Display Address,Postcode';
+const REAPIT_ROW = 'REF-100,residential,sale,12 Acacia Ave,M21 9WN';
+const REAPIT_MAP = {
+  'Agency Reference': 'reference',
+  'Property Type': 'listingType',
+  'Sale/Let': 'saleType',
+  'Display Address': 'displayAddress',
+  Postcode: 'postcode',
+};
+
 /** Build a HEADER + N synthetic valid data rows for the sample-limit assertion. */
 function manyRows(count: number): string {
   const rows: string[] = [HEADER];
@@ -152,6 +169,43 @@ describe('previewPropertyImport', () => {
     const res = await previewPropertyImport({ ok: false }, csvForm(`${header}\n${row}\n`));
     expect(res.ok).toBe(true);
     expect(res.preview!.ignoredColumns).toContain('crm_id');
+  });
+
+  it('auto-detects a Reapit CSV and reports the suggested preset (FR-X-3)', async () => {
+    // No mapping supplied: the preview detects the CRM from the raw headers so the form
+    // can pre-select the preset.
+    const res = await previewPropertyImport(
+      { ok: false },
+      csvForm(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`),
+    );
+    expect(res.ok).toBe(true);
+    expect(res.preview!.detectedPreset).toBe('reapit');
+  });
+
+  it('reports no detected preset for a canonical-header CSV (custom mapping option)', async () => {
+    const res = await previewPropertyImport({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
+    expect(res.ok).toBe(true);
+    expect(res.preview!.detectedPreset).toBeNull();
+  });
+
+  it('applies a mapping from FormData so a CRM export previews cleanly (FR-X-3)', async () => {
+    const res = await previewPropertyImport(
+      { ok: false },
+      csvFormWithMapping(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`, REAPIT_MAP),
+    );
+    expect(res.ok).toBe(true);
+    expect(res.preview!.counts).toEqual({ input: 1, valid: 1, invalid: 0 });
+    expect(res.preview!.sample[0]!.reference).toBe('REF-100');
+    expect(res.preview!.ignoredColumns).toHaveLength(0);
+  });
+
+  it('ignores a malformed mapping JSON and falls back to header-as-is', async () => {
+    const fd = csvForm(`${HEADER}\n${GOOD_1}\n`);
+    fd.set('mapping', 'not json');
+    const res = await previewPropertyImport({ ok: false }, fd);
+    // A bad mapping must not crash the dry run; the canonical CSV still previews.
+    expect(res.ok).toBe(true);
+    expect(res.preview!.counts.valid).toBe(1);
   });
 
   it('NEVER persists: no tenant transaction, no insert, no import log, no audit (dry run)', async () => {

@@ -224,6 +224,25 @@ export {
   type FeedbackEdit,
 } from './feedback.js';
 export {
+  IMPORT_COLUMNS,
+  IMPORT_REQUIRED_COLUMNS,
+  CRM_PRESET_NAMES,
+  REAPIT_PRESET,
+  ALTO_PRESET,
+  JUPIX_PRESET,
+  VEBRA_PRESET,
+  REX_PRESET,
+  mappingSchema,
+  detectCrmPreset,
+  getPreset,
+  isImportColumn,
+  isMappingComplete,
+  unmappedRequiredColumns,
+  type ImportColumn,
+  type ColumnMapping,
+  type PresetName,
+} from './column-mapping.js';
+export {
   ASSIGNMENT_RULE_CONDITION_FIELDS,
   ASSIGNMENT_RULE_OPERATORS,
   ASSIGNMENT_RULE_NAME_MAX,

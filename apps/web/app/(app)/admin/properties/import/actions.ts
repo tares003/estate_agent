@@ -12,7 +12,7 @@ import {
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { insertPropertyRow, type PropertyCreateClient } from '../actions.js';
 import { formatRowError, parsePropertyImportCsv, type RowError } from './csv-import-core.js';
-import { readImportCsv } from './read-csv.js';
+import { readImportCsv, readImportMapping } from './read-csv.js';
 
 // EPIC-X FR-X-1 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
 //
@@ -88,7 +88,11 @@ export async function importPropertiesFromCsv(
     return deny(upload.error);
   }
 
-  const parseResult = parsePropertyImportCsv(upload.text);
+  // FR-X-3 — the same mapping the admin confirmed in the dry-run preview travels with the
+  // real import, so the audited run parses the file identically to the preview.
+  const mapping = readImportMapping(formData);
+
+  const parseResult = parsePropertyImportCsv(upload.text, mapping);
   if (parseResult.parseError !== undefined) {
     return deny(parseResult.parseError);
   }

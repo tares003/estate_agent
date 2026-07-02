@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { REAPIT_PRESET, type ColumnMapping } from '@estate/validators';
 
 import { IMPORT_COLUMNS, formatRowError, parsePropertyImportCsv } from './csv-import-core.js';
 
@@ -119,6 +120,70 @@ describe('parsePropertyImportCsv', () => {
     const csv = `${HEADER}\n${GOOD_ROW}\n${GOOD_ROW.replace('REF-001', 'REF-008')}\n`;
     const result = parsePropertyImportCsv(csv);
     expect(result.valid.map((r) => r.rowNumber)).toEqual([1, 2]);
+  });
+});
+
+describe('parsePropertyImportCsv with a column mapping (FR-X-3)', () => {
+  // A Reapit-style export: none of the headers are the canonical field names, so WITHOUT
+  // a mapping every column is ignored and every required field is missing.
+  const REAPIT_HEADER = 'Agency Reference,Property Type,Sale/Let,Display Address,Postcode';
+  const REAPIT_ROW = 'REF-100,residential,sale,12 Acacia Ave,M21 9WN';
+
+  it('applies a preset mapping so CRM headers parse cleanly', () => {
+    const csv = `${REAPIT_HEADER}\n${REAPIT_ROW}\n`;
+    const result = parsePropertyImportCsv(csv, REAPIT_PRESET);
+    expect(result.parseError).toBeUndefined();
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors).toHaveLength(0);
+    expect(result.valid[0]!.data).toMatchObject({
+      reference: 'REF-100',
+      listingType: 'residential',
+      saleType: 'sale',
+      displayAddress: '12 Acacia Ave',
+      postcode: 'M21 9WN',
+    });
+  });
+
+  it('reports the CRM headers as recognised (via the mapping), not ignored', () => {
+    const result = parsePropertyImportCsv(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`, REAPIT_PRESET);
+    expect(result.recognisedColumns).toContain('reference');
+    expect(result.recognisedColumns).toContain('postcode');
+    expect(result.ignoredColumns).toHaveLength(0);
+  });
+
+  it('without a mapping, the same CRM export fails (headers are not canonical)', () => {
+    // Backward-compat: the default (no mapping) path still requires canonical headers.
+    const result = parsePropertyImportCsv(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    // Every source header is unrecognised without the mapping.
+    expect(result.ignoredColumns).toContain('Agency Reference');
+  });
+
+  it('a partial mapping leaves unmapped required columns failing per-row', () => {
+    // Map only the reference; the other required fields stay unmapped and unrecognised.
+    const partial: ColumnMapping = { 'Agency Reference': 'reference' };
+    const result = parsePropertyImportCsv(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`, partial);
+    expect(result.valid).toHaveLength(0);
+    expect(result.errors).toHaveLength(1);
+    const fields = result.errors[0]!.errors.map((e) => e.field);
+    expect(fields).toContain('postcode');
+    expect(fields).toContain('displayAddress');
+  });
+
+  it('an empty mapping behaves exactly like no mapping (headers used as-is)', () => {
+    const canonicalHeader = 'reference,listingType,saleType,displayAddress,postcode';
+    const canonicalRow = 'REF-200,residential,sale,1 High St,M21 9WN';
+    const result = parsePropertyImportCsv(`${canonicalHeader}\n${canonicalRow}\n`, {});
+    expect(result.valid).toHaveLength(1);
+  });
+
+  it('a mapping still coerces numeric columns after translation', () => {
+    const header = `${REAPIT_HEADER},Price,Bedrooms`;
+    const row = `${REAPIT_ROW},425000,3`;
+    const result = parsePropertyImportCsv(`${header}\n${row}\n`, REAPIT_PRESET);
+    expect(result.valid[0]!.data.price).toBe(425000);
+    expect(result.valid[0]!.data.bedrooms).toBe(3);
   });
 });
 
