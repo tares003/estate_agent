@@ -10,6 +10,7 @@ import {
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { activeListingWhere, getTenantActiveListingQuota } from '../../../lib/import-quota.js';
 import { insertPropertyRow, type PropertyCreateClient } from '../actions.js';
 import { formatRowError, parsePropertyImportCsv, type RowError } from './csv-import-core.js';
 import { readImportCsv, readImportMapping } from './read-csv.js';
@@ -37,9 +38,23 @@ const IMPORT_SOURCE = 'csv_upload';
 
 /** The `import_logs` write surface this action needs (a Prisma tx satisfies it). */
 interface ImportLogClient extends PropertyCreateClient {
+  property: PropertyCreateClient['property'] & {
+    /** Count existing active listings for the FR-X-10 quota check (tenant-scoped). */
+    count(args: { where?: Record<string, unknown> }): Promise<number>;
+  };
   importLog: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
   };
+}
+
+/** The active-listing quota decision recorded on the run audit (FR-X-10). */
+interface QuotaDecision {
+  /** The tenant's plan-tier active-listing cap (Infinity for enterprise). */
+  limit: number;
+  /** Existing active (published) listings before this run. */
+  existingActive: number;
+  /** Valid rows this run would create. */
+  incoming: number;
 }
 
 /** The per-run counts surfaced to the admin and stored on the `import_logs` row. */
@@ -102,12 +117,34 @@ export async function importPropertiesFromCsv(
   const triggeredBy = await getStaffUserId();
   const ip = await getRequestIp();
 
+  // FR-X-10 — the tenant's plan-tier active-listing cap (Infinity for enterprise),
+  // read from the operator registry BEFORE the transaction. The existing active
+  // count is taken inside the tx (tenant-scoped/RLS) so the quota is enforced against
+  // live data at import time.
+  const quotaLimit = await getTenantActiveListingQuota();
+  const incoming = parseResult.valid.length;
+
   const errorSummary = summariseErrors(parseResult.errors);
   const startedAt = new Date();
 
   let result: ImportActionState = deny('The import could not be completed.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as ImportLogClient;
+
+    // FR-X-10 — abort BEFORE any insert / import_logs write / audit when this run
+    // would push the tenant past their active-listing quota. Nothing is created and
+    // nothing is audited, so there is no state change to record (G4 unaffected).
+    const existingActive = await tx.property.count({ where: activeListingWhere() });
+    if (existingActive + incoming > quotaLimit) {
+      const remaining = Math.max(0, quotaLimit - existingActive);
+      result = deny(
+        `Quota would be exceeded: this import would add ${incoming} active listing(s) to ` +
+          `${existingActive} already live, over your plan limit of ${quotaLimit}. ` +
+          `You can import up to ${remaining} more, or upgrade your plan.`,
+      );
+      return;
+    }
+    const quota: QuotaDecision = { limit: quotaLimit, existingActive, incoming };
 
     // Seed the slug set from the tenant's existing properties so imported slugs never
     // collide with live rows; `insertPropertyRow` reserves each minted slug as it goes,
@@ -159,7 +196,9 @@ export async function importPropertiesFromCsv(
       action: 'property.imported',
       entity: 'import_log',
       entityId: importLog.id,
-      diff: { source: IMPORT_SOURCE, ...counts },
+      // FR-X-10 — the quota decision travels on the run audit so an import is traceable
+      // to the cap it was checked against and the headroom it consumed.
+      diff: { source: IMPORT_SOURCE, ...counts, quota },
       ip,
     });
 

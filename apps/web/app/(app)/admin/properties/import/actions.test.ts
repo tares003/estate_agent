@@ -24,6 +24,20 @@ vi.mock('../../../lib/tenant.js', () => ({
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+// FR-X-10 — the plan-tier active-listing cap. Default to unlimited here so the
+// create/audit behaviour these tests assert is unaffected by quota; the quota
+// branch itself is covered in quota-enforcement.test.ts.
+const getTenantActiveListingQuota = vi.fn();
+vi.mock('../../../lib/import-quota.js', async () => {
+  const actual = await vi.importActual<typeof import('../../../lib/import-quota.js')>(
+    '../../../lib/import-quota.js',
+  );
+  return {
+    ...actual,
+    getTenantActiveListingQuota: () => getTenantActiveListingQuota(),
+  };
+});
+
 // The shared insert path — spied so this test exercises the import orchestration, not
 // the (separately-tested) property insert. It reserves the minted slug like the real one.
 const insertPropertyRow = vi.fn(
@@ -40,10 +54,11 @@ vi.mock('../actions.js', () => ({
 
 const audit = vi.fn();
 const propertyFindMany = vi.fn();
+const propertyCount = vi.fn();
 const importLogCreate = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
   fn({
-    property: { findMany: propertyFindMany },
+    property: { findMany: propertyFindMany, count: propertyCount },
     importLog: { create: importLogCreate },
   }),
 );
@@ -98,7 +113,9 @@ beforeEach(() => {
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
   propertyFindMany.mockResolvedValue([]);
+  propertyCount.mockResolvedValue(0);
   importLogCreate.mockResolvedValue({ id: LOG_ID });
+  getTenantActiveListingQuota.mockResolvedValue(Infinity);
 });
 
 describe('importPropertiesFromCsv', () => {
