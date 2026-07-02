@@ -12,6 +12,10 @@ vi.mock('../../../../lib/staff-session.js', () => ({
   requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
 }));
 
+// FR-F-3 — the page resolves the tenant's authorable verticals to gate the vertical
+// form; stub it so this shell test stays DB/request-free.
+vi.mock('../../../../lib/packs.js', () => ({ getEnabledVerticals: vi.fn(async () => []) }));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });

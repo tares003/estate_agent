@@ -144,6 +144,32 @@ describe('createProperty', () => {
     const data = propertyCreate.mock.calls[0]![0].data as { price: number };
     expect(data.price).toBe(35000000);
   });
+
+  it('persists the per-vertical extension fields for a care_home listing (FR-F-3)', async () => {
+    const fd = createForm({ listingType: 'care_home' });
+    fd.set('bedCount', '42');
+    fd.set('cqcRating', 'good');
+    fd.set('cqcInspectionUrl', 'https://www.cqc.org.uk/location/1-234');
+    fd.set('isGoingConcern', 'on');
+    const res = await createProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyCreate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data).toMatchObject({
+      listingType: 'care_home',
+      bedCount: 42,
+      cqcRating: 'good',
+      cqcInspectionUrl: 'https://www.cqc.org.uk/location/1-234',
+      isGoingConcern: true,
+    });
+  });
+
+  it('rejects a vertical field that does not belong to the listing type (FR-F-3 isolation)', async () => {
+    const fd = createForm({ listingType: 'residential' });
+    fd.set('cqcRating', 'good');
+    const res = await createProperty({ ok: false }, fd);
+    expect(res.ok).toBe(false);
+    expect(propertyCreate).not.toHaveBeenCalled();
+  });
 });
 
 describe('updateProperty', () => {
@@ -204,6 +230,54 @@ describe('updateProperty', () => {
     // Only the property update is audited; the redirect was skipped.
     expect(audit).toHaveBeenCalledTimes(1);
     expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'property.updated' });
+  });
+
+  it('persists + audits a per-vertical extension field change (FR-F-3)', async () => {
+    propertyFindFirst.mockResolvedValue({
+      id: PROPERTY_ID,
+      slug: 'existing-slug',
+      listingType: 'care_home',
+    });
+    const fd = updateForm();
+    fd.set('bedCount', '48');
+    const res = await updateProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyUpdate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.bedCount).toBe(48);
+    // The change is captured in the property.updated audit diff.
+    expect(audit).toHaveBeenCalled();
+    expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'property.updated' });
+  });
+
+  it('clears a per-vertical boolean flag when its checkbox is unticked on edit (FR-F-3)', async () => {
+    propertyFindFirst.mockResolvedValue({
+      id: PROPERTY_ID,
+      slug: 'existing-slug',
+      listingType: 'care_home',
+    });
+    // The form pairs each checkbox with a hidden `false` companion, so an unticked box
+    // still posts "false". The edit must persist isGoingConcern:false — not drop the
+    // field and leave a previously-true column unchanged.
+    const fd = updateForm();
+    fd.set('isGoingConcern', 'false');
+    const res = await updateProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyUpdate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.isGoingConcern).toBe(false);
+  });
+
+  it('sets a per-vertical boolean flag when its checkbox is ticked on edit (FR-F-3)', async () => {
+    propertyFindFirst.mockResolvedValue({
+      id: PROPERTY_ID,
+      slug: 'existing-slug',
+      listingType: 'care_home',
+    });
+    const fd = updateForm();
+    fd.set('isGoingConcern', 'on');
+    const res = await updateProperty({ ok: false }, fd);
+    expect(res.ok).toBe(true);
+    const data = propertyUpdate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.isGoingConcern).toBe(true);
   });
 
   it('disambiguates a slug change that collides with another property (FR-F-11)', async () => {

@@ -1,3 +1,8 @@
+// pack: core — the public property detail is a core surface. It renders the facts of an
+// ALREADY-published property regardless of which packs the tenant has; the listing-type
+// strings below (commercial / business_transfer / …) are the §J discriminator, not pack
+// slugs. Pack entitlement gates AUTHORING these verticals (the admin form), not the public
+// display of a property that already exists (EPIC-AD / G12).
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -83,6 +88,69 @@ interface Fact {
   value: number;
 }
 
+/** One per-vertical extension fact — its value already rendered to a display string. */
+interface VerticalFact {
+  label: string;
+  value: string;
+}
+
+/** Humanise a snake_case enum value into Title Case ("requires_improvement" → "Requires improvement"). */
+function humaniseFact(value: string): string {
+  const spaced = value.replace(/_/g, ' ');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+/** Render a whole-pound money value as a GBP string ("£12,500"). */
+function money(value: number): string {
+  return `£${value.toLocaleString('en-GB')}`;
+}
+
+/**
+ * FR-F-3 — build the per-vertical facts shown below the core spec strip, discriminated
+ * by listing type. A residential/land listing yields none. The CQC inspection link is
+ * rendered separately (it is an anchor, not a value cell).
+ */
+function verticalFacts(v: PropertyDetail['vertical']): VerticalFact[] {
+  const facts: VerticalFact[] = [];
+  switch (v.listingType) {
+    case 'new_home':
+      if (v.developmentName) facts.push({ label: 'Development', value: v.developmentName });
+      if (v.isOffPlan) facts.push({ label: 'Off-plan', value: 'Yes' });
+      break;
+    case 'commercial':
+      if (v.useClass) facts.push({ label: 'Use class', value: v.useClass.toUpperCase() });
+      if (v.annualBusinessRates != null) {
+        facts.push({ label: 'Business rates', value: money(v.annualBusinessRates) });
+      }
+      if (v.vatPayable != null) {
+        facts.push({ label: 'VAT payable', value: v.vatPayable ? 'Yes' : 'No' });
+      }
+      break;
+    case 'business_transfer':
+      if (v.annualTurnover != null) {
+        facts.push({ label: 'Annual turnover', value: money(v.annualTurnover) });
+      }
+      if (v.grossProfit != null) facts.push({ label: 'Gross profit', value: money(v.grossProfit) });
+      if (v.netProfit != null) facts.push({ label: 'Net profit', value: money(v.netProfit) });
+      if (v.yearsTrading != null) {
+        facts.push({ label: 'Years trading', value: String(v.yearsTrading) });
+      }
+      if (v.staffCount != null) facts.push({ label: 'Staff', value: String(v.staffCount) });
+      if (v.currentAnnualRent != null) {
+        facts.push({ label: 'Current annual rent', value: money(v.currentAnnualRent) });
+      }
+      break;
+    case 'care_home':
+      if (v.bedCount != null) facts.push({ label: 'Bed count', value: String(v.bedCount) });
+      if (v.cqcRating) facts.push({ label: 'CQC rating', value: humaniseFact(v.cqcRating) });
+      if (v.isGoingConcern) facts.push({ label: 'Going concern', value: 'Yes' });
+      break;
+    default:
+      break;
+  }
+  return facts;
+}
+
 /**
  * EPIC-F property detail. Resolves the tenant, fetches the single published
  * property by slug inside the tenant RLS scope, and renders the detail beside
@@ -120,6 +188,11 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   if (property.bedrooms != null) facts.push({ label: 'Bedrooms', value: property.bedrooms });
   if (property.bathrooms != null) facts.push({ label: 'Bathrooms', value: property.bathrooms });
   if (property.receptions != null) facts.push({ label: 'Receptions', value: property.receptions });
+
+  // FR-F-3 — the per-vertical extension facts, discriminated by listing type.
+  const extraFacts = verticalFacts(property.vertical);
+  const cqcUrl =
+    property.vertical.listingType === 'care_home' ? property.vertical.cqcInspectionUrl : null;
 
   // EPIC-O structured data (FR-O-5 RealEstateListing + FR-O-6 BreadcrumbList).
   const origin = await getRequestOrigin();
@@ -191,6 +264,33 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                   <dd className="t-heading-sm">{fact.value}</dd>
                 </div>
               ))}
+            </dl>
+          ) : null}
+
+          {/* FR-F-3 — the per-vertical facts strip, below the core spec strip. */}
+          {extraFacts.length > 0 || cqcUrl ? (
+            <dl className="border-divider mt-8 flex flex-wrap gap-8 border-t pt-8">
+              {extraFacts.map((fact) => (
+                <div key={fact.label} className="flex flex-col">
+                  <dt className="t-caption text-text-secondary">{fact.label}</dt>
+                  <dd className="t-heading-sm">{fact.value}</dd>
+                </div>
+              ))}
+              {cqcUrl ? (
+                <div className="flex flex-col">
+                  <dt className="t-caption text-text-secondary">Inspection</dt>
+                  <dd className="t-heading-sm">
+                    <a
+                      href={cqcUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-brand-primary underline underline-offset-4"
+                    >
+                      CQC inspection
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           ) : null}
 

@@ -1,11 +1,14 @@
 'use server';
 
 import {
+  PROPERTY_VERTICAL_FIELD_OWNERS,
   propertyCreateSchema,
   propertySlugBase,
   propertyWriteUpdateSchema,
   slugify,
+  validatePropertyVerticalFields,
   type PropertyCreate,
+  type PropertyListingType,
   type PropertyWriteUpdate,
 } from '@estate/validators';
 import { audit, withTenant, type AuditWriter } from '@estate/db';
@@ -59,7 +62,7 @@ interface PropertyUpdateClient extends AuditWriter {
   property: {
     findFirst(args: {
       where: Record<string, unknown>;
-    }): Promise<{ id: string; slug: string } | null>;
+    }): Promise<{ id: string; slug: string; listingType?: string } | null>;
     findMany(args: {
       where: Record<string, unknown>;
       select?: Record<string, unknown>;
@@ -141,7 +144,68 @@ function coreData(input: PropertyCreate | PropertyWriteUpdate): Record<string, u
   if (input.metaDescription !== undefined) data['metaDescription'] = input.metaDescription;
   if (input.publicationStatus !== undefined) data['publicationStatus'] = input.publicationStatus;
   if (input.town !== undefined) data['town'] = input.town;
+  // FR-F-3 — the per-vertical extension columns (§F.3–§F.6). Each is written only when
+  // present in the submission; the isolation check has already rejected foreign fields.
+  for (const field of Object.keys(PROPERTY_VERTICAL_FIELD_OWNERS)) {
+    const value = (input as Record<string, unknown>)[field];
+    if (value !== undefined) data[field] = value;
+  }
   return data;
+}
+
+/** The extension fields submitted as numeric form inputs (whole-pound / count). */
+const VERTICAL_NUMBER_FIELDS = [
+  'annualBusinessRates',
+  'annualTurnover',
+  'grossProfit',
+  'netProfit',
+  'yearsTrading',
+  'staffCount',
+  'currentAnnualRent',
+  'bedCount',
+] as const;
+
+/**
+ * The extension fields submitted as checkboxes. Each is paired in the form with a
+ * hidden `false` companion so an unticked box still posts a value (a bare checkbox
+ * submits nothing when unticked), letting an edit clear a previously-true flag.
+ */
+const VERTICAL_BOOLEAN_FIELDS = [
+  'isOffPlan',
+  'vatPayable',
+  'isConfidential',
+  'isGoingConcern',
+] as const;
+
+/**
+ * FR-F-3 — coerce the raw per-vertical form values into the shapes the write schema
+ * expects: numeric inputs to numbers (blank ⇒ omitted), checkboxes to booleans. Each
+ * checkbox is paired with a hidden `false` companion in the form, so a rendered
+ * subsection posts an explicit "on"/"false" the edit path uses to SET or CLEAR the
+ * flag. Only the subsection matching the listing type is rendered, so at most one
+ * vertical's fields arrive; the isolation check still guards a crafted submission.
+ */
+function parseVerticalFields(raw: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const field of VERTICAL_NUMBER_FIELDS) {
+    const value = raw[field];
+    if (value !== undefined && value !== '') out[field] = Number(value);
+  }
+  for (const field of VERTICAL_BOOLEAN_FIELDS) {
+    // The form pairs each checkbox with a hidden `false` companion, so a rendered
+    // subsection always posts an explicit value: "on" when ticked, "false" when not.
+    // Reading the value (not mere presence) lets an EDIT clear a flag that was true.
+    // An absent field means the subsection was not rendered (a foreign vertical) and
+    // is left untouched, so the isolation check does not reject it.
+    const value = raw[field];
+    if (value !== undefined) out[field] = value === 'on' || value === 'true';
+  }
+  // Text / enum extension fields pass through as-is when present and non-blank.
+  for (const field of ['developmentName', 'useClass', 'cqcRating', 'cqcInspectionUrl'] as const) {
+    const value = raw[field];
+    if (value !== undefined && value !== '') out[field] = value;
+  }
+  return out;
 }
 
 /** The identity + provenance context a single property insert needs. */
@@ -229,9 +293,23 @@ export async function createProperty(
       raw['bathrooms'] === undefined || raw['bathrooms'] === ''
         ? undefined
         : Number(raw['bathrooms']),
+    ...parseVerticalFields(raw),
   });
   if (!parsed.success) {
     return fromZod(parsed.error.issues);
+  }
+
+  // FR-F-3 — conditional-by-listing-type isolation: reject any extension field that does
+  // not belong to this listing type before it can be persisted.
+  const verticalIssues = validatePropertyVerticalFields(
+    parsed.data.listingType,
+    parsed.data as unknown as Record<string, unknown>,
+  );
+  if (verticalIssues.length > 0) {
+    return {
+      ok: false,
+      errors: verticalIssues.map((i) => ({ field: i.field, message: i.message })),
+    };
   }
 
   // RBAC gate — fail closed BEFORE any read/write.
@@ -287,6 +365,7 @@ export async function updateProperty(
       raw['bathrooms'] === undefined || raw['bathrooms'] === ''
         ? undefined
         : Number(raw['bathrooms']),
+    ...parseVerticalFields(raw),
   });
   if (!parsed.success) {
     return fromZod(parsed.error.issues);
@@ -311,6 +390,24 @@ export async function updateProperty(
     const existing = await tx.property.findFirst({ where: { id: input.id, deletedAt: null } });
     if (!existing) {
       return; // result stays the not-found default
+    }
+
+    // FR-F-3 — enforce vertical isolation against the EFFECTIVE listing type: the
+    // submitted one if the edit restates it, else the row's current type. A field that
+    // does not belong is rejected before any write (no partial mutation).
+    const effectiveListingType = (input.listingType ??
+      existing.listingType ??
+      'residential') as PropertyListingType;
+    const verticalIssues = validatePropertyVerticalFields(
+      effectiveListingType,
+      input as unknown as Record<string, unknown>,
+    );
+    if (verticalIssues.length > 0) {
+      result = {
+        ok: false,
+        errors: verticalIssues.map((i) => ({ field: i.field, message: i.message })),
+      };
+      return;
     }
 
     // Resolve the target slug (only when the submission carries one). A change is made

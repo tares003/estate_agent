@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { withTenant } from '@estate/db';
 
 import { getDb } from '../../../../lib/db.js';
+import { getEnabledVerticals } from '../../../../lib/packs.js';
 import { getPropertyForEdit, type PropertyEditReader } from '../../../../lib/property-edit.js';
 import { requireStaffPermission } from '../../../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../../../lib/tenant.js';
@@ -31,6 +32,28 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
 
   if (!property) notFound();
 
+  // FR-F-3 — the authorable verticals gate the per-vertical subsections; the extension
+  // pre-fill values come from the same edit model.
+  const enabledVerticals = await getEnabledVerticals();
+  const verticalInitial = {
+    isOffPlan: property.isOffPlan,
+    developmentName: property.developmentName,
+    vatPayable: property.vatPayable,
+    annualBusinessRates: property.annualBusinessRates,
+    useClass: property.useClass,
+    annualTurnover: property.annualTurnover,
+    grossProfit: property.grossProfit,
+    netProfit: property.netProfit,
+    yearsTrading: property.yearsTrading,
+    staffCount: property.staffCount,
+    currentAnnualRent: property.currentAnnualRent,
+    isConfidential: property.isConfidential,
+    bedCount: property.bedCount,
+    cqcRating: property.cqcRating,
+    cqcInspectionUrl: property.cqcInspectionUrl,
+    isGoingConcern: property.isGoingConcern,
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -43,7 +66,13 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           automatically. Changes are recorded in the audit log.
         </p>
       </div>
-      <PropertyForm mode="edit" action={updateProperty} initial={property} />
+      <PropertyForm
+        mode="edit"
+        action={updateProperty}
+        initial={property}
+        enabledVerticals={enabledVerticals}
+        verticalInitial={verticalInitial}
+      />
     </div>
   );
 }

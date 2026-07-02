@@ -9,6 +9,10 @@ vi.mock('../../../lib/staff-session.js', () => ({
   requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
 }));
 
+// FR-F-3 — the page resolves the tenant's authorable verticals to gate the vertical
+// form; stub it so the page test stays DB/request-free.
+vi.mock('../../../lib/packs.js', () => ({ getEnabledVerticals: vi.fn(async () => []) }));
+
 // The action + the client form are exercised elsewhere; stub the form to its mode.
 vi.mock('../actions.js', () => ({ createProperty: vi.fn() }));
 vi.mock('../PropertyForm.js', () => ({

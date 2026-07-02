@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { getEnabledVerticals } from '../../../lib/packs.js';
 import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { createProperty } from '../actions.js';
 import { PropertyForm } from '../PropertyForm.js';
@@ -18,6 +19,10 @@ export default async function NewPropertyPage() {
   // submit (defence in depth); this stops the form appearing to an unauthorised user.
   await requireStaffPermission('property.write');
 
+  // FR-F-3 — resolve which vertical listing types the tenant may author so the
+  // per-vertical extension subsections gate correctly (EPIC-AD / G12).
+  const enabledVerticals = await getEnabledVerticals();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -30,7 +35,7 @@ export default async function NewPropertyPage() {
           page once it is created. Changes are recorded in the audit log.
         </p>
       </div>
-      <PropertyForm mode="create" action={createProperty} />
+      <PropertyForm mode="create" action={createProperty} enabledVerticals={enabledVerticals} />
     </div>
   );
 }

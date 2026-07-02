@@ -138,6 +138,27 @@ export type PropertyCouncilTaxBand = (typeof PROPERTY_COUNCIL_TAX_BANDS)[number]
 export const PROPERTY_EPC_RATINGS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'pending'] as const;
 export type PropertyEpcRating = (typeof PROPERTY_EPC_RATINGS)[number];
 
+/** Commercial use class — mirrors the Prisma `CommercialUseClass` enum (§F.4, FR-F-3). */
+export const PROPERTY_COMMERCIAL_USE_CLASSES = [
+  'e',
+  'b2',
+  'b8',
+  'c1',
+  'sui_generis',
+  'other',
+] as const;
+export type PropertyCommercialUseClass = (typeof PROPERTY_COMMERCIAL_USE_CLASSES)[number];
+
+/** CQC rating — mirrors the Prisma `CqcRating` enum (§F.6, FR-F-3). */
+export const PROPERTY_CQC_RATINGS = [
+  'outstanding',
+  'good',
+  'requires_improvement',
+  'inadequate',
+  'not_yet_rated',
+] as const;
+export type PropertyCqcRating = (typeof PROPERTY_CQC_RATINGS)[number];
+
 /** A URL slug: lowercase alphanumerics separated by single hyphens (FR-F-4). */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -223,16 +244,119 @@ const coreFields = {
   town: z.string().trim().max(120).optional(),
 } as const;
 
+/** A non-negative whole-money amount (turnover / rates / rent, in whole pounds). */
+const money = z.number().int().nonnegative().optional();
+
+/**
+ * FR-F-3 — the per-vertical EXTENSION fields (master spec §F.3–§F.6), carried on the
+ * SAME Property entity discriminated by `listingType` (FR-F-2). Each field belongs to
+ * exactly ONE vertical; {@link PROPERTY_VERTICAL_FIELD_OWNERS} records the mapping and
+ * {@link validatePropertyVerticalFields} enforces the isolation rule (a residential
+ * listing must not carry a commercial use class, a care-home CQC rating, etc.). Whether
+ * a tenant may author a vertical at all is a pack gate (EPIC-AD, G12) on the admin form.
+ */
+const verticalFields = {
+  // §F.3 new home
+  isOffPlan: z.boolean().optional(),
+  developmentName: z.string().trim().max(200).optional(),
+  // §F.4 commercial
+  vatPayable: z.boolean().optional(),
+  annualBusinessRates: money,
+  useClass: z.enum(PROPERTY_COMMERCIAL_USE_CLASSES).optional(),
+  // §F.5 business transfer
+  annualTurnover: money,
+  grossProfit: money,
+  netProfit: money,
+  yearsTrading: z.number().int().nonnegative().max(1000).optional(),
+  staffCount: z.number().int().nonnegative().max(1_000_000).optional(),
+  currentAnnualRent: money,
+  isConfidential: z.boolean().optional(),
+  // §F.6 care home
+  bedCount: z.number().int().nonnegative().max(100_000).optional(),
+  cqcRating: z.enum(PROPERTY_CQC_RATINGS).optional(),
+  cqcInspectionUrl: z.string().trim().url().max(2000).optional(),
+  isGoingConcern: z.boolean().optional(),
+} as const;
+
+/**
+ * FR-F-3 — which listing type OWNS each per-vertical extension field. The isolation
+ * check ({@link validatePropertyVerticalFields}) rejects a field set on a listing whose
+ * type is not its owner. Kept as data (not scattered `if`s) so it round-trips with the
+ * admin form's pack-gated subsections and stays the single source of truth.
+ */
+export const PROPERTY_VERTICAL_FIELD_OWNERS: Readonly<Record<string, PropertyListingType>> = {
+  isOffPlan: 'new_home',
+  developmentName: 'new_home',
+  vatPayable: 'commercial',
+  annualBusinessRates: 'commercial',
+  useClass: 'commercial',
+  annualTurnover: 'business_transfer',
+  grossProfit: 'business_transfer',
+  netProfit: 'business_transfer',
+  yearsTrading: 'business_transfer',
+  staffCount: 'business_transfer',
+  currentAnnualRent: 'business_transfer',
+  isConfidential: 'business_transfer',
+  bedCount: 'care_home',
+  cqcRating: 'care_home',
+  cqcInspectionUrl: 'care_home',
+  isGoingConcern: 'care_home',
+};
+
+/** A per-vertical isolation violation: an extension field set on the wrong listing type. */
+export interface VerticalFieldIssue {
+  field: string;
+  message: string;
+}
+
+/**
+ * FR-F-3 — treat a submitted extension value as "set" for isolation purposes. Optional
+ * fields left absent (`undefined`) are never set; a boolean flag counts only when TRUE
+ * (the flags default to `false` everywhere, so a `false` is not a vertical assertion);
+ * any other present value counts as set.
+ */
+function isVerticalValueSet(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'boolean') return value; // only `true` asserts the vertical
+  return true;
+}
+
+/**
+ * FR-F-3 conditional validation: reject any per-vertical extension field that does not
+ * belong to `listingType`. Returns one issue per foreign field (empty when clean). The
+ * write actions call this after the base Zod parse and surface the issues as field errors
+ * — so "a residential listing does not require business turnover" is enforced structurally,
+ * and a residential listing may not smuggle one in either.
+ */
+export function validatePropertyVerticalFields(
+  listingType: PropertyListingType,
+  values: Record<string, unknown>,
+): VerticalFieldIssue[] {
+  const issues: VerticalFieldIssue[] = [];
+  for (const [field, owner] of Object.entries(PROPERTY_VERTICAL_FIELD_OWNERS)) {
+    if (owner === listingType) continue;
+    if (isVerticalValueSet(values[field])) {
+      issues.push({
+        field,
+        message: `The "${field}" field does not apply to a ${listingType.replace(/_/g, ' ')} listing.`,
+      });
+    }
+  }
+  return issues;
+}
+
 // FR-F-1 — create a property. `reference` and `listingType` + `saleType` anchor the
 // record; `slug` is optional here (the action auto-generates it from title/town/
 // postcode per FR-F-4 when omitted). The remaining core fields carry the listing's
-// initial content.
+// initial content, plus the per-vertical extension fields (FR-F-3), validated
+// conditionally on `listingType` by the write action.
 export const propertyCreateSchema = z.object({
   reference: nonEmptyString,
   listingType: z.enum(PROPERTY_LISTING_TYPES),
   saleType: z.enum(PROPERTY_SALE_TYPES),
   slug: slug.optional(),
   ...coreFields,
+  ...verticalFields,
 });
 
 /** A validated new-property input. */
@@ -247,6 +371,7 @@ export const propertyWriteUpdateSchema = z.object({
   listingType: z.enum(PROPERTY_LISTING_TYPES).optional(),
   saleType: z.enum(PROPERTY_SALE_TYPES).optional(),
   ...coreFields,
+  ...verticalFields,
 });
 
 /** A validated property-update input. */

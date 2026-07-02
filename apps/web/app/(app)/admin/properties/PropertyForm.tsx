@@ -16,6 +16,10 @@ import {
 import { Button, FormError, NumberField, Select, TextField, type SelectOption } from '@estate/ui';
 
 import type { PropertyWriteState } from './actions.js';
+import {
+  VerticalExtensionsForm,
+  type VerticalExtensionsInitial,
+} from './VerticalExtensionsForm.js';
 
 // EPIC-H property management (FR-H-2 write) / EPIC-F (FR-F-1) — the shared admin
 // create + edit form over the CORE property fields. One client component drives both
@@ -30,8 +34,11 @@ import type { PropertyWriteState } from './actions.js';
 // form just posts the slug. On success a create routes to the new listing's admin page;
 // an edit refreshes the route so the header + catalogue reflect the change.
 //
-// The per-vertical extension fields (FR-F-3, master spec §F.1–§F.6) are DEFERRED to a
-// later slice; this form is the always-on CORE only.
+// The per-vertical extension fields (FR-F-3, master spec §F.3–§F.6) render below the core
+// via VerticalExtensionsForm — one pack-gated subsection (EPIC-AD / G12) that follows the
+// currently-selected listing type. The parent passes the tenant's authorable vertical
+// listing types (resolved server-side via isPackEnabled) and the extension pre-fill
+// values; a residential/land listing, or an unentitled vertical, shows none.
 
 const INITIAL: PropertyWriteState = { ok: false };
 
@@ -61,6 +68,25 @@ export interface PropertyFormInitial {
   metaTitle: string | null;
   metaDescription: string | null;
   publicationStatus: string | null;
+  // ── FR-F-3 per-vertical extension fields (master spec §F.3–§F.6) ──────────────
+  // Optional so a core-only caller (create) need not restate them; the edit route
+  // fills them from the listing. The pack-gated VerticalExtensionsForm reads these.
+  isOffPlan?: boolean | null;
+  developmentName?: string | null;
+  vatPayable?: boolean | null;
+  annualBusinessRates?: number | null;
+  useClass?: string | null;
+  annualTurnover?: number | null;
+  grossProfit?: number | null;
+  netProfit?: number | null;
+  yearsTrading?: number | null;
+  staffCount?: number | null;
+  currentAnnualRent?: number | null;
+  isConfidential?: boolean | null;
+  bedCount?: number | null;
+  cqcRating?: string | null;
+  cqcInspectionUrl?: string | null;
+  isGoingConcern?: boolean | null;
 }
 
 type PropertyWriteAction = (
@@ -75,6 +101,15 @@ export interface PropertyFormProps {
   action: PropertyWriteAction;
   /** The listing's current core values — required in edit mode, absent for create. */
   initial?: PropertyFormInitial;
+  /**
+   * The vertical listing types the tenant may author (resolved server-side in the route
+   * via the canonical isPackEnabled check). Gates which FR-F-3 per-vertical extension
+   * subsection renders (EPIC-AD / G12). Defaults to none, so a caller that omits it shows
+   * no vertical fields.
+   */
+  enabledVerticals?: readonly string[];
+  /** The per-vertical extension pre-fill values (edit mode). */
+  verticalInitial?: VerticalExtensionsInitial;
 }
 
 /** Humanise a snake_case enum value into a Title Case label ("guide_price" → "Guide price"). */
@@ -123,6 +158,8 @@ interface OptionalEnumFieldProps {
   options: SelectOption[];
   defaultValue: string;
   error?: ReactNode;
+  /** Notified with the chosen value on every change (used to drive the vertical form). */
+  onValueChange?: (value: string) => void;
 }
 
 /**
@@ -140,6 +177,7 @@ function OptionalEnumField({
   options,
   defaultValue,
   error,
+  onValueChange,
 }: OptionalEnumFieldProps) {
   const [value, setValue] = useState(defaultValue);
   return (
@@ -150,7 +188,10 @@ function OptionalEnumField({
         {...(hint !== undefined ? { hint } : {})}
         options={withNone(options)}
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setValue(event.target.value);
+          onValueChange?.(event.target.value);
+        }}
         {...(error !== undefined ? { error } : {})}
       />
       {value !== '' ? <input type="hidden" name={name} value={value} /> : null}
@@ -166,11 +207,22 @@ function keyFeatureLines(value: string): string[] {
     .filter((line) => line.length > 0);
 }
 
-export function PropertyForm({ mode, action, initial }: PropertyFormProps) {
+export function PropertyForm({
+  mode,
+  action,
+  initial,
+  enabledVerticals = [],
+  verticalInitial,
+}: PropertyFormProps) {
   const [state, formAction, pending] = useActionState(action, INITIAL);
   // Key features are edited as free text (one per line) but submitted as one form field
   // per feature, so the action's `formData.getAll('keyFeatures')` receives a real array.
   const [keyFeaturesText, setKeyFeaturesText] = useState((initial?.keyFeatures ?? []).join('\n'));
+  // Track the selected listing type so the FR-F-3 vertical subsection follows it live —
+  // create starts residential; edit starts from the listing's current type.
+  const [listingType, setListingType] = useState(
+    mode === 'create' ? 'residential' : (initial?.listingType ?? ''),
+  );
   const router = useRouter();
 
   useEffect(() => {
@@ -242,6 +294,7 @@ export function PropertyForm({ mode, action, initial }: PropertyFormProps) {
               required
               options={LISTING_TYPE_OPTIONS}
               defaultValue="residential"
+              onChange={(event) => setListingType(event.target.value)}
               error={errorFor('listingType')}
             />
             <Select
@@ -262,6 +315,7 @@ export function PropertyForm({ mode, action, initial }: PropertyFormProps) {
               label="Listing type"
               options={LISTING_TYPE_OPTIONS}
               defaultValue={initial?.listingType ?? ''}
+              onValueChange={setListingType}
               error={errorFor('listingType')}
             />
             <OptionalEnumField
@@ -357,6 +411,16 @@ export function PropertyForm({ mode, action, initial }: PropertyFormProps) {
           error={errorFor('epcRating')}
         />
       </fieldset>
+
+      {/* FR-F-3 — the pack-gated per-vertical extension subsection, following the
+          currently-selected listing type. Renders nothing for residential/land or
+          when the owning pack is not enabled. */}
+      <VerticalExtensionsForm
+        listingType={listingType}
+        enabledVerticals={enabledVerticals}
+        {...(verticalInitial !== undefined ? { initial: verticalInitial } : {})}
+        errorFor={errorFor}
+      />
 
       <fieldset className="flex flex-col gap-4">
         <legend className="t-heading-sm mb-2">Location</legend>

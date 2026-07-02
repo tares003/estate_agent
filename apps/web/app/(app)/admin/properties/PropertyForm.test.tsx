@@ -155,6 +155,40 @@ describe('PropertyForm — edit mode', () => {
     expect(formData.has('category')).toBe(false);
   });
 
+  it('renders the care-home extension fields when the pack is enabled (FR-F-3)', () => {
+    const action = makeAction({ ok: false });
+    render(
+      <PropertyForm
+        mode="edit"
+        action={action}
+        initial={{ ...initial, listingType: 'care_home' }}
+        enabledVerticals={['care_home']}
+        verticalInitial={{
+          bedCount: 40,
+          cqcRating: 'good',
+          cqcInspectionUrl: null,
+          isGoingConcern: false,
+        }}
+      />,
+    );
+    expect(screen.getByText('Care home details')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Bed count/i)).toHaveValue(40);
+  });
+
+  it('omits the extension fields when the owning pack is not enabled', () => {
+    const action = makeAction({ ok: false });
+    render(
+      <PropertyForm
+        mode="edit"
+        action={action}
+        initial={{ ...initial, listingType: 'care_home' }}
+        enabledVerticals={[]}
+      />,
+    );
+    expect(screen.queryByText('Care home details')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Bed count/i)).not.toBeInTheDocument();
+  });
+
   it('surfaces the action field errors as in-page links and does not navigate', async () => {
     const action = makeAction({
       ok: false,
