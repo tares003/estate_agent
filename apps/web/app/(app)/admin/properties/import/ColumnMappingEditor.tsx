@@ -72,8 +72,9 @@ export function ColumnMappingEditor({
   const current = mapping ?? {};
   const options = useMemo(() => canonicalOptions(), []);
 
-  // Which required canonical fields the current mapping does not yet map.
-  const missingRequired = useMemo(() => unmappedRequiredColumns(current), [current]);
+  // Which required canonical fields the current mapping does not yet map. Cheap to derive
+  // each render; kept inline (not memoised) so it always tracks the controlled `mapping`.
+  const missingRequired = unmappedRequiredColumns(current);
 
   /** Apply a whole preset, but only for headers actually present in this upload. */
   function applyPreset(name: PresetName): void {

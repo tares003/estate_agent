@@ -174,16 +174,16 @@ describe('previewPropertyImport', () => {
   it('auto-detects a Reapit CSV and reports the suggested preset (FR-X-3)', async () => {
     // No mapping supplied: the preview detects the CRM from the raw headers so the form
     // can pre-select the preset.
-    const res = await previewPropertyImport({ ok: false }, csvForm(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`));
+    const res = await previewPropertyImport(
+      { ok: false },
+      csvForm(`${REAPIT_HEADER}\n${REAPIT_ROW}\n`),
+    );
     expect(res.ok).toBe(true);
     expect(res.preview!.detectedPreset).toBe('reapit');
   });
 
   it('reports no detected preset for a canonical-header CSV (custom mapping option)', async () => {
-    const res = await previewPropertyImport(
-      { ok: false },
-      csvForm(`${HEADER}\n${GOOD_1}\n`),
-    );
+    const res = await previewPropertyImport({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
     expect(res.ok).toBe(true);
     expect(res.preview!.detectedPreset).toBeNull();
   });

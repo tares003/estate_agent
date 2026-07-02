@@ -64,7 +64,13 @@ const REAPIT_PREVIEW: ImportPreviewState = {
     sample: [],
     errors: ['Row 1 — postcode: Enter a valid UK postcode.'],
     recognisedColumns: [],
-    ignoredColumns: ['Agency Reference', 'Postcode', 'Property Type', 'Sale/Let', 'Display Address'],
+    ignoredColumns: [
+      'Agency Reference',
+      'Postcode',
+      'Property Type',
+      'Sale/Let',
+      'Display Address',
+    ],
     detectedPreset: 'reapit',
   },
 };

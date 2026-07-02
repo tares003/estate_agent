@@ -61,9 +61,7 @@ export function PropertyImportForm() {
   const detectedPreset = preview?.detectedPreset ?? null;
   // The source headers the mapping editor works over: recognised targets plus the ignored
   // source headers reconstruct the file's header row for mapping.
-  const sourceColumns = preview
-    ? [...preview.recognisedColumns, ...preview.ignoredColumns]
-    : [];
+  const sourceColumns = preview ? [...preview.recognisedColumns, ...preview.ignoredColumns] : [];
 
   return (
     <form action={previewAction} className="flex max-w-[46rem] flex-col gap-6">
@@ -72,7 +70,6 @@ export function PropertyImportForm() {
 
       {/* The chosen column mapping travels with the file to both actions (FR-X-3). */}
       <input type="hidden" name="mapping" value={JSON.stringify(mapping)} />
-
 
       <div className="flex flex-col gap-2">
         <label htmlFor="import-file" className="t-body-md font-semibold">
@@ -129,7 +126,9 @@ export function PropertyImportForm() {
           {detectedPreset !== null ? (
             <p className="t-body-sm text-text-secondary">
               Detected a{' '}
-              <span className="font-semibold">{PRESET_LABELS[detectedPreset] ?? detectedPreset}</span>{' '}
+              <span className="font-semibold">
+                {PRESET_LABELS[detectedPreset] ?? detectedPreset}
+              </span>{' '}
               export — the matching preset has been suggested below. Adjust it if anything looks
               wrong, then re-preview.
             </p>

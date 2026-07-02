@@ -177,26 +177,33 @@ function normaliseHeader(header: string): string {
   return header.trim().toLowerCase();
 }
 
+/** The fewest matching source headers before detection will commit to a preset. */
+const DETECT_MIN_MATCHES = 3;
+
 /**
  * Suggest a CRM preset for an uploaded file by comparing its header row against each
- * preset's source columns. The best match wins provided it recognises a MAJORITY of that
- * preset's headers (so a single coincidental column name does not force a wrong preset).
- * Returns `null` when no preset matches well — e.g. a raw canonical CSV (whose headers are
- * already the field names) or a bespoke export the admin will map by hand. Case- and
- * whitespace-insensitive.
+ * preset's source columns. A preset qualifies when it recognises at least
+ * `DETECT_MIN_MATCHES` of the file's headers AND recognises a MAJORITY of them — so a raw
+ * canonical CSV (whose headers match no preset) or a bespoke export with a couple of
+ * coincidental column names does not force a wrong preset. The qualifying preset that
+ * matches the most headers wins. Returns `null` when no preset qualifies or the header
+ * list is empty — e.g. a canonical CSV, or an export the admin will map by hand. Case-
+ * and whitespace-insensitive.
  */
 export function detectCrmPreset(headers: string[]): PresetName | null {
-  const present = new Set(headers.map(normaliseHeader));
-  if (present.size === 0) return null;
+  const present = [...new Set(headers.map(normaliseHeader))].filter((h) => h !== '');
+  if (present.length === 0) return null;
+  const majority = Math.ceil(present.length / 2);
 
   let best: { name: PresetName; score: number } | null = null;
   for (const name of CRM_PRESET_NAMES) {
-    const sourceHeaders = Object.keys(PRESETS[name]);
-    const matched = sourceHeaders.filter((h) => present.has(normaliseHeader(h))).length;
-    // Require a clear majority of the preset's headers to be present, so detection is
-    // confident rather than opportunistic.
-    const threshold = Math.ceil(sourceHeaders.length / 2);
-    if (matched >= threshold && (best === null || matched > best.score)) {
+    const sourceSet = new Set(Object.keys(PRESETS[name]).map(normaliseHeader));
+    const matched = present.filter((h) => sourceSet.has(h)).length;
+    if (
+      matched >= DETECT_MIN_MATCHES &&
+      matched >= majority &&
+      (best === null || matched > best.score)
+    ) {
       best = { name, score: matched };
     }
   }
@@ -222,7 +229,4 @@ export function isMappingComplete(mapping: ColumnMapping): boolean {
  * empty mapping is valid input (the parser falls back to the raw header for anything
  * unmapped); required-field completeness is a separate UI concern (`isMappingComplete`).
  */
-export const mappingSchema: z.ZodType<ColumnMapping> = z.record(
-  z.string(),
-  z.enum(IMPORT_COLUMNS),
-);
+export const mappingSchema: z.ZodType<ColumnMapping> = z.record(z.string(), z.enum(IMPORT_COLUMNS));

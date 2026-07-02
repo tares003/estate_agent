@@ -32,7 +32,9 @@ describe('ColumnMappingEditor (FR-X-3)', () => {
   it('offers the CRM presets in a preset selector', () => {
     render(<ColumnMappingEditor detectedColumns={REAPIT_HEADERS} onMappingChange={vi.fn()} />);
     const presetControl = screen.getByLabelText(/preset/i);
-    const options = within(presetControl).getAllByRole('option').map((o) => o.textContent?.toLowerCase());
+    const options = within(presetControl)
+      .getAllByRole('option')
+      .map((o) => o.textContent?.toLowerCase());
     expect(options?.some((o) => o?.includes('reapit'))).toBe(true);
     expect(options?.some((o) => o?.includes('alto'))).toBe(true);
   });

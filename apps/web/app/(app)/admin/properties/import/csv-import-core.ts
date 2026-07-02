@@ -96,7 +96,10 @@ function coerceCell(column: ImportColumn, rawValue: string): unknown {
  * mapping entry wins; otherwise the header is used AS-IS if it already equals a canonical
  * field name (the V1 header convention); otherwise the column is unrecognised (ignored).
  */
-function resolveColumn(header: string, mapping: ColumnMapping | undefined): ImportColumn | undefined {
+function resolveColumn(
+  header: string,
+  mapping: ColumnMapping | undefined,
+): ImportColumn | undefined {
   const mapped = mapping?.[header];
   if (mapped !== undefined) return mapped;
   return IMPORT_COLUMN_SET.has(header) ? (header as ImportColumn) : undefined;
@@ -131,10 +134,7 @@ function toCandidate(
  * (FR-X-5). A malformed file (bad CSV, or no data rows) returns a `parseError` and no
  * rows — the caller reports it without a partial import.
  */
-export function parsePropertyImportCsv(
-  csvText: string,
-  mapping?: ColumnMapping,
-): CsvImportParse {
+export function parsePropertyImportCsv(csvText: string, mapping?: ColumnMapping): CsvImportParse {
   let records: Record<string, string>[];
   let headers: string[] = [];
   try {
