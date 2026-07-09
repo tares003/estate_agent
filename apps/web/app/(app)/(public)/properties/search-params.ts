@@ -1,4 +1,9 @@
-import { LISTING_TYPES, type ListingTypeFilter, type PropertySearch } from '@estate/validators';
+import {
+  LISTING_TYPES,
+  type AddedWithin,
+  type ListingTypeFilter,
+  type PropertySearch,
+} from '@estate/validators';
 
 // Pure helpers for the URL-driven catalogue: serialise the active filters to a
 // query string (the URL is the single source of truth — master spec §C.10) and
@@ -13,6 +18,14 @@ export const LISTING_TYPE_LABELS: Record<ListingTypeFilter, string> = {
   business_transfer: 'Business transfer',
   care_home: 'Care home',
   land: 'Land',
+};
+
+/** Human labels for the §C.10 added-to-site windows (used by chips + the filter bar). */
+export const ADDED_WITHIN_LABELS: Record<AddedWithin, string> = {
+  '24h': '24 hours',
+  '3d': '3 days',
+  '7d': '7 days',
+  '14d': '14 days',
 };
 
 /** GBP formatter (fixed locale → deterministic in tests / across runtimes). */
@@ -31,6 +44,8 @@ const KEYS: ReadonlyArray<keyof PropertySearch> = [
   'priceMax',
   'bedroomsMin',
   'bathroomsMin',
+  'newHomesOnly',
+  'addedWithin',
   'lat',
   'lng',
   'radius',
@@ -109,5 +124,10 @@ export function activeChips(search: PropertySearch): FilterChip[] {
   if (search.priceMax != null) add('priceMax', `Up to ${GBP.format(search.priceMax)}`);
   if (search.bedroomsMin != null) add('bedroomsMin', `${search.bedroomsMin}+ beds`);
   if (search.bathroomsMin != null) add('bathroomsMin', `${search.bathroomsMin}+ baths`);
+  // §C.10 advanced filters
+  if (search.newHomesOnly) add('newHomesOnly', 'New homes only');
+  if (search.addedWithin) {
+    add('addedWithin', `Added in last ${ADDED_WITHIN_LABELS[search.addedWithin]}`);
+  }
   return chips;
 }

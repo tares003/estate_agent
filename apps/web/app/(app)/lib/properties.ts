@@ -119,6 +119,14 @@ export interface PropertySearchOptions {
   priceMax?: number;
   bedroomsMin?: number;
   bathroomsMin?: number;
+  /** §C.10 advanced filter — restrict to new-build homes (`isNewHome = true`). */
+  newHomesOnly?: boolean;
+  /**
+   * §C.10 advanced filter — only properties added to the site (published) at or
+   * after this instant. The route derives it from the URL's `addedWithin` window
+   * via `addedWithinCutoff`, so this layer stays deterministic and Date-free.
+   */
+  addedAfter?: Date;
   sort?: PropertySort;
   page?: number;
   pageSize?: number;
@@ -157,10 +165,15 @@ function clamp(value: number, min: number, max: number): number {
 
 /** Build the Prisma `where` clause for the catalogue from the filter options. */
 function buildWhere(options: PropertySearchOptions): Record<string, unknown> {
-  // Base predicate: only published, non-soft-deleted properties are public.
-  const where: Record<string, unknown> = { publishedAt: { not: null }, deletedAt: null };
+  // Base predicate: only published, non-soft-deleted properties are public. The
+  // §C.10 added-within cutoff NARROWS the published gate (still never null).
+  const where: Record<string, unknown> = {
+    publishedAt: options.addedAfter ? { not: null, gte: options.addedAfter } : { not: null },
+    deletedAt: null,
+  };
   if (options.saleType) where['saleType'] = options.saleType;
   if (options.listingType) where['listingType'] = options.listingType;
+  if (options.newHomesOnly) where['isNewHome'] = true;
 
   // Free-text location: match the town (case-insensitive substring) OR a postcode
   // prefix (e.g. "Didsbury" or "M20"). Geographic radius search (PostGIS) is a
@@ -330,6 +343,9 @@ export async function searchPropertiesNear(
   if (options.priceMax != null) conditions.push(`price <= ${bind(options.priceMax)}`);
   if (options.bedroomsMin != null) conditions.push(`bedrooms >= ${bind(options.bedroomsMin)}`);
   if (options.bathroomsMin != null) conditions.push(`bathrooms >= ${bind(options.bathroomsMin)}`);
+  // §C.10 advanced filters — same semantics as buildWhere above.
+  if (options.newHomesOnly) conditions.push('is_new_home = TRUE');
+  if (options.addedAfter) conditions.push(`published_at >= ${bind(options.addedAfter)}`);
   if (options.location) {
     conditions.push(
       `(town ILIKE ${bind(`%${options.location}%`)} OR postcode LIKE ${bind(`${options.location.toUpperCase()}%`)})`,
