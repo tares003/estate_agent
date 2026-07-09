@@ -1,7 +1,7 @@
-import { Button, NumberField, Select, TextField, type SelectOption } from '@estate/ui';
-import { LISTING_TYPES, type PropertySearch } from '@estate/validators';
+import { Button, Checkbox, NumberField, Select, TextField, type SelectOption } from '@estate/ui';
+import { ADDED_WITHIN_WINDOWS, LISTING_TYPES, type PropertySearch } from '@estate/validators';
 import { NearMeButton } from './NearMeButton.js';
-import { LISTING_TYPE_LABELS } from './search-params.js';
+import { ADDED_WITHIN_LABELS, LISTING_TYPE_LABELS } from './search-params.js';
 
 /**
  * EPIC-F catalogue filter bar (master spec §C.10). A plain GET `<form>` whose
@@ -40,6 +40,15 @@ const RADIUS_OPTIONS: SelectOption[] = [
 const UNIT_OPTIONS: SelectOption[] = [
   { value: 'mi', label: 'Miles' },
   { value: 'km', label: 'Km' },
+];
+
+/** §C.10 advanced filter — the "added to site" window options. */
+const ADDED_WITHIN_OPTIONS: SelectOption[] = [
+  { value: '', label: 'Anytime' },
+  ...ADDED_WITHIN_WINDOWS.map((window) => ({
+    value: window,
+    label: `Last ${ADDED_WITHIN_LABELS[window]}`,
+  })),
 ];
 
 /** "Any … / 1+ / 2+ / …" options for a minimum bedroom/bathroom count. */
@@ -120,6 +129,21 @@ export function PropertyFilters({ current }: PropertyFiltersProps) {
       />
       <Select name="unit" label="Unit" options={UNIT_OPTIONS} defaultValue={current.unit} />
       <Select name="sort" label="Order by" options={SORT_OPTIONS} defaultValue={current.sort} />
+
+      {/* §C.10 advanced filters — added-to-site window + New Homes Only toggle. */}
+      <Select
+        name="addedWithin"
+        label="Added to site"
+        options={ADDED_WITHIN_OPTIONS}
+        defaultValue={current.addedWithin ?? ''}
+      />
+      <div className="flex items-end">
+        <Checkbox
+          name="newHomesOnly"
+          label="New homes only"
+          defaultChecked={current.newHomesOnly ?? false}
+        />
+      </div>
 
       {/* Coordinates for radius search — populated by "Search near me" (browser geolocation). */}
       <input type="hidden" name="lat" defaultValue={current.lat ?? ''} />

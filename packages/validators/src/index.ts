@@ -157,14 +157,17 @@ export {
   propertySearchSchema,
   parsePropertySearch,
   radiusToMetres,
+  addedWithinCutoff,
   PROPERTY_SORTS,
   LISTING_TYPES,
   RADIUS_UNITS,
+  ADDED_WITHIN_WINDOWS,
   DEFAULT_PAGE_SIZE,
   type PropertySearch,
   type PropertySort,
   type ListingTypeFilter,
   type RadiusUnit,
+  type AddedWithin,
 } from './property-search.js';
 export {
   REPAIR_FILE_CONTENT_TYPES,

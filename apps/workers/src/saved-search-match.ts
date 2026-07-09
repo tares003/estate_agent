@@ -24,6 +24,11 @@ export interface CandidateProperty {
   bedrooms: number | null;
   bathrooms: number | null;
   town: string | null;
+  /**
+   * §C.10 "New Homes Only" flag. Optional so older fixtures/callers still compile;
+   * an absent value is treated as NOT a new home (the toggle fails conservatively).
+   */
+  isNewHome?: boolean;
   /** Null until first published; the catalogue base gate requires it to be set. */
   publishedAt: Date | null;
   /** Soft-delete marker; a deleted property is never public (catalogue base gate). */
@@ -56,6 +61,9 @@ function matchesLocation(property: CandidateProperty, location: string): boolean
  * catalogue `buildWhere` predicate. Every active filter must hold (AND); an absent
  * filter (undefined) is a no-op. A null numeric column (POA price, unstated bed /
  * bath count) fails a min/range filter, matching SQL's `NULL >= n` → false.
+ *
+ * The §C.10 `addedWithin` window is deliberately NOT matched here: alert recency is
+ * governed by {@link findNewMatches}' published-after-cutoff, which subsumes it.
  */
 export function propertyMatchesSearch(
   filters: PropertySearch,
@@ -67,6 +75,9 @@ export function propertyMatchesSearch(
   if (filters.listingType !== undefined && property.listingType !== filters.listingType) {
     return false;
   }
+  // §C.10 "New Homes Only" — mirrors buildWhere's `isNewHome = true`. An absent
+  // column fails the toggle (conservative: never alert a non-new-home as new-build).
+  if (filters.newHomesOnly === true && property.isNewHome !== true) return false;
   if (filters.location !== undefined && !matchesLocation(property, filters.location)) return false;
 
   if (filters.priceMin !== undefined) {

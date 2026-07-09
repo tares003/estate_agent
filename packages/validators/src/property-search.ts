@@ -9,8 +9,10 @@
  * cacheable page. No personal data is captured (read-only search), so there is
  * no consent affirmation here (unlike the form schemas).
  *
- * Scope note: the radius (PostGIS), saved-search, and advanced status/added-within
- * toggles in §C.10 are later-phase; this covers the always-on core filter bar.
+ * Scope note: the radius (PostGIS) + saved-search are handled elsewhere. This adds
+ * the §C.10 advanced-modal "New Homes Only" + "Added to site" window toggles; the
+ * "Include Sold STC / Let Agreed / Under Offer" market-status toggle remains a later
+ * phase (it changes the default availability set and needs a product decision).
  */
 
 import { z } from 'zod';
@@ -50,6 +52,27 @@ const METRES_PER_UNIT: Record<RadiusUnit, number> = { mi: 1609.344, km: 1000 };
 /** Convert a radius in the chosen unit to whole metres for `ST_DWithin`. */
 export function radiusToMetres(radius: number, unit: RadiusUnit): number {
   return Math.round(radius * METRES_PER_UNIT[unit]);
+}
+
+/** "Added to site" time windows offered by the §C.10 advanced filter modal. */
+export const ADDED_WITHIN_WINDOWS = ['24h', '3d', '7d', '14d'] as const;
+export type AddedWithin = (typeof ADDED_WITHIN_WINDOWS)[number];
+
+/** Hours represented by each added-within window, used to derive the cutoff instant. */
+const ADDED_WITHIN_HOURS: Record<AddedWithin, number> = {
+  '24h': 24,
+  '3d': 72,
+  '7d': 168,
+  '14d': 336,
+};
+
+/**
+ * The `published_at` cutoff for an "added to site" window, relative to `now` — a
+ * property counts as "added within" the window when it was published at or after
+ * this instant. `now` is passed in so the read model stays deterministic in tests.
+ */
+export function addedWithinCutoff(window: AddedWithin, now: Date): Date {
+  return new Date(now.getTime() - ADDED_WITHIN_HOURS[window] * 60 * 60 * 1000);
 }
 
 /** Map an empty string / null to undefined so a present-but-blank param is "no filter". */
@@ -92,6 +115,20 @@ const optionalRadius = z.preprocess(
 const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess(blankToUndefined, z.enum(values).optional().catch(undefined));
 
+/**
+ * An optional boolean toggle from a GET form. A checked/selected control posts
+ * "1" / "true" / "on"; anything else (including absent) is "no filter" (undefined),
+ * so a toggle only ever NARROWS the results — it never forces `false`.
+ */
+const optionalFlag = z.preprocess(
+  blankToUndefined,
+  z
+    .enum(['1', 'true', 'on'])
+    .transform(() => true as const)
+    .optional()
+    .catch(undefined),
+);
+
 export const propertySearchSchema = z.object({
   location: optionalText,
   saleType: optionalEnum(['sale', 'rent'] as const),
@@ -100,6 +137,10 @@ export const propertySearchSchema = z.object({
   priceMax: optionalPounds,
   bedroomsMin: optionalCount,
   bathroomsMin: optionalCount,
+  // §C.10 advanced filter modal: restrict to new-build homes, and/or to properties
+  // added to the site within a recent time window.
+  newHomesOnly: optionalFlag,
+  addedWithin: optionalEnum(ADDED_WITHIN_WINDOWS),
   // Radius search (§K.1): a centre point (lat/lng, e.g. from browser geolocation)
   // + a radius. All three are needed to activate it; unit defaults to miles (UK).
   lat: optionalCoord(-90, 90),

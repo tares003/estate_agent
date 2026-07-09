@@ -1,7 +1,12 @@
 import type { Metadata } from 'next';
 import { withTenant } from '@estate/db';
 import { PropertyCard } from '@estate/ui';
-import { parsePropertySearch, radiusToMetres, type PropertySearch } from '@estate/validators';
+import {
+  addedWithinCutoff,
+  parsePropertySearch,
+  radiusToMetres,
+  type PropertySearch,
+} from '@estate/validators';
 import { getDb } from '../../lib/db.js';
 import {
   listHeroImages,
@@ -57,6 +62,12 @@ function toOptions(search: PropertySearch): PropertySearchOptions {
     ...(search.priceMax != null ? { priceMax: search.priceMax * 100 } : {}),
     ...(search.bedroomsMin != null ? { bedroomsMin: search.bedroomsMin } : {}),
     ...(search.bathroomsMin != null ? { bathroomsMin: search.bathroomsMin } : {}),
+    // §C.10 advanced filters: the added-within window becomes a concrete
+    // publishedAt cutoff here — the only place "now" enters the search.
+    ...(search.newHomesOnly ? { newHomesOnly: true } : {}),
+    ...(search.addedWithin
+      ? { addedAfter: addedWithinCutoff(search.addedWithin, new Date()) }
+      : {}),
   };
 }
 
