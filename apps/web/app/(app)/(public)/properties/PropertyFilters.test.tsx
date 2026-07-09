@@ -72,8 +72,22 @@ describe('PropertyFilters', () => {
       'lat',
       'lng',
       'sort',
+      'addedWithin',
+      'newHomesOnly',
     ]) {
       expect(container.querySelector(`[name="${name}"]`)).toBeInTheDocument();
     }
+  });
+
+  it('renders + pre-fills the §C.10 advanced filters (added-to-site window, New Homes Only)', () => {
+    render(<PropertyFilters current={{ ...empty, newHomesOnly: true, addedWithin: '7d' }} />);
+    expect(screen.getByLabelText('Added to site')).toHaveValue('7d');
+    expect(screen.getByLabelText(/New homes only/i)).toBeChecked();
+  });
+
+  it('leaves the advanced filters at their inactive defaults when unset', () => {
+    render(<PropertyFilters current={empty} />);
+    expect(screen.getByLabelText('Added to site')).toHaveValue('');
+    expect(screen.getByLabelText(/New homes only/i)).not.toBeChecked();
   });
 });

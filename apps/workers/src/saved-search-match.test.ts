@@ -194,3 +194,20 @@ describe('findNewMatches', () => {
     expect(findNewMatches(filters(), [old], since)).toEqual([]);
   });
 });
+
+describe('newHomesOnly (§C.10 advanced filter — buildWhere parity)', () => {
+  it('rejects a non-new-build (or unmarked) property when the saved search asks for new homes only', () => {
+    expect(
+      propertyMatchesSearch(filters({ newHomesOnly: true }), property({ isNewHome: false })),
+    ).toBe(false);
+    // an absent column fails the toggle — never alert a non-new-home as a new build
+    expect(propertyMatchesSearch(filters({ newHomesOnly: true }), property())).toBe(false);
+  });
+
+  it('accepts a new-build home, and ignores the toggle when the search does not set it', () => {
+    expect(
+      propertyMatchesSearch(filters({ newHomesOnly: true }), property({ isNewHome: true })),
+    ).toBe(true);
+    expect(propertyMatchesSearch(filters(), property({ isNewHome: false }))).toBe(true);
+  });
+});

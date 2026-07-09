@@ -177,6 +177,30 @@ describe('searchProperties', () => {
     );
   });
 
+  it('applies the §C.10 advanced filters — New Homes Only + added-within cutoff', async () => {
+    const { db, findMany } = reader([]);
+    const cutoff = new Date('2026-07-02T12:00:00Z');
+    await searchProperties(db, { newHomesOnly: true, addedAfter: cutoff });
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          // the added-within cutoff narrows the base published gate, never widens it
+          publishedAt: { not: null, gte: cutoff },
+          isNewHome: true,
+        },
+      }),
+    );
+  });
+
+  it('leaves the advanced filters off the where clause when unset', async () => {
+    const { db, findMany } = reader([]);
+    await searchProperties(db, {});
+    const where = findMany.mock.calls[0]![0].where as Record<string, unknown>;
+    expect(where['isNewHome']).toBeUndefined();
+    expect(where['publishedAt']).toEqual({ not: null });
+  });
+
   it('matches a location against the town (insensitive) OR a postcode prefix', async () => {
     const { db, findMany } = reader([]);
     await searchProperties(db, { location: 'Didsbury' });
@@ -260,6 +284,22 @@ describe('searchPropertiesNear', () => {
     expect(rowsCall?.values.slice(0, 3)).toEqual([-0.12, 51.5, 8047]);
     expect(rowsCall?.values).toContain(24); // LIMIT (default page size)
     expect(rowsCall?.values).toContain(0); // OFFSET (page 1)
+  });
+
+  it('appends the §C.10 advanced-filter conditions to the radius query', async () => {
+    const { client, calls } = rawClient([], 0);
+    const cutoff = new Date('2026-07-02T12:00:00Z');
+    await searchPropertiesNear(client, {
+      lat: 51.5,
+      lng: -0.12,
+      radiusMetres: 8047,
+      newHomesOnly: true,
+      addedAfter: cutoff,
+    });
+    const rowsCall = calls.find((c) => c.sql.includes('ORDER BY'));
+    expect(rowsCall?.sql).toContain('is_new_home = TRUE');
+    expect(rowsCall?.sql).toContain('published_at >= ');
+    expect(rowsCall?.values).toContainEqual(cutoff);
   });
 
   it('appends the filter conditions and runs a distinct count query', async () => {

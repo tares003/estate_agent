@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parsePropertySearch, propertySearchSchema, radiusToMetres } from './property-search.js';
+import {
+  ADDED_WITHIN_WINDOWS,
+  addedWithinCutoff,
+  parsePropertySearch,
+  propertySearchSchema,
+  radiusToMetres,
+} from './property-search.js';
 
 describe('propertySearchSchema / parsePropertySearch', () => {
   it('defaults to newest sort, page 1, miles unit and no filters for an empty query', () => {
@@ -104,5 +110,36 @@ describe('propertySearchSchema / parsePropertySearch', () => {
     expect(() =>
       propertySearchSchema.parse({ priceMin: '<script>', page: '1e9999', sort: ['x', 'y'] }),
     ).not.toThrow();
+  });
+});
+
+describe('advanced filters (§C.10 modal — New Homes Only + added-to-site window)', () => {
+  it('parses the New Homes Only toggle from checkbox-style truthy values', () => {
+    expect(parsePropertySearch({ newHomesOnly: 'on' }).newHomesOnly).toBe(true);
+    expect(parsePropertySearch({ newHomesOnly: 'true' }).newHomesOnly).toBe(true);
+    expect(parsePropertySearch({ newHomesOnly: '1' }).newHomesOnly).toBe(true);
+  });
+
+  it('treats an absent, blank or unrecognised toggle value as "no filter" (never false)', () => {
+    expect(parsePropertySearch({}).newHomesOnly).toBeUndefined();
+    expect(parsePropertySearch({ newHomesOnly: '' }).newHomesOnly).toBeUndefined();
+    expect(parsePropertySearch({ newHomesOnly: 'false' }).newHomesOnly).toBeUndefined();
+    expect(parsePropertySearch({ newHomesOnly: 'banana' }).newHomesOnly).toBeUndefined();
+  });
+
+  it('parses each added-within window and drops an unknown one', () => {
+    for (const window of ADDED_WITHIN_WINDOWS) {
+      expect(parsePropertySearch({ addedWithin: window }).addedWithin).toBe(window);
+    }
+    expect(parsePropertySearch({ addedWithin: '1y' }).addedWithin).toBeUndefined();
+    expect(parsePropertySearch({ addedWithin: '' }).addedWithin).toBeUndefined();
+  });
+
+  it('derives the published-at cutoff for each window relative to the supplied now', () => {
+    const now = new Date('2026-07-09T12:00:00Z');
+    expect(addedWithinCutoff('24h', now)).toEqual(new Date('2026-07-08T12:00:00Z'));
+    expect(addedWithinCutoff('3d', now)).toEqual(new Date('2026-07-06T12:00:00Z'));
+    expect(addedWithinCutoff('7d', now)).toEqual(new Date('2026-07-02T12:00:00Z'));
+    expect(addedWithinCutoff('14d', now)).toEqual(new Date('2026-06-25T12:00:00Z'));
   });
 });

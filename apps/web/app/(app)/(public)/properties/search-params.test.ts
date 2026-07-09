@@ -94,4 +94,17 @@ describe('activeChips', () => {
     expect(byKey['saleType']?.removeQuery).not.toContain('page=4');
     expect(byKey['saleType']?.removeQuery).toContain('listingType=new_home');
   });
+
+  it('serialises + chips the §C.10 advanced filters (New Homes Only, added-within)', () => {
+    const search = { ...base, newHomesOnly: true as const, addedWithin: '3d' as const };
+    expect(toSearchQuery(search)).toBe('?newHomesOnly=true&addedWithin=3d');
+
+    const chips = activeChips(search);
+    const byKey = Object.fromEntries(chips.map((c) => [c.key, c]));
+    expect(byKey['newHomesOnly']?.label).toBe('New homes only');
+    expect(byKey['addedWithin']?.label).toBe('Added in last 3 days');
+    // each chip removes only its own filter
+    expect(byKey['newHomesOnly']?.removeQuery).toBe('?addedWithin=3d');
+    expect(byKey['addedWithin']?.removeQuery).toBe('?newHomesOnly=true');
+  });
 });
