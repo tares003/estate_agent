@@ -7,21 +7,24 @@ import type { FormErrorItem } from '@estate/ui';
 import { getDb } from '../../lib/db.js';
 import { signInCustomer } from '../../lib/customer-sign-in.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { verifyTurnstile } from '../../lib/turnstile.js';
 
 // EPIC-T FR-T-3 — the customer sign-in submission (`/sign-in`). A registered
 // customer authenticates with email + password and is returned to the route they
 // were trying to reach (`?next=`). Mirrors the registration action's shape: the
-// Zod schema validates the input, then the `signInCustomer` seam (better-auth
-// signInEmail → password verified FR-N-1 → session cookie set via nextCookies)
-// authenticates. On success the action emits a `customer.signed_in` audit row in
-// ONE tenant transaction (G4 — a sign-in mints a session row, a state change) and
-// returns the SANITISED redirect target for the client to navigate to. Drives a
-// form via `useActionState`.
+// Zod schema validates the input, the Turnstile challenge is verified server-side
+// BEFORE any side effect (CLAUDE.md §9, G8 — throttles credential stuffing;
+// audit finding sign-in-missing-turnstile-g8), then the `signInCustomer` seam
+// (better-auth signInEmail → password verified FR-N-1 → session cookie set via
+// nextCookies) authenticates. On success the action emits a `customer.signed_in`
+// audit row in ONE tenant transaction (G4 — a sign-in mints a session row, a
+// state change) and returns the SANITISED redirect target for the client to
+// navigate to. Drives a form via `useActionState`.
 //
-// Fail-closed: invalid input, or a rejected credential, authenticates nothing and
-// writes nothing, and the surfaced error is deliberately GENERIC — it never
-// discloses whether the email or the password was wrong (account-enumeration
-// defence), so it carries no field link.
+// Fail-closed: invalid input, a failed challenge, or a rejected credential
+// authenticates nothing and writes nothing, and the surfaced error is
+// deliberately GENERIC — it never discloses whether the email or the password
+// was wrong (account-enumeration defence), so it carries no field link.
 
 /** The default post-sign-in destination (design brief — `/account` dashboard). */
 const DEFAULT_REDIRECT = '/account';
@@ -82,6 +85,21 @@ export async function submitSignIn(
 
   const credentials = parsed.data;
   const tenantId = await getCurrentTenantId();
+  const ip = await getRequestIp();
+
+  // Anti-spam gate (CLAUDE.md §9, G8): verify the Turnstile token BEFORE
+  // authenticating or writing anything — matching register/forgot-password.
+  const turnstileToken = formData.get('cf-turnstile-response');
+  const challengePassed = await verifyTurnstile(
+    typeof turnstileToken === 'string' ? turnstileToken : null,
+    ip,
+  );
+  if (!challengePassed) {
+    return {
+      ok: false,
+      errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+    };
+  }
 
   // Authenticate (and set the session cookie) BEFORE the audit write, so a
   // rejected credential leaves no orphaned audit row.
@@ -98,7 +116,6 @@ export async function submitSignIn(
     };
   }
 
-  const ip = await getRequestIp();
   await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as AuditWriter;
     await audit(tx, {

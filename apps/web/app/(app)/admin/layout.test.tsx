@@ -22,13 +22,7 @@ const redirect = vi.fn((to: string) => {
 vi.mock('next/navigation', () => ({ redirect: (to: string) => redirect(to) }));
 
 vi.mock('../../../components/admin/AdminShell.js', () => ({
-  AdminShell: ({
-    accountLabel,
-    children,
-  }: {
-    accountLabel: string;
-    children: React.ReactNode;
-  }) => (
+  AdminShell: ({ accountLabel, children }: { accountLabel: string; children: React.ReactNode }) => (
     <div data-testid="admin-shell" data-account={accountLabel}>
       {children}
     </div>

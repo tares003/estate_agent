@@ -3,17 +3,22 @@ import { withTenant } from '@estate/db';
 
 import { getDb } from '../../../lib/db.js';
 import { listContractors, type ContractorReader } from '../../../lib/contractors.js';
+import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { ContractorsManager } from './ContractorsManager.js';
 
-// EPIC-G contractor directory admin (FR-G-8, master spec §G.6). Resolves the
-// tenant, reads the directory inside the tenant (RLS) scope, and renders the
-// manager. The query is unit-tested in lib/contractors.ts, so this route stays a
-// thin composition. Renders inside the admin shell's `main` landmark.
+// EPIC-G contractor directory admin (FR-G-8, master spec §G.6). Gates on
+// `repair_request.read` (RBAC fail-closed; the write actions gate on
+// `repair_request.manage`). Resolves the tenant, reads the directory inside the
+// tenant (RLS) scope, and renders the manager. The query is unit-tested in
+// lib/contractors.ts, so this route stays a thin composition. Renders inside the
+// admin shell's `main` landmark.
 
 export const dynamic = 'force-dynamic';
 
 export default async function ContractorsPage() {
+  await requireStaffPermission('repair_request.read');
+
   const tenantId = await getCurrentTenantId();
   const contractors = await withTenant(getDb(), tenantId, (tx) =>
     listContractors(tx as unknown as ContractorReader),

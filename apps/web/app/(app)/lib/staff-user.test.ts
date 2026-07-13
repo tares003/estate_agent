@@ -47,7 +47,10 @@ describe('staffSessionFromUser', () => {
 });
 
 describe('loadStaffSession', () => {
-  function reader(row: StaffUserRow | null): { db: StaffUserReader; findFirst: ReturnType<typeof vi.fn> } {
+  function reader(row: StaffUserRow | null): {
+    db: StaffUserReader;
+    findFirst: ReturnType<typeof vi.fn>;
+  } {
     const findFirst = vi.fn(async () => row);
     return { db: { user: { findFirst } }, findFirst };
   }

@@ -6,17 +6,22 @@ import {
   listManagedRepairCategories,
   type ManagedRepairCategoryReader,
 } from '../../../lib/repair-categories.js';
+import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { RepairCategoriesManager } from './RepairCategoriesManager.js';
 
-// EPIC-G repair categories admin (FR-G-4, master spec §G.3). Resolves the tenant,
-// reads the full catalogue (visible + hidden) inside the tenant (RLS) scope, and
-// renders the manager. The query is unit-tested in lib/repair-categories.ts, so
-// this route stays a thin composition. Renders inside the admin shell's `main`.
+// EPIC-G repair categories admin (FR-G-4, master spec §G.3). Gates on
+// `repair_request.read` (RBAC fail-closed; the write actions gate on
+// `repair_request.manage`). Resolves the tenant, reads the full catalogue
+// (visible + hidden) inside the tenant (RLS) scope, and renders the manager. The
+// query is unit-tested in lib/repair-categories.ts, so this route stays a thin
+// composition. Renders inside the admin shell's `main`.
 
 export const dynamic = 'force-dynamic';
 
 export default async function RepairCategoriesPage() {
+  await requireStaffPermission('repair_request.read');
+
   const tenantId = await getCurrentTenantId();
   const categories = await withTenant(getDb(), tenantId, (tx) =>
     listManagedRepairCategories(tx as unknown as ManagedRepairCategoryReader),
