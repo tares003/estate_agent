@@ -26,6 +26,11 @@ export interface PropertyForSeo {
   priceValue: number | null;
   /** Market status (snake_case enum value) → drives offer availability. */
   marketStatus: string;
+  /**
+   * §F.5 confidential business transfer / §J hideExactAddress — when true the
+   * JSON-LD omits streetAddress, postalCode and geo (town + country only).
+   */
+  addressRedacted?: boolean;
 }
 
 /** schema.org availability for a market status (master spec §J.3 lifecycle). */
@@ -57,6 +62,9 @@ export function propertyListingJsonLd(
   url: string,
   images: readonly string[] = [],
 ): Record<string, unknown> {
+  // A redacted address (§F.5 confidential / §J hideExactAddress) carries no
+  // streetAddress or postalCode — locality + country only — and never a geo node.
+  const redacted = property.addressRedacted === true;
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'RealEstateListing',
@@ -64,9 +72,9 @@ export function propertyListingJsonLd(
     url,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: property.displayAddress,
+      ...(redacted ? {} : { streetAddress: property.displayAddress }),
       ...(property.town ? { addressLocality: property.town } : {}),
-      postalCode: property.postcode,
+      ...(redacted ? {} : { postalCode: property.postcode }),
       addressCountry: 'GB',
     },
   };
@@ -74,7 +82,7 @@ export function propertyListingJsonLd(
   if (property.description) jsonLd['description'] = property.description;
   if (property.bedrooms != null) jsonLd['numberOfBedrooms'] = property.bedrooms;
   if (property.bathrooms != null) jsonLd['numberOfBathroomsTotal'] = property.bathrooms;
-  if (property.latitude != null && property.longitude != null) {
+  if (!redacted && property.latitude != null && property.longitude != null) {
     jsonLd['geo'] = {
       '@type': 'GeoCoordinates',
       latitude: property.latitude,

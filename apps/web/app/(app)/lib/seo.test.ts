@@ -121,7 +121,10 @@ describe('propertyListingJsonLd', () => {
   });
 
   it('omits the locality too when a redacted property has no town', () => {
-    const ld = propertyListingJsonLd({ ...base, town: null, addressRedacted: true }, 'https://x.test/p');
+    const ld = propertyListingJsonLd(
+      { ...base, town: null, addressRedacted: true },
+      'https://x.test/p',
+    );
     expect(ld['address']).toEqual({ '@type': 'PostalAddress', addressCountry: 'GB' });
   });
 

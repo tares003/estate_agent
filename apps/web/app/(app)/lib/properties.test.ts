@@ -411,7 +411,11 @@ describe('searchPropertiesNear', () => {
 
   it('selects the redaction columns so radius results inherit the address masking', async () => {
     const { client, calls } = rawClient([confidentialTransferRow], 1);
-    const result = await searchPropertiesNear(client, { lat: 53.48, lng: -2.24, radiusMetres: 500 });
+    const result = await searchPropertiesNear(client, {
+      lat: 53.48,
+      lng: -2.24,
+      radiusMetres: 500,
+    });
 
     // The raw projection must carry the columns toCardProps redacts on, or a
     // confidential/hidden-address row found by radius search would leak.

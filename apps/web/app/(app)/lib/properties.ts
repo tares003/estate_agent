@@ -22,6 +22,10 @@ export interface PropertyRow {
   receptions: number | null;
   description?: string | null;
   town?: string | null;
+  /** §J location — stored outward code ("M20"); derived from `postcode` when absent. */
+  postcodePrefix?: string | null;
+  /** §J location — vendor-discretion flag: public render is town + postcode prefix only. */
+  hideExactAddress?: boolean | null;
   latitude?: number | null;
   longitude?: number | null;
   // §F specification: the property category discriminator (PropertyCategory enum)
@@ -106,6 +110,13 @@ export interface PropertyDetail extends PropertyCardProps {
   /** Asking price in whole pounds (GBP) for JSON-LD offers; null for POA. */
   priceValue: number | null;
   marketStatus: string;
+  /**
+   * True when the public address is redacted (§F.5 confidential business transfer,
+   * or the §J hideExactAddress flag). When set, displayAddress/postcode above are
+   * already coarsened to town + postcode prefix and latitude/longitude are null;
+   * the JSON-LD builder additionally omits streetAddress/postalCode/geo.
+   */
+  addressRedacted: boolean;
   /** FR-F-3 — the per-vertical extension facts, discriminated by listingType. */
   vertical: PropertyVerticalFacts;
 }
@@ -226,6 +237,68 @@ export function propertyTypeLabel(category: string | null | undefined): string |
   return PROPERTY_TYPE_LABELS[category];
 }
 
+/** The row fields the public-address redaction reasons about. */
+type AddressRedactionFields = Pick<
+  PropertyRow,
+  'town' | 'postcode' | 'postcodePrefix' | 'isConfidential' | 'hideExactAddress'
+>;
+
+/**
+ * The outward code ("M20") used wherever the full postcode must not render.
+ * Prefers the stored §J postcodePrefix; derives it from the postcode otherwise.
+ */
+export function publicPostcodePrefix(
+  row: Pick<PropertyRow, 'postcode' | 'postcodePrefix'>,
+): string {
+  if (row.postcodePrefix) return row.postcodePrefix;
+  return row.postcode.trim().split(/\s+/)[0] ?? '';
+}
+
+/**
+ * Whether the public surface must redact this row's exact address:
+ * - §F.5 — a business transfer flagged confidential hides the business's name and
+ *   exact address from the public listing (master spec line 527). Fail closed: a
+ *   confidential flag on ANY row redacts, whatever the listing type.
+ * - §J location — the hideExactAddress vendor-discretion flag renders only the
+ *   town + postcode prefix (master spec line 452).
+ */
+export function isPublicAddressRedacted(
+  row: Pick<PropertyRow, 'isConfidential' | 'hideExactAddress'>,
+): boolean {
+  return row.hideExactAddress === true || row.isConfidential === true;
+}
+
+/** The non-identifying placeholder rendered instead of the exact address: "town, prefix". */
+export function redactedAddressLine(
+  row: Pick<PropertyRow, 'town' | 'postcode' | 'postcodePrefix'>,
+): string {
+  const prefix = publicPostcodePrefix(row);
+  if (!row.town) return prefix;
+  return prefix ? `${row.town}, ${prefix}` : row.town;
+}
+
+/** The public address line for a row: exact, or the redacted placeholder. */
+function publicAddressLine(
+  row: Pick<PropertyRow, 'displayAddress'> & AddressRedactionFields,
+): string {
+  return isPublicAddressRedacted(row)
+    ? redactedAddressLine(row)
+    : `${row.displayAddress}, ${row.postcode}`;
+}
+
+/**
+ * The public headline for a row. A confidential row's title is the business name
+ * (§F.5) so it is replaced with the placeholder; a hidden-address row keeps its
+ * authored headline but must never fall back to the exact display address.
+ */
+function publicTitle(
+  row: Pick<PropertyRow, 'title' | 'displayAddress'> & AddressRedactionFields,
+): string {
+  if (row.isConfidential === true) return redactedAddressLine(row);
+  if (row.title) return row.title;
+  return isPublicAddressRedacted(row) ? redactedAddressLine(row) : row.displayAddress;
+}
+
 /** Map one §J Property row to PropertyCard props (trust markers applied). */
 export function toCardProps(row: PropertyRow): PropertyCardProps {
   const card: PropertyCardProps = {
@@ -233,8 +306,8 @@ export function toCardProps(row: PropertyRow): PropertyCardProps {
     status: toCardStatus(row.marketStatus),
     priceQualifier: priceQualifier(row.marketStatus),
     price: formatPrice(row.price),
-    title: row.title ?? row.displayAddress,
-    address: `${row.displayAddress}, ${row.postcode}`,
+    title: publicTitle(row),
+    address: publicAddressLine(row),
   };
   const freq = rentFrequency(row.saleType);
   if (freq) card.rentFrequency = freq;
@@ -298,11 +371,18 @@ export interface NearSearchOptions extends PropertySearchOptions {
   radiusMetres: number;
 }
 
-/** Columns the radius query selects, aliased to PropertyRow's camelCase shape. */
+/**
+ * Columns the radius query selects, aliased to PropertyRow's camelCase shape.
+ * Must carry the redaction columns (town, postcode_prefix, is_confidential,
+ * hide_exact_address) so toCardProps can mask a confidential / hidden-address
+ * row found via radius search exactly like the Prisma path does.
+ */
 const RADIUS_SELECT =
-  'id, slug, display_address AS "displayAddress", postcode, title, ' +
+  'id, slug, display_address AS "displayAddress", postcode, town, ' +
+  'postcode_prefix AS "postcodePrefix", title, ' +
   'sale_type AS "saleType", market_status AS "marketStatus", price, bedrooms, bathrooms, receptions, ' +
-  'category::text AS category';
+  'category::text AS category, listing_type::text AS "listingType", ' +
+  'is_confidential AS "isConfidential", hide_exact_address AS "hideExactAddress"';
 
 /**
  * Geographic radius search (master spec §K.1 "search radius"). Returns published,
@@ -387,19 +467,24 @@ export async function getPropertyBySlug(
     where: { slug, publishedAt: { not: null }, deletedAt: null },
   });
   if (!row) return null;
+  // Redact AT THE DATA LAYER (§F.5 confidential / §J hideExactAddress): the raw
+  // SEO fields are coarsened to town + postcode prefix and the coordinates are
+  // dropped, so every consumer (header, JSON-LD, metadata) inherits the masking.
+  const redacted = isPublicAddressRedacted(row);
   return {
     ...toCardProps(row),
     id: row.id,
     slug: row.slug,
     description: row.description ?? null,
     receptions: row.receptions,
-    displayAddress: row.displayAddress,
+    displayAddress: redacted ? redactedAddressLine(row) : row.displayAddress,
     town: row.town ?? null,
-    postcode: row.postcode,
-    latitude: row.latitude ?? null,
-    longitude: row.longitude ?? null,
+    postcode: redacted ? publicPostcodePrefix(row) : row.postcode,
+    latitude: redacted ? null : (row.latitude ?? null),
+    longitude: redacted ? null : (row.longitude ?? null),
     priceValue: row.price != null ? row.price / 100 : null,
     marketStatus: row.marketStatus,
+    addressRedacted: redacted,
     vertical: toVerticalFacts(row),
   };
 }
