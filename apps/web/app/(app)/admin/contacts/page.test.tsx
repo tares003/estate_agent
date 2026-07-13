@@ -6,6 +6,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const findMany = vi.fn();
 const count = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -30,11 +35,25 @@ function params(p: Record<string, string>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
 });
 
 describe('ContactsPage', () => {
+  // Audit finding admin-read-pages-ungated-pii-leak: the contact directory is
+  // PII — RBAC-gated fail-closed, mirroring feedback/page.tsx.
+  it('gates on the contact.read permission before reading', async () => {
+    render(await ContactsPage(params({})));
+    expect(requireStaffPermission).toHaveBeenCalledWith('contact.read');
+  });
+
+  it('propagates a denial WITHOUT reading the directory (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(ContactsPage(params({}))).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the directory heading + a row from the tenant-scoped read', async () => {
     render(await ContactsPage(params({})));
     expect(screen.getByRole('heading', { level: 1, name: 'Contacts' })).toBeInTheDocument();

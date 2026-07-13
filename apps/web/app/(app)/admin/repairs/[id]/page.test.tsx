@@ -6,6 +6,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -99,6 +104,7 @@ function props(id = 'r1') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   repairFindFirst.mockResolvedValue(repair);
   propertyFindMany.mockResolvedValue([
     { id: 'p1', displayAddress: '1 Acacia Avenue' },
@@ -146,6 +152,19 @@ beforeEach(() => {
 });
 
 describe('RepairDetailPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the ticket detail holds
+  // reporter PII (email/phone) — RBAC-gated fail-closed.
+  it('gates on the repair_request.read permission before reading', async () => {
+    render(await RepairDetailPage(props()));
+    expect(requireStaffPermission).toHaveBeenCalledWith('repair_request.read');
+  });
+
+  it('propagates a denial WITHOUT reading the ticket (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(RepairDetailPage(props())).rejects.toThrow('denied');
+    expect(repairFindFirst).not.toHaveBeenCalled();
+  });
+
   it('renders the ticket header, description, control with legal next statuses, and history', async () => {
     render(await RepairDetailPage(props()));
 

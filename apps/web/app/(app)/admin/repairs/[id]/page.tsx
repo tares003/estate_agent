@@ -12,6 +12,7 @@ import {
 import { listContractors, type ContractorReader } from '../../../lib/contractors.js';
 import { listRepairFiles, type RepairFileReader } from '../../../lib/repair-files.js';
 import { getRepairRequest, type RepairDetailReader } from '../../../lib/repairs.js';
+import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { repairStatusDisplay, repairUrgencyDisplay } from '../repair-display.js';
@@ -21,8 +22,10 @@ import { PropertyMatchControl } from './PropertyMatchControl.js';
 import { RepairStatusControl } from './RepairStatusControl.js';
 import { RepairTimeline } from './RepairTimeline.js';
 
-// EPIC-G repair triage detail (master spec §G.2/§G.5, FR-G-6/FR-G-7). Resolves the
-// tenant, reads the ticket + its status history in the same tenant (RLS) scope
+// EPIC-G repair triage detail (master spec §G.2/§G.5, FR-G-6/FR-G-7). Gates on
+// `repair_request.read` (RBAC fail-closed — the ticket holds reporter PII).
+// Resolves the tenant, reads the ticket + its status history in the same tenant
+// (RLS) scope
 // (404 if unknown), and renders: the header context (reporter, urgency + status
 // badges, category, property reference, submitted), the issue description, the
 // reporter's contact details, the §G.5 status changer (only legal next statuses),
@@ -34,6 +37,8 @@ export const dynamic = 'force-dynamic';
 const SUBMITTED = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 export default async function RepairDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireStaffPermission('repair_request.read');
+
   const { id } = await params;
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (tx) => {

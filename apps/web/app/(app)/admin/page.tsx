@@ -4,13 +4,16 @@ import { withTenant } from '@estate/db';
 import { getDb } from '../lib/db.js';
 import { enquiryPipelineReport, type EnquiryReportReader } from '../lib/enquiry-reports.js';
 import { countFeedbackNeedsResponse, type FeedbackAlertsReader } from '../lib/feedback-alerts.js';
+import { requireStaffPermission } from '../lib/staff-session.js';
 import { getCurrentTenantId } from '../lib/tenant.js';
 
 // EPIC-H admin home (FR-H-1). The v1 dashboard: live at-a-glance KPIs (the enquiry
 // conversion funnel, from the unit-tested pipeline read model, run tenant-scoped)
 // plus the count of feedback awaiting a response (EPIC-AC FR-AC-10) and quick access
-// to the live admin surfaces. The full role-adaptive KPI grid + alerts + activity
-// feed land as those capabilities do. Renders inside the shell's `main` landmark.
+// to the live admin surfaces. Gates on `enquiry.read` (RBAC fail-closed — the KPIs
+// derive from enquiry data; the layout gates the session itself). The full
+// role-adaptive KPI grid + alerts + activity feed land as those capabilities do.
+// Renders inside the shell's `main` landmark.
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +36,8 @@ interface DashboardKpi {
 }
 
 export default async function AdminDashboardPage() {
+  await requireStaffPermission('enquiry.read');
+
   const tenantId = await getCurrentTenantId();
   const { report, needsResponse } = await withTenant(getDb(), tenantId, async (tx) => ({
     report: await enquiryPipelineReport(tx as unknown as EnquiryReportReader, {}),

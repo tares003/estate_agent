@@ -31,3 +31,14 @@ export function staffAuthLookup(
   if (tenantId !== requestTenantId) return null;
   return { userId, tenantId };
 }
+
+/**
+ * Whether the DEV super-admin session fallback may be used. NEVER in production
+ * (audit finding staff-dev-fallback-not-env-gated): an unauthenticated production
+ * request must fail CLOSED to no staff session so every RBAC gate denies. Outside
+ * production (development / test / unset, mirroring proxy.ts's dev-tenant gate)
+ * the fallback keeps the admin exercisable in local dev without sign-in.
+ */
+export function devFallbackAllowed(nodeEnv: string | undefined): boolean {
+  return nodeEnv !== 'production';
+}

@@ -6,6 +6,11 @@ import { render, screen, within } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const findMany = vi.fn();
 const count = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -31,11 +36,25 @@ function params(p: Record<string, string>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
 });
 
 describe('AdminPropertiesPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the admin catalogue shows
+  // unpublished drafts — RBAC-gated fail-closed.
+  it('gates on the property.read permission before reading', async () => {
+    render(await AdminPropertiesPage(params({})));
+    expect(requireStaffPermission).toHaveBeenCalledWith('property.read');
+  });
+
+  it('propagates a denial WITHOUT reading the catalogue (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(AdminPropertiesPage(params({}))).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the heading + a draft listing from the tenant-scoped read (drafts included)', async () => {
     render(await AdminPropertiesPage(params({})));
     expect(screen.getByRole('heading', { level: 1, name: 'Properties' })).toBeInTheDocument();

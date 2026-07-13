@@ -2,12 +2,14 @@ import { withTenant } from '@estate/db';
 
 import { getDb } from '../../lib/db.js';
 import { listAuditLogs, type AuditLogReader } from '../../lib/audit-log.js';
+import { requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
 import { AuditLogTable } from './AuditLogTable.js';
 import { parseAuditParams } from './audit-params.js';
 
 // EPIC-H audit-log viewer (FR-H-17) — every state-changing action, with full diff,
-// actor, IP and time. URL-driven (entity / page); resolves the tenant, runs the
+// actor, IP and time. Gates on `audit.read` (RBAC fail-closed — the trail carries
+// actor + IP + diffs). URL-driven (entity / page); resolves the tenant, runs the
 // read inside the tenant RLS scope (audit_logs is RLS-isolated), renders the table.
 // Thin composition; renders inside the admin shell's `main` landmark.
 
@@ -18,6 +20,8 @@ interface AuditPageProps {
 }
 
 export default async function AuditPage({ searchParams }: AuditPageProps) {
+  await requireStaffPermission('audit.read');
+
   const options = parseAuditParams((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
   const result = await withTenant(getDb(), tenantId, (tx) =>

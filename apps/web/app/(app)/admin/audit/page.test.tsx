@@ -6,6 +6,11 @@ import { render, screen, within } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const findMany = vi.fn();
 const count = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -33,11 +38,25 @@ function params(p: Record<string, string>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
 });
 
 describe('AuditPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the audit trail (actor,
+  // IP, diffs) must be RBAC-gated fail-closed, mirroring feedback/page.tsx.
+  it('gates on the audit.read permission before reading', async () => {
+    render(await AuditPage(params({})));
+    expect(requireStaffPermission).toHaveBeenCalledWith('audit.read');
+  });
+
+  it('propagates a denial WITHOUT reading the audit log (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(AuditPage(params({}))).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the audit heading + an entry from the tenant-scoped read', async () => {
     render(await AuditPage(params({})));
     expect(screen.getByRole('heading', { level: 1, name: 'Audit log' })).toBeInTheDocument();

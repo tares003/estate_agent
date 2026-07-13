@@ -2,15 +2,16 @@ import { withTenant } from '@estate/db';
 
 import { getDb } from '../../lib/db.js';
 import { listContacts, type ContactListReader } from '../../lib/contacts.js';
+import { requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
 import { ContactsTable } from './ContactsTable.js';
 import { parseContactListParams } from './contacts-params.js';
 
-// EPIC-H contacts (FR-H-7 list) — the contact directory. URL-driven (type / page);
-// resolves the tenant, runs the read inside the tenant RLS scope, renders the
-// table. Thin composition over unit-tested pieces; renders inside the admin shell's
-// `main` landmark. The full FR-H-7 (per-type tabs, dedup/merge, compliance) is
-// deferred.
+// EPIC-H contacts (FR-H-7 list) — the contact directory. Gates on `contact.read`
+// (RBAC fail-closed — the directory is PII). URL-driven (type / page); resolves
+// the tenant, runs the read inside the tenant RLS scope, renders the table. Thin
+// composition over unit-tested pieces; renders inside the admin shell's `main`
+// landmark. The full FR-H-7 (per-type tabs, dedup/merge, compliance) is deferred.
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,8 @@ interface ContactsPageProps {
 }
 
 export default async function ContactsPage({ searchParams }: ContactsPageProps) {
+  await requireStaffPermission('contact.read');
+
   const options = parseContactListParams((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
   const result = await withTenant(getDb(), tenantId, (tx) =>
