@@ -58,6 +58,42 @@ jobs:
           GUARDS_BASE_REF: origin/${{ github.base_ref || 'main' }}
         run: pnpm run guards
 
+  integration:
+    name: Integration — Testcontainers (PostgreSQL 16 + PostGIS)
+    runs-on: ubuntu-latest
+    env:
+      # The integration suites are describe.skipIf(!DOCKER) so they can be
+      # skipped gracefully on developer machines without Docker. In CI a
+      # missing/broken Docker daemon must FAIL the job, never green-skip it:
+      # DOCKER_REQUIRED=1 makes each suite throw when Docker is unreachable.
+      DOCKER_REQUIRED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # real-postgres.integration.test.ts runs `prisma db push` and
+      # auth-tenant-scope.integration.test.ts imports the generated client, so
+      # the Prisma client must be materialised first (same as the static job).
+      - name: Generate Prisma client
+        run: pnpm --filter @estate/db run db:generate
+
+      # The ONLY real-engine verification of the RLS tenant-isolation policies,
+      # the 0006 composite tenant FKs, and the Better Auth tenant-scope
+      # extension. Excluded from the fast unit run (`pnpm run test`), so this
+      # job is where they execute.
+      - name: Integration tests — @estate/db (RLS · composite FKs · PostGIS)
+        run: pnpm --filter @estate/db run test:integration
+
+      # Proves the assembled ST_DWithin radius-search SQL parses and runs on a
+      # real PostGIS engine and returns rows nearest-first.
+      - name: Integration tests — @estate/web (radius search on real PostGIS)
+        run: pnpm --filter @estate/web run test:integration
+
   runtime-gates:
     name: Runtime gates — G3 performance budget · G9 accessibility
     runs-on: ubuntu-latest

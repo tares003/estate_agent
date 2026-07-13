@@ -40,6 +40,15 @@ function dockerAvailable(): boolean {
 }
 const DOCKER = dockerAvailable();
 
+// Fail closed in CI: the workflow's `integration` job sets DOCKER_REQUIRED=1,
+// so an unreachable Docker daemon fails the suite loudly instead of
+// green-skipping the only real-engine auth tenant-isolation verification.
+if (!DOCKER && process.env.DOCKER_REQUIRED === '1') {
+  throw new Error(
+    'DOCKER_REQUIRED=1 but the Docker daemon is unreachable — the Testcontainers integration suite cannot run.',
+  );
+}
+
 const TENANT_A = '11111111-1111-1111-1111-111111111111';
 const TENANT_B = '22222222-2222-2222-2222-222222222222';
 const SHARED_EMAIL = 'shared@example.com';
@@ -90,47 +99,64 @@ describe.skipIf(!DOCKER)('auth tenant-scope on real Postgres (Testcontainers)', 
     await container?.stop();
   });
 
+  // NOTE: every query below is awaited INSIDE the runWithAuthTenant callback.
+  // PrismaPromises are lazy — they dispatch on `.then` — so returning one out of
+  // runWithAuthTenant and awaiting it outside would dispatch AFTER the
+  // AsyncLocalStorage context has exited and the fail-closed hook would throw.
+  // Production callers (auth.handler / auth.api.*) invoke an async handler
+  // inside the callback, which awaits its adapter queries within the context —
+  // this mirrors that shape.
+
   it('writes the CONTEXT tenant onto a create, overriding any supplied value', async () => {
     // better-auth never supplies tenantId; even a (hostile) supplied value loses to
     // the context tenant — the boundary is unspoofable from the create args.
-    const user = await runWithAuthTenant(TENANT_A, () =>
-      authClient.user.create({
-        data: { email: SHARED_EMAIL, name: 'A User', role: 'agent', tenantId: TENANT_B },
-      }),
+    const user = await runWithAuthTenant(
+      TENANT_A,
+      async () =>
+        await authClient.user.create({
+          data: { email: SHARED_EMAIL, name: 'A User', role: 'agent', tenantId: TENANT_B },
+        }),
     );
     expect(user.tenantId).toBe(TENANT_A);
   });
 
   it('makes one tenant’s user invisible to another (cross-tenant read isolation)', async () => {
-    const inA = await runWithAuthTenant(TENANT_A, () =>
-      authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
+    const inA = await runWithAuthTenant(
+      TENANT_A,
+      async () => await authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
     );
     expect(inA?.email).toBe(SHARED_EMAIL);
-    const inB = await runWithAuthTenant(TENANT_B, () =>
-      authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
+    const inB = await runWithAuthTenant(
+      TENANT_B,
+      async () => await authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
     );
     expect(inB).toBeNull();
   });
 
   it('supports the SAME email in two tenants and resolves each to its own user', async () => {
-    const aUser = await runWithAuthTenant(TENANT_A, () =>
-      authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
+    const aUser = await runWithAuthTenant(
+      TENANT_A,
+      async () => await authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
     );
     // Per-tenant identity: a second user with the same email in tenant B is allowed.
-    const bUser = await runWithAuthTenant(TENANT_B, () =>
-      authClient.user.create({
-        data: { email: SHARED_EMAIL, name: 'B User', role: 'agent', tenantId: TENANT_B },
-      }),
+    const bUser = await runWithAuthTenant(
+      TENANT_B,
+      async () =>
+        await authClient.user.create({
+          data: { email: SHARED_EMAIL, name: 'B User', role: 'agent', tenantId: TENANT_B },
+        }),
     );
     expect(bUser.tenantId).toBe(TENANT_B);
     expect(bUser.id).not.toBe(aUser?.id);
 
     // The email lookup (the sign-in path) resolves to the RIGHT tenant's user.
-    const resolvedInA = await runWithAuthTenant(TENANT_A, () =>
-      authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
+    const resolvedInA = await runWithAuthTenant(
+      TENANT_A,
+      async () => await authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
     );
-    const resolvedInB = await runWithAuthTenant(TENANT_B, () =>
-      authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
+    const resolvedInB = await runWithAuthTenant(
+      TENANT_B,
+      async () => await authClient.user.findFirst({ where: { email: SHARED_EMAIL } }),
     );
     expect(resolvedInA?.id).toBe(aUser?.id);
     expect(resolvedInB?.id).toBe(bUser.id);
@@ -144,7 +170,7 @@ describe.skipIf(!DOCKER)('auth tenant-scope on real Postgres (Testcontainers)', 
 
   it('rejects any access to a non-auth model through the auth connection', async () => {
     await expect(
-      runWithAuthTenant(TENANT_A, () => authClient.platformTenant.findFirst()),
+      runWithAuthTenant(TENANT_A, async () => await authClient.platformTenant.findFirst()),
     ).rejects.toThrow(AuthTenantContextError);
   });
 });
