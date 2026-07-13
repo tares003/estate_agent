@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { feedbackAggregate, type FeedbackAggregateReader } from './feedback-aggregate.js';
 
 // EPIC-AC FR-AC-6 — the live reviews aggregate read model. Computes the average
-// rating (1 dp) + total count across the tenant's feedback. Tenant scoping is
-// applied by the caller (withTenant); this just shapes the aggregate query and
-// rounds the result. DB-free: a Prisma tx satisfies the structural reader.
+// rating (1 dp) + total count across the tenant's MODERATED (published) feedback —
+// pending / rejected rows must never move the public badge (audit finding
+// feedback-token-not-single-use: replayed/unmoderated rows skewed the average).
+// Tenant scoping is applied by the caller (withTenant); this just shapes the
+// aggregate query and rounds the result. DB-free: a Prisma tx satisfies the
+// structural reader.
 
 function reader(result: { _avg: { rating: number | null }; _count: number }): {
   r: FeedbackAggregateReader;
@@ -31,9 +34,13 @@ describe('feedbackAggregate', () => {
     expect(await feedbackAggregate(r)).toEqual({ average: 4.9, count: 30 });
   });
 
-  it('asks the reader to average the rating across every row', async () => {
+  it('scopes the aggregate to moderated (published) feedback only', async () => {
     const { r, aggregate } = reader({ _avg: { rating: 5 }, _count: 1 });
     await feedbackAggregate(r);
-    expect(aggregate.mock.calls[0]![0]).toEqual({ _avg: { rating: true }, _count: true });
+    expect(aggregate.mock.calls[0]![0]).toEqual({
+      where: { status: 'published' },
+      _avg: { rating: true },
+      _count: true,
+    });
   });
 });

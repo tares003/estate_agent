@@ -65,6 +65,16 @@ describe('FeedbackForm', () => {
     expect(submitFeedback).toHaveBeenCalledTimes(1);
   });
 
+  it('shows a friendly already-submitted state when the link was already used (FR-AC-2)', async () => {
+    submitFeedback.mockResolvedValue({ ok: false, alreadySubmitted: true });
+    const user = userEvent.setup();
+    render(<FeedbackForm token="tok.en.sig" />);
+    await user.click(screen.getByRole('button', { name: /send feedback/i }));
+    expect(await screen.findByText(/already been received/i)).toBeInTheDocument();
+    // The form is gone — the link is spent, there is nothing left to submit.
+    expect(screen.queryByRole('button', { name: /send feedback/i })).not.toBeInTheDocument();
+  });
+
   it('surfaces an error returned by the action', async () => {
     submitFeedback.mockResolvedValue({
       ok: false,

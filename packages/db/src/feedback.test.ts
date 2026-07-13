@@ -45,6 +45,16 @@ describe('Feedback — schema (feedback, master spec §B.36, FR-AC-4)', () => {
     );
   });
 
+  it('carries the FR-AC-2 single-use token digest, unique per tenant', () => {
+    // The SHA-256 digest of the redeemed one-time token is persisted with the
+    // row; the per-tenant unique constraint makes a replayed link structurally
+    // un-insertable (audit finding feedback-token-not-single-use). Nullable so
+    // rows that predate single-use enforcement stay valid (NULLs are distinct).
+    const model = block('Feedback', 'model');
+    expect(model).toMatch(/tokenDigest\s+String\?\s+@map\("token_digest"\)/);
+    expect(model).toContain('@@unique([tenantId, tokenDigest])');
+  });
+
   it('carries the FR-AC-5/10 moderation + alert columns', () => {
     const model = block('Feedback', 'model');
     expect(model).toMatch(/status\s+FeedbackStatus\s+@default\(pending\)/);
