@@ -46,19 +46,18 @@ beforeEach(() => {
 });
 
 describe('setPropertyPublished', () => {
-  it('publishes (sets publishedAt) and audits it (G4)', async () => {
+  it('REFUSES a publish request — publishing runs only through the preflight (FR-F-8)', async () => {
+    // A crafted POST with publish=true must not bypass the §H.5 checklist: this
+    // action is the UNPUBLISH half; publishWithPreflight is the only publish path
+    // (audit finding publish-preflight-checklist-bypassed). Nothing is read or
+    // written and nothing is audited.
     const result = await setPropertyPublished({ ok: false }, form({ publish: 'true' }));
 
-    expect(result).toEqual({ ok: true });
-    expect(requireStaffPermission).toHaveBeenCalledWith('property.publish');
-    expect(update).toHaveBeenCalledWith({
-      where: { id: PROP },
-      data: { publishedAt: expect.any(Date) },
-    });
-    expect(audit).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ action: 'property.published', entityId: PROP }),
-    );
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]?.message).toMatch(/checklist/i);
+    expect(withTenant).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
   });
 
   it('unpublishes (clears publishedAt) and audits it', async () => {
@@ -86,7 +85,7 @@ describe('setPropertyPublished', () => {
 
   it('returns not-found and writes nothing when the listing is absent', async () => {
     findFirst.mockResolvedValue(null);
-    const result = await setPropertyPublished({ ok: false }, form());
+    const result = await setPropertyPublished({ ok: false }, form({ publish: 'false' }));
     expect(result.ok).toBe(false);
     expect(update).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
