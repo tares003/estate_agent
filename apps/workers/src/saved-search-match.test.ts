@@ -115,18 +115,29 @@ describe('propertyMatchesSearch', () => {
     ).toBe(true);
   });
 
-  it('filters on priceMin / priceMax (inclusive)', () => {
-    const p = property({ price: 25_000_000 });
-    expect(propertyMatchesSearch(filters({ priceMin: 25_000_000 }), p)).toBe(true);
-    expect(propertyMatchesSearch(filters({ priceMin: 25_000_001 }), p)).toBe(false);
-    expect(propertyMatchesSearch(filters({ priceMax: 25_000_000 }), p)).toBe(true);
-    expect(propertyMatchesSearch(filters({ priceMax: 24_999_999 }), p)).toBe(false);
+  // MONEY SEAM (audit saved-search-digest-price-off-by-100): the saved filters keep
+  // the catalogue URL's POUNDS (propertySearchSchema optionalPounds — "the route
+  // multiplies by 100 to the pence"), while property.price is the DB PENCE column.
+  // These tests therefore feed realistic POUNDS bounds against PENCE prices, exactly
+  // as the digest worker sees them — a matcher that compares the two units raw can
+  // never pass them again.
+  it('filters on priceMin / priceMax (inclusive) — pounds bounds vs pence prices', () => {
+    const p = property({ price: 25_000_000 }); // £250,000 stored as pence
+    expect(propertyMatchesSearch(filters({ priceMax: 300_000 }), p)).toBe(true);
+    expect(propertyMatchesSearch(filters({ priceMax: 200_000 }), p)).toBe(false);
+    expect(propertyMatchesSearch(filters({ priceMin: 200_000 }), p)).toBe(true);
+    expect(propertyMatchesSearch(filters({ priceMin: 300_000 }), p)).toBe(false);
+    // inclusive boundaries, like the catalogue's gte/lte
+    expect(propertyMatchesSearch(filters({ priceMin: 250_000 }), p)).toBe(true);
+    expect(propertyMatchesSearch(filters({ priceMin: 250_001 }), p)).toBe(false);
+    expect(propertyMatchesSearch(filters({ priceMax: 250_000 }), p)).toBe(true);
+    expect(propertyMatchesSearch(filters({ priceMax: 249_999 }), p)).toBe(false);
   });
 
   it('excludes a POA (null price) property when a price bound is set', () => {
     const poa = property({ price: null });
     expect(propertyMatchesSearch(filters({ priceMin: 1 }), poa)).toBe(false);
-    expect(propertyMatchesSearch(filters({ priceMax: 99_999_999 }), poa)).toBe(false);
+    expect(propertyMatchesSearch(filters({ priceMax: 999_999 }), poa)).toBe(false);
     // …but with no price filter, a POA property still matches.
     expect(propertyMatchesSearch(filters(), poa)).toBe(true);
   });
