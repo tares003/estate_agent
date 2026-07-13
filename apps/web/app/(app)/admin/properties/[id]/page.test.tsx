@@ -23,6 +23,18 @@ vi.mock('./PublishControl.js', () => ({
     <div data-testid="publish-control">{published ? 'published' : 'draft'}</div>
   ),
 }));
+// FR-F-8 — the checklist-enforcing publish control a DRAFT must publish through
+// (audit finding publish-preflight-checklist-bypassed). The page evaluates the
+// checklist server-side and passes items + ready down.
+vi.mock('./PublishPreflight.js', () => ({
+  PublishPreflight: ({
+    items,
+    ready,
+  }: {
+    items: { key: string; satisfied: boolean }[];
+    ready: boolean;
+  }) => <div data-testid="publish-preflight">{`${items.length}:${ready ? 'ready' : 'blocked'}`}</div>,
+}));
 vi.mock('./MarketStatusControl.js', () => ({
   MarketStatusControl: ({ current, options }: { current: string; options: string[] }) => (
     <div data-testid="market-status-control">{`${current}:${options.join(',')}`}</div>
@@ -42,12 +54,16 @@ vi.mock('../../../lib/storage.js', () => ({
 const findFirst = vi.fn();
 const eventFindMany = vi.fn();
 const imageFindMany = vi.fn();
+const imageCount = vi.fn();
+const imageFindFirst = vi.fn();
+const documentFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
       property: { findFirst },
       propertyStatusEvent: { findMany: eventFindMany },
-      propertyImage: { findMany: imageFindMany },
+      propertyImage: { findMany: imageFindMany, count: imageCount, findFirst: imageFindFirst },
+      propertyDocument: { findMany: documentFindMany },
     }),
 }));
 
@@ -75,6 +91,9 @@ function props(id = 'p1') {
 beforeEach(() => {
   vi.clearAllMocks();
   findFirst.mockResolvedValue(property);
+  imageCount.mockResolvedValue(1);
+  imageFindFirst.mockResolvedValue(null);
+  documentFindMany.mockResolvedValue([]);
   imageFindMany.mockResolvedValue([
     {
       id: 'img1',
@@ -106,7 +125,11 @@ describe('AdminPropertyDetailPage', () => {
     expect(screen.getByText('Draft')).toBeInTheDocument();
     expect(screen.getByText('For sale · For sale')).toBeInTheDocument(); // saleType · marketStatus
     expect(screen.getByTestId('property-edit-form')).toHaveTextContent('p1');
-    expect(screen.getByTestId('publish-control')).toHaveTextContent('draft');
+    // FR-F-8 — a DRAFT publishes ONLY through the pre-flight checklist (eleven items,
+    // evaluated server-side; this fixture satisfies none fully, so publish is gated
+    // behind the typed override). The checklist-less PublishControl must NOT render.
+    expect(screen.getByTestId('publish-preflight')).toHaveTextContent('11:blocked');
+    expect(screen.queryByTestId('publish-control')).not.toBeInTheDocument();
     // the market-status control gets the current status + the sale-type's options
     expect(screen.getByTestId('market-status-control')).toHaveTextContent(
       'for_sale:for_sale,under_offer,sold_stc,sold,withdrawn',
@@ -136,7 +159,9 @@ describe('AdminPropertyDetailPage', () => {
     render(await AdminPropertyDetailPage(props()));
     expect(screen.getByText('Published')).toBeInTheDocument();
     expect(screen.getByText('To rent · To let')).toBeInTheDocument();
+    // A LIVE listing needs no checklist to unpublish — the simple control remains.
     expect(screen.getByTestId('publish-control')).toHaveTextContent('published');
+    expect(screen.queryByTestId('publish-preflight')).not.toBeInTheDocument();
   });
 
   it('404s an unknown listing', async () => {

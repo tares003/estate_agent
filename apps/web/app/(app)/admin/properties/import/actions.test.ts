@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// EPIC-X FR-X-1 / FR-X-6 / FR-X-9 — the audited bulk CSV import action. Mirrors the
-// property create/import action tests: mock the staff-session, tenant and db seams +
-// the shared insertPropertyRow. Assert fail-closed RBAC, that valid rows are created
-// through the shared insert path, that ONE import_logs row captures the counts +
-// per-row error summary, and that the run is audited (property.imported) in the same
-// transaction (G4) — while a bad row is isolated and the rest still import (FR-X-5).
+// EPIC-X FR-X-1 / FR-X-5 / FR-X-6 / FR-X-9 — the audited bulk CSV import action.
+// Mirrors the property create/import action tests: mock the staff-session, tenant and
+// db seams + the shared insertPropertyRow. Assert fail-closed RBAC, that valid rows
+// are created through the shared insert path, that ONE import_logs row captures the
+// counts + per-row error summary, and that the run is audited (property.imported) in
+// the same transaction (G4) — while a bad row is isolated and the rest still import
+// (FR-X-5). Row isolation covers BOTH validation failures AND DB-constraint failures
+// (a duplicate reference / P2002 rolls back only its own savepoint, never the run —
+// audit finding import-duplicate-reference-aborts-whole-run), and the G12 pack gate
+// fails rows whose vertical listing type the tenant has not enabled.
 
 const requireStaffPermission = vi.fn();
 const getStaffActor = vi.fn();
@@ -23,6 +27,13 @@ vi.mock('../../../lib/tenant.js', () => ({
   getRequestIp: () => getRequestIp(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
+
+// EPIC-AD / G12 — the server-side pack gate for the per-vertical listing types.
+// Permissive by default; the deny branch is asserted explicitly below.
+const isListingTypePermitted = vi.fn();
+vi.mock('../../../lib/packs.js', () => ({
+  isListingTypePermitted: (...a: unknown[]) => isListingTypePermitted(...a),
+}));
 
 // FR-X-10 — the plan-tier active-listing cap. Default to unlimited here so the
 // create/audit behaviour these tests assert is unaffected by quota; the quota
@@ -56,10 +67,12 @@ const audit = vi.fn();
 const propertyFindMany = vi.fn();
 const propertyCount = vi.fn();
 const importLogCreate = vi.fn();
+const executeRawUnsafe = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
   fn({
     property: { findMany: propertyFindMany, count: propertyCount },
     importLog: { create: importLogCreate },
+    $executeRawUnsafe: executeRawUnsafe,
   }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
@@ -115,8 +128,16 @@ beforeEach(() => {
   propertyFindMany.mockResolvedValue([]);
   propertyCount.mockResolvedValue(0);
   importLogCreate.mockResolvedValue({ id: LOG_ID });
+  isListingTypePermitted.mockResolvedValue(true);
   getTenantActiveListingQuota.mockResolvedValue(Infinity);
 });
+
+/** A P2002-shaped (unique-constraint) error, as Prisma raises for a duplicate reference. */
+function p2002(): Error {
+  const error = new Error('Unique constraint failed on the fields: (`tenantId`,`reference`)');
+  (error as Error & { code: string }).code = 'P2002';
+  return error;
+}
 
 describe('importPropertiesFromCsv', () => {
   it('denies when the staff role lacks property.write (fail-closed) — nothing written', async () => {
@@ -253,5 +274,107 @@ describe('importPropertiesFromCsv', () => {
     await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
     const data = importLogCreate.mock.calls[0]![0].data as { errorSummary: unknown };
     expect(data.errorSummary).toBeNull();
+  });
+
+  // FR-X-5 — DB-constraint failures are isolated per row exactly like validation
+  // failures: a duplicate `reference` (P2002 on @@unique([tenantId, reference])) must
+  // record THAT row as failed and continue, never abort the whole run (audit finding
+  // import-duplicate-reference-aborts-whole-run).
+  describe('per-row DB-error isolation (FR-X-5)', () => {
+    it('records a duplicate-reference row as failed and imports the rest', async () => {
+      insertPropertyRow.mockRejectedValueOnce(p2002());
+      const res = await importPropertiesFromCsv(
+        { ok: false },
+        csvForm(`${HEADER}\n${GOOD_1}\n${GOOD_2}\n`),
+      );
+      expect(res.ok).toBe(true);
+      // BOTH rows were attempted; the duplicate failed, the other row still imported.
+      expect(insertPropertyRow).toHaveBeenCalledTimes(2);
+      expect(res.counts).toMatchObject({ input: 2, created: 1, failed: 1 });
+      // The failure names the row and the duplicate reference.
+      expect(res.errorSummary).toHaveLength(1);
+      expect(res.errorSummary![0]).toContain('Row 1');
+      expect(res.errorSummary![0]).toMatch(/reference/i);
+      // The ONE import_logs row reflects the mixed outcome.
+      expect(importLogCreate).toHaveBeenCalledTimes(1);
+      const data = importLogCreate.mock.calls[0]![0].data as Record<string, unknown>;
+      expect(data).toMatchObject({ recordsCreated: 1, recordsFailed: 1 });
+      expect(data['errorSummary']).toEqual({ rows: res.errorSummary });
+    });
+
+    it('audits the failed row individually (FR-X-9) alongside the run audit', async () => {
+      insertPropertyRow.mockRejectedValueOnce(p2002());
+      await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n${GOOD_2}\n`));
+      const actions = audit.mock.calls.map((call) => (call[1] as { action: string }).action);
+      expect(actions).toContain('property.imported');
+      const rowFailAudit = audit.mock.calls.find(
+        (call) => (call[1] as { action: string }).action === 'property.import_row_failed',
+      );
+      expect(rowFailAudit).toBeDefined();
+      expect((rowFailAudit![1] as { diff: { rowNumber: number } }).diff.rowNumber).toBe(1);
+    });
+
+    it('wraps each row insert in a savepoint so a failed row rolls back alone', async () => {
+      insertPropertyRow.mockRejectedValueOnce(p2002());
+      await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n${GOOD_2}\n`));
+      const statements = executeRawUnsafe.mock.calls.map((call) => String(call[0]));
+      // Every attempted row opens a savepoint; the failed row rolls back to it, so the
+      // aborted INSERT never poisons the surrounding tenant transaction (import_log +
+      // run audit + surviving rows still commit together).
+      expect(statements.filter((s) => s.startsWith('SAVEPOINT '))).toHaveLength(2);
+      expect(statements.some((s) => s.startsWith('ROLLBACK TO SAVEPOINT '))).toBe(true);
+    });
+
+    it('isolates a non-P2002 insert failure with a generic row error', async () => {
+      insertPropertyRow.mockRejectedValueOnce(new Error('connection reset'));
+      const res = await importPropertiesFromCsv(
+        { ok: false },
+        csvForm(`${HEADER}\n${GOOD_1}\n${GOOD_2}\n`),
+      );
+      expect(res.ok).toBe(true);
+      expect(res.counts).toMatchObject({ created: 1, failed: 1 });
+      expect(res.errorSummary![0]).toContain('Row 1');
+    });
+  });
+
+  // EPIC-AD / G12 — the import path must enforce pack entitlement SERVER-SIDE like the
+  // create action: a row authoring a pack-gated vertical the tenant has not enabled is
+  // recorded as failed (row-isolated), never inserted (audit finding
+  // vertical-pack-entitlement-not-enforced-server-side).
+  describe('pack entitlement (G12 server-side)', () => {
+    const COMMERCIAL_ROW = 'REF-C1,commercial,sale,1 Bridge St,M3 3BZ,Unit One,Manchester';
+
+    it('fails rows whose vertical listing type is not enabled and imports the rest', async () => {
+      isListingTypePermitted.mockImplementation(async (type: unknown) => type !== 'commercial');
+      const res = await importPropertiesFromCsv(
+        { ok: false },
+        csvForm(`${HEADER}\n${GOOD_1}\n${COMMERCIAL_ROW}\n`),
+      );
+      expect(res.ok).toBe(true);
+      expect(isListingTypePermitted).toHaveBeenCalledWith('commercial');
+      // Only the permitted row reaches the insert path.
+      expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+      expect(res.counts).toMatchObject({ input: 2, created: 1, failed: 1 });
+      expect(res.errorSummary).toHaveLength(1);
+      expect(res.errorSummary![0]).toContain('Row 2');
+      expect(res.errorSummary![0]).toMatch(/pack/i);
+      // The denied row is audited individually like any other failed row (FR-X-9).
+      const rowFailAudit = audit.mock.calls.find(
+        (call) => (call[1] as { action: string }).action === 'property.import_row_failed',
+      );
+      expect(rowFailAudit).toBeDefined();
+      expect((rowFailAudit![1] as { diff: { rowNumber: number } }).diff.rowNumber).toBe(2);
+    });
+
+    it('imports pack-gated rows when the tenant HAS the pack enabled', async () => {
+      isListingTypePermitted.mockResolvedValue(true);
+      const res = await importPropertiesFromCsv(
+        { ok: false },
+        csvForm(`${HEADER}\n${COMMERCIAL_ROW}\n`),
+      );
+      expect(res.ok).toBe(true);
+      expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+      expect(res.counts).toMatchObject({ input: 1, created: 1, failed: 0 });
+    });
   });
 });
