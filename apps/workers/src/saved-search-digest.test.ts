@@ -197,8 +197,21 @@ describe('processSavedSearchDigest', () => {
       where: { id: 's1' },
       data: { lastAlertSentAt: NOW },
     });
-    // no email => no alert audit row
-    expect(tx.auditLog.create).not.toHaveBeenCalled();
+    // G4 (audit saved-search-digest-advance-unaudited): advancing the persisted
+    // lastAlertSentAt watermark is a state change even when nothing is emailed,
+    // so the no-match branch emits its own cheap audit row in the same tx —
+    // symmetric with the emitted branch's saved_search.alerted.
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: TENANT,
+        actor: 'worker:saved-search-alerts',
+        action: 'saved_search.digest_advanced',
+        entity: 'saved_search',
+        entityId: 's1',
+        diff: { matches: 0 },
+      }),
+    });
   });
 
   it('only counts matches NEW since the search cutoff, not every current match', async () => {

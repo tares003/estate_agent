@@ -24,6 +24,15 @@ function dockerAvailable(): boolean {
 }
 const DOCKER = dockerAvailable();
 
+// Fail closed in CI: the workflow's `integration` job sets DOCKER_REQUIRED=1,
+// so an unreachable Docker daemon fails the suite loudly instead of
+// green-skipping the only real-PostGIS radius-search verification.
+if (!DOCKER && process.env.DOCKER_REQUIRED === '1') {
+  throw new Error(
+    'DOCKER_REQUIRED=1 but the Docker daemon is unreachable — the Testcontainers integration suite cannot run.',
+  );
+}
+
 const TENANT = '11111111-1111-1111-1111-111111111111';
 const LON = -0.1278;
 const LAT = 51.5074;
@@ -50,6 +59,7 @@ describe.skipIf(!DOCKER)('searchPropertiesNear on real PostGIS (Testcontainers)'
       CREATE TYPE sale_type AS ENUM ('sale','rent');
       CREATE TYPE listing_type AS ENUM ('residential','new_home','commercial','business_transfer','care_home','land');
       CREATE TYPE market_status AS ENUM ('for_sale','under_offer','sold_stc','sold','to_let','let_agreed','let','withdrawn');
+      CREATE TYPE property_category AS ENUM ('house','flat','bungalow','studio','maisonette','commercial','land','room','retail','office','industrial','leisure','business','care_home','hmo','mixed_use');
       CREATE TABLE properties (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         tenant_id uuid NOT NULL,
@@ -57,11 +67,16 @@ describe.skipIf(!DOCKER)('searchPropertiesNear on real PostGIS (Testcontainers)'
         slug text NOT NULL,
         display_address text NOT NULL,
         postcode text NOT NULL,
+        postcode_prefix text,
         title text,
         town text,
+        is_confidential boolean NOT NULL DEFAULT false,
+        hide_exact_address boolean NOT NULL DEFAULT false,
         sale_type sale_type NOT NULL,
         listing_type listing_type NOT NULL DEFAULT 'residential',
         market_status market_status NOT NULL DEFAULT 'for_sale',
+        category property_category,
+        is_new_home boolean NOT NULL DEFAULT false,
         price int, bedrooms int, bathrooms int, receptions int,
         latitude float8, longitude float8,
         geog geography(Point, 4326),
@@ -71,9 +86,9 @@ describe.skipIf(!DOCKER)('searchPropertiesNear on real PostGIS (Testcontainers)'
     for (const p of PROPS) {
       await pg.query(
         `INSERT INTO properties
-           (tenant_id, reference, slug, display_address, postcode, town, sale_type, price, bedrooms,
-            latitude, longitude, geog, published_at)
-         VALUES ($1, $2, $2, 'Addr', 'SW1A 1AA', 'London', $3::sale_type, $4, $5, $6, $7,
+           (tenant_id, reference, slug, display_address, postcode, town, sale_type, category, price,
+            bedrooms, latitude, longitude, geog, published_at)
+         VALUES ($1, $2, $2, 'Addr', 'SW1A 1AA', 'London', $3::sale_type, 'house', $4, $5, $6, $7,
                  ST_SetSRID(ST_MakePoint($7, $6), 4326)::geography, now())`,
         [TENANT, p.slug, p.sale, p.price, p.beds, p.lat, p.lon],
       );

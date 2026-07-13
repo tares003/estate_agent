@@ -7,8 +7,11 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// Real PostgreSQL 16 + PostGIS integration suite (opt-in: `pnpm test:integration`,
-// requires Docker). This is the "Testcontainers in CI" path the migrations' own
+// Real PostgreSQL 16 + PostGIS integration suite. Opt-in locally
+// (`pnpm test:integration`, requires Docker); in CI it is executed by the
+// dedicated `integration` job in .github/workflows/ci.yml (ubuntu-latest,
+// DOCKER_REQUIRED=1 so a missing Docker daemon fails the job instead of
+// skipping). This is the "Testcontainers in CI" path the migrations' own
 // comments reference — it does what pglite CANNOT: applies the actual schema +
 // raw migrations to a real engine and verifies PostGIS radius search, RLS tenant
 // isolation under a non-superuser role, and the composite tenant FKs (0006),
@@ -29,6 +32,15 @@ function dockerAvailable(): boolean {
   }
 }
 const DOCKER = dockerAvailable();
+
+// Fail closed in CI: the workflow's `integration` job sets DOCKER_REQUIRED=1,
+// so an unreachable Docker daemon fails the suite loudly instead of
+// green-skipping the only real-engine RLS/FK/PostGIS verification.
+if (!DOCKER && process.env.DOCKER_REQUIRED === '1') {
+  throw new Error(
+    'DOCKER_REQUIRED=1 but the Docker daemon is unreachable — the Testcontainers integration suite cannot run.',
+  );
+}
 
 const MIGRATIONS = [
   '0001_postgis.sql',

@@ -19,6 +19,7 @@ import {
   listPropertyStatusEvents,
   type PropertyEventReader,
 } from '../../../lib/property-status-events.js';
+import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { signedObjectPath } from '../../../lib/storage.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { marketStatusesForSaleType } from './market-status-display.js';
@@ -30,10 +31,11 @@ import { PublishControl } from './PublishControl.js';
 import { PublishPreflight } from './PublishPreflight.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
-// (drafts included). Resolves the tenant, reads the listing by id inside the tenant
-// RLS scope (404 if unknown), shows the read-only context (sale type, market status,
-// publish state) in the header and the editable core details in the form. Renders
-// inside the admin shell's `main` landmark.
+// (drafts included). Gates on `property.read` (RBAC fail-closed; the edit/publish
+// actions gate their own write permissions). Resolves the tenant, reads the
+// listing by id inside the tenant RLS scope (404 if unknown), shows the read-only
+// context (sale type, market status, publish state) in the header and the editable
+// core details in the form. Renders inside the admin shell's `main` landmark.
 //
 // EPIC-F FR-F-8 — a DRAFT publishes ONLY through the §H.5 Tab 9 pre-flight checklist:
 // the page evaluates the checklist server-side (inside the same tenant scope as the
@@ -55,6 +57,8 @@ export default async function AdminPropertyDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireStaffPermission('property.read');
+
   const { id } = await params;
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (tx) => {

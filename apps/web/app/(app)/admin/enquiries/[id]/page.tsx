@@ -10,6 +10,7 @@ import {
   listEnquiryStatusEvents,
   type StatusEventReader,
 } from '../../../lib/enquiry-status-events.js';
+import { requireStaffPermission } from '../../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { statusDisplay } from '../status-display.js';
 import { ConvertForm } from './ConvertForm.js';
@@ -20,7 +21,8 @@ import { NoteComposer } from './NoteComposer.js';
 import { StatusChanger } from './StatusChanger.js';
 
 // EPIC-H enquiry detail (FR-H-3) — a single enquiry: its summary, the status
-// workflow control, and the note thread. Resolves the tenant, reads the enquiry +
+// workflow control, and the note thread. Gates on `enquiry.read` (RBAC
+// fail-closed — the detail renders PII). Resolves the tenant, reads the enquiry +
 // its notes inside the tenant RLS scope, and 404s an enquiry that isn't the
 // tenant's. Thin composition over unit-tested pieces; renders inside the admin
 // shell's `main` landmark.
@@ -49,6 +51,8 @@ interface EnquiryDetailClient {
 const RECEIVED = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
 export default async function EnquiryDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireStaffPermission('enquiry.read');
+
   const { id } = await params;
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (rawTx) => {

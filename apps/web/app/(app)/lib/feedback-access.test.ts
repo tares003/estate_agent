@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   feedbackLinkSecret,
+  feedbackTokenDigest,
   signFeedbackToken,
   verifyFeedbackToken,
   type FeedbackContext,
@@ -63,6 +64,30 @@ describe('signFeedbackToken / verifyFeedbackToken', () => {
     for (const bad of ['', 'a.b', 'a.b.c.d', 'not-base64url!.123.sig', 'seg.notanumber.sig']) {
       expect(verifyFeedbackToken(bad, SECRET, NOW)).toBeNull();
     }
+  });
+});
+
+// FR-AC-2 single-use — the digest of a redeemed token is what the feedback row
+// records (never the token itself, which would stay usable until expiry if the
+// row leaked). Deterministic so a replay maps to the same digest and trips the
+// per-tenant unique constraint.
+describe('feedbackTokenDigest', () => {
+  it('is deterministic: the same token always digests to the same value', () => {
+    const token = signFeedbackToken(CONTEXT, NOW + 60_000, SECRET);
+    expect(feedbackTokenDigest(token)).toBe(feedbackTokenDigest(token));
+  });
+
+  it('differs across tokens (a different expiry is a different link)', () => {
+    const a = signFeedbackToken(CONTEXT, NOW + 60_000, SECRET);
+    const b = signFeedbackToken(CONTEXT, NOW + 120_000, SECRET);
+    expect(feedbackTokenDigest(a)).not.toBe(feedbackTokenDigest(b));
+  });
+
+  it('does not contain the token itself (one-way — a stored digest is not a live link)', () => {
+    const token = signFeedbackToken(CONTEXT, NOW + 60_000, SECRET);
+    const digest = feedbackTokenDigest(token);
+    expect(digest).not.toContain(token);
+    expect(token).not.toContain(digest);
   });
 });
 

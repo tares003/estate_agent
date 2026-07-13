@@ -2,14 +2,16 @@ import { withTenant } from '@estate/db';
 
 import { getDb } from '../../lib/db.js';
 import { listRepairRequests, type RepairListReader } from '../../lib/repairs.js';
+import { requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
 import { parseRepairQueueParams } from './queue-params.js';
 import { RepairsInboxTable } from './RepairsInboxTable.js';
 
 // EPIC-G repairs inbox (FR-G-2/FR-G-9) — the staff triage queue for tenant repair
-// reports. URL-driven (status / urgency / sort / page); resolves the tenant, runs
-// the read inside the tenant RLS scope, and renders the inbox table with FR-G-9
-// SLA-risk badges. The query, the SLA banding and the badge mapping are
+// reports. Gates on `repair_request.read` (RBAC fail-closed — tickets hold
+// reporter PII). URL-driven (status / urgency / sort / page); resolves the tenant,
+// runs the read inside the tenant RLS scope, and renders the inbox table with
+// FR-G-9 SLA-risk badges. The query, the SLA banding and the badge mapping are
 // unit-tested in lib/ + repair-display.ts, so this route stays a thin composition.
 // Renders inside the admin shell's `main` landmark.
 
@@ -20,6 +22,8 @@ interface RepairsInboxPageProps {
 }
 
 export default async function RepairsInboxPage({ searchParams }: RepairsInboxPageProps) {
+  await requireStaffPermission('repair_request.read');
+
   const options = parseRepairQueueParams((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
   const result = await withTenant(getDb(), tenantId, (tx) =>

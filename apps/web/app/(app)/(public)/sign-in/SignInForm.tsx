@@ -1,8 +1,8 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmailField, FormError, TextField } from '@estate/ui';
+import { AntiSpamChallenge, Button, EmailField, FormError, TextField } from '@estate/ui';
 
 import { submitSignIn, type SignInFormState } from './actions.js';
 
@@ -26,12 +26,17 @@ export interface SignInFormProps {
  * (never disclosing which half of the credential was wrong — account-enumeration
  * defence); on success the action returns the sanitised `redirectTo` and the form
  * navigates there, returning the customer to the route they were trying to reach.
- * Helper links offer password recovery and account creation (design brief §sign-in
- * — "forgot password" + "create account").
+ * Carries the Turnstile anti-spam challenge (CLAUDE.md §9, G8 — verified
+ * server-side by the action, matching register/forgot-password). Helper links
+ * offer password recovery and account creation (design brief §sign-in — "forgot
+ * password" + "create account").
  */
 export function SignInForm({ next, initialState = INITIAL_STATE }: SignInFormProps = {}) {
   const [state, formAction, pending] = useActionState(submitSignIn, initialState);
   const router = useRouter();
+
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   useEffect(() => {
     if (state.ok && state.redirectTo) {
@@ -62,6 +67,13 @@ export function SignInForm({ next, initialState = INITIAL_STATE }: SignInFormPro
           Forgot your password?
         </a>
       </div>
+
+      {turnstileSiteKey ? (
+        <>
+          <AntiSpamChallenge sitekey={turnstileSiteKey} onVerify={setTurnstileToken} />
+          <input type="hidden" name="cf-turnstile-response" value={turnstileToken} />
+        </>
+      ) : null}
 
       <Button type="submit" loading={pending}>
         Sign in

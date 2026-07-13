@@ -19,6 +19,11 @@ vi.mock('../../lib/tenant.js', () => ({
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const verifyTurnstile = vi.fn();
+vi.mock('../../lib/turnstile.js', () => ({
+  verifyTurnstile: (...a: unknown[]) => verifyTurnstile(...a),
+}));
+
 const signInCustomer = vi.fn();
 vi.mock('../../lib/customer-sign-in.js', () => ({
   signInCustomer: (...a: unknown[]) => signInCustomer(...a),
@@ -40,6 +45,7 @@ function form(overrides: Record<string, string> = {}): FormData {
   const fd = new FormData();
   fd.set('email', 'penny@example.invalid');
   fd.set('password', 'correct horse battery');
+  fd.set('cf-turnstile-response', 'tok');
   for (const [k, v] of Object.entries(overrides)) fd.set(k, v);
   return fd;
 }
@@ -48,6 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  verifyTurnstile.mockResolvedValue(true);
   signInCustomer.mockResolvedValue({ ok: true, userId: USER });
 });
 
@@ -57,6 +64,27 @@ describe('submitSignIn', () => {
     expect(res.ok).toBe(false);
     expect(signInCustomer).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
+  });
+
+  // Audit finding sign-in-missing-turnstile-g8: the credential endpoint is a
+  // public form submission, so the Turnstile challenge must be verified
+  // server-side BEFORE authenticating or writing (CLAUDE.md §9, G8) — matching
+  // register/forgot-password. Unthrottled sign-in invites credential stuffing.
+  it('fails closed when the Turnstile challenge does not verify — no auth, no audit', async () => {
+    verifyTurnstile.mockResolvedValue(false);
+    const res = await submitSignIn({ ok: false }, form());
+    expect(res.ok).toBe(false);
+    expect(signInCustomer).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
+  });
+
+  it('verifies Turnstile BEFORE authenticating (G8)', async () => {
+    await submitSignIn({ ok: false }, form());
+    expect(verifyTurnstile).toHaveBeenCalledTimes(1);
+    expect(verifyTurnstile).toHaveBeenCalledWith('tok', '203.0.113.7');
+    expect(verifyTurnstile.mock.invocationCallOrder[0]!).toBeLessThan(
+      signInCustomer.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('authenticates with the validated email/password (FR-T-3)', async () => {

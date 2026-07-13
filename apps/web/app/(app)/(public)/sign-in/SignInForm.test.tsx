@@ -3,7 +3,7 @@
 // error branch; the centred single-column layout is covered by the
 // account-routes Playwright pass (design-briefs/v1/EPIC-T §Authentication forms,
 // design-requirements §3).
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 const submitSignIn = vi.fn();
@@ -18,6 +18,10 @@ const { SignInForm } = await import('./SignInForm.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('SignInForm', () => {
@@ -68,5 +72,20 @@ describe('SignInForm', () => {
   it('navigates to the action-supplied redirect target on success (FR-T-3 return-to)', () => {
     render(<SignInForm initialState={{ ok: true, redirectTo: '/account/saved' }} />);
     expect(push).toHaveBeenCalledWith('/account/saved');
+  });
+
+  // Audit finding sign-in-missing-turnstile-g8: sign-in is a public form, so it
+  // carries the anti-spam challenge like register/forgot-password (CLAUDE.md §9).
+  it('renders the Turnstile anti-spam challenge when a sitekey is configured (G8)', () => {
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', 'site-key-123');
+    const { container } = render(<SignInForm />);
+    expect(screen.getByRole('group', { name: /security challenge/i })).toBeInTheDocument();
+    expect(container.querySelector('input[name="cf-turnstile-response"]')).toBeInTheDocument();
+  });
+
+  it('omits the Turnstile challenge when no sitekey is configured (dev ergonomics)', () => {
+    vi.stubEnv('NEXT_PUBLIC_TURNSTILE_SITE_KEY', '');
+    const { container } = render(<SignInForm />);
+    expect(container.querySelector('input[name="cf-turnstile-response"]')).not.toBeInTheDocument();
   });
 });

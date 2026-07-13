@@ -6,6 +6,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const findMany = vi.fn();
 const count = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -32,6 +37,7 @@ const { default: RepairsInboxPage } = await import('./page.js');
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findMany.mockResolvedValue([
     {
       id: 'r1',
@@ -47,6 +53,19 @@ beforeEach(() => {
 });
 
 describe('RepairsInboxPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the repairs inbox holds
+  // reporter PII — RBAC-gated fail-closed, mirroring feedback/page.tsx.
+  it('gates on the repair_request.read permission before reading', async () => {
+    render(await RepairsInboxPage({}));
+    expect(requireStaffPermission).toHaveBeenCalledWith('repair_request.read');
+  });
+
+  it('propagates a denial WITHOUT reading the inbox (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(RepairsInboxPage({})).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the heading + the tenant-scoped repairs with the parsed filters', async () => {
     render(
       await RepairsInboxPage({

@@ -883,7 +883,11 @@ model Contractor {
 /// "needs response" flag for negative sentiment (FR-AC-10). The respondent is
 /// anonymous (FR-AC-4); `triggerEntity`/`triggerEntityId` is a SOFT reference to the
 /// originating record (viewing/sale/tenancy/repair), so no hard FK. `agentActor`
-/// tags the agent for the league-table rollup (FR-AC-7). Tenant-scoped (RLS, 0013).
+/// tags the agent for the league-table rollup (FR-AC-7). `tokenDigest` is the
+/// SHA-256 digest of the redeemed one-time token (FR-AC-2): unique per tenant, so a
+/// replayed link is structurally un-insertable — the digest (never the token, which
+/// would remain a live link) records consumption. Nullable only for rows that
+/// predate single-use enforcement. Tenant-scoped (RLS, 0013).
 model Feedback {
   id                   String          @id @default(uuid()) @db.Uuid
   tenantId             String          @map("tenant_id") @db.Uuid
@@ -892,6 +896,7 @@ model Feedback {
   triggerEntityId      String?         @map("trigger_entity_id") @db.Uuid
   respondentRef        String?         @map("respondent_ref")
   agentActor           String?         @map("agent_actor")
+  tokenDigest          String?         @map("token_digest")
   rating               Int
   comment              String?
   publishAsTestimonial Boolean         @default(false) @map("publish_as_testimonial")
@@ -903,6 +908,7 @@ model Feedback {
 
   tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, tokenDigest])
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("feedback")

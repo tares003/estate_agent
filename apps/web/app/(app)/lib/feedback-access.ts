@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 // EPIC-AC FR-AC-2 — the one-time feedback-request token. A respondent reaches a
 // no-sign-in feedback form via an emailed link; this is the signing core that
@@ -11,6 +11,11 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 // and an anonymous respondent ref. None can be altered without invalidating the
 // signature; verify returns the ATTESTED context (parsed only AFTER the signature
 // checks out), so a grafted token cannot retarget the feedback.
+//
+// The token itself is STATELESS, so verification alone cannot make it one-time.
+// Single use (FR-AC-2) is enforced at redemption: the submission records
+// feedbackTokenDigest(token) on the feedback row, unique per tenant, and rejects
+// a token whose digest is already recorded — see feedback/[token]/actions.ts.
 //
 // Token format: `<payloadB64Url>.<expiryMs>.<sigB64Url>`, payload = base64url(JSON).
 
@@ -36,6 +41,17 @@ export function feedbackLinkSecret(): string {
     throw new Error('FEEDBACK_LINK_SECRET is not set');
   }
   return raw;
+}
+
+/**
+ * The digest under which a redeemed token is recorded (FR-AC-2 single-use).
+ * SHA-256 of the full token string, URL-safe base64. The feedback row stores this
+ * digest — never the token itself, which would remain a live link until expiry —
+ * and the per-tenant unique constraint on it makes a replay un-insertable.
+ * Deterministic: the same link always maps to the same digest.
+ */
+export function feedbackTokenDigest(token: string): string {
+  return createHash('sha256').update(token, 'utf8').digest('base64url');
 }
 
 function payloadSegmentOf(context: FeedbackContext): string {

@@ -7,17 +7,19 @@ import {
   enquiryPipelineReport,
   type EnquiryReportReader,
 } from '../../lib/enquiry-reports.js';
+import { requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../lib/tenant.js';
 import { AgentRatings } from './AgentRatings.js';
 import { PipelineReport } from './PipelineReport.js';
 import { parseReportRange, toDateInputValue } from './reports-params.js';
 
-// EPIC-H reports (FR-H-18) — the enquiry pipeline report at /admin/reports. URL-
-// driven date range; resolves the tenant, runs the (unit-tested) read models inside
-// the tenant RLS scope, and renders the funnel + by-source breakdown plus the
-// EPIC-AC FR-AC-7 per-agent rating rollup. Thin composition; renders inside the
-// admin shell's `main` landmark. The full report suite + custom builder + export
-// (FR-H-18) are deferred.
+// EPIC-H reports (FR-H-18) — the enquiry pipeline report at /admin/reports. Gates
+// on `enquiry.read` (RBAC fail-closed — the reports derive from enquiry data).
+// URL-driven date range; resolves the tenant, runs the (unit-tested) read models
+// inside the tenant RLS scope, and renders the funnel + by-source breakdown plus
+// the EPIC-AC FR-AC-7 per-agent rating rollup. Thin composition; renders inside
+// the admin shell's `main` landmark. The full report suite + custom builder +
+// export (FR-H-18) are deferred.
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,8 @@ interface ReportsPageProps {
 }
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
+  await requireStaffPermission('enquiry.read');
+
   const range = parseReportRange((await searchParams) ?? {});
   const tenantId = await getCurrentTenantId();
   const { report, sources, agentRatings } = await withTenant(getDb(), tenantId, async (rawTx) => {

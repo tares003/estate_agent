@@ -20,6 +20,7 @@ export interface CandidateProperty {
   saleType: string;
   listingType: string;
   marketStatus: string;
+  /** PENCE (the raw §J `price` column); null is POA. Filter bounds arrive in POUNDS. */
   price: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -80,11 +81,18 @@ export function propertyMatchesSearch(
   if (filters.newHomesOnly === true && property.isNewHome !== true) return false;
   if (filters.location !== undefined && !matchesLocation(property, filters.location)) return false;
 
+  // MONEY SEAM: the saved filters keep the catalogue URL's POUNDS
+  // (propertySearchSchema optionalPounds — "the route multiplies by 100 to the
+  // pence"), while property.price is the DB PENCE column. Convert the bounds to
+  // pence here, mirroring the catalogue route's toOptions ×100, so the digest
+  // matches the exact same band the catalogue shows (inclusive gte/lte).
   if (filters.priceMin !== undefined) {
-    if (property.price === null || property.price < filters.priceMin) return false;
+    const priceMinPence = filters.priceMin * 100;
+    if (property.price === null || property.price < priceMinPence) return false;
   }
   if (filters.priceMax !== undefined) {
-    if (property.price === null || property.price > filters.priceMax) return false;
+    const priceMaxPence = filters.priceMax * 100;
+    if (property.price === null || property.price > priceMaxPence) return false;
   }
 
   if (filters.bedroomsMin !== undefined) {

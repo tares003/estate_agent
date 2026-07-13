@@ -6,6 +6,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -92,6 +97,7 @@ function props(id = 'p1') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findFirst.mockResolvedValue(property);
   imageCount.mockResolvedValue(1);
   imageFindFirst.mockResolvedValue(null);
@@ -118,6 +124,19 @@ beforeEach(() => {
 });
 
 describe('AdminPropertyDetailPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the admin detail shows
+  // drafts + lifecycle controls — RBAC-gated fail-closed.
+  it('gates on the property.read permission before reading', async () => {
+    render(await AdminPropertyDetailPage(props()));
+    expect(requireStaffPermission).toHaveBeenCalledWith('property.read');
+  });
+
+  it('propagates a denial WITHOUT reading the listing (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(AdminPropertyDetailPage(props())).rejects.toThrow('denied');
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
   it('renders the header context + the edit form for the fetched listing', async () => {
     render(await AdminPropertyDetailPage(props()));
 

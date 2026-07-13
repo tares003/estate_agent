@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { staffAuthLookup } from './staff-session-resolve.js';
+import { devFallbackAllowed, staffAuthLookup } from './staff-session-resolve.js';
 
 // B78d — the pure decision behind resolving a staff member from a verified Better
 // Auth session. The session carries the user id + the tenant it was issued for; we
@@ -59,5 +59,23 @@ describe('staffAuthLookup', () => {
 
   it('returns null when the session names no tenant at all', () => {
     expect(staffAuthLookup({ user: { id: USER }, session: {} }, TENANT_A)).toBeNull();
+  });
+});
+
+// Audit finding staff-dev-fallback-not-env-gated: the DEV super-admin fallback must
+// only ever be reachable OUTSIDE production (mirroring proxy.ts's env-gated dev
+// tenant fallback). In production an absent verified session fails CLOSED.
+describe('devFallbackAllowed', () => {
+  it('permits the dev fallback in development and test', () => {
+    expect(devFallbackAllowed('development')).toBe(true);
+    expect(devFallbackAllowed('test')).toBe(true);
+  });
+
+  it('permits the dev fallback when NODE_ENV is unset (mirrors proxy.ts)', () => {
+    expect(devFallbackAllowed(undefined)).toBe(true);
+  });
+
+  it('NEVER permits the dev fallback in production (fail-closed)', () => {
+    expect(devFallbackAllowed('production')).toBe(false);
   });
 });
