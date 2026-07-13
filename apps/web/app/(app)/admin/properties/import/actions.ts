@@ -4,6 +4,7 @@ import { audit, withTenant } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
+import { isListingTypePermitted } from '../../../lib/packs.js';
 import {
   getStaffActor,
   getStaffUserId,
@@ -11,30 +12,49 @@ import {
 } from '../../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { activeListingWhere, getTenantActiveListingQuota } from '../../../lib/import-quota.js';
-import { insertPropertyRow, type PropertyCreateClient } from '../actions.js';
-import { formatRowError, parsePropertyImportCsv, type RowError } from './csv-import-core.js';
+import { insertPropertyRow, type PropertyCreateClient } from '../property-insert.js';
+import {
+  formatRowError,
+  parsePropertyImportCsv,
+  type RowError,
+  type RowFieldError,
+  type ValidRow,
+} from './csv-import-core.js';
 import { readImportCsv, readImportMapping } from './read-csv.js';
 
-// EPIC-X FR-X-1 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
+// EPIC-X FR-X-1 / FR-X-5 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
 //
 // RBAC fail-closed on `property.write` BEFORE any read/write (the same permission the
 // property create action gates on — `property.import` is not yet in the catalogue, and
 // this slice reuses the create path verbatim). The uploaded CSV is parsed + validated by
-// the pure core; every VALID row is created through the SHARED `insertPropertyRow` path
-// (identical slug disambiguation, column mapping and `property.created` audit as the
-// admin create form); the run is recorded as ONE `import_logs` row (source=csv_upload,
-// triggeredBy=<staff id>, the in/created/skipped/failed counts, and an errorSummary
-// listing the per-row failures) and audited as one `property.imported` run event — all
-// inside a single tenant transaction (G4).
+// the pure core; the EPIC-AD / G12 pack gate then fails any row authoring a vertical the
+// tenant has not enabled (row-isolated, like a validation failure); every remaining row
+// is created through the SHARED `insertPropertyRow` path (identical slug disambiguation,
+// column mapping and `property.created` audit as the admin create form); the run is
+// recorded as ONE `import_logs` row (source=csv_upload, triggeredBy=<staff id>, the
+// in/created/skipped/failed counts, and an errorSummary listing the per-row failures)
+// and audited as one `property.imported` run event — all inside a single tenant
+// transaction (G4).
+//
+// FR-X-5 row isolation covers DB-CONSTRAINT failures too: each row insert runs under a
+// Postgres SAVEPOINT inside the one tenant transaction. A duplicate `reference` (P2002
+// on @@unique([tenantId, reference])) — or any other insert error — rolls back ONLY its
+// own savepoint (undoing that row's insert + its property.created audit), is recorded as
+// a failed row with its own FR-X-9 audit entry, and the run continues. Savepoints were
+// chosen over splitting the run into per-row transactions so the import_log, the run
+// audit and every surviving row still commit ATOMICALLY (and RLS's SET LOCAL tenant GUC
+// keeps applying to the whole run); a mid-run crash leaves nothing half-imported.
 //
 // This is an authenticated admin action over business data, not a public personal-data
 // form: no GDPR-consent affirmation (G5) and no Turnstile (G8). Deferred to later slices
-// of this epic: the dry-run preview (FR-X-2), configurable / preset CRM column mappings
-// (FR-X-3), upsert + external-id matching (FR-X-4/5), plan-quota enforcement (FR-X-10),
-// image post-processing (FR-X-11) and scheduled feeds (FR-X-7/8).
+// of this epic: upsert + external-id matching (FR-X-4), image post-processing (FR-X-11)
+// and scheduled feeds (FR-X-7/8).
 
 /** The import source identifier stored on the `import_logs` row (schema doc: "csv_upload"). */
 const IMPORT_SOURCE = 'csv_upload';
+
+/** The savepoint name each row insert runs under (re-used per row, released after). */
+const ROW_SAVEPOINT = 'property_import_row';
 
 /** The `import_logs` write surface this action needs (a Prisma tx satisfies it). */
 interface ImportLogClient extends PropertyCreateClient {
@@ -45,15 +65,17 @@ interface ImportLogClient extends PropertyCreateClient {
   importLog: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
   };
+  /** Raw SQL escape hatch for the per-row SAVEPOINT statements (FR-X-5 isolation). */
+  $executeRawUnsafe(query: string): Promise<number>;
 }
 
 /** The active-listing quota decision recorded on the run audit (FR-X-10). */
 interface QuotaDecision {
   /** The tenant's plan-tier active-listing cap (Infinity for enterprise). */
   limit: number;
-  /** Existing active (published) listings before this run. */
+  /** Existing active (publicly live) listings before this run. */
   existingActive: number;
-  /** Valid rows this run would create. */
+  /** Rows this run imports as PUBLISHED (draft rows never consume the ACTIVE cap). */
   incoming: number;
 }
 
@@ -87,6 +109,24 @@ function summariseErrors(rowErrors: RowError[]): string[] {
   return rowErrors.map(formatRowError);
 }
 
+/**
+ * Describe an insert failure as a row-level field error (FR-X-5). A P2002
+ * unique-constraint violation is a duplicate `reference` (slugs are de-duplicated
+ * in-run, so the reference unique index is the one a CSV can realistically hit);
+ * anything else gets a generic per-row failure line.
+ */
+function describeInsertError(error: unknown): RowFieldError {
+  const code =
+    typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+  if (code === 'P2002') {
+    return {
+      field: 'reference',
+      message: 'a property with this reference already exists (duplicate)',
+    };
+  }
+  return { field: '', message: 'the row could not be inserted' };
+}
+
 export async function importPropertiesFromCsv(
   _prevState: ImportActionState,
   formData: FormData,
@@ -117,14 +157,40 @@ export async function importPropertiesFromCsv(
   const triggeredBy = await getStaffUserId();
   const ip = await getRequestIp();
 
+  // EPIC-AD / G12 — pack entitlement, enforced SERVER-SIDE on the import path exactly
+  // like createProperty: a row authoring a pack-gated vertical the tenant has not
+  // enabled is failed (row-isolated, FR-X-5), never inserted. Each distinct listing
+  // type is resolved once against the registry.
+  const typePermitted = new Map<string, boolean>();
+  for (const listingType of new Set(parseResult.valid.map((row) => row.data.listingType))) {
+    typePermitted.set(listingType, await isListingTypePermitted(listingType));
+  }
+  const importable: ValidRow[] = [];
+  const packRowErrors: RowError[] = [];
+  for (const row of parseResult.valid) {
+    if (typePermitted.get(row.data.listingType) === true) {
+      importable.push(row);
+    } else {
+      packRowErrors.push({
+        rowNumber: row.rowNumber,
+        errors: [
+          {
+            field: 'listingType',
+            message: `the "${row.data.listingType}" listing type requires a pack that is not enabled for this tenant`,
+          },
+        ],
+      });
+    }
+  }
+
   // FR-X-10 — the tenant's plan-tier active-listing cap (Infinity for enterprise),
   // read from the operator registry BEFORE the transaction. The existing active
   // count is taken inside the tx (tenant-scoped/RLS) so the quota is enforced against
-  // live data at import time.
+  // live data at import time. Only rows imported as PUBLISHED consume the ACTIVE cap —
+  // drafts are not active, so a draft-only import is never blocked by it.
   const quotaLimit = await getTenantActiveListingQuota();
-  const incoming = parseResult.valid.length;
+  const incoming = importable.filter((row) => row.data.publicationStatus === 'published').length;
 
-  const errorSummary = summariseErrors(parseResult.errors);
   const startedAt = new Date();
 
   let result: ImportActionState = deny('The import could not be completed.');
@@ -152,24 +218,43 @@ export async function importPropertiesFromCsv(
     const existing = await tx.property.findMany({ where: {}, select: { slug: true } });
     const taken = new Set(existing.map((row) => row.slug));
 
+    // FR-X-5 — per-row DB-error isolation. Each insert runs under a SAVEPOINT: a
+    // constraint failure (e.g. duplicate reference, P2002) rolls back ONLY that row
+    // (including its property.created audit) and the run continues; the surrounding
+    // tenant transaction — import_log + run audit + surviving rows — stays intact.
     let created = 0;
-    for (const row of parseResult.valid) {
-      await insertPropertyRow(
-        tx,
-        { tenantId, actor, createdByUserId: triggeredBy, ip },
-        row.data,
-        taken,
-      );
-      created += 1;
+    const insertRowErrors: RowError[] = [];
+    for (const row of importable) {
+      await tx.$executeRawUnsafe(`SAVEPOINT ${ROW_SAVEPOINT}`);
+      try {
+        await insertPropertyRow(
+          tx,
+          { tenantId, actor, createdByUserId: triggeredBy, ip },
+          row.data,
+          taken,
+        );
+        created += 1;
+      } catch (error) {
+        await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${ROW_SAVEPOINT}`);
+        insertRowErrors.push({ rowNumber: row.rowNumber, errors: [describeInsertError(error)] });
+      }
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${ROW_SAVEPOINT}`);
     }
+
+    // Every failed row — validation, pack gate, or DB constraint — in source order.
+    const rowErrors = [...parseResult.errors, ...packRowErrors, ...insertRowErrors].sort(
+      (a, b) => a.rowNumber - b.rowNumber,
+    );
+    const errorSummary = summariseErrors(rowErrors);
 
     const counts: ImportRunCounts = {
       input: parseResult.recordsInput,
       created,
       // No row was skipped as a duplicate in this create-only slice; upsert de-dup
-      // (FR-X-4) is a later slice. Rows that failed validation are `failed`, not skipped.
+      // (FR-X-4) is a later slice. Rows that failed validation, the pack gate or a
+      // DB constraint are `failed`, not skipped.
       skipped: 0,
-      failed: parseResult.errors.length,
+      failed: rowErrors.length,
     };
 
     const importLog = await tx.importLog.create({
@@ -202,10 +287,11 @@ export async function importPropertiesFromCsv(
       ip,
     });
 
-    // FR-X-9 — PLUS one audit entry per FAILED row, so each rejected row is traceable
-    // to its run and reason (the run summary alone does not name the individual
-    // failures). All emitted inside the same tenant transaction as the run event.
-    for (const rowError of parseResult.errors) {
+    // FR-X-9 — PLUS one audit entry per FAILED row (validation, pack gate or DB
+    // constraint alike), so each rejected row is traceable to its run and reason (the
+    // run summary alone does not name the individual failures). All emitted inside the
+    // same tenant transaction as the run event.
+    for (const rowError of rowErrors) {
       await audit(tx, {
         tenantId,
         actor,

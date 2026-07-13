@@ -1,13 +1,9 @@
 'use server';
 
 import {
-  PROPERTY_VERTICAL_FIELD_OWNERS,
   propertyCreateSchema,
-  propertySlugBase,
   propertyWriteUpdateSchema,
-  slugify,
   validatePropertyVerticalFields,
-  type PropertyCreate,
   type PropertyListingType,
   type PropertyWriteUpdate,
 } from '@estate/validators';
@@ -15,14 +11,23 @@ import { audit, withTenant, type AuditWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
+import { isListingTypePermitted } from '../../lib/packs.js';
 import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import {
+  coreData,
+  disambiguateSlug,
+  insertPropertyRow,
+  type PropertyCreateClient,
+} from './property-insert.js';
 
 // EPIC-F FR-F-1 / FR-F-4 / FR-F-5 (and FR-O-12) — the audited admin WRITE path for a
 // property: create + update Server Actions. Each gates fail-closed on the staff
-// `property.write` permission BEFORE any read/write; validates the submission with the
-// @estate/validators write schema; then mutates + writes the audit row(s) in ONE
-// tenant-scoped transaction (G4).
+// `property.write` permission BEFORE any read/write; enforces the EPIC-AD / G12 pack
+// entitlement for the effective listing type SERVER-SIDE (mirroring the admin-form
+// render gate, so a crafted POST cannot author a vertical the tenant has not enabled);
+// validates the submission with the @estate/validators write schema; then mutates +
+// writes the audit row(s) in ONE tenant-scoped transaction (G4).
 //
 // FR-F-4 — the URL slug is auto-generated from title/town/postcode-prefix with a numeric
 // disambiguation suffix on collision, deterministic per FR-F-11 (the tenant's existing
@@ -33,8 +38,9 @@ import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 // create path) so the previous URL keeps resolving; both the property update and the
 // redirect creation are audited in the same transaction.
 //
-// The property write form UI is a separate follow-on slice; these actions are the
-// validated, tested action layer the form (and bulk import) will call.
+// This module carries 'use server', so EVERY exported function becomes a network-callable
+// Server Action endpoint: only the gated actions are exported. The internal insert path
+// lives in property-insert.ts (no 'use server'), so it is never registered as an action.
 
 /** The public path prefix a property detail page lives under (the 301 source/target). */
 const PROPERTY_PATH_PREFIX = '/properties/';
@@ -42,20 +48,6 @@ const PROPERTY_PATH_PREFIX = '/properties/';
 /** Build the public detail path for a slug. */
 function propertyPath(slug: string): string {
   return `${PROPERTY_PATH_PREFIX}${slug}`;
-}
-
-/** The minimal Property + Redirect write surface these actions need. */
-export interface PropertyCreateClient extends AuditWriter {
-  property: {
-    findFirst(args: {
-      where: Record<string, unknown>;
-    }): Promise<{ id: string; slug: string } | null>;
-    findMany(args: {
-      where: Record<string, unknown>;
-      select?: Record<string, unknown>;
-    }): Promise<{ slug: string }[]>;
-    create(args: { data: Record<string, unknown> }): Promise<{ id: string; slug: string }>;
-  };
 }
 
 interface PropertyUpdateClient extends AuditWriter {
@@ -103,54 +95,6 @@ function fromZod(issues: { path: (string | number)[]; message: string }[]): Prop
         : { field: key, message: issue.message };
     }),
   };
-}
-
-/**
- * Choose a unique slug within the tenant (FR-F-4 / FR-F-11). Given a desired base slug
- * and the set of slugs already taken, returns the base when free, else the first
- * `base-2`, `base-3`, … that is free. Deterministic — a pure function of its inputs.
- */
-function disambiguateSlug(base: string, taken: ReadonlySet<string>): string {
-  if (!taken.has(base)) return base;
-  for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${base}-${suffix}`;
-    if (!taken.has(candidate)) return candidate;
-  }
-}
-
-/**
- * Map the validated core fields to the Property column write. `input.price` is in
- * pounds; the column stores pence. Absent optional fields are omitted (create leaves
- * the column default); blanks the caller wants cleared arrive as their own values.
- */
-function coreData(input: PropertyCreate | PropertyWriteUpdate): Record<string, unknown> {
-  const data: Record<string, unknown> = {
-    displayAddress: input.displayAddress,
-    postcode: input.postcode,
-  };
-  if (input.title !== undefined) data['title'] = input.title;
-  if (input.description !== undefined) data['description'] = input.description;
-  if (input.keyFeatures !== undefined) data['keyFeatures'] = input.keyFeatures;
-  if (input.price !== undefined) data['price'] = input.price * 100;
-  if (input.priceQualifier !== undefined) data['priceQualifier'] = input.priceQualifier;
-  if (input.marketStatus !== undefined) data['marketStatus'] = input.marketStatus;
-  if (input.bedrooms !== undefined) data['bedrooms'] = input.bedrooms;
-  if (input.bathrooms !== undefined) data['bathrooms'] = input.bathrooms;
-  if (input.category !== undefined) data['category'] = input.category;
-  if (input.tenure !== undefined) data['tenure'] = input.tenure;
-  if (input.councilTaxBand !== undefined) data['councilTaxBand'] = input.councilTaxBand;
-  if (input.epcRating !== undefined) data['epcRating'] = input.epcRating;
-  if (input.metaTitle !== undefined) data['metaTitle'] = input.metaTitle;
-  if (input.metaDescription !== undefined) data['metaDescription'] = input.metaDescription;
-  if (input.publicationStatus !== undefined) data['publicationStatus'] = input.publicationStatus;
-  if (input.town !== undefined) data['town'] = input.town;
-  // FR-F-3 — the per-vertical extension columns (§F.3–§F.6). Each is written only when
-  // present in the submission; the isolation check has already rejected foreign fields.
-  for (const field of Object.keys(PROPERTY_VERTICAL_FIELD_OWNERS)) {
-    const value = (input as Record<string, unknown>)[field];
-    if (value !== undefined) data[field] = value;
-  }
-  return data;
 }
 
 /** The extension fields submitted as numeric form inputs (whole-pound / count). */
@@ -208,68 +152,6 @@ function parseVerticalFields(raw: Record<string, unknown>): Record<string, unkno
   return out;
 }
 
-/** The identity + provenance context a single property insert needs. */
-export interface PropertyInsertContext {
-  tenantId: string;
-  /** The audit actor string (`agent:<id>`). */
-  actor: string;
-  /** The staff user id for the created/updated FK columns; null for the dev fallback. */
-  createdByUserId: string | null;
-  /** Originating IP for the audit row, when known. */
-  ip: string | null;
-}
-
-/**
- * Insert ONE validated property + its `property.created` audit row on an already-open
- * tenant transaction (FR-F-1 / FR-F-4). The slug is taken from the submission when
- * present, else derived from title/town/postcode (falling back to the reference), then
- * made unique against `taken` — the caller-supplied set of slugs already claimed in the
- * same transaction. When inserting a batch, the caller adds each returned slug to
- * `taken` so successive rows in the SAME run don't collide (FR-F-11).
- *
- * Extracted so bulk import (EPIC-X) creates properties through the EXACT create path —
- * same disambiguation, same column mapping, same audit event — rather than a parallel
- * insert. Pure of session/tenant resolution: every I/O input is a parameter, so it is
- * unit-testable with a fake `tx`.
- */
-export async function insertPropertyRow(
-  tx: PropertyCreateClient,
-  ctx: PropertyInsertContext,
-  input: PropertyCreate,
-  taken: Set<string>,
-): Promise<{ id: string; slug: string }> {
-  const postcodePrefix = input.postcode.split(' ')[0];
-  const desiredBase =
-    (input.slug ?? propertySlugBase({ title: input.title, town: input.town, postcodePrefix })) ||
-    slugify(input.reference);
-  const slug = disambiguateSlug(desiredBase, taken);
-
-  const created = await tx.property.create({
-    data: {
-      tenantId: ctx.tenantId,
-      reference: input.reference,
-      listingType: input.listingType,
-      saleType: input.saleType,
-      slug,
-      createdByUserId: ctx.createdByUserId,
-      updatedByUserId: ctx.createdByUserId,
-      ...coreData(input),
-    },
-  });
-  await audit(tx, {
-    tenantId: ctx.tenantId,
-    actor: ctx.actor,
-    action: 'property.created',
-    entity: 'property',
-    entityId: created.id,
-    diff: { reference: input.reference, slug, listingType: input.listingType },
-    ip: ctx.ip,
-  });
-  // Reserve the minted slug so a following row in the same batch disambiguates past it.
-  taken.add(slug);
-  return { id: created.id, slug };
-}
-
 // FR-F-1 / FR-F-4 — create a property. The slug is taken from the submission when
 // provided, else auto-generated from title/town/postcode; either way it is made unique
 // within the tenant before the insert.
@@ -317,6 +199,13 @@ export async function createProperty(
     await requireStaffPermission('property.write');
   } catch {
     return deny('You do not have permission to create listings.');
+  }
+
+  // EPIC-AD / G12 — pack entitlement, enforced SERVER-SIDE (not only at render): a
+  // pack-gated vertical listing type may be authored only when the tenant's pack is
+  // enabled. Fail closed BEFORE any write.
+  if (!(await isListingTypePermitted(parsed.data.listingType))) {
+    return deny('This listing type requires a pack that is not enabled for this tenant.');
   }
 
   const input = parsed.data;
@@ -398,6 +287,15 @@ export async function updateProperty(
     const effectiveListingType = (input.listingType ??
       existing.listingType ??
       'residential') as PropertyListingType;
+
+    // EPIC-AD / G12 — pack entitlement against the EFFECTIVE listing type, enforced
+    // SERVER-SIDE and fail-closed BEFORE any write (a lapsed pack blocks edits to the
+    // vertical it gated, exactly like the render gate hides its form section).
+    if (!(await isListingTypePermitted(effectiveListingType))) {
+      result = deny('This listing type requires a pack that is not enabled for this tenant.');
+      return;
+    }
+
     const verticalIssues = validatePropertyVerticalFields(
       effectiveListingType,
       input as unknown as Record<string, unknown>,

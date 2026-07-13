@@ -33,7 +33,9 @@ vi.mock('./PublishPreflight.js', () => ({
   }: {
     items: { key: string; satisfied: boolean }[];
     ready: boolean;
-  }) => <div data-testid="publish-preflight">{`${items.length}:${ready ? 'ready' : 'blocked'}`}</div>,
+  }) => (
+    <div data-testid="publish-preflight">{`${items.length}:${ready ? 'ready' : 'blocked'}`}</div>
+  ),
 }));
 vi.mock('./MarketStatusControl.js', () => ({
   MarketStatusControl: ({ current, options }: { current: string; options: string[] }) => (

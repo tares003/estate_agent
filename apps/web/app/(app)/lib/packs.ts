@@ -46,3 +46,19 @@ export async function getEnabledVerticals(): Promise<string[]> {
   }
   return enabled;
 }
+
+/**
+ * EPIC-AD / G12 — may the current tenant author a listing of this type? The
+ * SERVER-SIDE pack gate the property write actions and the bulk import consult
+ * before any write (mirroring the `getEnabledVerticals` render gate, so a crafted
+ * POST cannot author a vertical the tenant has not enabled). Core listing types
+ * (residential, land, …) need no pack and are always permitted; a pack-gated
+ * vertical is permitted only when `isPackEnabled` says so — fail closed.
+ */
+export async function isListingTypePermitted(listingType: string): Promise<boolean> {
+  const pack = VERTICAL_LISTING_TYPE_PACK[listingType];
+  if (pack === undefined) return true;
+  const tenantId = await getCurrentTenantId();
+  const source = new PrismaPackSource(getDb() as unknown as TenantPackReader);
+  return isPackEnabled(tenantId, pack, source);
+}

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { withTenant } from '@estate/db';
 import { Badge } from '@estate/ui';
+import { evaluatePublishPreflight, isPublishReady } from '@estate/validators';
 
 import { getAdminProperty, type AdminPropertyDetailReader } from '../../../lib/admin-properties.js';
 import { getDb } from '../../../lib/db.js';
@@ -10,6 +11,10 @@ import {
   renditionKeyFor,
   type PropertyImageReader,
 } from '../../../lib/property-images.js';
+import {
+  loadPublishPreflightInput,
+  type PublishPreflightReader,
+} from '../../../lib/property-preflight.js';
 import {
   listPropertyStatusEvents,
   type PropertyEventReader,
@@ -22,13 +27,21 @@ import { PropertyEditForm } from './PropertyEditForm.js';
 import { PropertyImagesManager } from './PropertyImagesManager.js';
 import { PropertyTimeline } from './PropertyTimeline.js';
 import { PublishControl } from './PublishControl.js';
+import { PublishPreflight } from './PublishPreflight.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
 // (drafts included). Resolves the tenant, reads the listing by id inside the tenant
 // RLS scope (404 if unknown), shows the read-only context (sale type, market status,
-// publish state) in the header and the editable core details in the form. Market
-// status + publish have their own lifecycle controls (a later slice). Renders inside
-// the admin shell's `main` landmark.
+// publish state) in the header and the editable core details in the form. Renders
+// inside the admin shell's `main` landmark.
+//
+// EPIC-F FR-F-8 — a DRAFT publishes ONLY through the §H.5 Tab 9 pre-flight checklist:
+// the page evaluates the checklist server-side (inside the same tenant scope as the
+// detail read) and renders <PublishPreflight>, whose publishWithPreflight action
+// blocks publishing unless the checklist is all-green or a TYPED override reason is
+// supplied (recorded in the audit log). The checklist-less <PublishControl> remains
+// only on a LIVE listing, where its sole gesture is Unpublish (audit finding
+// publish-preflight-checklist-bypassed).
 
 export const dynamic = 'force-dynamic';
 
@@ -49,12 +62,19 @@ export default async function AdminPropertyDetailPage({
     if (!property) return null;
     const events = await listPropertyStatusEvents(tx as unknown as PropertyEventReader, id);
     const images = await listPropertyImages(tx as unknown as PropertyImageReader, id);
-    return { property, events, images };
+    // FR-F-8 — a draft's publish gesture runs through the pre-flight checklist, so
+    // gather its input inside the same tenant scope as the detail read.
+    const preflight =
+      property.publishedAt === null
+        ? await loadPublishPreflightInput(tx as unknown as PublishPreflightReader, id)
+        : null;
+    return { property, events, images, preflight };
   });
 
   if (!data) notFound();
 
-  const { property, events, images } = data;
+  const { property, events, images, preflight } = data;
+  const checklist = preflight === null ? null : evaluatePublishPreflight(preflight);
   // Render-time signed thumbnails (CLAUDE.md §9 — files served via signed URLs).
   const thumbExpiry = Date.now() + 15 * 60_000;
   const managedImages = images.map((image) => ({
@@ -84,7 +104,17 @@ export default async function AdminPropertyDetailPage({
           {saleTypeLabel} · {humanise(property.marketStatus)}
         </p>
         <div className="mt-2 flex flex-wrap items-end gap-6">
-          <PublishControl propertyId={property.id} published={property.publishedAt !== null} />
+          {property.publishedAt !== null ? (
+            // A LIVE listing needs no checklist to unpublish.
+            <PublishControl propertyId={property.id} published={true} />
+          ) : checklist !== null ? (
+            // FR-F-8 — a DRAFT publishes only through the checklist (or a typed override).
+            <PublishPreflight
+              propertyId={property.id}
+              items={checklist}
+              ready={isPublishReady(checklist)}
+            />
+          ) : null}
           <MarketStatusControl
             propertyId={property.id}
             current={property.marketStatus}

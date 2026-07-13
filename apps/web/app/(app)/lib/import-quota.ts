@@ -11,9 +11,13 @@ import { getCurrentTenantId } from './tenant.js';
 // Two facts drive the check: the tenant's CAP (resolved from their plan tier on the
 // operator-owned `platform_tenants` registry, read on the base client by id — that
 // table is NOT under RLS per CLAUDE.md §9, exactly like getTenantName), and their
-// current ACTIVE count (published, non-deleted listings — a tenant-scoped read that
-// runs inside `withTenant`/RLS). The pure helpers below take injected readers so
-// they unit-test DB-free; the live wrappers wire the real clients.
+// current ACTIVE count — a tenant-scoped read that runs inside `withTenant`/RLS.
+// "Active" is the SAME predicate that makes a listing publicly live (publishedAt
+// set, not soft-deleted — lib/properties.ts buildWhere and the publish actions key
+// solely off publishedAt), NEVER the publicationStatus column, which the publish
+// flow does not write (audit finding
+// import-quota-active-predicate-diverges-from-publish). The pure helpers below take
+// injected readers so they unit-test DB-free; the live wrappers wire the real clients.
 
 /** Structural reader for the tenant's stored plan tier (base client, un-RLS'd). */
 export interface TenantPlanTierReader {
@@ -25,21 +29,26 @@ export interface TenantPlanTierReader {
   };
 }
 
-/** Structural reader for the tenant's active (published) listing count (RLS-scoped). */
+/** Structural reader for the tenant's active (live) listing count (RLS-scoped). */
 export interface ActiveListingCounter {
   count(args: { where?: Record<string, unknown> }): Promise<number>;
 }
 
-/** The `where` that selects a tenant's ACTIVE listings — published and not soft-deleted. */
+/**
+ * The `where` that selects a tenant's ACTIVE listings — the SAME predicate that makes
+ * a listing publicly live: `publishedAt` set and not soft-deleted. The publish actions
+ * write only `publishedAt` (never `publicationStatus`), so counting any other column
+ * would let a tenant import-then-publish past the cap without bound.
+ */
 export function activeListingWhere(): Record<string, unknown> {
-  return { publicationStatus: 'published', deletedAt: null };
+  return { publishedAt: { not: null }, deletedAt: null };
 }
 
 /** The tenant's active-listing usage: their cap and their current active count. */
 export interface ActiveListingUsage {
   /** The plan-tier active-listing cap (Infinity for enterprise). */
   limit: number;
-  /** The tenant's current active (published) listing count. */
+  /** The tenant's current active (publicly live) listing count. */
   existingActive: number;
 }
 

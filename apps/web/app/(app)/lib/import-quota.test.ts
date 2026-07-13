@@ -18,9 +18,8 @@ vi.mock('./db.js', () => ({ getDb: () => ({}) }));
 const withTenant = vi.fn();
 vi.mock('@estate/db', () => ({ withTenant }));
 
-const { resolveTenantPlanTier, computeActiveListingUsage, activeListingWhere } = await import(
-  './import-quota.js'
-);
+const { resolveTenantPlanTier, computeActiveListingUsage, activeListingWhere } =
+  await import('./import-quota.js');
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
 

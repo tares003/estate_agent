@@ -51,6 +51,7 @@ vi.mock('../../../lib/import-quota.js', async () => {
 
 // The shared insert path — spied so this test exercises the import orchestration, not
 // the (separately-tested) property insert. It reserves the minted slug like the real one.
+// Lives in the non-action property-insert module (never a Server Action export).
 const insertPropertyRow = vi.fn(
   async (_tx: unknown, _ctx: unknown, input: { reference: string }, taken: Set<string>) => {
     const slug = `slug-${input.reference}`;
@@ -58,7 +59,7 @@ const insertPropertyRow = vi.fn(
     return { id: `id-${input.reference}`, slug };
   },
 );
-vi.mock('../actions.js', () => ({
+vi.mock('../property-insert.js', () => ({
   insertPropertyRow: (...a: unknown[]) =>
     insertPropertyRow(...(a as [unknown, unknown, { reference: string }, Set<string>])),
 }));
