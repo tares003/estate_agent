@@ -9,8 +9,10 @@ import { getCurrentTenantId } from '../app/(app)/lib/tenant.js';
 import { ReviewsBadge } from './ReviewsBadge.js';
 
 // EPIC-AC FR-AC-6 (the live reviews badge): async server-component GLUE — it
-// resolves the current tenant, reads the feedback aggregate inside the tenant RLS
-// scope, and renders the presentational ReviewsBadge. Like SiteHeader it touches
+// resolves the current tenant, reads the feedback aggregate (scoped by
+// feedbackAggregate to moderated status=published feedback only, so pending /
+// rejected rows never move the public badge) inside the tenant RLS scope, and
+// renders the presentational ReviewsBadge. Like SiteHeader it touches
 // the request + DB, so it is verified by runtime smoke / e2e and excluded from
 // unit coverage (the testable parts are feedbackAggregate + ReviewsBadge).
 //

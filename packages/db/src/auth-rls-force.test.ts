@@ -43,9 +43,7 @@ describe('0023 migration — FORCE RLS + tenant_isolation on the Better Auth tab
     for (const table of AUTH_TABLES) {
       expect(forceRls).toContain(`CREATE POLICY tenant_isolation ON ${table}`);
     }
-    expect(forceRls).toContain(
-      "NULLIF(current_setting('app.current_tenant_id', true), '')::uuid",
-    );
+    expect(forceRls).toContain("NULLIF(current_setting('app.current_tenant_id', true), '')::uuid");
   });
 
   it('documents why FORCE is safe: the auth adapter connects via BYPASSRLS', () => {
