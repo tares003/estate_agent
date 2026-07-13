@@ -75,6 +75,13 @@ async function renderSlug(slug: string) {
   return render(await PropertyDetailPage({ params: Promise.resolve({ slug }) }));
 }
 
+/** Parse every JSON-LD block the page emitted (structured-data leak assertions). */
+function jsonLdBlocks(container: HTMLElement): Array<Record<string, unknown>> {
+  return Array.from(container.querySelectorAll('script[type="application/ld+json"]')).map(
+    (script) => JSON.parse(script.textContent ?? '{}') as Record<string, unknown>,
+  );
+}
+
 describe('property detail — per-vertical facts (FR-F-3)', () => {
   it('renders no vertical facts for a residential listing', async () => {
     findFirst.mockResolvedValue({ ...BASE, id: 'p-res', listingType: 'residential' });
@@ -140,14 +147,73 @@ describe('property detail — per-vertical facts (FR-F-3)', () => {
       ...BASE,
       id: 'p-biz',
       listingType: 'business_transfer',
+      title: 'Bianchi & Sons Bakery',
+      displayAddress: '12 King Street',
+      town: 'Manchester',
+      postcode: 'M2 4WU',
+      latitude: 53.48,
+      longitude: -2.24,
       annualTurnover: 450000,
       netProfit: 90000,
       yearsTrading: 12,
       isConfidential: true,
     });
-    await renderSlug('the-listing');
+    const { container } = await renderSlug('the-listing');
     expect(screen.getByText('Annual turnover')).toBeInTheDocument();
     expect(screen.getByText('Net profit')).toBeInTheDocument();
     expect(screen.getByText('Years trading')).toBeInTheDocument();
+
+    // §F.5 confidential flag — the business name and exact address must be ABSENT
+    // from the document (header, card fields, everywhere).
+    expect(screen.queryByText(/Bianchi/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/King Street/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/4WU/)).not.toBeInTheDocument();
+    // The non-identifying placeholder (town + postcode prefix) renders instead.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Manchester, M2');
+
+    // The structured data must not leak the name, exact address, postcode or geo.
+    const blocks = jsonLdBlocks(container);
+    const serialized = JSON.stringify(blocks);
+    expect(serialized).not.toContain('Bianchi');
+    expect(serialized).not.toContain('King Street');
+    expect(serialized).not.toContain('4WU');
+    const realEstate = blocks.find((block) => block['@type'] === 'RealEstateListing');
+    expect(realEstate?.['geo']).toBeUndefined();
+    const address = realEstate?.['address'] as Record<string, unknown>;
+    expect(address['streetAddress']).toBeUndefined();
+    expect(address['postalCode']).toBeUndefined();
+  });
+
+  it('renders only town + postcode prefix (no geo JSON-LD) when hideExactAddress is set', async () => {
+    findFirst.mockResolvedValue({
+      ...BASE,
+      id: 'p-hidden',
+      listingType: 'residential',
+      title: 'Edwardian semi · 4 bed',
+      displayAddress: 'Palatine Road, Didsbury',
+      town: 'Manchester',
+      postcode: 'M20 2QR',
+      latitude: 53.41,
+      longitude: -2.23,
+      hideExactAddress: true,
+    });
+    const { container } = await renderSlug('the-listing');
+
+    // The authored headline stays; the exact address and full postcode do not render.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Edwardian semi · 4 bed');
+    expect(screen.getByText('Manchester, M20')).toBeInTheDocument();
+    expect(screen.queryByText(/Palatine Road/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/2QR/)).not.toBeInTheDocument();
+
+    const blocks = jsonLdBlocks(container);
+    const serialized = JSON.stringify(blocks);
+    expect(serialized).not.toContain('Palatine Road');
+    expect(serialized).not.toContain('2QR');
+    const realEstate = blocks.find((block) => block['@type'] === 'RealEstateListing');
+    expect(realEstate?.['geo']).toBeUndefined();
+    const address = realEstate?.['address'] as Record<string, unknown>;
+    expect(address['streetAddress']).toBeUndefined();
+    expect(address['postalCode']).toBeUndefined();
+    expect(address['addressLocality']).toBe('Manchester');
   });
 });

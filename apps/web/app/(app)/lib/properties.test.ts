@@ -44,6 +44,28 @@ const rentRow: PropertyRow = {
   receptions: null,
 };
 
+// §F.5 — a confidential business transfer: the title carries the business name and
+// the display address is the exact trading address; neither may reach the public
+// surface (master spec line 527, audit confidential-business-listing-leaks-name-address-geo).
+const confidentialTransferRow: PropertyRow = {
+  id: '33333333-3333-3333-3333-333333333333',
+  slug: 'business-for-sale-manchester-m2',
+  displayAddress: '12 King Street',
+  postcode: 'M2 4WU',
+  title: 'Bianchi & Sons Bakery',
+  saleType: 'sale',
+  marketStatus: 'for_sale',
+  price: 25_000_000,
+  bedrooms: null,
+  bathrooms: null,
+  receptions: null,
+  town: 'Manchester',
+  latitude: 53.48,
+  longitude: -2.24,
+  listingType: 'business_transfer',
+  isConfidential: true,
+};
+
 describe('toCardProps', () => {
   it('maps a sale row to PropertyCard props with a guide price and no frequency', () => {
     const card = toCardProps(saleRow);
@@ -83,6 +105,58 @@ describe('toCardProps', () => {
     expect(card.propertyType).toBeUndefined();
     const noCategory = toCardProps(saleRow);
     expect(noCategory.propertyType).toBeUndefined();
+  });
+});
+
+describe('toCardProps — public address redaction (§F.5 confidential / hide exact address)', () => {
+  it('redacts the business name and exact address for a confidential business transfer', () => {
+    const card = toCardProps(confidentialTransferRow);
+    // Non-identifying placeholder: town + postcode prefix only.
+    expect(card.title).toBe('Manchester, M2');
+    expect(card.address).toBe('Manchester, M2');
+    expect(card.title).not.toContain('Bianchi');
+    expect(card.address).not.toContain('King Street');
+    expect(card.address).not.toContain('4WU');
+  });
+
+  it('keeps the name and address for a NON-confidential business transfer', () => {
+    const card = toCardProps({ ...confidentialTransferRow, isConfidential: false });
+    expect(card.title).toBe('Bianchi & Sons Bakery');
+    expect(card.address).toBe('12 King Street, M2 4WU');
+  });
+
+  it('fails closed: a confidential flag on any row redacts, whatever the listing type', () => {
+    // Vertical-field isolation should make this unreachable; if a stray flag ever
+    // gets through, the safer wrong is to redact.
+    const card = toCardProps({ ...saleRow, isConfidential: true });
+    expect(card.address).toBe('Manchester, M20');
+    expect(card.address).not.toContain('Palatine Road');
+  });
+
+  it('renders town + postcode prefix only when hideExactAddress is set (spec §J location)', () => {
+    const card = toCardProps({ ...saleRow, postcode: 'M20 2QR', hideExactAddress: true });
+    expect(card.address).toBe('Manchester, M20');
+    expect(card.address).not.toContain('Palatine Road');
+    expect(card.address).not.toContain('2QR');
+    // The authored headline is not identifying — it stays.
+    expect(card.title).toBe('Edwardian semi · 4 bed');
+  });
+
+  it('falls back to the redacted line — never the display address — for an untitled hidden-address row', () => {
+    const card = toCardProps({ ...rentRow, town: 'Manchester', hideExactAddress: true });
+    expect(card.title).toBe('Manchester, M15');
+    expect(card.title).not.toContain('Ellesmere Street');
+  });
+
+  it('prefers the stored postcodePrefix and omits the town segment when the row has no town', () => {
+    const card = toCardProps({
+      ...saleRow,
+      town: null,
+      postcode: 'M20 2QR',
+      postcodePrefix: 'M20',
+      hideExactAddress: true,
+    });
+    expect(card.address).toBe('M20');
   });
 });
 
@@ -334,6 +408,23 @@ describe('searchPropertiesNear', () => {
     expect(countCall?.values).not.toContain(10);
     expect(countCall?.values).not.toContain(20);
   });
+
+  it('selects the redaction columns so radius results inherit the address masking', async () => {
+    const { client, calls } = rawClient([confidentialTransferRow], 1);
+    const result = await searchPropertiesNear(client, { lat: 53.48, lng: -2.24, radiusMetres: 500 });
+
+    // The raw projection must carry the columns toCardProps redacts on, or a
+    // confidential/hidden-address row found by radius search would leak.
+    const rowsCall = calls.find((c) => c.sql.includes('ORDER BY'));
+    expect(rowsCall?.sql).toContain('town');
+    expect(rowsCall?.sql).toContain('postcode_prefix AS "postcodePrefix"');
+    expect(rowsCall?.sql).toContain('listing_type::text AS "listingType"');
+    expect(rowsCall?.sql).toContain('is_confidential AS "isConfidential"');
+    expect(rowsCall?.sql).toContain('hide_exact_address AS "hideExactAddress"');
+
+    expect(result.items[0]?.title).toBe('Manchester, M2');
+    expect(result.items[0]?.address).toBe('Manchester, M2');
+  });
 });
 
 describe('getPropertyBySlug', () => {
@@ -374,6 +465,46 @@ describe('getPropertyBySlug', () => {
   it('returns null when no published property matches the slug', async () => {
     const findFirst = vi.fn().mockResolvedValue(null);
     expect(await getPropertyBySlug({ property: { findFirst } }, 'does-not-exist')).toBeNull();
+  });
+
+  it('marks an unredacted detail addressRedacted=false', async () => {
+    const findFirst = vi.fn().mockResolvedValue(saleRow);
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'palatine-road-m20');
+    expect(detail?.addressRedacted).toBe(false);
+  });
+
+  it('redacts every SEO-facing field for a confidential business transfer', async () => {
+    const findFirst = vi.fn().mockResolvedValue(confidentialTransferRow);
+    const detail = await getPropertyBySlug(
+      { property: { findFirst } },
+      'business-for-sale-manchester-m2',
+    );
+    expect(detail).toMatchObject({
+      addressRedacted: true,
+      title: 'Manchester, M2',
+      address: 'Manchester, M2',
+      // The raw SEO fields are coarsened at the data layer so every consumer inherits it.
+      displayAddress: 'Manchester, M2',
+      postcode: 'M2',
+      latitude: null,
+      longitude: null,
+    });
+  });
+
+  it('coarsens the detail address and drops the coordinates when hideExactAddress is set', async () => {
+    const findFirst = vi
+      .fn()
+      .mockResolvedValue({ ...saleRow, postcode: 'M20 2QR', hideExactAddress: true });
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'palatine-road-m20');
+    expect(detail).toMatchObject({
+      addressRedacted: true,
+      title: 'Edwardian semi · 4 bed',
+      address: 'Manchester, M20',
+      displayAddress: 'Manchester, M20',
+      postcode: 'M20',
+      latitude: null,
+      longitude: null,
+    });
   });
 });
 
