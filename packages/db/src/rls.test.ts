@@ -9,7 +9,9 @@ import { describe, expect, it } from 'vitest';
 // superuser, so the test runs its tenant operations under a dedicated
 // non-privileged `app_user` role (SET ROLE) — which is also the least-privilege
 // shape the production app should connect with. Full Prisma-against-PostgreSQL
-// + PostGIS integration runs via Testcontainers in CI.
+// + PostGIS coverage lives in real-postgres.integration.test.ts (opt-in
+// locally via `pnpm test:integration`, requires Docker; executed by the CI
+// `integration` job with DOCKER_REQUIRED=1 so it can never green-skip).
 
 const TENANT_A = '11111111-1111-1111-1111-111111111111';
 const TENANT_B = '22222222-2222-2222-2222-222222222222';
