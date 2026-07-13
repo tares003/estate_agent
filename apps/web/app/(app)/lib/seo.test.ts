@@ -103,6 +103,31 @@ describe('propertyListingJsonLd', () => {
     expect(empty['image']).toBeUndefined();
   });
 
+  it('omits streetAddress, postalCode and geo when the address is redacted', () => {
+    // Confidential business transfer (§F.5) / hideExactAddress (§J location): the
+    // structured data must not carry the exact address, full postcode or coordinates.
+    const ld = propertyListingJsonLd(
+      { ...base, addressRedacted: true },
+      'https://acme.test/properties/business-for-sale-manchester-m2',
+    );
+    expect(ld['address']).toEqual({
+      '@type': 'PostalAddress',
+      addressLocality: 'Manchester',
+      addressCountry: 'GB',
+    });
+    expect(ld['geo']).toBeUndefined();
+    expect(JSON.stringify(ld)).not.toContain('Palatine Road');
+    expect(JSON.stringify(ld)).not.toContain('M20 2QR');
+  });
+
+  it('omits the locality too when a redacted property has no town', () => {
+    const ld = propertyListingJsonLd(
+      { ...base, town: null, addressRedacted: true },
+      'https://x.test/p',
+    );
+    expect(ld['address']).toEqual({ '@type': 'PostalAddress', addressCountry: 'GB' });
+  });
+
   it('reflects market status in offer availability', () => {
     const sold = propertyListingJsonLd({ ...base, marketStatus: 'sold' }, 'https://x.test/p');
     expect((sold['offers'] as Record<string, unknown>)['availability']).toBe(
