@@ -183,9 +183,20 @@ export async function processSavedSearchDigest(opts: {
 
   if (matches.length === 0) {
     // No new matches — advance the cutoff without emailing (acceptance rule).
-    await runTenant((tx) =>
-      tx.savedSearch.update({ where: { id: search.id }, data: { lastAlertSentAt: now } }),
-    );
+    // Advancing the persisted FR-U-4 watermark is still a state change, so it
+    // emits its own cheap audit row in the SAME tx (G4), symmetric with the
+    // emitted branch's saved_search.alerted below.
+    await runTenant(async (tx) => {
+      await tx.savedSearch.update({ where: { id: search.id }, data: { lastAlertSentAt: now } });
+      await audit(tx, {
+        tenantId,
+        actor: 'worker:saved-search-alerts',
+        action: 'saved_search.digest_advanced',
+        entity: 'saved_search',
+        entityId: search.id,
+        diff: { matches: 0 },
+      });
+    });
     return 'advanced';
   }
 
