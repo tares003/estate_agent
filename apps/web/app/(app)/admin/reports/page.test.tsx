@@ -7,6 +7,11 @@ import { render, screen, within } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const count = vi.fn();
 const groupBy = vi.fn();
 const findMany = vi.fn();
@@ -23,6 +28,7 @@ function params(p: Record<string, string>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   // every status count → returns the status-keyed value via the where filter
   count.mockImplementation(async (args: { where?: { status?: string } }) => {
     const status = args.where?.status;
@@ -33,6 +39,19 @@ beforeEach(() => {
 });
 
 describe('ReportsPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: the pipeline reports
+  // derive from enquiry data — RBAC-gated fail-closed.
+  it('gates on the enquiry.read permission before reading', async () => {
+    render(await ReportsPage(params({})));
+    expect(requireStaffPermission).toHaveBeenCalledWith('enquiry.read');
+  });
+
+  it('propagates a denial WITHOUT running the reports (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(ReportsPage(params({}))).rejects.toThrow('denied');
+    expect(count).not.toHaveBeenCalled();
+  });
+
   it('renders the funnel KPIs + by-source from the tenant-scoped reports', async () => {
     render(await ReportsPage(params({})));
 

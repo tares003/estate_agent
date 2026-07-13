@@ -6,6 +6,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const findMany = vi.fn();
 const count = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -31,11 +36,25 @@ function params(p: Record<string, string>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findMany.mockResolvedValue([row]);
   count.mockResolvedValue(1);
 });
 
 describe('EnquiryQueuePage', () => {
+  // Audit finding admin-read-pages-ungated-pii-leak: the enquiry queue renders
+  // names/emails/messages — RBAC-gated fail-closed, mirroring feedback/page.tsx.
+  it('gates on the enquiry.read permission before reading', async () => {
+    render(await EnquiryQueuePage(params({})));
+    expect(requireStaffPermission).toHaveBeenCalledWith('enquiry.read');
+  });
+
+  it('propagates a denial WITHOUT reading the queue (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(EnquiryQueuePage(params({}))).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the queue heading + a row from the tenant-scoped read', async () => {
     render(await EnquiryQueuePage(params({})));
 

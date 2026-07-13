@@ -1,10 +1,15 @@
 // responsive-coverage: opt-out all — asserts the page shell + the tenant-scoped
 // read; layout is the admin-routes Playwright pass.
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 vi.mock('../../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
+
+const requireStaffPermission = vi.fn();
+vi.mock('../../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
 
 const findMany = vi.fn();
 vi.mock('@estate/db', () => ({
@@ -20,11 +25,28 @@ vi.mock('./RepairCategoriesManager.js', () => ({
 
 const { default: RepairCategoriesPage } = await import('./page.js');
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
+  findMany.mockResolvedValue([
+    { id: 'c1', slug: 'plumbing', label: 'Plumbing', defaultUrgency: 'standard', visible: true },
+  ]);
+});
+
 describe('RepairCategoriesPage', () => {
+  // Audit finding admin-read-surfaces-missing-rbac-gate: RBAC-gated fail-closed.
+  it('gates on the repair_request.read permission before reading', async () => {
+    render(await RepairCategoriesPage());
+    expect(requireStaffPermission).toHaveBeenCalledWith('repair_request.read');
+  });
+
+  it('propagates a denial WITHOUT reading the catalogue (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(RepairCategoriesPage()).rejects.toThrow('denied');
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it('renders the heading + the manager with the tenant categories', async () => {
-    findMany.mockResolvedValue([
-      { id: 'c1', slug: 'plumbing', label: 'Plumbing', defaultUrgency: 'standard', visible: true },
-    ]);
     render(await RepairCategoriesPage());
 
     expect(

@@ -7,6 +7,11 @@ import { render, screen } from '@testing-library/react';
 vi.mock('../../../lib/tenant.js', () => ({ getCurrentTenantId: async () => 'tenant-1' }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
+const requireStaffPermission = vi.fn();
+vi.mock('../../../lib/staff-session.js', () => ({
+  requireStaffPermission: (...args: unknown[]) => requireStaffPermission(...args),
+}));
+
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
@@ -60,6 +65,7 @@ function props(id = 'e1') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  requireStaffPermission.mockResolvedValue(undefined);
   findFirst.mockResolvedValue(enquiry);
   noteFindMany.mockResolvedValue([
     {
@@ -82,6 +88,19 @@ beforeEach(() => {
 });
 
 describe('EnquiryDetailPage', () => {
+  // Audit finding admin-read-pages-ungated-pii-leak: the enquiry detail renders
+  // PII (name/email/phone/message) — RBAC-gated fail-closed.
+  it('gates on the enquiry.read permission before reading', async () => {
+    render(await EnquiryDetailPage(props()));
+    expect(requireStaffPermission).toHaveBeenCalledWith('enquiry.read');
+  });
+
+  it('propagates a denial WITHOUT reading the enquiry (fail-closed)', async () => {
+    requireStaffPermission.mockRejectedValueOnce(new Error('denied'));
+    await expect(EnquiryDetailPage(props())).rejects.toThrow('denied');
+    expect(findFirst).not.toHaveBeenCalled();
+  });
+
   it('renders the summary, status badge, changer, and the note thread', async () => {
     render(await EnquiryDetailPage(props()));
 
