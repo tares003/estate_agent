@@ -4,7 +4,11 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 import { feedbackSubmissionSchema } from '@estate/validators';
 import type { FormErrorItem } from '@estate/ui';
 
-import { feedbackLinkSecret, verifyFeedbackToken } from '../../../lib/feedback-access.js';
+import {
+  feedbackLinkSecret,
+  feedbackTokenDigest,
+  verifyFeedbackToken,
+} from '../../../lib/feedback-access.js';
 import { getDb } from '../../../lib/db.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../lib/turnstile.js';
@@ -23,19 +27,32 @@ import { FEEDBACK_CONSENT_TEXT } from '../consent-text.js';
 //  4. SECURITY: the row's tenant is the REQUEST tenant (hostname-resolved, EPIC-S);
 //     a token whose tenant differs is rejected, so a token cannot be replayed on
 //     another tenant's subdomain;
-//  5. record the consent affirmation verbatim (G5) + write the feedback row
+//  5. SINGLE USE (FR-AC-2): the token's digest is looked up FIRST inside the
+//     tenant transaction — a token whose feedback already exists is rejected with
+//     a friendly already-submitted state, writing nothing (no consent row, no
+//     feedback row, no audit row — a replay is not a new submission). The digest
+//     is persisted with the row under a per-tenant unique constraint, so a
+//     concurrent race falls back to the same state via the constraint (the whole
+//     transaction rolls back);
+//  6. record the consent affirmation verbatim (G5) + write the feedback row
 //     (needs_response set for a low rating, FR-AC-10) + an audit row, all in one
 //     tenant transaction (G4). The actor is the anonymous respondent.
 
 interface FeedbackWriteClient extends ConsentWriter, AuditWriter {
   feedback: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+    findFirst(args: {
+      where: Record<string, unknown>;
+      select: { id: true };
+    }): Promise<{ id: string } | null>;
   };
 }
 
 /** The result of a feedback submission, consumed by `useActionState`. */
 export interface FeedbackFormState {
   ok: boolean;
+  /** Set when the one-time link was already redeemed (FR-AC-2) — no new write. */
+  alreadySubmitted?: boolean;
   errors?: FormErrorItem[];
 }
 
@@ -46,16 +63,29 @@ function deny(message: string): FeedbackFormState {
   return { ok: false, errors: [{ message }] };
 }
 
+/** Thrown inside the tenant tx when the token's feedback already exists. */
+class AlreadySubmittedError extends Error {
+  constructor() {
+    super('feedback token already redeemed');
+  }
+}
+
+/** A Prisma P2002 unique-constraint violation (the single-use race backstop). */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
 export async function submitFeedback(
   _prevState: FeedbackFormState,
   formData: FormData,
 ): Promise<FeedbackFormState> {
   const tokenValue = formData.get('token');
+  const token = typeof tokenValue === 'string' ? tokenValue : null;
   const context =
-    typeof tokenValue === 'string'
-      ? verifyFeedbackToken(tokenValue, feedbackLinkSecret(), Date.now())
-      : null;
-  if (context === null) {
+    token === null ? null : verifyFeedbackToken(token, feedbackLinkSecret(), Date.now());
+  if (token === null || context === null) {
     return deny('This feedback link is invalid or has expired.');
   }
 
@@ -97,42 +127,67 @@ export async function submitFeedback(
   // The anonymous respondent is the consent subject (no personal identifier is
   // captured; the token's opaque respondent ref is used when present, FR-AC-4).
   const consentSubject = context.respondentRef ?? 'anonymous';
+  // FR-AC-2 — the digest under which this one-time token is consumed.
+  const tokenDigest = feedbackTokenDigest(token);
 
-  await withTenant(getDb(), tenantId, async (rawTx) => {
-    const tx = rawTx as unknown as FeedbackWriteClient;
-    // G5 — persist the exact affirmation the respondent agreed to, verbatim, in
-    // the same tenant transaction as the feedback row.
-    await recordConsent(tx, {
-      tenantId,
-      scope: 'feedback_form',
-      subject: consentSubject,
-      consentText: FEEDBACK_CONSENT_TEXT,
-      ipAddress: ip,
-    });
-    const created = await tx.feedback.create({
-      data: {
+  try {
+    await withTenant(getDb(), tenantId, async (rawTx) => {
+      const tx = rawTx as unknown as FeedbackWriteClient;
+      // FR-AC-2 single-use gate, BEFORE any write: a token whose feedback already
+      // exists has been redeemed — a replay writes nothing.
+      const redeemed = await tx.feedback.findFirst({
+        where: { tokenDigest },
+        select: { id: true },
+      });
+      if (redeemed !== null) {
+        throw new AlreadySubmittedError();
+      }
+      // G5 — persist the exact affirmation the respondent agreed to, verbatim, in
+      // the same tenant transaction as the feedback row.
+      await recordConsent(tx, {
         tenantId,
-        triggerType: context.triggerType,
-        triggerEntity: context.triggerEntity ?? null,
-        triggerEntityId: context.triggerEntityId ?? null,
-        agentActor: context.agentActor ?? null,
-        respondentRef: context.respondentRef ?? null,
-        rating,
-        comment: comment ?? null,
-        publishAsTestimonial,
-        needsResponse,
-      },
+        scope: 'feedback_form',
+        subject: consentSubject,
+        consentText: FEEDBACK_CONSENT_TEXT,
+        ipAddress: ip,
+      });
+      const created = await tx.feedback.create({
+        data: {
+          tenantId,
+          triggerType: context.triggerType,
+          triggerEntity: context.triggerEntity ?? null,
+          triggerEntityId: context.triggerEntityId ?? null,
+          agentActor: context.agentActor ?? null,
+          respondentRef: context.respondentRef ?? null,
+          tokenDigest,
+          rating,
+          comment: comment ?? null,
+          publishAsTestimonial,
+          needsResponse,
+        },
+      });
+      await audit(tx, {
+        tenantId,
+        actor: context.respondentRef
+          ? `respondent:${context.respondentRef}`
+          : 'respondent:anonymous',
+        action: 'feedback.submitted',
+        entity: 'feedback',
+        entityId: created.id,
+        diff: { rating, publishAsTestimonial, needsResponse, consentAffirmed: true },
+        ip,
+      });
     });
-    await audit(tx, {
-      tenantId,
-      actor: context.respondentRef ? `respondent:${context.respondentRef}` : 'respondent:anonymous',
-      action: 'feedback.submitted',
-      entity: 'feedback',
-      entityId: created.id,
-      diff: { rating, publishAsTestimonial, needsResponse, consentAffirmed: true },
-      ip,
-    });
-  });
+  } catch (error) {
+    // The friendly already-submitted state: the read-first gate, or — when two
+    // submissions race past it — the per-tenant unique constraint on the token
+    // digest (P2002). Either way the transaction rolled back: nothing was
+    // written and no audit row records a new submission.
+    if (error instanceof AlreadySubmittedError || isUniqueViolation(error)) {
+      return { ok: false, alreadySubmitted: true };
+    }
+    throw error;
+  }
 
   return { ok: true };
 }

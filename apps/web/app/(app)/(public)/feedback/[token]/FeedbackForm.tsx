@@ -21,7 +21,8 @@ import { FEEDBACK_CONSENT_TEXT } from '../consent-text.js';
 // form carries the required GDPR-consent affirmation (G5) and a Cloudflare Turnstile
 // anti-spam challenge (G8, when a sitekey is configured). Driven by
 // `useActionState(submitFeedback, …)`: a failed submit shows a field-linked error
-// summary; success swaps to a calm thank-you.
+// summary; success swaps to a calm thank-you; a replayed one-time link swaps to a
+// friendly already-submitted notice (FR-AC-2 — the token is single-use).
 
 const INITIAL_STATE: FeedbackFormState = { ok: false };
 
@@ -44,6 +45,17 @@ export function FeedbackForm({ token }: { token: string }) {
       <FormSuccess
         title="Thank you for your feedback"
         message="We really appreciate you taking the time to let us know."
+      />
+    );
+  }
+
+  // FR-AC-2 — the link is one-time. A replayed link gets a calm, friendly
+  // notice rather than an error: the feedback was received the first time.
+  if (state.alreadySubmitted) {
+    return (
+      <FormSuccess
+        title="Your feedback has already been received"
+        message="This link has already been used to share feedback — thank you. Each feedback link can only be used once."
       />
     );
   }
