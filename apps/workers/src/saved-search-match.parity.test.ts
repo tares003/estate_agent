@@ -121,7 +121,7 @@ const FIXTURES: ParityFixture[] = [
   },
   {
     name: 'newHomesOnly toggle with a non-new-build row',
-    encodes: "buildWhere: isNewHome = true excludes isNewHome false",
+    encodes: 'buildWhere: isNewHome = true excludes isNewHome false',
     filters: { newHomesOnly: true },
     property: { isNewHome: false },
     catalogueIncludes: false,
