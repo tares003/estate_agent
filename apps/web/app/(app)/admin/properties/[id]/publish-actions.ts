@@ -8,11 +8,16 @@ import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 
-// EPIC-H property management (FR-H-2): publish / unpublish a listing. Publishing
-// makes it visible on the public catalogue; unpublishing returns it to draft.
-// RBAC-gated on `property.publish` (a distinct permission from `property.write`,
-// fail-closed before any read/write); the change is recorded in an `audit_logs` row
-// in the same tenant-scoped transaction (G4). Drives a form via `useActionState`.
+// EPIC-H property management (FR-H-2): the UNPUBLISH half of the listing
+// lifecycle — unpublishing returns a live listing to draft. PUBLISHING is only
+// reachable through `publishWithPreflight` (publish-preflight-actions.ts), which
+// evaluates the §H.5 Tab 9 checklist and requires a typed reason to override
+// (FR-F-8); a publish request posted here is REFUSED before any read or write, so
+// a crafted POST cannot bypass the checklist (audit finding
+// publish-preflight-checklist-bypassed). RBAC-gated on `property.publish`
+// (fail-closed before any read/write); the change is recorded in an `audit_logs`
+// row in the same tenant-scoped transaction (G4). Drives a form via
+// `useActionState`.
 
 const idSchema = z.string().uuid();
 
@@ -50,6 +55,18 @@ export async function setPropertyPublished(
     return { ok: false, errors: [{ message: 'You do not have permission to publish listings.' }] };
   }
 
+  // FR-F-8 — publishing runs ONLY through the pre-publish checklist
+  // (publishWithPreflight). Refuse before touching the tenant scope: no read,
+  // no write, no audit row for a request this action does not own.
+  if (publish) {
+    return {
+      ok: false,
+      errors: [
+        { message: 'Publishing runs through the pre-publish checklist on the listing page.' },
+      ],
+    };
+  }
+
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
@@ -63,12 +80,12 @@ export async function setPropertyPublished(
     }
     await tx.property.update({
       where: { id },
-      data: { publishedAt: publish ? new Date() : null },
+      data: { publishedAt: null },
     });
     await audit(tx, {
       tenantId,
       actor,
-      action: publish ? 'property.published' : 'property.unpublished',
+      action: 'property.unpublished',
       entity: 'property',
       entityId: id,
       ip,
