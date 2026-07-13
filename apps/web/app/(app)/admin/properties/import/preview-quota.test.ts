@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // EPIC-X FR-X-10 (dry-run surface) — the preview shows the tenant's active-listing
 // quota outcome BEFORE they commit, so an over-quota upload is caught up front:
-// the plan cap, the current active (published) count, how many rows the upload
-// would add, whether that would exceed the cap, and the remaining capacity. The
-// preview reads this through an injected seam (getTenantActiveListingQuota + a
-// tenant-scoped active count); it performs NO insert, NO import_logs write and NO
-// audit — surfacing quota is a read, not a state change (G4 unaffected).
+// the plan cap, the current active (LIVE) count, how many rows the upload would
+// add as PUBLISHED (draft rows never consume the ACTIVE cap), whether that would
+// exceed the cap, and the remaining capacity. The preview reads this through an
+// injected seam (readActiveListingUsage); it performs NO insert, NO import_logs
+// write and NO audit — surfacing quota is a read, not a state change (G4
+// unaffected).
 
 const requireStaffPermission = vi.fn();
 vi.mock('../../../lib/staff-session.js', () => ({
@@ -42,12 +43,15 @@ vi.mock('@estate/db', () => ({ withTenant, audit }));
 const { previewPropertyImport } = await import('./preview-action.js');
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
-const HEADER = 'reference,listingType,saleType,displayAddress,postcode,title,town';
+const HEADER =
+  'reference,listingType,saleType,displayAddress,postcode,title,town,publicationStatus';
 
-function manyRows(count: number): string {
+function manyRows(count: number, publicationStatus: 'published' | 'draft' = 'published'): string {
   const rows: string[] = [HEADER];
   for (let i = 0; i < count; i += 1) {
-    rows.push(`REF-${i},residential,sale,${i} Acacia Ave,M21 9WN,Flat ${i},Chorlton`);
+    rows.push(
+      `REF-${i},residential,sale,${i} Acacia Ave,M21 9WN,Flat ${i},Chorlton,${publicationStatus}`,
+    );
   }
   return `${rows.join('\n')}\n`;
 }
@@ -94,6 +98,19 @@ describe('previewPropertyImport — quota info (FR-X-10)', () => {
     });
     // Over-quota remaining capacity never goes negative.
     expect(res.preview!.quota!.remainingAfterImport).toBe(0);
+  });
+
+  it('counts only rows imported as published toward incoming (drafts are not active)', async () => {
+    readActiveListingUsage.mockResolvedValue({ limit: 100, existingActive: 100 });
+    const res = await previewPropertyImport({ ok: false }, csvForm(manyRows(20, 'draft')));
+    expect(res.ok).toBe(true);
+    // A draft-only upload adds no ACTIVE listing, so even a tenant AT the cap fits.
+    expect(res.preview!.quota).toMatchObject({
+      limit: 100,
+      existingActive: 100,
+      incoming: 0,
+      wouldExceed: false,
+    });
   });
 
   it('reports an unlimited (enterprise) quota as never exceeding', async () => {

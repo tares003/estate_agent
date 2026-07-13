@@ -61,9 +61,9 @@ export interface ImportPreviewSampleRow {
 export interface ImportPreviewQuota {
   /** The plan-tier active-listing cap (Infinity for enterprise). */
   limit: number;
-  /** The tenant's current active (published) listings. */
+  /** The tenant's current active (publicly live) listings. */
   existingActive: number;
-  /** Valid rows this upload would create. */
+  /** Valid rows this upload imports as PUBLISHED (drafts never consume the ACTIVE cap). */
   incoming: number;
   /** Whether committing this upload would push the tenant past the cap. */
   wouldExceed: boolean;
@@ -154,10 +154,13 @@ export async function previewPropertyImport(
   ]);
 
   // FR-X-10 — surface the plan-quota outcome so the admin sees whether the upload
-  // fits BEFORE committing. Only the VALID rows would be created, so they are the
-  // "incoming" count against the cap. A read only — no insert, no import_logs write,
-  // no audit. Best-effort: a quota-read failure must not break the (read-only) dry run.
-  const incoming = parseResult.valid.length;
+  // fits BEFORE committing. Only valid rows imported as PUBLISHED consume the ACTIVE
+  // cap (matching the real import's check — drafts are not active), so they are the
+  // "incoming" count. A read only — no insert, no import_logs write, no audit.
+  // Best-effort: a quota-read failure must not break the (read-only) dry run.
+  const incoming = parseResult.valid.filter(
+    (row) => row.data.publicationStatus === 'published',
+  ).length;
   let quota: ImportPreviewQuota | undefined;
   try {
     const usage = await readActiveListingUsage();
