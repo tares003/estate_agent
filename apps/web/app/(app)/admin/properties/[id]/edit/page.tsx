@@ -9,6 +9,7 @@ import { requireStaffPermission } from '../../../../lib/staff-session.js';
 import { getCurrentTenantId } from '../../../../lib/tenant.js';
 import { updateProperty } from '../../actions.js';
 import { PropertyForm } from '../../PropertyForm.js';
+import { isUuid } from '../../../../lib/uuid.js';
 
 // EPIC-H property management (FR-H-2 write) / EPIC-F (FR-F-1 / FR-F-5) — the admin EDIT
 // form at /admin/properties/[id]/edit. Gates on `property.write` (RBAC fail-closed at the
@@ -25,6 +26,10 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
   await requireStaffPermission('property.write');
 
   const { id } = await params;
+  // A segment that is not a uuid can never name a row — and handing it to a uuid column
+  // throws P2023 (an unhandled 500) rather than returning nothing. Answer 404 instead,
+  // without touching the database.
+  if (!isUuid(id)) notFound();
   const tenantId = await getCurrentTenantId();
   const property = await withTenant(getDb(), tenantId, (tx) =>
     getPropertyForEdit(tx as unknown as PropertyEditReader, id),

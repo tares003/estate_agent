@@ -30,6 +30,7 @@ import { PropertyTimeline } from './PropertyTimeline.js';
 import { PublishControl } from './PublishControl.js';
 import { PublishPreflight } from './PublishPreflight.js';
 import { SoftDeleteControl } from './SoftDeleteControl.js';
+import { isUuid } from '../../../lib/uuid.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
 // (drafts included). Gates on `property.read` (RBAC fail-closed; the edit/publish
@@ -61,6 +62,10 @@ export default async function AdminPropertyDetailPage({
   await requireStaffPermission('property.read');
 
   const { id } = await params;
+  // A segment that is not a uuid can never name a row — and handing it to a uuid column
+  // throws P2023 (an unhandled 500) rather than returning nothing. Answer 404 instead,
+  // without touching the database.
+  if (!isUuid(id)) notFound();
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (tx) => {
     const property = await getAdminProperty(tx as unknown as AdminPropertyDetailReader, id);

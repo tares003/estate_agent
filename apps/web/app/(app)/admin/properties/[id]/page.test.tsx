@@ -84,7 +84,7 @@ vi.mock('@estate/db', () => ({
 const { default: AdminPropertyDetailPage } = await import('./page.js');
 
 const property = {
-  id: 'p1',
+  id: '33333333-3333-3333-3333-333333333333',
   title: 'Edwardian semi',
   displayAddress: 'Palatine Road, Didsbury',
   postcode: 'M20 6RE',
@@ -98,7 +98,7 @@ const property = {
   publishedAt: null,
 };
 
-function props(id = 'p1') {
+function props(id = '33333333-3333-3333-3333-333333333333') {
   return { params: Promise.resolve({ id }) };
 }
 
@@ -152,7 +152,9 @@ describe('AdminPropertyDetailPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Draft')).toBeInTheDocument();
     expect(screen.getByText('For sale · For sale')).toBeInTheDocument(); // saleType · marketStatus
-    expect(screen.getByTestId('property-edit-form')).toHaveTextContent('p1');
+    expect(screen.getByTestId('property-edit-form')).toHaveTextContent(
+      '33333333-3333-3333-3333-333333333333',
+    );
     // FR-F-8 — a DRAFT publishes ONLY through the pre-flight checklist (eleven items,
     // evaluated server-side; this fixture satisfies none fully, so publish is gated
     // behind the typed override). The checklist-less PublishControl must NOT render.
@@ -170,11 +172,13 @@ describe('AdminPropertyDetailPage', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Status history' })).toBeInTheDocument();
     expect(screen.getByText('Under offer')).toBeInTheDocument();
     expect(eventFindMany).toHaveBeenCalledWith({
-      where: { propertyId: 'p1' },
+      where: { propertyId: '33333333-3333-3333-3333-333333333333' },
       orderBy: { changedAt: 'desc' },
     });
     // admin read is by id, drafts included (no published filter)
-    expect(findFirst).toHaveBeenCalledWith({ where: { id: 'p1', deletedAt: null } });
+    expect(findFirst).toHaveBeenCalledWith({
+      where: { id: '33333333-3333-3333-3333-333333333333', deletedAt: null },
+    });
   });
 
   it('frames a published rental in the header', async () => {
@@ -195,11 +199,23 @@ describe('AdminPropertyDetailPage', () => {
   it('offers the soft-delete control for the listing (FR-F-10)', async () => {
     render(await AdminPropertyDetailPage(props()));
     expect(screen.getByRole('heading', { level: 2, name: 'Delete listing' })).toBeInTheDocument();
-    expect(screen.getByTestId('soft-delete-control')).toHaveTextContent('p1');
+    expect(screen.getByTestId('soft-delete-control')).toHaveTextContent(
+      '33333333-3333-3333-3333-333333333333',
+    );
   });
 
   it('404s an unknown listing', async () => {
     findFirst.mockResolvedValue(null);
     await expect(AdminPropertyDetailPage(props('nope'))).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  // A `[id]` segment that is not a uuid can never name a row, and handing it to a uuid
+  // column throws P2023 — an unhandled 500 — rather than returning nothing. Every one of
+  // these routes did exactly that (verified live: /admin/.../not-a-uuid returned 500).
+  // It must 404, and it must not reach the database to find that out.
+  it('renders 404 for a malformed id, without querying the database', async () => {
+    await expect(AdminPropertyDetailPage(props('not-a-uuid'))).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(notFound).toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 });

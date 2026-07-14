@@ -21,6 +21,7 @@ import { AssignContractorControl } from './AssignContractorControl.js';
 import { PropertyMatchControl } from './PropertyMatchControl.js';
 import { RepairStatusControl } from './RepairStatusControl.js';
 import { RepairTimeline } from './RepairTimeline.js';
+import { isUuid } from '../../../lib/uuid.js';
 
 // EPIC-G repair triage detail (master spec §G.2/§G.5, FR-G-6/FR-G-7). Gates on
 // `repair_request.read` (RBAC fail-closed — the ticket holds reporter PII).
@@ -40,6 +41,10 @@ export default async function RepairDetailPage({ params }: { params: Promise<{ i
   await requireStaffPermission('repair_request.read');
 
   const { id } = await params;
+  // A segment that is not a uuid can never name a row — and handing it to a uuid column
+  // throws P2023 (an unhandled 500) rather than returning nothing. Answer 404 instead,
+  // without touching the database.
+  if (!isUuid(id)) notFound();
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (tx) => {
     const repair = await getRepairRequest(tx as unknown as RepairDetailReader, id);
