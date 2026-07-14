@@ -49,6 +49,18 @@ describe('WORKER_CATALOGUE (FR-U-10)', () => {
       'saved_search_weekly',
     ]);
   });
+
+  it('marks exactly the per-tenant loops as controllable (FR-U-8)', () => {
+    // The console offers Pause / Run now only for workers that run as a per-tenant loop.
+    // The outbox dispatchers drain one shared queue across tenants, so a per-tenant pause
+    // has nothing to act on — the console must not offer a control that would do nothing.
+    const perTenant = WORKER_CATALOGUE.filter((worker) => worker.perTenant).map((w) => w.id);
+    expect(perTenant).toEqual([
+      'saved_search_instant',
+      'saved_search_daily',
+      'saved_search_weekly',
+    ]);
+  });
 });
 
 describe('findWorker', () => {
