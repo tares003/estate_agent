@@ -1,5 +1,6 @@
 import { PrismaClient, withTenant } from '@estate/db';
 import { createLogger } from '@estate/observability';
+import { findWorker, type WorkerDefinition } from '@estate/scheduler';
 import { resolveSmsBackend } from '@estate/sms';
 import { LocalFilesystemBackend } from '@estate/storage';
 import { Queue, Worker, type ConnectionOptions } from 'bullmq';
@@ -23,6 +24,12 @@ import {
   type SavedSearchInstantClient,
   type SavedSearchInstantTenantRunner,
 } from './saved-search-instant.js';
+import {
+  runScheduledWorker,
+  type ScheduledResult,
+  type ScheduledTasksClient,
+  type ScheduledTenantRunner,
+} from './scheduled-tasks.js';
 import { transformImage } from './sharp-transform.js';
 import { runSmsTick, type SmsQueueClient, type SmsTenantRunner } from './sms-dispatcher.js';
 
@@ -48,13 +55,22 @@ const SMS_TICK_EVERY_MS = 30_000;
 // is no enqueue-from-web BullMQ path in V1). 1 minute is the V1 "instant" latency.
 const INSTANT_POLL_EVERY_MS = 60_000;
 
-// EPIC-U worker catalogue cadences for the saved-search digests (FR-T-7/8). cron
-// patterns are minute hour dom month dow; both run server-time daily/weekly. The
-// per-tenant-local-time refinement (FR-U-9) is a later slice — V1 fires one digest
-// per cadence at a fixed server hour, which still satisfies "emailed only when
-// there are new matches" (the worker's core acceptance rule).
-const SAVED_SEARCH_DAILY_CRON = '0 7 * * *'; // daily 07:00
-const SAVED_SEARCH_WEEKLY_CRON = '0 8 * * 1'; // Monday 08:00
+// EPIC-U FR-U-9 — the saved-search digests fire at the TENANT's local hour, not a fixed
+// server hour, so this is ONE hourly tick (minute hour dom month dow) rather than a cron
+// per cadence. Every hour, each tenant is asked "is it your local 07:00 (or Monday 08:00)
+// yet, and have you not already run today?" — see scheduled-tasks.ts. Reading the tenant's
+// wall clock also makes it DST-correct: a 07:00-local digest is 06:00Z in BST and 07:00Z
+// in GMT, which a fixed UTC cron gets wrong for half the year.
+const SCHEDULED_TICK_CRON = '0 * * * *'; // hourly, on the hour
+
+/** A catalogue worker by id — a typo here is a startup crash, not a silent no-op. */
+function catalogueWorker(id: string): WorkerDefinition {
+  const definition = findWorker(id);
+  if (!definition) {
+    throw new Error(`worker "${id}" is not declared in the EPIC-U catalogue`);
+  }
+  return definition;
+}
 
 function storageDir(): string {
   const raw = process.env['STORAGE_DIR'];
@@ -173,41 +189,73 @@ async function main(): Promise<void> {
     logger.error({ queue: SMS_SEND_QUEUE, jobId: job?.id, err: error }, 'job failed');
   });
 
-  // EPIC-U + EPIC-T FR-T-7/8 — the saved-search alert digest worker. Two repeatable
-  // jobs (daily 07:00 / weekly Mon 08:00) feed one Worker; the job's data carries
-  // the cadence so the consumer runs the right digest. The heavy lifting is in the
-  // pure + read-model layer (saved-search-digest.ts); this only wires Redis + the
-  // tenant-scoped runner, mirroring the email/image/sms ticks above.
+  // EPIC-U + EPIC-T FR-T-7/8 — the saved-search alert digest worker, now scheduled per
+  // tenant (FR-U-9). One hourly repeatable job drives both cadences: for every active
+  // tenant, runScheduledWorker decides on that tenant's own clock whether the daily or
+  // weekly digest is due, honours the FR-U-8 pause flag, picks up a pending Run-now, and
+  // records the run in the log the console reads (FR-U-7). The digest itself is unchanged
+  // — it is simply handed one tenant at a time instead of the whole list.
   const baseUrl = siteBaseUrl();
+  const listScheduledTenants = (): Promise<{ id: string; timezone: string }[]> =>
+    prisma.platformTenant.findMany({
+      where: { status: 'active' },
+      select: { id: true, timezone: true },
+    });
+  const runScheduledTenantFor =
+    (tenantId: string): ScheduledTenantRunner =>
+    (fn) =>
+      withTenant(prisma, tenantId, (tx) => fn(tx as unknown as ScheduledTasksClient));
+  const logScheduled = (queue: string, tenantId: string, id: string, result: ScheduledResult) => {
+    if (result.status !== 'ran' || !result.recorded) return;
+    const { outcome, detail, runtimeMs } = result;
+    logger.info({ queue, tenantId, workerId: id, outcome, detail, runtimeMs }, 'scheduled run');
+  };
+
+  const DIGEST_WORKERS = [
+    { definition: catalogueWorker('saved_search_daily'), cadence: 'daily' satisfies DigestCadence },
+    {
+      definition: catalogueWorker('saved_search_weekly'),
+      cadence: 'weekly' satisfies DigestCadence,
+    },
+  ] as const;
+  const INSTANT_WORKER = catalogueWorker('saved_search_instant');
+
   const savedSearchQueue = new Queue(SAVED_SEARCH_ALERTS_QUEUE, { connection });
-  await savedSearchQueue.upsertJobScheduler(
-    'saved-search-alerts-daily',
-    { pattern: SAVED_SEARCH_DAILY_CRON },
-    { data: { cadence: 'daily' satisfies DigestCadence } },
-  );
-  await savedSearchQueue.upsertJobScheduler(
-    'saved-search-alerts-weekly',
-    { pattern: SAVED_SEARCH_WEEKLY_CRON },
-    { data: { cadence: 'weekly' satisfies DigestCadence } },
-  );
+  await savedSearchQueue.upsertJobScheduler('saved-search-alerts-hourly', {
+    pattern: SCHEDULED_TICK_CRON,
+  });
   const runSavedSearchTenantFor =
     (tenantId: string): SavedSearchTenantRunner =>
     (fn) =>
       withTenant(prisma, tenantId, (tx) => fn(tx as unknown as SavedSearchDigestClient));
   const savedSearchWorker = new Worker(
     SAVED_SEARCH_ALERTS_QUEUE,
-    async (job) => {
-      const cadence: DigestCadence = job.data?.cadence === 'weekly' ? 'weekly' : 'daily';
-      const counts = await runSavedSearchDigestTick({
-        cadence,
-        now: new Date(),
-        listActiveTenants: () =>
-          prisma.platformTenant.findMany({ where: { status: 'active' }, select: { id: true } }),
-        runTenantFor: runSavedSearchTenantFor,
-        ...(baseUrl !== undefined ? { baseUrl } : {}),
-      });
-      if (counts.emailed > 0 || counts.advanced > 0) {
-        logger.info({ queue: SAVED_SEARCH_ALERTS_QUEUE, cadence, ...counts }, 'digest tick');
+    async () => {
+      const now = new Date();
+      const tenants = await listScheduledTenants();
+      for (const tenant of tenants) {
+        for (const { definition, cadence } of DIGEST_WORKERS) {
+          const result = await runScheduledWorker({
+            tenantId: tenant.id,
+            timeZone: tenant.timezone,
+            worker: definition,
+            now,
+            runTenant: runScheduledTenantFor(tenant.id),
+            execute: async () => {
+              const counts = await runSavedSearchDigestTick({
+                cadence,
+                now,
+                listActiveTenants: () => Promise.resolve([{ id: tenant.id }]),
+                runTenantFor: runSavedSearchTenantFor,
+                ...(baseUrl !== undefined ? { baseUrl } : {}),
+              });
+              return counts.emailed === 0 && counts.advanced === 0
+                ? null
+                : `emailed ${counts.emailed}, advanced ${counts.advanced}`;
+            },
+          });
+          logScheduled(SAVED_SEARCH_ALERTS_QUEUE, tenant.id, definition.id, result);
+        }
       }
     },
     { connection },
@@ -229,15 +277,30 @@ async function main(): Promise<void> {
   const instantWorker = new Worker(
     SAVED_SEARCH_INSTANT_QUEUE,
     async () => {
-      const counts = await runInstantAlertsTick({
-        now: new Date(),
-        listActiveTenants: () =>
-          prisma.platformTenant.findMany({ where: { status: 'active' }, select: { id: true } }),
-        runTenantFor: runInstantTenantFor,
-        ...(baseUrl !== undefined ? { baseUrl } : {}),
-      });
-      if (counts.emailed > 0 || counts.advanced > 0) {
-        logger.info({ queue: SAVED_SEARCH_INSTANT_QUEUE, ...counts }, 'instant tick');
+      const now = new Date();
+      const tenants = await listScheduledTenants();
+      for (const tenant of tenants) {
+        // An interval worker is always "due"; the wrapper is here for the FR-U-8 pause
+        // flag, the Run-now request and the run log. An idle minute records nothing.
+        const result = await runScheduledWorker({
+          tenantId: tenant.id,
+          timeZone: tenant.timezone,
+          worker: INSTANT_WORKER,
+          now,
+          runTenant: runScheduledTenantFor(tenant.id),
+          execute: async () => {
+            const counts = await runInstantAlertsTick({
+              now,
+              listActiveTenants: () => Promise.resolve([{ id: tenant.id }]),
+              runTenantFor: runInstantTenantFor,
+              ...(baseUrl !== undefined ? { baseUrl } : {}),
+            });
+            return counts.emailed === 0 && counts.advanced === 0
+              ? null
+              : `emailed ${counts.emailed}, advanced ${counts.advanced}`;
+          },
+        });
+        logScheduled(SAVED_SEARCH_INSTANT_QUEUE, tenant.id, INSTANT_WORKER.id, result);
       }
     },
     { connection },
@@ -256,7 +319,7 @@ async function main(): Promise<void> {
         SAVED_SEARCH_INSTANT_QUEUE,
       ],
       everyMs: [TICK_EVERY_MS, IMAGE_TICK_EVERY_MS, SMS_TICK_EVERY_MS, INSTANT_POLL_EVERY_MS],
-      cron: [SAVED_SEARCH_DAILY_CRON, SAVED_SEARCH_WEEKLY_CRON],
+      cron: [SCHEDULED_TICK_CRON],
     },
     'worker started',
   );

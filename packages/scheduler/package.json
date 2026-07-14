@@ -1,0 +1,27 @@
+{
+  "name": "@estate/scheduler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "EPIC-U worker catalogue + cadence maths. The single-file worker declaration the scheduled-tasks console auto-discovers (FR-U-10), tenant-local next-run computation for daily/weekly cadences (FR-U-9), and the run-log summary the console renders (FR-U-7).",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@estate/config": "workspace:*",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -35,6 +35,9 @@ importers:
       '@estate/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@estate/scheduler':
+        specifier: workspace:*
+        version: link:../../packages/scheduler
       '@estate/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -156,6 +159,9 @@ importers:
       '@estate/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@estate/scheduler':
+        specifier: workspace:*
+        version: link:../../packages/scheduler
       '@estate/sms':
         specifier: workspace:*
         version: link:../../packages/sms
@@ -393,6 +399,24 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.20
+      '@vitest/coverage-v8':
+        specifier: ^3.0.0
+        version: 3.2.6(vitest@3.2.6(@types/debug@4.1.13)(@types/node@22.19.20)(happy-dom@20.10.2)(jiti@2.7.0)(jsdom@25.0.1)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
+      eslint:
+        specifier: ^9.0.0
+        version: 9.39.4(jiti@2.7.0)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@22.19.20)(happy-dom@20.10.2)(jiti@2.7.0)(jsdom@25.0.1)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0)
+
+  packages/scheduler:
+    devDependencies:
+      '@estate/config':
+        specifier: workspace:*
+        version: link:../config
       '@vitest/coverage-v8':
         specifier: ^3.0.0
         version: 3.2.6(vitest@3.2.6(@types/debug@4.1.13)(@types/node@22.19.20)(happy-dom@20.10.2)(jiti@2.7.0)(jsdom@25.0.1)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))

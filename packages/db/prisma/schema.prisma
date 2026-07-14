@@ -30,49 +30,55 @@ model PlatformTenant {
   status       TenantStatus @default(active)
   planTier     PlanTier     @default(starter) @map("plan_tier")
   enabledPacks Json         @default("[]") @map("enabled_packs")
+  /// EPIC-U FR-U-9 — the tenant's IANA time zone. Daily/weekly worker cadences fire at
+  /// the tenant's LOCAL hour (the digest should "arrive at 7am my time"), not at a single
+  /// server-time instant. UK-first default; the scheduler fails soft on an unknown zone.
+  timezone     String       @default("Europe/London")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  users                User[]
-  branches             Branch[]
-  agents               Agent[]
-  properties           Property[]
-  enquiries            Enquiry[]
-  assignmentRules      AssignmentRule[]
-  viewings             Viewing[]
-  valuations           Valuation[]
-  repairRequests       RepairRequest[]
-  contacts             Contact[]
-  propertyImages       PropertyImage[]
-  propertyDocuments    PropertyDocument[]
-  notes                Note[]
-  propertyStatusEvents PropertyStatusEvent[]
-  enquiryStatusEvents  EnquiryStatusEvent[]
-  repairStatusEvents   RepairStatusEvent[]
-  repairFiles          RepairFile[]
-  repairCategories     RepairCategory[]
-  contractors          Contractor[]
-  feedback             Feedback[]
-  sdltConfig           SdltConfig?
-  savedProperties      SavedProperty[]
-  savedSearches        SavedSearch[]
-  mortgageRateConfig   MortgageRateConfig?
-  mortgageRatePresets  MortgageRatePreset[]
+  users                    User[]
+  branches                 Branch[]
+  agents                   Agent[]
+  properties               Property[]
+  enquiries                Enquiry[]
+  assignmentRules          AssignmentRule[]
+  viewings                 Viewing[]
+  valuations               Valuation[]
+  repairRequests           RepairRequest[]
+  contacts                 Contact[]
+  propertyImages           PropertyImage[]
+  propertyDocuments        PropertyDocument[]
+  notes                    Note[]
+  propertyStatusEvents     PropertyStatusEvent[]
+  enquiryStatusEvents      EnquiryStatusEvent[]
+  repairStatusEvents       RepairStatusEvent[]
+  repairFiles              RepairFile[]
+  repairCategories         RepairCategory[]
+  contractors              Contractor[]
+  feedback                 Feedback[]
+  sdltConfig               SdltConfig?
+  savedProperties          SavedProperty[]
+  savedSearches            SavedSearch[]
+  mortgageRateConfig       MortgageRateConfig?
+  mortgageRatePresets      MortgageRatePreset[]
   repairNotificationConfig RepairNotificationConfig?
-  repairSlaConfig      RepairSlaConfig?
-  blogAuthors          BlogAuthor[]
-  blogCategories       BlogCategory[]
-  blogPostTags         BlogPostTag[]
-  blogPosts            BlogPost[]
-  areaGuides           AreaGuide[]
-  areaGuideSections    AreaGuideSection[]
-  redirects            Redirect[]
-  seoMetadata          SeoMetadata[]
-  importLogs           ImportLog[]
-  sessions             Session[]
-  accounts             Account[]
-  verifications        Verification[]
-  twoFactors           TwoFactor[]
+  repairSlaConfig          RepairSlaConfig?
+  workerRuns               WorkerRun[]
+  workerSchedules          WorkerSchedule[]
+  blogAuthors              BlogAuthor[]
+  blogCategories           BlogCategory[]
+  blogPostTags             BlogPostTag[]
+  blogPosts                BlogPost[]
+  areaGuides               AreaGuide[]
+  areaGuideSections        AreaGuideSection[]
+  redirects                Redirect[]
+  seoMetadata              SeoMetadata[]
+  importLogs               ImportLog[]
+  sessions                 Session[]
+  accounts                 Account[]
+  verifications            Verification[]
+  twoFactors               TwoFactor[]
 
   @@map("platform_tenants")
 }
@@ -1833,4 +1839,60 @@ enum BlogPostStatus {
   published
 
   @@map("blog_post_status")
+}
+
+/// EPIC-U FR-U-7 — one recorded run of one worker FOR ONE TENANT (the run log the
+/// scheduled-tasks console reads: last run, outcome, average runtime — master spec §H.23).
+///
+/// A "run" is a tenant's slice of a worker tick, not the platform-wide tick: the console
+/// is a TENANT admin surface, so a tenant must see only its own worker history. That also
+/// makes the row naturally RLS-scoped like every other tenant table, and makes "average
+/// runtime" mean the runtime of THIS tenant's work.
+///
+/// `workerId` is the stable id from the @estate/scheduler catalogue (FR-U-10) — the
+/// console folds these rows onto the DECLARED workers, so a retired worker's history
+/// never conjures a phantom row.
+model WorkerRun {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  /// The @estate/scheduler catalogue id (e.g. `saved_search_daily`).
+  workerId   String   @map("worker_id")
+  startedAt  DateTime @map("started_at")
+  finishedAt DateTime @map("finished_at")
+  /// How the run ended: `success` | `failed`.
+  outcome    String
+  /// Failure message, or a short counts summary on success.
+  detail     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, workerId, startedAt])
+  @@map("worker_runs")
+}
+
+/// EPIC-U FR-U-8 — per-tenant, per-worker schedule state: the pause flag ("a worker shall
+/// be pause-able from the admin without redeploy") and the pending Run-now request
+/// (master spec §H.23 "Run now").
+///
+/// Run-now is a REQUEST, not a direct invocation: `apps/web` has no BullMQ producer (the
+/// workers own the Redis connection), so the admin action stamps `runRequestedAt` and the
+/// worker's own tick — which already polls — picks it up and clears it. That needs no new
+/// infrastructure and keeps the write inside the tenant transaction.
+model WorkerSchedule {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  /// The @estate/scheduler catalogue id this state belongs to.
+  workerId       String    @map("worker_id")
+  /// FR-U-8 — a paused worker does not run for this tenant.
+  paused         Boolean   @default(false)
+  /// Set by the admin's "Run now"; cleared by the worker when it picks the request up.
+  runRequestedAt DateTime? @map("run_requested_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, workerId])
+  @@map("worker_schedules")
 }
