@@ -48,6 +48,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       { label: 'SEO', href: '/admin/settings/seo' },
       { label: 'Redirects', href: '/admin/settings/redirects' },
       { label: 'Repair notifications', href: '/admin/settings/repair-notifications' },
+      { label: 'Repair SLAs', href: '/admin/settings/repair-sla' },
     ],
   },
 ];

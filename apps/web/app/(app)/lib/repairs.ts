@@ -1,13 +1,20 @@
-import { DEFAULT_PAGE_SIZE, type RepairStatus, type RepairUrgency } from '@estate/validators';
+import {
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_REPAIR_SLA_CONFIG,
+  type RepairStatus,
+  type RepairUrgency,
+} from '@estate/validators';
 
-import { slaRisk, type SlaRisk } from './repair-sla.js';
+import { slaRisk, type SlaConfig, type SlaRisk } from './repair-sla.js';
 
 // EPIC-G repairs inbox read model (master spec §G.2, FR-G-2/FR-G-9). Pure mapping
 // over a STRUCTURAL Prisma client (DB-free to unit-test, mirrors lib/enquiries.ts);
 // the live query runs tenant-scoped (RLS) via withTenant in the admin Server
 // Component. URL-driven status/urgency filters + pagination; closed tickets
 // (completed / rejected) are hidden unless explicitly asked for; each open item is
-// banded by SLA-breach risk against the injected `now` (FR-G-9).
+// banded by SLA-breach risk against the injected `now` and the tenant's SLA config
+// (FR-G-5/FR-G-9 — the page loads it with loadRepairSlaConfig; omitting it applies
+// the master spec §G.4 / FR-G-9 defaults).
 
 /** The RepairRequest columns the inbox reads. */
 export interface RepairRow {
@@ -77,6 +84,7 @@ export async function listRepairRequests(
   db: RepairListReader,
   options: RepairQueueOptions,
   now: number,
+  slaConfig: SlaConfig = DEFAULT_REPAIR_SLA_CONFIG,
 ): Promise<RepairQueueResult> {
   const where = buildRepairWhere(options);
   const orderBy = { createdAt: options.sort === 'oldest' ? 'asc' : 'desc' };
@@ -90,7 +98,7 @@ export async function listRepairRequests(
   ]);
 
   return {
-    items: rows.map((row) => ({ ...row, slaRisk: slaRisk(row, now) })),
+    items: rows.map((row) => ({ ...row, slaRisk: slaRisk(row, now, slaConfig) })),
     total,
     page,
     pageSize,

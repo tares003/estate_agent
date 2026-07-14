@@ -13,9 +13,14 @@ vi.mock('../../lib/staff-session.js', () => ({
 
 const findMany = vi.fn();
 const count = vi.fn();
+// FR-G-5/FR-G-9: the tenant's SLA config is read in the SAME tenant scope as the tickets.
+const slaConfigFindFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-    fn({ repairRequest: { findMany, count } }),
+    fn({
+      repairRequest: { findMany, count },
+      repairSlaConfig: { findFirst: slaConfigFindFirst },
+    }),
 }));
 
 // The table is presentational; stub it so the page test focuses on the read + shell.
@@ -24,10 +29,10 @@ vi.mock('./RepairsInboxTable.js', () => ({
     result,
     options,
   }: {
-    result: { items: Array<{ id: string }>; total: number };
+    result: { items: Array<{ id: string; slaRisk: string | null }>; total: number };
     options: { urgency?: string };
   }) => (
-    <div data-testid="repairs-inbox-table">
+    <div data-testid="repairs-inbox-table" data-sla-risk={result.items[0]?.slaRisk ?? ''}>
       {`${result.items.length}/${result.total}:${options.urgency ?? 'all'}`}
     </div>
   ),
@@ -35,21 +40,26 @@ vi.mock('./RepairsInboxTable.js', () => ({
 
 const { default: RepairsInboxPage } = await import('./page.js');
 
+/** A ticket submitted `hoursAgo` hours ago — so its SLA band is deterministic. */
+function ticket(hoursAgo: number) {
+  return {
+    id: 'r1',
+    name: 'Tess',
+    reference: null,
+    category: 'Plumbing',
+    urgency: 'urgent',
+    status: 'new',
+    createdAt: new Date(Date.now() - hoursAgo * 3_600_000),
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   requireStaffPermission.mockResolvedValue(undefined);
-  findMany.mockResolvedValue([
-    {
-      id: 'r1',
-      name: 'Tess',
-      reference: null,
-      category: 'Plumbing',
-      urgency: 'urgent',
-      status: 'new',
-      createdAt: new Date(),
-    },
-  ]);
+  findMany.mockResolvedValue([ticket(0)]);
   count.mockResolvedValue(1);
+  // Unconfigured by default — the §G.4 / FR-G-9 defaults apply.
+  slaConfigFindFirst.mockResolvedValue(null);
 });
 
 describe('RepairsInboxPage', () => {
@@ -89,5 +99,34 @@ describe('RepairsInboxPage', () => {
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: { notIn: ['completed', 'rejected'] } } }),
     );
+  });
+
+  // FR-G-5 / FR-G-9 (audit finding repair-urgency-sla-not-configurable): the badges
+  // band against the tenant's configured SLA, read in the SAME tenant scope.
+  it('bands against the §G.4 defaults when the tenant has configured no SLA', async () => {
+    // An urgent ticket 3h old is 12.5% of the default 24h target — on track.
+    findMany.mockResolvedValue([ticket(3)]);
+
+    render(await RepairsInboxPage({}));
+
+    expect(slaConfigFindFirst).toHaveBeenCalled();
+    expect(screen.getByTestId('repairs-inbox-table')).toHaveAttribute('data-sla-risk', 'on_track');
+  });
+
+  it('bands against the tenant-configured SLA when one exists', async () => {
+    // The same 3h-old urgent ticket is 75% of a configured 4h target — due soon.
+    findMany.mockResolvedValue([ticket(3)]);
+    slaConfigFindFirst.mockResolvedValue({
+      emergencyTargetHours: 4,
+      urgentTargetHours: 4,
+      standardTargetHours: 48,
+      lowTargetWorkingDays: 5,
+      dueSoonThresholdPercent: 50,
+      atRiskThresholdPercent: 75,
+    });
+
+    render(await RepairsInboxPage({}));
+
+    expect(screen.getByTestId('repairs-inbox-table')).toHaveAttribute('data-sla-risk', 'due_soon');
   });
 });

@@ -59,6 +59,7 @@ model PlatformTenant {
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
   repairNotificationConfig RepairNotificationConfig?
+  repairSlaConfig      RepairSlaConfig?
   blogAuthors          BlogAuthor[]
   blogCategories       BlogCategory[]
   blogPostTags         BlogPostTag[]
@@ -1009,6 +1010,49 @@ model RepairNotificationConfig {
   tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("repair_notification_config")
+}
+
+/// EPIC-G FR-G-5 / FR-G-9 (audit finding repair-urgency-sla-not-configurable) —
+/// the per-tenant repair SLA configuration. Master spec §G.4 gives each urgency an
+/// SLA target and marks it "(configurable)"; FR-G-9 requires the inbox's SLA-breach
+/// badge to change colour at "configurable thresholds". One row per tenant (the
+/// @unique on tenant_id) holds both. Every column defaults to the §G.4 / FR-G-9
+/// value, and lib/repair-sla-config.ts falls back to those same defaults when no
+/// row exists, so an unconfigured tenant behaves exactly as before this slice.
+///
+/// The three "on site / acknowledged in N hours" urgencies carry an HOURS target;
+/// non-urgent (the committed `low` enum value) carries a WORKING-DAYS target,
+/// mirroring §G.4's own units. Thresholds are a whole percentage of the target
+/// elapsed; breach is not configurable (FR-G-9 fixes it at 100% — that is what
+/// "breached" means).
+///
+/// SCOPE: this configures the TARGETS for the urgencies, not the membership of the
+/// urgency taxonomy — RepairUrgency stays a Prisma enum (see the FR-G-5 note in
+/// dev-briefs/v1/EPIC-G-repair-system.md; runtime-editable enum VALUES would mean
+/// restructuring the enum into a table, which this slice deliberately does not do).
+/// Tenant-scoped, isolated by the tenant_isolation RLS policy in
+/// migrations/raw/0025_repair_sla_config_rls.sql.
+model RepairSlaConfig {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @unique @map("tenant_id") @db.Uuid
+  /// §G.4 Emergency — "contractor on site < 4 hours".
+  emergencyTargetHours    Int      @default(4) @map("emergency_target_hours")
+  /// §G.4 Urgent — "contractor on site < 24 hours".
+  urgentTargetHours       Int      @default(24) @map("urgent_target_hours")
+  /// §G.4 Standard — "acknowledged < 48 hours".
+  standardTargetHours     Int      @default(48) @map("standard_target_hours")
+  /// §G.4 Non-urgent — "acknowledged < 5 working days" (the `low` enum value).
+  lowTargetWorkingDays    Int      @default(5) @map("low_target_working_days")
+  /// FR-G-9 amber boundary — above this share of the target elapsed the badge reads "Due soon".
+  dueSoonThresholdPercent Int      @default(50) @map("due_soon_threshold_percent")
+  /// FR-G-9 red boundary — above this share of the target elapsed the badge reads "At risk".
+  atRiskThresholdPercent  Int      @default(75) @map("at_risk_threshold_percent")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("repair_sla_config")
 }
 
 /// EPIC-J knowledge-hub author (master spec §J "Blog author"; §H Blog tab).

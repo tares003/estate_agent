@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_REPAIR_SLA_CONFIG } from '@estate/validators';
 
 import {
   buildRepairWhere,
@@ -79,6 +80,23 @@ describe('listRepairRequests', () => {
     ]);
     const result = await listRepairRequests(db, {}, NOW);
     expect(result.items.map((item) => item.slaRisk)).toEqual(['on_track', 'at_risk', 'breached']);
+  });
+
+  it('bands against the tenant SLA config when one is supplied (FR-G-5/FR-G-9)', async () => {
+    // The same three tickets, banded against a 48h urgent target with 25%/50% bands:
+    // 1h = 2% on_track; 23h = 48% due_soon; 25h = 52% at_risk (not breached).
+    const db = reader([
+      row({ id: 'a', createdAt: new Date(NOW - 1 * 3_600_000) }),
+      row({ id: 'b', createdAt: new Date(NOW - 23 * 3_600_000) }),
+      row({ id: 'c', createdAt: new Date(NOW - 25 * 3_600_000) }),
+    ]);
+    const result = await listRepairRequests(db, {}, NOW, {
+      ...DEFAULT_REPAIR_SLA_CONFIG,
+      urgentTargetHours: 48,
+      dueSoonThresholdPercent: 25,
+      atRiskThresholdPercent: 50,
+    });
+    expect(result.items.map((item) => item.slaRisk)).toEqual(['on_track', 'due_soon', 'at_risk']);
   });
 });
 
