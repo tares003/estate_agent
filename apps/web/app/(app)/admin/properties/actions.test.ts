@@ -17,9 +17,11 @@ vi.mock('../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -90,6 +92,7 @@ beforeEach(() => {
   getStaffUserId.mockResolvedValue(USER_ID);
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   propertyFindFirst.mockResolvedValue(null);
   propertyFindMany.mockResolvedValue([]);
   propertyCreate.mockResolvedValue({
@@ -370,5 +373,21 @@ describe('Server Action export surface', () => {
       .map(([name]) => name)
       .sort();
     expect(exportedFunctions).toEqual(['createProperty', 'updateProperty']);
+  });
+});
+
+// FR-H-17 — the audit trail records actor, diff, IP AND user-agent; every admin
+// state-change audit row must carry the request user-agent (audit finding
+// audit-log-user-agent-never-captured).
+describe('FR-H-17 audit user-agent', () => {
+  it('captures the request user-agent in every audit row', async () => {
+    await createProperty({ ok: false }, createForm());
+    propertyFindFirst.mockResolvedValue({ id: PROPERTY_ID, slug: 'old-slug' });
+    await updateProperty({ ok: false }, updateForm({ slug: 'new-slug' }));
+
+    expect(audit.mock.calls.length).toBeGreaterThanOrEqual(3);
+    for (const call of audit.mock.calls) {
+      expect(call[1]).toMatchObject({ userAgent: 'Mozilla/5.0 (Test)' });
+    }
   });
 });

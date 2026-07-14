@@ -14,9 +14,11 @@ vi.mock('../../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -60,6 +62,7 @@ beforeEach(() => {
   getStaffActor.mockResolvedValue('agent:settings');
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   sdltFindFirst.mockResolvedValue(null);
   sdltUpsert.mockResolvedValue({});
 });
@@ -111,5 +114,19 @@ describe('saveSdltConfig', () => {
       action: 'calculator_config.updated',
       entity: 'sdlt_config',
     });
+  });
+});
+
+// FR-H-17 — the audit trail records actor, diff, IP AND user-agent; every admin
+// state-change audit row must carry the request user-agent (audit finding
+// audit-log-user-agent-never-captured).
+describe('FR-H-17 audit user-agent', () => {
+  it('captures the request user-agent in every audit row', async () => {
+    await saveSdltConfig({ ok: false }, form(GOOD_CONFIG));
+
+    expect(audit.mock.calls.length).toBeGreaterThanOrEqual(1);
+    for (const call of audit.mock.calls) {
+      expect(call[1]).toMatchObject({ userAgent: 'Mozilla/5.0 (Test)' });
+    }
   });
 });

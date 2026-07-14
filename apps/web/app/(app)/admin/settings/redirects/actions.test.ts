@@ -14,9 +14,11 @@ vi.mock('../../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -55,6 +57,7 @@ beforeEach(() => {
   getStaffActor.mockResolvedValue('agent:settings');
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   findFirst.mockResolvedValue(null);
   create.mockResolvedValue({ id: REDIRECT_ID });
   update.mockResolvedValue({});
@@ -196,5 +199,27 @@ describe('deleteRedirect', () => {
       entity: 'redirect',
       entityId: REDIRECT_ID,
     });
+  });
+});
+
+// FR-H-17 — the audit trail records actor, diff, IP AND user-agent; every admin
+// state-change audit row must carry the request user-agent (audit finding
+// audit-log-user-agent-never-captured).
+describe('FR-H-17 audit user-agent', () => {
+  it('captures the request user-agent in every audit row', async () => {
+    await createRedirect({ ok: false }, createForm());
+    findFirst.mockResolvedValue({
+      id: REDIRECT_ID,
+      sourcePath: '/old-path',
+      destinationPath: '/new-path',
+      type: 'r301',
+    });
+    await updateRedirect({ ok: false }, updateForm({ destinationPath: '/newer-path' }));
+    await deleteRedirect({ ok: false }, updateForm());
+
+    expect(audit.mock.calls.length).toBeGreaterThanOrEqual(3);
+    for (const call of audit.mock.calls) {
+      expect(call[1]).toMatchObject({ userAgent: 'Mozilla/5.0 (Test)' });
+    }
   });
 });

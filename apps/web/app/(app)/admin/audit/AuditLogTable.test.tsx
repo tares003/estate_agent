@@ -37,6 +37,27 @@ describe('AuditLogTable', () => {
     expect(screen.getByText('Showing 1 of 1 entries')).toBeInTheDocument();
   });
 
+  // FR-H-17 — the viewer exposes actor, IP AND user-agent (audit finding
+  // audit-log-user-agent-never-captured).
+  it('shows the user-agent for each entry (FR-H-17)', () => {
+    render(
+      <AuditLogTable
+        result={result({ items: [row({ userAgent: 'Mozilla/5.0 (Test Runner)' })] })}
+        options={{}}
+      />,
+    );
+    const table = within(screen.getByRole('table'));
+    expect(table.getByText('User agent')).toBeInTheDocument();
+    expect(table.getByText('Mozilla/5.0 (Test Runner)')).toBeInTheDocument();
+  });
+
+  it('renders a dash for a missing user-agent', () => {
+    render(<AuditLogTable result={result()} options={{}} />); // fixture userAgent: null
+    const table = within(screen.getByRole('table'));
+    // entityId + ip are present in the fixture, so the dash is the user-agent's
+    expect(table.getAllByText('—').length).toBeGreaterThanOrEqual(1);
+  });
+
   it('renders dashes for a missing target id, IP, and diff', () => {
     render(
       <AuditLogTable
