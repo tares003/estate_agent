@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the convert-form behaviour; layout is
 // the admin-routes Playwright pass (design-requirements §3).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const convertEnquiry = vi.fn();
@@ -37,7 +37,7 @@ describe('ConvertForm', () => {
     await user.click(screen.getByRole('button', { name: 'Convert to contact' }));
 
     expect(convertEnquiry).toHaveBeenCalledTimes(1);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(await screen.findByText('Converted to a contact.')).toBeInTheDocument();
   });
 

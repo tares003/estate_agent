@@ -73,7 +73,7 @@ describe('ProfileForm (FR-T-11)', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => expect(screen.getByText(/profile updated/i)).toBeTruthy());
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
   it('surfaces a server error and does not show the confirmation', async () => {

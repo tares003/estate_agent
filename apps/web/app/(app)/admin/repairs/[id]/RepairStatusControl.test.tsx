@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the control behaviour; layout is the
 // admin-routes Playwright pass (design-requirements §3).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const setRepairStatus = vi.fn();
@@ -58,6 +58,6 @@ describe('RepairStatusControl', () => {
     const fd = setRepairStatus.mock.calls[0]?.[1] as FormData;
     expect(fd.get('repairId')).toBe('r1');
     expect(fd.get('to')).toBe('triaged');
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });

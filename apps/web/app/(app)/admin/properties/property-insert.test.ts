@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { propertyCreateSchema } from '@estate/validators';
 
-import { insertPropertyRow, updatePropertyRow } from './property-insert.js';
+import { disambiguateSlug, insertPropertyRow, updatePropertyRow } from './property-insert.js';
 
 // EPIC-X FR-X-4 — the SHARED property write paths the bulk import drives. Unit-level,
 // with a fake tx: `insertPropertyRow` (already exercised end-to-end through the create
@@ -11,6 +11,21 @@ import { insertPropertyRow, updatePropertyRow } from './property-insert.js';
 // etc.), stamps `updatedByUserId`, leaves the row's slug/provenance alone (URL
 // stability — slug changes belong to the admin edit flow with its FR-F-5 redirect),
 // and emits a `property.updated` audit row on the same transaction (G4).
+//
+// FR-F-4 / FR-F-11 — PLUS the slug-disambiguation contract both write paths rest on
+// (audit finding import-insertpropertyrow-overmock-batch-gap). Two layers, because the
+// admin create/update actions only ever exercise ONE collision (`base` → `base-2`):
+//
+//   1. `disambiguateSlug` directly — the SUFFIX LOOP past 2 (`base-3`, `base-4`, …),
+//      gap-filling and purity, none of which a single-collision test can reach.
+//   2. `insertPropertyRow` across SUCCESSIVE calls threading ONE `taken` set — the
+//      in-run accumulation a batch depends on: each minted slug is reserved, so the
+//      next row minting the same base walks to the next free suffix. If the `taken`
+//      set stopped being threaded (or stopped being mutated), these rows would all
+//      mint the same slug and the DB's @@unique([tenantId, slug]) would abort the run.
+//
+// The end-to-end proof — a real multi-row import through the real insert path — lives
+// in import/slug-collision.test.ts.
 
 const CTX = {
   tenantId: '00000000-0000-0000-0000-000000000001',
@@ -101,6 +116,150 @@ describe('coreData — internal size (§F specification)', () => {
     const data = propertyUpdate.mock.calls[0]![0].data;
     expect(data['internalSqft']).toBe(900);
     expect(data['internalSqm']).toBe(84); // 900 × 0.09290304 = 83.6 → 84
+  });
+});
+
+// FR-F-4 / FR-F-11 — the pure slug-disambiguation helper. The create/update actions only
+// ever drive it through a SINGLE collision (`base` → `base-2`), so its suffix LOOP —
+// the `base-3`, `base-4`, … walk a batch import relies on — was previously untested.
+describe('disambiguateSlug (FR-F-4 / FR-F-11)', () => {
+  const BASE = 'flat-one-m21';
+
+  it('returns the base slug untouched when nothing has claimed it', () => {
+    expect(disambiguateSlug(BASE, new Set())).toBe(BASE);
+    expect(disambiguateSlug(BASE, new Set(['some-other-slug']))).toBe(BASE);
+  });
+
+  it('appends -2 on the first collision', () => {
+    expect(disambiguateSlug(BASE, new Set([BASE]))).toBe(`${BASE}-2`);
+  });
+
+  it('walks past -2 to -3 when the base AND -2 are both taken', () => {
+    expect(disambiguateSlug(BASE, new Set([BASE, `${BASE}-2`]))).toBe(`${BASE}-3`);
+  });
+
+  it('keeps walking the suffix loop until it reaches a free slug', () => {
+    // The accumulation a batch of five rows sharing one base slug produces: each
+    // successive call sees one more claimed suffix and must mint the next.
+    const taken = new Set([BASE, `${BASE}-2`, `${BASE}-3`, `${BASE}-4`]);
+    expect(disambiguateSlug(BASE, taken)).toBe(`${BASE}-5`);
+    taken.add(`${BASE}-5`);
+    expect(disambiguateSlug(BASE, taken)).toBe(`${BASE}-6`);
+  });
+
+  it('takes the FIRST free suffix, filling a gap left by a released slug', () => {
+    // -2 is free (its listing was deleted) while -3 is live: the loop must stop at the
+    // first free candidate rather than counting the set's size.
+    expect(disambiguateSlug(BASE, new Set([BASE, `${BASE}-3`]))).toBe(`${BASE}-2`);
+  });
+
+  it('is deterministic and pure — the same inputs give the same slug, `taken` is not mutated', () => {
+    const taken = new Set([BASE, `${BASE}-2`]);
+    expect(disambiguateSlug(BASE, taken)).toBe(`${BASE}-3`);
+    expect(disambiguateSlug(BASE, taken)).toBe(`${BASE}-3`);
+    expect([...taken]).toEqual([BASE, `${BASE}-2`]);
+  });
+
+  it('disambiguates each base independently', () => {
+    const taken = new Set([BASE, `${BASE}-2`]);
+    expect(disambiguateSlug('other-base', taken)).toBe('other-base');
+  });
+});
+
+// FR-F-11 — the IN-RUN accumulation a bulk import depends on: `insertPropertyRow`
+// reserves every slug it mints in the caller's `taken` set, so successive rows of ONE
+// run that derive the SAME base slug walk `base` → `base-2` → `base-3`. The admin create
+// action inserts one row per transaction and can never exercise this; the import suites
+// mock `insertPropertyRow` out entirely (documented over-mock), so nothing drove it.
+describe('insertPropertyRow — in-run slug accumulation (FR-F-11)', () => {
+  /** Three rows an agency would realistically upload: same building, same town. */
+  const BASE = 'flat-one-m21'; // slugify(title) + postcode prefix; no town on the fixture
+
+  it('mints base, base-2, base-3 for successive rows deriving the SAME base slug', async () => {
+    const { tx, propertyCreate } = fakeTx();
+    const taken = new Set<string>();
+
+    const first = await insertPropertyRow(tx, CTX, input({ reference: 'REF-001' }), taken);
+    const second = await insertPropertyRow(tx, CTX, input({ reference: 'REF-002' }), taken);
+    const third = await insertPropertyRow(tx, CTX, input({ reference: 'REF-003' }), taken);
+
+    expect([first.slug, second.slug, third.slug]).toEqual([BASE, `${BASE}-2`, `${BASE}-3`]);
+    // The slug actually WRITTEN to each row matches what was returned (the column, not
+    // just the return value, carries the disambiguated slug).
+    const written = propertyCreate.mock.calls.map((call) => call[0].data['slug']);
+    expect(written).toEqual([BASE, `${BASE}-2`, `${BASE}-3`]);
+    // The @@unique([tenantId, slug]) invariant the run would otherwise violate.
+    expect(new Set(written).size).toBe(3);
+  });
+
+  it('reserves each minted slug in the caller-supplied `taken` set', async () => {
+    const { tx } = fakeTx();
+    const taken = new Set<string>();
+    await insertPropertyRow(tx, CTX, input({ reference: 'REF-001' }), taken);
+    expect(taken.has(BASE)).toBe(true);
+    await insertPropertyRow(tx, CTX, input({ reference: 'REF-002' }), taken);
+    expect(taken.has(`${BASE}-2`)).toBe(true);
+  });
+
+  it('disambiguates the FIRST row against the tenant existing slugs seeded into `taken`', async () => {
+    const { tx } = fakeTx();
+    // The import seeds `taken` from the tenant's live catalogue before the loop.
+    const taken = new Set([BASE, `${BASE}-2`]);
+    const first = await insertPropertyRow(tx, CTX, input({ reference: 'REF-001' }), taken);
+    const second = await insertPropertyRow(tx, CTX, input({ reference: 'REF-002' }), taken);
+    expect([first.slug, second.slug]).toEqual([`${BASE}-3`, `${BASE}-4`]);
+  });
+
+  it('disambiguates an EXPLICIT submitted slug the same way as a derived one', async () => {
+    const { tx } = fakeTx();
+    const taken = new Set<string>();
+    // Two CSV rows carrying the same `slug` column value (it is an import column).
+    const first = await insertPropertyRow(tx, CTX, input({ slug: 'penthouse' }), taken);
+    const second = await insertPropertyRow(
+      tx,
+      CTX,
+      input({ reference: 'REF-002', slug: 'penthouse' }),
+      taken,
+    );
+    expect([first.slug, second.slug]).toEqual(['penthouse', 'penthouse-2']);
+  });
+
+  it('emits ONE property.created audit row per inserted row, each naming its minted slug (G4)', async () => {
+    const { tx, auditCreate } = fakeTx();
+    const taken = new Set<string>();
+    await insertPropertyRow(tx, CTX, input({ reference: 'REF-001' }), taken);
+    await insertPropertyRow(tx, CTX, input({ reference: 'REF-002' }), taken);
+
+    expect(auditCreate).toHaveBeenCalledTimes(2);
+    const rows = auditCreate.mock.calls.map((call) => call[0].data);
+    for (const row of rows) {
+      expect(row).toMatchObject({
+        tenantId: CTX.tenantId,
+        actor: CTX.actor,
+        action: 'property.created',
+        entity: 'property',
+        ip: CTX.ip,
+      });
+    }
+    expect(rows[0]!['diff']).toMatchObject({ reference: 'REF-001', slug: BASE });
+    expect(rows[1]!['diff']).toMatchObject({ reference: 'REF-002', slug: `${BASE}-2` });
+  });
+
+  it('a failed insert reserves NOTHING — the next row minting that base takes it', async () => {
+    // The slug is only reserved AFTER the row + its audit row are written, so a row the
+    // import rolls back to its savepoint (e.g. a duplicate reference, P2002) leaves no
+    // phantom claim behind: the next row minting the same base gets the bare base slug.
+    const { tx, propertyCreate } = fakeTx();
+    const taken = new Set<string>();
+    propertyCreate.mockRejectedValueOnce(new Error('unique constraint failed'));
+
+    await expect(
+      insertPropertyRow(tx, CTX, input({ reference: 'REF-001' }), taken),
+    ).rejects.toThrow(/unique constraint/);
+    expect(taken.size).toBe(0);
+
+    const next = await insertPropertyRow(tx, CTX, input({ reference: 'REF-002' }), taken);
+    expect(next.slug).toBe(BASE);
   });
 });
 

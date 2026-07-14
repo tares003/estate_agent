@@ -45,7 +45,9 @@ const post = {
   renderedHtmlCache: null,
   category: { name: 'Market insight', slug: 'market-insight' },
   author: { name: 'Jo Bloggs', slug: 'jo-bloggs' },
-  tags: [{ name: 'Sales', slug: 'sales' }],
+  // Prisma returns the tags as rows of the explicit, tenant-scoped join model;
+  // the read model flattens them for the view.
+  tags: [{ tag: { name: 'Sales', slug: 'sales' } }],
 };
 
 beforeEach(() => {

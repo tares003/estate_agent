@@ -15,10 +15,22 @@
 --
 -- The columns / FKs / unique + indexes are created by `prisma db push` from the
 -- BlogAuthor / BlogCategory / BlogPostTag / BlogPost models — this raw migration
--- adds ONLY the RLS policies, which Prisma cannot express. The posts<->tags m-n
--- uses Prisma's implicit join table (_BlogPostToBlogPostTag); it is reachable only
--- through the already-isolated blog_posts and blog_post_tags rows, so no separate
--- policy is added here. The isolation pattern is exercised against pglite in
+-- adds ONLY the RLS policies, which Prisma cannot express.
+--
+-- CORRECTION (audit finding blog-mn-join-table-outside-rls-and-composite-fk):
+-- this file originally left the posts<->tags m-n join out of RLS on the grounds
+-- that it "is reachable only through the already-isolated blog_posts and
+-- blog_post_tags rows". That rationale covers READS — it does NOT cover an
+-- FK-checked CONNECT. PostgreSQL validates a foreign key with RLS BYPASSED, so a
+-- tenant-scoped write could link tenant A's post to tenant B's TAG id: the join
+-- row itself passed no policy (it had none), and the FK's parent lookup saw the
+-- other tenant's tag regardless of isolation. The join is therefore no longer an
+-- implicit table: it is the EXPLICIT, tenant_id-carrying blog_post_tag_links, put
+-- under FORCE RLS and re-pointed to composite same-tenant FKs by
+-- 0027_blog_post_tag_link_rls_and_fks.sql (the 0006 hardening, extended to the
+-- blog). See src/blog-post-tag-link.test.ts.
+--
+-- The isolation pattern below is exercised against pglite in
 -- src/blog-schema.test.ts; full Prisma-against-PostgreSQL runs via Testcontainers
 -- in CI.
 

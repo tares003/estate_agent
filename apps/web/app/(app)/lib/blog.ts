@@ -9,6 +9,24 @@ import type { PageSection } from '../../../components/blocks/PageRenderer.js';
 // ({ type, data }[]); the route renders it via the shared PageRenderer, or the
 // pre-rendered renderedHtmlCache when present (master spec §J).
 
+/** A category / tag term row — the identifying fields an archive heading needs. */
+export interface BlogTermRow {
+  name: string;
+  slug: string;
+}
+
+/**
+ * A post's tag as it comes back from Prisma: a row of the EXPLICIT join model
+ * (blog_post_tag_links) wrapping the tag itself. The join is explicit — rather
+ * than Prisma's implicit m-n table — so that it can carry tenant_id, sit under
+ * RLS, and enforce a same-tenant composite FK (a cross-tenant tag connect is
+ * refused by the engine; see packages/db/migrations/raw/0027_*.sql). The wrapper
+ * is an isolation detail: the read models below flatten it away.
+ */
+export interface BlogPostTagLinkRow {
+  tag: BlogTermRow;
+}
+
 /** The BlogPost columns the knowledge hub reads (the published subset). */
 export interface BlogPostRow {
   id: string;
@@ -23,7 +41,7 @@ export interface BlogPostRow {
   metaDescription: string | null;
   category: { name: string; slug: string } | null;
   author: { name: string; slug: string } | null;
-  tags: Array<{ name: string; slug: string }>;
+  tags: BlogPostTagLinkRow[];
 }
 
 /** The structural client the read model needs (a real PrismaClient satisfies it). */
@@ -42,12 +60,6 @@ export interface BlogReader {
       include?: Record<string, unknown>;
     }): Promise<BlogPostRow | null>;
   };
-}
-
-/** A category / tag term row — the identifying fields an archive heading needs. */
-export interface BlogTermRow {
-  name: string;
-  slug: string;
 }
 
 /**
@@ -118,11 +130,15 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/** The relation tree the list/detail reads need (category + author + tags). */
+/**
+ * The relation tree the list/detail reads need (category + author + tags). Tags
+ * are reached through the explicit join model, so the select descends one level
+ * (link -> tag) before it reaches the term.
+ */
 const POST_INCLUDE = {
   category: { select: { name: true, slug: true } },
   author: { select: { name: true, slug: true } },
-  tags: { select: { name: true, slug: true } },
+  tags: { select: { tag: { select: { name: true, slug: true } } } },
 } as const;
 
 /** Build the Prisma `where` for the published list (status + optional taxonomy). */
@@ -130,8 +146,14 @@ function buildListWhere(options: BlogListOptions): Record<string, unknown> {
   // Base predicate: only published posts are public (drafts / scheduled excluded).
   const where: Record<string, unknown> = { status: 'published' };
   if (options.category) where['category'] = { slug: options.category };
-  if (options.tag) where['tags'] = { some: { slug: options.tag } };
+  // The tag predicate traverses the join: "has SOME link whose tag has this slug".
+  if (options.tag) where['tags'] = { some: { tag: { slug: options.tag } } };
   return where;
+}
+
+/** Flatten the join rows back to plain tag terms for the view model. */
+function toTerms(links: BlogPostTagLinkRow[]): BlogTermRow[] {
+  return links.map((link) => link.tag);
 }
 
 /** Map a published row to its list-card view model (drops body + SEO). */
@@ -205,7 +227,7 @@ export async function getPublishedPostBySlug(
     renderedHtmlCache: row.renderedHtmlCache,
     metaTitle: row.metaTitle,
     metaDescription: row.metaDescription,
-    tags: row.tags,
+    tags: toTerms(row.tags),
   };
 }
 
