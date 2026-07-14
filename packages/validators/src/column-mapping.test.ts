@@ -89,6 +89,14 @@ describe('CRM presets (FR-X-3)', () => {
   it('accepts a mapping whose target is externalId (FR-X-4)', () => {
     expect(mappingSchema.safeParse({ 'CRM ID': 'externalId' }).success).toBe(true);
   });
+
+  // §F specification — the internal size in square feet is an importable property fact,
+  // so a CRM export's floor-area column can be mapped onto it.
+  it('recognises internalSqft as an optional mappable canonical column', () => {
+    expect(IMPORT_COLUMNS).toContain('internalSqft');
+    expect(IMPORT_REQUIRED_COLUMNS).not.toContain('internalSqft');
+    expect(mappingSchema.safeParse({ 'Floor Area (sq ft)': 'internalSqft' }).success).toBe(true);
+  });
 });
 
 describe('getPreset', () => {

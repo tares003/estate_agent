@@ -466,6 +466,21 @@ describe('getPropertyBySlug', () => {
     expect(detail?.receptions).toBeNull();
   });
 
+  // §F specification — the internal size (square feet) is a first-class property fact; it
+  // feeds the detail facts strip AND the FR-O-5 `floorSize` structured data (the detail
+  // satisfies seo.ts' PropertyForSeo), so the read model must carry it verbatim.
+  it('carries the internal size (square feet) through to the detail', async () => {
+    const findFirst = vi.fn().mockResolvedValue({ ...saleRow, internalSqft: 1450 });
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'palatine-road-m20');
+    expect(detail?.internalSqft).toBe(1450);
+  });
+
+  it('maps an unmeasured listing to a null internal size (never 0)', async () => {
+    const findFirst = vi.fn().mockResolvedValue(rentRow);
+    const detail = await getPropertyBySlug({ property: { findFirst } }, 'ellesmere-street-m15');
+    expect(detail?.internalSqft).toBeNull();
+  });
+
   it('returns null when no published property matches the slug', async () => {
     const findFirst = vi.fn().mockResolvedValue(null);
     expect(await getPropertyBySlug({ property: { findFirst } }, 'does-not-exist')).toBeNull();

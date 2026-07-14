@@ -20,6 +20,11 @@ export interface PropertyForSeo {
   postcode: string;
   bedrooms?: number;
   bathrooms?: number;
+  /**
+   * §F specification — the internal floor area in whole SQUARE FEET, or null/absent when
+   * the listing carries no measurement. Feeds FR-O-5's `floorSize`.
+   */
+  internalSqft?: number | null;
   latitude: number | null;
   longitude: number | null;
   /** Asking price in whole pounds (GBP), or null for POA. */
@@ -49,9 +54,21 @@ function availabilityFor(marketStatus: string): string {
 }
 
 /**
- * `RealEstateListing` JSON-LD for a property (FR-O-5). Geo, offers and the
- * gallery `image` array are included only when their data is present; floor
- * size remains absent from the view model and is omitted rather than faked.
+ * The UN/CEFACT Recommendation 20 unit code for a SQUARE FOOT, which is the unit the
+ * property model captures the internal size in (§F specification / the admin editor's
+ * "size (sqft + auto-converted sqm)"). schema.org's `QuantitativeValue.unitCode` takes a
+ * UN/CEFACT code, so the square-metre equivalent would be `MTK` — we emit what was
+ * measured rather than a converted figure.
+ */
+const SQUARE_FOOT_UNIT_CODE = 'FTK';
+
+/**
+ * `RealEstateListing` JSON-LD for a property (FR-O-5). Geo, offers, floor size and the
+ * gallery `image` array are included only when their data is present.
+ *
+ * `floorSize` is a schema.org `QuantitativeValue` in square feet (FTK). A listing with no
+ * measured size OMITS the key entirely — a `floorSize` of null or 0 is invalid structured
+ * data, not a smaller property.
  *
  * `images` are the gallery photo URLs in display order (the caller resolves
  * them to absolute, render-time signed URLs). Schema.org accepts a URL array
@@ -82,6 +99,15 @@ export function propertyListingJsonLd(
   if (property.description) jsonLd['description'] = property.description;
   if (property.bedrooms != null) jsonLd['numberOfBedrooms'] = property.bedrooms;
   if (property.bathrooms != null) jsonLd['numberOfBathroomsTotal'] = property.bathrooms;
+  // FR-O-5 floor size. Guarded on `> 0`, not merely non-null: an unmeasured listing must
+  // omit the key rather than claim a zero-square-foot property.
+  if (property.internalSqft != null && property.internalSqft > 0) {
+    jsonLd['floorSize'] = {
+      '@type': 'QuantitativeValue',
+      value: property.internalSqft,
+      unitCode: SQUARE_FOOT_UNIT_CODE,
+    };
+  }
   if (!redacted && property.latitude != null && property.longitude != null) {
     jsonLd['geo'] = {
       '@type': 'GeoCoordinates',

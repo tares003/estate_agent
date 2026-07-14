@@ -39,6 +39,23 @@ describe('parsePropertyImportCsv', () => {
     expect(result.valid[0]!.data.bedrooms).toBe(2);
   });
 
+  // §F specification — the internal size (square feet) is an importable property fact,
+  // so its CSV cell must be coerced from a string to a number before validation.
+  it('coerces internalSqft from a CSV string to a number', () => {
+    const header = `${HEADER},internalSqft`;
+    const result = parsePropertyImportCsv(`${header}\n${GOOD_ROW},1450\n`);
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]!.data.internalSqft).toBe(1450);
+    expect(result.recognisedColumns).toContain('internalSqft');
+  });
+
+  it('leaves internalSqft absent when the CSV cell is blank', () => {
+    const header = `${HEADER},internalSqft`;
+    const result = parsePropertyImportCsv(`${header}\n${GOOD_ROW},\n`);
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]!.data.internalSqft).toBeUndefined();
+  });
+
   it('normalises the postcode to the canonical spaced upper-case form', () => {
     const row = 'REF-002,residential,sale,1 High St,m219wn,,,,';
     const result = parsePropertyImportCsv(`${HEADER}\n${row}\n`);

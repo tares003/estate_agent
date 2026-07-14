@@ -38,6 +38,8 @@ export interface PropertyEditModel {
   marketStatus: PropertyMarketStatus | null;
   bedrooms: number | null;
   bathrooms: number | null;
+  /** §F specification — the internal size in whole square feet (sqm is derived on write). */
+  internalSqft: number | null;
   category: PropertyCategory | null;
   tenure: PropertyTenure | null;
   councilTaxBand: PropertyCouncilTaxBand | null;
@@ -83,6 +85,8 @@ interface PropertyEditRow {
   marketStatus: PropertyMarketStatus | null;
   bedrooms: number | null;
   bathrooms: number | null;
+  /** §F specification — the internal size in whole square feet (sqm is derived on write). */
+  internalSqft: number | null;
   category: PropertyCategory | null;
   tenure: PropertyTenure | null;
   councilTaxBand: PropertyCouncilTaxBand | null;
@@ -149,6 +153,7 @@ export async function getPropertyForEdit(
     marketStatus: row.marketStatus,
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
+    internalSqft: row.internalSqft,
     category: row.category,
     tenure: row.tenure,
     councilTaxBand: row.councilTaxBand,

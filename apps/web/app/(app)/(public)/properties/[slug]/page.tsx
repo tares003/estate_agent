@@ -85,7 +85,8 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
 /** One key fact rendered in the spec list, when the value is present. */
 interface Fact {
   label: string;
-  value: number;
+  /** Already rendered for display — a bare count, or a value carrying its unit ("1,450 sq ft"). */
+  value: string | number;
 }
 
 /** One per-vertical extension fact — its value already rendered to a display string. */
@@ -188,6 +189,14 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   if (property.bedrooms != null) facts.push({ label: 'Bedrooms', value: property.bedrooms });
   if (property.bathrooms != null) facts.push({ label: 'Bathrooms', value: property.bathrooms });
   if (property.receptions != null) facts.push({ label: 'Receptions', value: property.receptions });
+  // §C.11 item 5 — the facts strip carries the square footage. Omitted (never "0 sq ft")
+  // when the listing has no measured internal size.
+  if (property.internalSqft != null && property.internalSqft > 0) {
+    facts.push({
+      label: 'Size',
+      value: `${property.internalSqft.toLocaleString('en-GB')} sq ft`,
+    });
+  }
 
   // FR-F-3 — the per-vertical extension facts, discriminated by listing type.
   const extraFacts = verticalFacts(property.vertical);

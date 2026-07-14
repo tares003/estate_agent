@@ -32,6 +32,8 @@ const initial = {
   marketStatus: 'for_sale',
   bedrooms: 2,
   bathrooms: 1,
+  // §F specification — unmeasured by default; the size tests override it explicitly.
+  internalSqft: null,
   category: 'flat',
   tenure: 'leasehold',
   councilTaxBand: 'b',
@@ -88,6 +90,43 @@ describe('PropertyForm — create mode', () => {
     expect(formData.get('postcode')).toBe('M21 9WN');
     expect(formData.get('listingType')).toBe('residential');
     expect(refresh).not.toHaveBeenCalled();
+  });
+});
+
+// §F specification — the admin editor's Specification tab captures the internal
+// "size (sqft + auto-converted sqm)". Square feet is the field staff enter.
+describe('PropertyForm — internal size (§F specification)', () => {
+  it('offers an internal-size field in square feet on create', async () => {
+    const action = makeAction({ ok: true, id: 'new-prop-id', slug: 'flat-chorlton' });
+    const user = userEvent.setup();
+    render(<PropertyForm mode="create" action={action} />);
+
+    const size = screen.getByLabelText(/Internal size/i);
+    await user.type(size, '1450');
+    await user.type(screen.getByLabelText(/Reference/i), 'REF-9');
+    await user.type(screen.getByLabelText(/Display address/i), '5 New Street');
+    await user.type(screen.getByLabelText(/Postcode/i), 'M21 9WN');
+    await user.click(screen.getByRole('button', { name: 'Create property' }));
+
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    const formData = action.mock.calls[0]![1] as FormData;
+    expect(formData.get('internalSqft')).toBe('1450');
+  });
+
+  it('pre-fills the internal size from the listing in edit mode', () => {
+    const action = makeAction({ ok: false });
+    render(
+      <PropertyForm mode="edit" action={action} initial={{ ...initial, internalSqft: 1450 }} />,
+    );
+    expect(screen.getByLabelText(/Internal size/i)).toHaveValue(1450);
+  });
+
+  it('leaves the internal-size field blank for an unmeasured listing', () => {
+    const action = makeAction({ ok: false });
+    render(
+      <PropertyForm mode="edit" action={action} initial={{ ...initial, internalSqft: null }} />,
+    );
+    expect(screen.getByLabelText(/Internal size/i)).toHaveValue(null);
   });
 });
 

@@ -34,7 +34,7 @@ export { IMPORT_COLUMNS };
 export type { ImportColumn };
 
 /** The columns whose CSV string cell must be coerced to a number before validation. */
-const NUMERIC_COLUMNS = new Set<ImportColumn>(['price', 'bedrooms', 'bathrooms']);
+const NUMERIC_COLUMNS = new Set<ImportColumn>(['price', 'bedrooms', 'bathrooms', 'internalSqft']);
 
 const IMPORT_COLUMN_SET = new Set<string>(IMPORT_COLUMNS);
 

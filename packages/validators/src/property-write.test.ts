@@ -9,6 +9,7 @@ import {
   propertySlugBase,
   propertyWriteUpdateSchema,
   slugify,
+  sqftToSqm,
   validatePropertyVerticalFields,
 } from './property-write.js';
 
@@ -53,6 +54,51 @@ describe('propertySlugBase (FR-F-4)', () => {
   it('skips blank/absent parts', () => {
     expect(propertySlugBase({ title: 'Studio', town: null })).toBe('studio');
     expect(propertySlugBase({ postcodePrefix: '  ' })).toBe('');
+  });
+});
+
+// §F specification — "Internal size in square feet and square metres"; the admin editor
+// captures "size (sqft + auto-converted sqm)", so square feet is the CAPTURED unit and
+// square metres is DERIVED from it. sqftToSqm is that single conversion.
+describe('sqftToSqm (§F specification)', () => {
+  it('converts square feet to whole square metres (1 sq ft = 0.09290304 sq m)', () => {
+    expect(sqftToSqm(1000)).toBe(93); // 92.90304 → 93
+    expect(sqftToSqm(1450)).toBe(135); // 134.709… → 135
+  });
+
+  it('is deterministic and never negative for a positive size', () => {
+    expect(sqftToSqm(538)).toBe(sqftToSqm(538));
+    expect(sqftToSqm(1)).toBe(0); // 0.0929 sq m rounds to 0 — a whole-metre column
+  });
+});
+
+describe('propertyCreateSchema internal size (§F specification)', () => {
+  it('accepts an internal size in whole square feet', () => {
+    const res = propertyCreateSchema.safeParse({ ...CORE, internalSqft: 1450 });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.internalSqft).toBe(1450);
+  });
+
+  it('is optional — a listing with no measured size is valid', () => {
+    const res = propertyCreateSchema.safeParse(CORE);
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.internalSqft).toBeUndefined();
+  });
+
+  it('rejects a zero, negative or fractional size', () => {
+    expect(propertyCreateSchema.safeParse({ ...CORE, internalSqft: 0 }).success).toBe(false);
+    expect(propertyCreateSchema.safeParse({ ...CORE, internalSqft: -1 }).success).toBe(false);
+    expect(propertyCreateSchema.safeParse({ ...CORE, internalSqft: 12.5 }).success).toBe(false);
+  });
+
+  it('accepts an internal size on an update', () => {
+    const res = propertyWriteUpdateSchema.safeParse({
+      ...CORE,
+      id: '11111111-1111-1111-1111-111111111111',
+      internalSqft: 900,
+    });
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.internalSqft).toBe(900);
   });
 });
 

@@ -217,6 +217,33 @@ const price = z.number().int().nonnegative().optional();
 const count = z.number().int().nonnegative().max(1000).optional();
 
 /**
+ * Square feet → square metres, rounded to the nearest whole metre (the `internal_sqm`
+ * column is an integer). 1 sq ft = 0.09290304 sq m exactly (the international foot).
+ *
+ * Master spec §F specification captures "internal size in square feet AND square metres",
+ * and the admin editor's Specification tab captures "size (sqft + auto-converted sqm)" —
+ * so square feet is the unit staff ENTER and square metres is DERIVED, never asked for
+ * twice. This is that single conversion, shared by every write path.
+ */
+export const SQFT_PER_SQM = 0.09290304;
+
+/** Convert a whole-square-foot size to whole square metres (§F specification). */
+export function sqftToSqm(sqft: number): number {
+  return Math.round(sqft * SQFT_PER_SQM);
+}
+
+/** The largest internal size the schema accepts, in square feet (a very large warehouse). */
+export const PROPERTY_INTERNAL_SQFT_MAX = 10_000_000;
+
+/**
+ * §F specification — the internal floor area in whole SQUARE FEET. Optional: a listing may
+ * carry no measured size (and most land listings never will). Strictly positive — a zero
+ * or negative floor area is not a measurement, and emitting `floorSize: 0` would be invalid
+ * structured data (FR-O-5); an unmeasured listing omits the field instead.
+ */
+const internalSqft = z.number().int().positive().max(PROPERTY_INTERNAL_SQFT_MAX).optional();
+
+/**
  * The core fields common to create + update. Optional fields left absent leave the
  * column at its default (create) or unchanged (update); the action maps blanks to
  * `null` where it clears a column.
@@ -230,6 +257,8 @@ const coreFields = {
   marketStatus: z.enum(PROPERTY_MARKET_STATUSES).optional(),
   bedrooms: count,
   bathrooms: count,
+  // §F specification — internal size in square feet; square metres is derived on write.
+  internalSqft,
   category: z.enum(PROPERTY_CATEGORIES).optional(),
   tenure: z.enum(PROPERTY_TENURES).optional(),
   councilTaxBand: z.enum(PROPERTY_COUNCIL_TAX_BANDS).optional(),

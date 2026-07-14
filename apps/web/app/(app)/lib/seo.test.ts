@@ -66,6 +66,29 @@ describe('propertyListingJsonLd', () => {
     });
   });
 
+  // FR-O-5 — master spec §O.3 lists `floorSize` on the RealEstateListing. The property
+  // model captures the internal size in SQUARE FEET (§F specification; the admin editor
+  // "size (sqft + auto-converted sqm)"), so the QuantitativeValue carries the UN/CEFACT
+  // code for square foot, FTK.
+  it('emits floorSize as a QuantitativeValue in square feet (FTK) when the size is known', () => {
+    const ld = propertyListingJsonLd(
+      { ...base, internalSqft: 1450 },
+      'https://acme.test/properties/palatine-road-m20',
+    );
+    expect(ld['floorSize']).toEqual({
+      '@type': 'QuantitativeValue',
+      value: 1450,
+      unitCode: 'FTK',
+    });
+  });
+
+  it('omits floorSize entirely when the property carries no internal size', () => {
+    expect(propertyListingJsonLd(base, 'https://acme.test/p')).not.toHaveProperty('floorSize');
+    expect(
+      propertyListingJsonLd({ ...base, internalSqft: null }, 'https://acme.test/p'),
+    ).not.toHaveProperty('floorSize');
+  });
+
   it('omits geo, offer, description and beds/baths when the data is absent', () => {
     const ld = propertyListingJsonLd(
       {
