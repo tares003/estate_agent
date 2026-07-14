@@ -97,6 +97,24 @@ function fromZod(issues: { path: (string | number)[]; message: string }[]): Prop
   };
 }
 
+/**
+ * The CORE fields submitted as numeric form inputs: price (whole pounds), the room counts
+ * and the §F internal size (square feet). Each key is ALWAYS returned — a blank input maps
+ * to `undefined`, which must OVERRIDE the raw `''` the FormData spread carries, or the
+ * schema would see an empty string where it expects a number.
+ */
+const CORE_NUMBER_FIELDS = ['price', 'bedrooms', 'bathrooms', 'internalSqft'] as const;
+
+/** Coerce the core numeric form inputs; blank ⇒ `undefined` (the field is absent). */
+function parseCoreNumbers(raw: Record<string, unknown>): Record<string, number | undefined> {
+  const out: Record<string, number | undefined> = {};
+  for (const field of CORE_NUMBER_FIELDS) {
+    const value = raw[field];
+    out[field] = value === undefined || value === '' ? undefined : Number(value);
+  }
+  return out;
+}
+
 /** The extension fields submitted as numeric form inputs (whole-pound / count). */
 const VERTICAL_NUMBER_FIELDS = [
   'annualBusinessRates',
@@ -168,13 +186,7 @@ export async function createProperty(
     ...raw,
     slug: raw['slug'] === '' ? undefined : raw['slug'],
     keyFeatures: keyFeatures.length > 0 ? keyFeatures : undefined,
-    price: raw['price'] === undefined || raw['price'] === '' ? undefined : Number(raw['price']),
-    bedrooms:
-      raw['bedrooms'] === undefined || raw['bedrooms'] === '' ? undefined : Number(raw['bedrooms']),
-    bathrooms:
-      raw['bathrooms'] === undefined || raw['bathrooms'] === ''
-        ? undefined
-        : Number(raw['bathrooms']),
+    ...parseCoreNumbers(raw),
     ...parseVerticalFields(raw),
   });
   if (!parsed.success) {
@@ -248,13 +260,7 @@ export async function updateProperty(
     ...raw,
     slug: raw['slug'] === '' ? undefined : raw['slug'],
     keyFeatures: keyFeatures.length > 0 ? keyFeatures : undefined,
-    price: raw['price'] === undefined || raw['price'] === '' ? undefined : Number(raw['price']),
-    bedrooms:
-      raw['bedrooms'] === undefined || raw['bedrooms'] === '' ? undefined : Number(raw['bedrooms']),
-    bathrooms:
-      raw['bathrooms'] === undefined || raw['bathrooms'] === ''
-        ? undefined
-        : Number(raw['bathrooms']),
+    ...parseCoreNumbers(raw),
     ...parseVerticalFields(raw),
   });
   if (!parsed.success) {

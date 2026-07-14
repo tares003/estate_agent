@@ -56,6 +56,8 @@ export interface PropertyFormInitial {
   marketStatus: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
+  /** §F specification — the internal size in whole square feet (sqm is derived on write). */
+  internalSqft: number | null;
   category: string | null;
   tenure: string | null;
   councilTaxBand: string | null;
@@ -377,6 +379,16 @@ export function PropertyForm({
           label="Bathrooms"
           defaultValue={num(initial?.bathrooms)}
           error={errorFor('bathrooms')}
+        />
+        {/* §F specification — "size (sqft + auto-converted sqm)": staff enter the square
+            footage; the write path derives the square-metre column from it. */}
+        <NumberField
+          id="internalSqft"
+          name="internalSqft"
+          label="Internal size (sq ft)"
+          hint="Optional. Square metres are converted automatically."
+          defaultValue={num(initial?.internalSqft)}
+          error={errorFor('internalSqft')}
         />
         <OptionalEnumField
           id="category"

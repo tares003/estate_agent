@@ -2,6 +2,7 @@ import {
   PROPERTY_VERTICAL_FIELD_OWNERS,
   propertySlugBase,
   slugify,
+  sqftToSqm,
   type PropertyCreate,
   type PropertyWriteUpdate,
 } from '@estate/validators';
@@ -76,6 +77,13 @@ export function coreData(input: PropertyCreate | PropertyWriteUpdate): Record<st
   if (input.marketStatus !== undefined) data['marketStatus'] = input.marketStatus;
   if (input.bedrooms !== undefined) data['bedrooms'] = input.bedrooms;
   if (input.bathrooms !== undefined) data['bathrooms'] = input.bathrooms;
+  // §F specification — the internal size is CAPTURED in square feet; the square-metre
+  // column is DERIVED here (the admin editor's "auto-converted sqm"), so the two columns
+  // can never drift and staff never enter the same measurement twice.
+  if (input.internalSqft !== undefined) {
+    data['internalSqft'] = input.internalSqft;
+    data['internalSqm'] = sqftToSqm(input.internalSqft);
+  }
   if (input.category !== undefined) data['category'] = input.category;
   if (input.tenure !== undefined) data['tenure'] = input.tenure;
   if (input.councilTaxBand !== undefined) data['councilTaxBand'] = input.councilTaxBand;

@@ -20,6 +20,12 @@ export interface PropertyRow {
   bedrooms: number | null;
   bathrooms: number | null;
   receptions: number | null;
+  /**
+   * §F specification — the internal size in whole square feet. Optional on the row: the
+   * catalogue card ignores it; the DETAIL surfaces it as a fact and as the FR-O-5
+   * `floorSize` structured data.
+   */
+  internalSqft?: number | null;
   description?: string | null;
   town?: string | null;
   /** §J location — stored outward code ("M20"); derived from `postcode` when absent. */
@@ -102,6 +108,8 @@ export interface PropertyDetail extends PropertyCardProps {
   slug: string;
   description: string | null;
   receptions: number | null;
+  /** §F specification — internal size in square feet; null when the listing is unmeasured. */
+  internalSqft: number | null;
   displayAddress: string;
   town: string | null;
   postcode: string;
@@ -477,6 +485,7 @@ export async function getPropertyBySlug(
     slug: row.slug,
     description: row.description ?? null,
     receptions: row.receptions,
+    internalSqft: row.internalSqft ?? null,
     displayAddress: redacted ? redactedAddressLine(row) : row.displayAddress,
     town: row.town ?? null,
     postcode: redacted ? publicPostcodePrefix(row) : row.postcode,

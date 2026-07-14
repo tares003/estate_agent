@@ -32,6 +32,8 @@ const initial = {
   marketStatus: 'for_sale',
   bedrooms: 2,
   bathrooms: 1,
+  // §F specification — unmeasured by default; the size tests override it explicitly.
+  internalSqft: null,
   category: 'flat',
   tenure: 'leasehold',
   councilTaxBand: 'b',
@@ -121,7 +123,9 @@ describe('PropertyForm — internal size (§F specification)', () => {
 
   it('leaves the internal-size field blank for an unmeasured listing', () => {
     const action = makeAction({ ok: false });
-    render(<PropertyForm mode="edit" action={action} initial={{ ...initial, internalSqft: null }} />);
+    render(
+      <PropertyForm mode="edit" action={action} initial={{ ...initial, internalSqft: null }} />,
+    );
     expect(screen.getByLabelText(/Internal size/i)).toHaveValue(null);
   });
 });

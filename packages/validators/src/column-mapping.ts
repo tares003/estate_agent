@@ -31,6 +31,9 @@ export const IMPORT_COLUMNS = [
   'marketStatus',
   'bedrooms',
   'bathrooms',
+  // §F specification — internal size in square feet (square metres is derived on write,
+  // so it is never a mapping target: a CSV carries the sq ft figure only).
+  'internalSqft',
   'category',
   'tenure',
   'councilTaxBand',
