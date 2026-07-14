@@ -34,9 +34,23 @@ const audit = vi.fn();
 const withTenant = vi.fn();
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
-const { previewPropertyImport } = await import('./preview-action.js');
+const previewModule = await import('./preview-action.js');
+const { previewPropertyImport } = previewModule;
 
 const TENANT = '00000000-0000-0000-0000-000000000001';
+
+// Regression guard for the Next 16 rule "only async functions may be exported from a
+// 'use server' module". A non-async value export (e.g. `export const … = 10`) fails the
+// whole webpack build and cascades 500s to unrelated routes — invisible to typecheck /
+// lint / unit tests, only surfacing at bundle time. This pins every runtime export of
+// the action module to an async function (interfaces/types are erased, so never appear).
+describe("preview-action 'use server' exports", () => {
+  it('exports only async server actions (no non-async value export)', () => {
+    for (const [name, value] of Object.entries(previewModule)) {
+      expect(typeof value, `export "${name}" must be a function`).toBe('function');
+    }
+  });
+});
 
 const HEADER = 'reference,listingType,saleType,displayAddress,postcode,title,town';
 const GOOD_1 = 'REF-001,residential,sale,12 Acacia Ave,M21 9WN,Flat One,Chorlton';

@@ -28,8 +28,12 @@ import { readImportCsv, readImportMapping } from './read-csv.js';
 // same `property.import` permission the real import gates on (FR-X-1), so a user who
 // could not import also cannot preview.
 
+// A `'use server'` module may only export async functions (Next 16 bundles it as a
+// server-action endpoint), so this module-local constant is NOT exported — an
+// `export const` here fails the whole webpack build and cascades 500s to unrelated
+// routes that share the chunk.
 /** How many mapped records the preview surfaces (FR-X-2: "the first ten records"). */
-export const PREVIEW_SAMPLE_LIMIT = 10;
+const PREVIEW_SAMPLE_LIMIT = 10;
 
 /** The in / valid / invalid tally shown above the preview. */
 export interface ImportPreviewCounts {
