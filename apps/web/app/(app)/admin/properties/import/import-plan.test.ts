@@ -200,10 +200,50 @@ describe('planImportRows — in-file duplicate match keys (FR-X-4 / FR-X-5)', ()
     expect(plan[1]).toMatchObject({ action: 'update', propertyId: 'p-1' });
   });
 
-  it('leaves create-only mode untouched: no match field, no in-file key tracking', () => {
-    // Create-only has no identity semantics — a repeated reference still plans as a
-    // create and is left to the DB unique constraint (FR-X-5 isolates it as a failed row).
+  it('FAILS a repeated external id in CREATE-ONLY mode too (the default mode has no DB back-stop)', () => {
+    // The regression the PR #160 review caught: create-only does no MATCHING, but
+    // `insertPropertyRow` still persists `external_id` on every create, and that column
+    // has NO unique constraint. Two rows sharing one would mint a permanently-orphaned
+    // duplicate (buildMatchIndex is first-wins, so a later upsert only ever reaches the
+    // first). It must be rejected here, in the DEFAULT mode, not just in upsert modes.
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-DUP'), row(2, 'REF-002', 'EXT-DUP')],
+      null,
+      new Map(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('externalId');
+    expect(failed.error.message).toMatch(/duplicate/i);
+  });
+
+  it('still creates every create-only row that carries NO external id (nothing to duplicate)', () => {
+    const plan = planImportRows([row(1, 'REF-001'), row(2, 'REF-002')], null, new Map());
+    expect(plan.every((planned) => planned.action === 'create')).toBe(true);
+  });
+
+  it('leaves a repeated create-only REFERENCE to the DB constraint (it has one; external id does not)', () => {
+    // `reference` is back-stopped by @@unique([tenantId, reference]), and FR-X-5's
+    // per-row savepoint isolation records that constraint failure as a failed row — so
+    // create-only deliberately does not plan-reject it.
     const plan = planImportRows([row(1, 'REF-DUP'), row(2, 'REF-DUP')], null, new Map());
     expect(plan.every((planned) => planned.action === 'create')).toBe(true);
+  });
+
+  it('also rejects a duplicate external id among the CREATES of upsert-on-reference mode', () => {
+    // Matching on reference, but both rows are new — and both would persist the same
+    // external id. Same no-back-stop hazard.
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-DUP'), row(2, 'REF-002', 'EXT-DUP')],
+      'reference',
+      new Map(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('externalId');
   });
 });

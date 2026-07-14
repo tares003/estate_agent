@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getCustomerSession } from '../../lib/customer-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-T FR-T-11 — a registered customer updates their own profile: display name,
 // optional phone, email/SMS contact preferences and the marketing opt-in. Gated
@@ -85,6 +85,7 @@ export async function updateProfile(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: ProfileActionState = deny('Your profile could not be updated. Please try again.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -118,6 +119,7 @@ export async function updateProfile(
         marketingOptIn: { from: existing.marketingOptIn, to: marketingOptIn },
       },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

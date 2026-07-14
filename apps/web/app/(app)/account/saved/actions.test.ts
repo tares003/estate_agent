@@ -12,9 +12,11 @@ vi.mock('../../lib/customer-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -50,6 +52,7 @@ beforeEach(() => {
   });
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   savedFindFirst.mockResolvedValue(null);
   savedCreate.mockResolvedValue({ id: 's1' });
   savedDelete.mockResolvedValue({});
@@ -110,5 +113,31 @@ describe('toggleSavedProperty', () => {
     expect(savedCreate).not.toHaveBeenCalled();
     expect(audit).toHaveBeenCalledTimes(1);
     expect(audit.mock.calls[0]![1]).toMatchObject({ action: 'saved_property.unsaved' });
+  });
+
+  it('records the request IP AND user-agent on both audit rows (FR-H-17 provenance)', async () => {
+    // A customer action is a state change like any other: audit_logs.user_agent must
+    // not be null (it was, until this fix — the admin actions got it, these did not).
+    await toggleSavedProperty({ ok: false }, form()); // save
+    expect(audit.mock.calls[0]![1]).toMatchObject({
+      ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
+    });
+
+    vi.clearAllMocks();
+    getCustomerSession.mockResolvedValue({
+      userId: USER,
+      emailVerified: true,
+      actor: `customer:${USER}`,
+    });
+    getCurrentTenantId.mockResolvedValue(TENANT);
+    getRequestIp.mockResolvedValue('203.0.113.7');
+    getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
+    savedFindFirst.mockResolvedValue({ id: 's1' });
+    await toggleSavedProperty({ ok: false }, form()); // unsave
+    expect(audit.mock.calls[0]![1]).toMatchObject({
+      ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
+    });
   });
 });

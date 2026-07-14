@@ -65,9 +65,15 @@ import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js'
 // counts only NET-NEW published rows (planned creates) — updates are never net-new.
 //
 // The match index is a PRE-RUN snapshot, so the planner also rejects a row repeating a
-// match key an EARLIER row of the same file mints: it is recorded as a failed row (no
-// write at all — no savepoint needed), because inserting it would mint the duplicate
-// pair `external_id` has no unique constraint to stop.
+// key an EARLIER row of the same file mints: it is recorded as a failed row (no write at
+// all — no savepoint needed), because inserting it would mint a duplicate pair. This
+// applies to `external_id` in EVERY mode, INCLUDING the default create-only: create-only
+// does no matching, but `insertPropertyRow` still persists the external id it carries,
+// and that column has no unique constraint to back-stop it (a duplicate there would be
+// permanently orphaned — `buildMatchIndex` is first-occurrence-wins, so a later upsert
+// only ever reaches the first of the pair). A repeated `reference` needs no plan-time
+// guard: `@@unique([tenantId, reference])` back-stops it and the per-row savepoint
+// isolation records the constraint failure as a failed row.
 //
 // This is an authenticated admin action over business data, not a public personal-data
 // form: no GDPR-consent affirmation (G5) and no Turnstile (G8). Deferred to later slices
