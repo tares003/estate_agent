@@ -67,10 +67,11 @@ describe('TagArchivePage', () => {
     expect(tagFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { slug: 'sales' } }),
     );
-    // The list is filtered to the tag (some-relation) and to published posts only.
+    // The list is filtered to the tag (some-relation, through the tenant-scoped
+    // join model) and to published posts only.
     expect(postFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+        where: { status: 'published', tags: { some: { tag: { slug: 'sales' } } } },
       }),
     );
     expect(screen.getByRole('heading', { level: 1, name: 'Sales' })).toBeInTheDocument();

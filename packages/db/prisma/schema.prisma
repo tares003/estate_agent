@@ -70,6 +70,7 @@ model PlatformTenant {
   blogCategories           BlogCategory[]
   blogPostTags             BlogPostTag[]
   blogPosts                BlogPost[]
+  blogPostTagLinks         BlogPostTagLink[]
   areaGuides               AreaGuide[]
   areaGuideSections        AreaGuideSection[]
   redirects                Redirect[]
@@ -1105,7 +1106,9 @@ model BlogCategory {
 
 /// EPIC-J knowledge-hub tag (master spec §J "Blog post tag" — the tag entity in a
 /// many-to-many tag-to-post relationship). Tenant-scoped; slug unique per tenant.
-/// The posts <-> tags m-n uses Prisma's idiomatic implicit join table.
+/// The posts <-> tags m-n goes through the EXPLICIT, tenant-scoped BlogPostTagLink
+/// join model — never Prisma's implicit join table, which would carry no tenant_id
+/// and no same-tenant FK (see BlogPostTagLink).
 /// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
 model BlogPostTag {
   id        String   @id @default(uuid()) @db.Uuid
@@ -1115,12 +1118,48 @@ model BlogPostTag {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  posts  BlogPost[]
+  tenant PlatformTenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  posts  BlogPostTagLink[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@map("blog_post_tags")
+}
+
+/// EPIC-J posts <-> tags join (audit finding blog-mn-join-table-outside-rls-and-
+/// composite-fk). An EXPLICIT join model rather than Prisma's implicit m-n table,
+/// because the implicit table (_BlogPostToBlogPostTag) carries no tenant_id, can
+/// therefore hold no RLS policy, and its two single-column FKs check only that the
+/// post id and the tag id EXIST — never that they belong to the same tenant.
+/// PostgreSQL validates foreign keys with RLS BYPASSED, so a tenant-scoped write
+/// connecting tenant A's post to tenant B's tag id would be structurally insertable
+/// (the D-012 class that migrations/raw/0006_composite_tenant_fks.sql closes for
+/// the property / branch relations).
+///
+/// Carrying tenant_id here lets 0027 do both halves of the fix: FORCE RLS with the
+/// standard tenant_isolation policy, and composite (tenant_id, blog_post_id) /
+/// (tenant_id, blog_post_tag_id) FKs so a cross-tenant connect finds no parent row
+/// and is rejected by the engine, RLS or not. The Prisma relations below are the
+/// single-column ones `prisma db push` creates; 0027 re-points them (Prisma cannot
+/// express a composite FK to non-primary-key columns).
+///
+/// The link is not an entity in its own right: it has no id, its identity IS the
+/// (post, tag) pair, and it is CASCADE-deleted with either parent.
+model BlogPostTagLink {
+  tenantId      String   @map("tenant_id") @db.Uuid
+  blogPostId    String   @map("blog_post_id") @db.Uuid
+  blogPostTagId String   @map("blog_post_tag_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  post   BlogPost       @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  tag    BlogPostTag    @relation(fields: [blogPostTagId], references: [id], onDelete: Cascade)
+
+  @@id([blogPostId, blogPostTagId])
+  @@index([tenantId])
+  /// The tag-archive lookup (all posts carrying a tag, within the tenant).
+  @@index([tenantId, blogPostTagId])
+  @@map("blog_post_tag_links")
 }
 
 /// EPIC-J knowledge-hub article (master spec §J "Blog post"; §H Blog tab —
@@ -1130,7 +1169,9 @@ model BlogPostTag {
 /// nullable. The lifecycle is draft -> scheduled -> published (BlogPostStatus);
 /// `scheduledFor` carries the scheduled publication time and `publishedAt` the
 /// actual one. Category (m-1) and author (m-1) are nullable and SetNull on delete;
-/// tags are a m-n via the implicit join. Tenant-scoped; slug unique per tenant.
+/// tags are a m-n through the explicit, tenant-scoped BlogPostTagLink join model
+/// (a cross-tenant tag connect is refused by its composite FK, see 0027).
+/// Tenant-scoped; slug unique per tenant.
 /// Isolated by the tenant_isolation RLS policy in migrations/raw/0019_blog_rls.sql.
 model BlogPost {
   id                String         @id @default(uuid()) @db.Uuid
@@ -1153,10 +1194,10 @@ model BlogPost {
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
 
-  tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category BlogCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  author   BlogAuthor?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  tags     BlogPostTag[]
+  tenant   PlatformTenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category BlogCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   BlogAuthor?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  tags     BlogPostTagLink[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
