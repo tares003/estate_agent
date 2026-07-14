@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_SDLT_CONFIG, computeStampDuty, type SdltConfig } from './stamp-duty.js';
 
-// EPIC-W FR-W-2/4 — the indicative SDLT engine. The BAND-APPLICATION logic is what
-// matters and is proven here against SYNTHETIC bands, so the test asserts the
-// progressive maths (not HMRC's actual rates, which are admin-configurable per
-// FR-W-3 precisely because they change). A light sanity check covers the shipped
-// default config without pinning specific legal amounts.
+// EPIC-W FR-W-2/4 — the indicative SDLT engine. The BAND-APPLICATION logic is
+// proven against SYNTHETIC bands (the progressive maths is the invariant; the
+// rates are admin-configurable data per FR-W-3). The shipped DEFAULT_SDLT_CONFIG
+// is additionally PINNED to the England/NI rules in force since 2025-04-01
+// (audit finding stale-default-sdlt-bands): a fresh tenant that has not
+// configured custom bands must get an accurate out-of-the-box calculator, not
+// the pre-April-2025 figures. The defaults remain illustrative/operator-must-
+// verify — pinning them here means a rate refresh is a deliberate, tested edit.
 
 // Synthetic bands: nil to 100k, 5% to 200k, 10% above.
 const CONFIG: SdltConfig = {
@@ -87,6 +90,51 @@ describe('DEFAULT_SDLT_CONFIG (operator-configurable starting point)', () => {
     expect(DEFAULT_SDLT_CONFIG.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(DEFAULT_SDLT_CONFIG.standardBands.length).toBeGreaterThan(1);
     expect(DEFAULT_SDLT_CONFIG.standardBands.at(-1)?.upTo).toBeNull(); // open-ended top band
+  });
+
+  it('ships the England/NI main residential bands in force since 2025-04-01 (FR-W-2)', () => {
+    expect(DEFAULT_SDLT_CONFIG.standardBands).toEqual([
+      { upTo: 125_000, ratePercent: 0 },
+      { upTo: 250_000, ratePercent: 2 },
+      { upTo: 925_000, ratePercent: 5 },
+      { upTo: 1_500_000, ratePercent: 10 },
+      { upTo: null, ratePercent: 12 },
+    ]);
+  });
+
+  it('ships the first-time-buyer relief at a 300k nil-rate band under a 500k cap (FR-W-2)', () => {
+    expect(DEFAULT_SDLT_CONFIG.firstTimeBuyer).toEqual({
+      maxPrice: 500_000,
+      bands: [
+        { upTo: 300_000, ratePercent: 0 },
+        { upTo: null, ratePercent: 5 },
+      ],
+    });
+  });
+
+  it('ships the 5% additional-property surcharge and the 2025-04-01 effective date', () => {
+    expect(DEFAULT_SDLT_CONFIG.additionalPropertySurchargePercent).toBe(5);
+    expect(DEFAULT_SDLT_CONFIG.lastUpdated).toBe('2025-04-01');
+  });
+
+  it('charges a 300k home mover 5,000 out of the box (the restored 2% band applies)', () => {
+    // 0% of 125k + 2% of 125k (2,500) + 5% of 50k (2,500) = 5,000 — the audit
+    // finding's example: the stale defaults understated this as ~2,500.
+    const r = computeStampDuty(
+      { purchasePrice: 300_000, buyerCategory: 'home_mover' },
+      DEFAULT_SDLT_CONFIG,
+    );
+    expect(r.totalTax).toBe(5000);
+    expect(r.lastUpdated).toBe('2025-04-01');
+  });
+
+  it('charges a 425k first-time buyer 6,250 out of the box (relief up to the 500k cap)', () => {
+    // FTB bands apply (425k <= 500k cap): 0% of 300k + 5% of 125k = 6,250.
+    const r = computeStampDuty(
+      { purchasePrice: 425_000, buyerCategory: 'first_time_buyer' },
+      DEFAULT_SDLT_CONFIG,
+    );
+    expect(r.totalTax).toBe(6250);
   });
 
   it('computes a non-negative, sensible result for a typical price', () => {

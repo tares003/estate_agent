@@ -141,13 +141,21 @@ function p2002(): Error {
 }
 
 describe('importPropertiesFromCsv', () => {
-  it('denies when the staff role lacks property.write (fail-closed) — nothing written', async () => {
+  it('denies when the staff role lacks property.import (fail-closed) — nothing written', async () => {
     requireStaffPermission.mockRejectedValue(new Error('forbidden'));
     const res = await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
     expect(res.ok).toBe(false);
     expect(insertPropertyRow).not.toHaveBeenCalled();
     expect(importLogCreate).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
+  });
+
+  it('gates on property.import (FR-X-1), not the broader property.write', async () => {
+    // Audit finding import-uses-property-write-not-property-import: bulk import
+    // is its own RBAC capability, distinct from one-by-one property authoring.
+    await importPropertiesFromCsv({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
+    expect(requireStaffPermission).toHaveBeenCalledWith('property.import');
+    expect(requireStaffPermission).not.toHaveBeenCalledWith('property.write');
   });
 
   it('rejects a submission with no file before any write', async () => {

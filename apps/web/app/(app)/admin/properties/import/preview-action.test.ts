@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // SAME pure core as the real import, reports total records / valid / invalid counts, a
 // sample of the first ten mapped rows, and the per-row validation errors — WITHOUT
 // creating any property and WITHOUT writing an import_logs row or ANY audit. RBAC is
-// fail-closed on `property.write` first (the same gate as the real import). The DB /
+// fail-closed on `property.import` first (the same gate as the real import). The DB /
 // audit seams are mocked so the test can prove zero persistence: no withTenant, no
 // insert, no importLog.create, no audit — a preview never touches the database.
 
@@ -90,7 +90,7 @@ beforeEach(() => {
 });
 
 describe('previewPropertyImport', () => {
-  it('denies when the staff role lacks property.write (fail-closed) — nothing read or written', async () => {
+  it('denies when the staff role lacks property.import (fail-closed) — nothing read or written', async () => {
     requireStaffPermission.mockRejectedValue(new Error('forbidden'));
     const res = await previewPropertyImport({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
     expect(res.ok).toBe(false);
@@ -101,9 +101,10 @@ describe('previewPropertyImport', () => {
     expect(audit).not.toHaveBeenCalled();
   });
 
-  it('gates on property.write (the same permission as the real import)', async () => {
+  it('gates on property.import (FR-X-1 — the same permission as the real import)', async () => {
     await previewPropertyImport({ ok: false }, csvForm(`${HEADER}\n${GOOD_1}\n`));
-    expect(requireStaffPermission).toHaveBeenCalledWith('property.write');
+    expect(requireStaffPermission).toHaveBeenCalledWith('property.import');
+    expect(requireStaffPermission).not.toHaveBeenCalledWith('property.write');
   });
 
   it('rejects a submission with no file before parsing', async () => {

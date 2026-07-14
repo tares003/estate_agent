@@ -35,6 +35,10 @@ describe('PERMISSIONS catalogue', () => {
       expect(PERMISSIONS).toContain(permission);
     }
   });
+
+  it('includes property.import — the FR-X-1 bulk-import capability (EPIC-X)', () => {
+    expect(PERMISSIONS).toContain('property.import');
+  });
 });
 
 describe('ROLES catalogue (master spec §H.1)', () => {
@@ -103,6 +107,23 @@ describe('ROLES catalogue (master spec §H.1)', () => {
   it('repairs_manager manages repairs but not properties', () => {
     expect(hasPermission('repairs_manager', 'repair_request.write')).toBe(true);
     expect(hasPermission('repairs_manager', 'property.write')).toBe(false);
+  });
+
+  // FR-X-1 (audit finding import-uses-property-write-not-property-import): bulk
+  // import is its own capability. It is granted to exactly the roles that can
+  // author properties today (role intent preserved — anyone who can create a
+  // listing one-by-one can bulk-create them), and to no one else, so the two
+  // grants can be separated later without a catalogue change.
+  it('grants property.import to exactly the roles that hold property.write (FR-X-1)', () => {
+    for (const role of STAFF_ROLES) {
+      expect(hasPermission(role, 'property.import')).toBe(hasPermission(role, 'property.write'));
+    }
+  });
+
+  it('denies property.import to non-authoring roles (content, repairs, auditor)', () => {
+    expect(hasPermission('content_editor', 'property.import')).toBe(false);
+    expect(hasPermission('repairs_manager', 'property.import')).toBe(false);
+    expect(hasPermission('read_only_auditor', 'property.import')).toBe(false);
   });
 
   it('grants feedback moderation to managers but not sales agents (FR-AC-5)', () => {
