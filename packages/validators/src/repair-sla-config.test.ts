@@ -49,12 +49,16 @@ describe('repairSlaConfigSchema', () => {
   });
 
   it('rejects a non-positive or fractional target', () => {
-    expect(repairSlaConfigSchema.safeParse(config({ emergencyTargetHours: 0 })).success).toBe(false);
+    expect(repairSlaConfigSchema.safeParse(config({ emergencyTargetHours: 0 })).success).toBe(
+      false,
+    );
     expect(repairSlaConfigSchema.safeParse(config({ urgentTargetHours: -1 })).success).toBe(false);
     expect(repairSlaConfigSchema.safeParse(config({ standardTargetHours: 1.5 })).success).toBe(
       false,
     );
-    expect(repairSlaConfigSchema.safeParse(config({ lowTargetWorkingDays: 0 })).success).toBe(false);
+    expect(repairSlaConfigSchema.safeParse(config({ lowTargetWorkingDays: 0 })).success).toBe(
+      false,
+    );
   });
 
   it('rejects a target beyond the sane ceiling (a year of hours / working days)', () => {

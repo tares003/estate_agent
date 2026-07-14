@@ -43,7 +43,9 @@ describe('RepairSlaConfig — schema (repair_sla_config, FR-G-5/FR-G-9)', () => 
     expect(model).toMatch(
       /emergencyTargetHours\s+Int\s+@default\(4\)\s+@map\("emergency_target_hours"\)/,
     );
-    expect(model).toMatch(/urgentTargetHours\s+Int\s+@default\(24\)\s+@map\("urgent_target_hours"\)/);
+    expect(model).toMatch(
+      /urgentTargetHours\s+Int\s+@default\(24\)\s+@map\("urgent_target_hours"\)/,
+    );
     expect(model).toMatch(
       /standardTargetHours\s+Int\s+@default\(48\)\s+@map\("standard_target_hours"\)/,
     );

@@ -187,6 +187,11 @@ export {
   type RepairNotificationConfigInput,
 } from './repair-notification-config.js';
 export {
+  DEFAULT_REPAIR_SLA_CONFIG,
+  repairSlaConfigSchema,
+  type RepairSlaConfigInput,
+} from './repair-sla-config.js';
+export {
   MORTGAGE_PRESET_LABEL_MAX,
   mortgageRatePresetSchema,
   mortgageRatePresetCreateSchema,
