@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the checklist + override behaviour;
 // the §H.5 Tab 9 right-rail layout is covered by the admin-routes Playwright pass.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const publishWithPreflight = vi.fn();
@@ -62,6 +62,6 @@ describe('PublishPreflight', () => {
     await user.click(screen.getByRole('button', { name: /publish/i }));
 
     expect(publishWithPreflight).toHaveBeenCalledTimes(1);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });

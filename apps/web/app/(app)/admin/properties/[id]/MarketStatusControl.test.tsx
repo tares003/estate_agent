@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the control behaviour; layout is the
 // admin-routes Playwright pass.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const setPropertyMarketStatus = vi.fn();
@@ -40,6 +40,6 @@ describe('MarketStatusControl', () => {
     await user.click(screen.getByRole('button', { name: 'Update market status' }));
 
     expect(setPropertyMarketStatus).toHaveBeenCalledTimes(1);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });
