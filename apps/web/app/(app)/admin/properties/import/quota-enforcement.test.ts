@@ -63,9 +63,11 @@ const insertPropertyRow = vi.fn(
     return { id: `id-${input.reference}`, slug };
   },
 );
+const updatePropertyRow = vi.fn();
 vi.mock('../property-insert.js', () => ({
   insertPropertyRow: (...a: unknown[]) =>
     insertPropertyRow(...(a as [unknown, unknown, { reference: string }, Set<string>])),
+  updatePropertyRow: (...a: unknown[]) => updatePropertyRow(...(a as [])),
 }));
 
 const audit = vi.fn();

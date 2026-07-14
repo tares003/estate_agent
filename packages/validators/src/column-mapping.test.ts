@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ALTO_PRESET,
   CRM_PRESET_NAMES,
+  IMPORT_COLUMNS,
   IMPORT_REQUIRED_COLUMNS,
   JUPIX_PRESET,
   REAPIT_PRESET,
@@ -73,6 +74,20 @@ describe('CRM presets (FR-X-3)', () => {
 
   it('IMPORT_REQUIRED_COLUMNS lists exactly the five schema-required fields', () => {
     expect([...IMPORT_REQUIRED_COLUMNS].sort()).toEqual([...REQUIRED].sort());
+  });
+
+  // EPIC-X FR-X-4 — upsert matches incoming records on `reference` OR on `external_id`,
+  // so a CSV must be able to carry the external id as a mappable canonical column.
+  it('recognises externalId as a mappable canonical column (FR-X-4)', () => {
+    expect(IMPORT_COLUMNS).toContain('externalId');
+  });
+
+  it('externalId stays optional — never a required mapping target (FR-X-4)', () => {
+    expect(IMPORT_REQUIRED_COLUMNS).not.toContain('externalId');
+  });
+
+  it('accepts a mapping whose target is externalId (FR-X-4)', () => {
+    expect(mappingSchema.safeParse({ 'CRM ID': 'externalId' }).success).toBe(true);
   });
 });
 

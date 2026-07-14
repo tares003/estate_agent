@@ -53,6 +53,30 @@ const CLEAN_PREVIEW: ImportPreviewState = {
     recognisedColumns: ['reference', 'postcode'],
     ignoredColumns: [],
     detectedPreset: null,
+    mode: 'create_only',
+    outcome: { wouldCreate: 2, wouldUpdate: 0, wouldSkip: 0 },
+  },
+};
+
+/** A preview computed in upsert mode: one row matches (update), one is new (create). */
+const UPSERT_PREVIEW: ImportPreviewState = {
+  ok: true,
+  preview: {
+    counts: { input: 3, valid: 3, invalid: 0 },
+    sample: [
+      {
+        reference: 'REF-001',
+        displayAddress: '12 Acacia Ave',
+        price: null,
+        listingType: 'residential',
+      },
+    ],
+    errors: [],
+    recognisedColumns: ['reference', 'postcode'],
+    ignoredColumns: [],
+    detectedPreset: null,
+    mode: 'upsert_reference',
+    outcome: { wouldCreate: 1, wouldUpdate: 1, wouldSkip: 1 },
   },
 };
 
@@ -72,6 +96,8 @@ const REAPIT_PREVIEW: ImportPreviewState = {
       'Display Address',
     ],
     detectedPreset: 'reapit',
+    mode: 'create_only',
+    outcome: { wouldCreate: 0, wouldUpdate: 0, wouldSkip: 0 },
   },
 };
 
@@ -125,6 +151,8 @@ describe('PropertyImportForm', () => {
         recognisedColumns: ['reference'],
         ignoredColumns: [],
         detectedPreset: null,
+        mode: 'create_only',
+        outcome: { wouldCreate: 0, wouldUpdate: 0, wouldSkip: 0 },
       },
     };
     render(<PropertyImportForm />);
@@ -153,7 +181,7 @@ describe('PropertyImportForm', () => {
     importState = {
       ok: true,
       importLogId: 'log-1',
-      counts: { input: 3, created: 2, skipped: 0, failed: 1 },
+      counts: { input: 3, created: 2, updated: 0, skipped: 0, failed: 1 },
       errorSummary: ['Row 3 — postcode: Enter a valid UK postcode.'],
     };
     render(<PropertyImportForm />);
@@ -193,10 +221,57 @@ describe('PropertyImportForm', () => {
     importState = {
       ok: true,
       importLogId: 'log-1',
-      counts: { input: 1, created: 0, skipped: 0, failed: 1 },
+      counts: { input: 1, created: 0, updated: 0, skipped: 0, failed: 1 },
       errorSummary: ['Row 1 — postcode: Enter a valid UK postcode.'],
     };
     render(<PropertyImportForm />);
     expect(screen.getByText(/Row 1 — postcode/)).toBeTruthy();
+  });
+
+  // EPIC-X FR-X-2 / FR-X-4 — the import-mode choice (create-only vs upsert) travels with
+  // the upload; the preview reports what each mode WOULD do; the result shows updates.
+  describe('import mode (FR-X-2 / FR-X-4)', () => {
+    it('offers the import-mode choice before previewing, defaulting to create only', () => {
+      render(<PropertyImportForm />);
+      const createOnly = screen.getByRole('radio', { name: /create only/i });
+      expect(createOnly).toBeTruthy();
+      expect((createOnly as HTMLInputElement).checked).toBe(true);
+      expect(screen.getByRole('radio', { name: /match on reference/i })).toBeTruthy();
+      expect(screen.getByRole('radio', { name: /match on external id/i })).toBeTruthy();
+    });
+
+    it('posts the chosen mode with the form (the mode travels to both actions)', () => {
+      render(<PropertyImportForm />);
+      const upsert = screen.getByRole('radio', { name: /match on reference/i });
+      fireEvent.click(upsert);
+      const checked = screen
+        .getAllByRole('radio')
+        .filter((input) => (input as HTMLInputElement).checked);
+      expect(checked).toHaveLength(1);
+      expect((checked[0] as HTMLInputElement).name).toBe('mode');
+      expect((checked[0] as HTMLInputElement).value).toBe('upsert_reference');
+    });
+
+    it('shows what WOULD be created vs updated vs skipped after an upsert preview', () => {
+      previewState = UPSERT_PREVIEW;
+      render(<PropertyImportForm />);
+      const outcome = screen.getByLabelText(/preview outcome/i);
+      expect(outcome.textContent).toMatch(/create/i);
+      expect(outcome.textContent).toMatch(/update/i);
+      expect(outcome.textContent).toContain('1');
+    });
+
+    it('shows the updated count and the skipped rows after a confirmed upsert run', () => {
+      importState = {
+        ok: true,
+        importLogId: 'log-1',
+        counts: { input: 3, created: 1, updated: 1, skipped: 1, failed: 0 },
+        skippedSummary: ['Row 3 — skipped: no externalId value to match on'],
+      };
+      render(<PropertyImportForm />);
+      const counts = screen.getByLabelText(/import counts/i);
+      expect(counts.textContent).toMatch(/updated/i);
+      expect(screen.getByText(/Row 3 — skipped/)).toBeTruthy();
+    });
   });
 });
