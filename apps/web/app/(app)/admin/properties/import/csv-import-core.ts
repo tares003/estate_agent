@@ -15,10 +15,11 @@ import {
 // errors}. No I/O, no session, no DB — the audited action layer feeds this a string (and
 // a mapping) and persists the result; this module is exhaustively unit-tested.
 //
-// V1 slice: this CREATES properties (FR-X-1) and now applies a configurable / preset
-// column mapping (FR-X-3). The dry-run preview (FR-X-2), upsert / external-id matching
-// (FR-X-4/5), quota enforcement (FR-X-10) and image post-processing (FR-X-11) are later
-// slices of this epic.
+// Shipped in this module: parse + validate (FR-X-1), the configurable / preset column
+// mapping (FR-X-3) and the pure UPSERT PLANNER (FR-X-2 / FR-X-4 — see the second half of
+// the file) that both the dry-run preview and the audited import run. Quota enforcement
+// (FR-X-10) lives on the action side; image post-processing (FR-X-11) and the scheduled
+// feeds (FR-X-7/8) are later slices of this epic.
 
 /**
  * The canonical column set the importer understands, re-exported from `@estate/validators`
@@ -267,22 +268,40 @@ export function buildMatchIndex(
 export type PlannedRow =
   | { action: 'create'; row: ValidRow }
   | { action: 'update'; row: ValidRow; propertyId: string; matchedOn: ImportMatchField }
-  | { action: 'skip'; row: ValidRow; reason: string };
+  | { action: 'skip'; row: ValidRow; reason: string }
+  | { action: 'fail'; row: ValidRow; error: RowFieldError };
+
+/** How the rejected in-file duplicate reads in the error report, per match field. */
+const MATCH_FIELD_LABEL: Record<ImportMatchField, string> = {
+  reference: 'reference',
+  externalId: 'external id',
+};
 
 /**
  * Plan every validated row for the run (FR-X-2 / FR-X-4), in source order. With no
  * match field (create-only mode) every row is a create. In an upsert mode a row whose
  * match value appears in `index` becomes an UPDATE of that property; a row without a
  * match value is SKIPPED with a reason (only reachable in external-id mode — the
- * schema requires `reference`); anything else is a create. Matching runs against the
- * catalogue snapshot the caller read, so in-file duplicate keys fall through to the
- * DB constraint, where FR-X-5's per-row isolation records them as failed rows.
+ * schema requires `reference`); anything else is a create.
+ *
+ * `index` is the caller's PRE-RUN catalogue snapshot, so the planner additionally
+ * tracks the match keys the run itself would MINT: a second row repeating a key an
+ * earlier row in the SAME file already creates is planned as a FAILED row (FR-X-5),
+ * never a second create. Without this, two rows sharing a new `external_id` — which,
+ * unlike `reference`, has no unique constraint to back-stop it — both inserted on the
+ * first run, minting the duplicate pair the FR-X acceptance criterion forbids. A key
+ * that matches an EXISTING listing is exempt: both rows simply update the same
+ * property (idempotent — nothing new is inserted).
  */
 export function planImportRows(
   rows: readonly ValidRow[],
   matchField: ImportMatchField | null,
   index: ReadonlyMap<string, string>,
 ): PlannedRow[] {
+  // The match keys THIS run would create (empty in create-only mode, which has no
+  // identity semantics — a repeated reference there still falls to the DB constraint,
+  // which FR-X-5's per-row isolation records as a failed row).
+  const minted = new Set<string>();
   return rows.map((row): PlannedRow => {
     if (matchField === null) return { action: 'create', row };
     const key = row.data[matchField];
@@ -290,8 +309,20 @@ export function planImportRows(
       return { action: 'skip', row, reason: 'no externalId value to match on' };
     }
     const propertyId = index.get(key);
-    return propertyId === undefined
-      ? { action: 'create', row }
-      : { action: 'update', row, propertyId, matchedOn: matchField };
+    if (propertyId !== undefined) {
+      return { action: 'update', row, propertyId, matchedOn: matchField };
+    }
+    if (minted.has(key)) {
+      return {
+        action: 'fail',
+        row,
+        error: {
+          field: matchField,
+          message: `an earlier row in this file already imports the ${MATCH_FIELD_LABEL[matchField]} "${key}" (duplicate)`,
+        },
+      };
+    }
+    minted.add(key);
+    return { action: 'create', row };
   });
 }

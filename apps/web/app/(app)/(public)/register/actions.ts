@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { registerCustomer } from '../../lib/customer-register.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 import { REGISTER_CONSENT_TEXT } from './consent-text.js';
 
@@ -61,6 +61,7 @@ export async function submitRegister(
   const registration = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (CLAUDE.md §9): verify the Turnstile token BEFORE any write.
   const turnstileToken = formData.get('cf-turnstile-response');
@@ -108,6 +109,7 @@ export async function submitRegister(
       entityId: created.userId,
       diff: { email: registration.email, marketingOptIn: registration.marketingOptIn },
       ip,
+      userAgent,
     });
   });
 

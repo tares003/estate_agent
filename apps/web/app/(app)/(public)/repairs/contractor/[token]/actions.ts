@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 import { contractorLinkSecret, verifyContractorLink } from '../../../../lib/contractor-access.js';
 import { contractorNextStep } from '../../../../lib/contractor-portal.js';
 import { getDb } from '../../../../lib/db.js';
-import { getCurrentTenantId, getRequestIp } from '../../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../../lib/tenant.js';
 
 // EPIC-G contractor portal (FR-G-8, master spec §G.5): a contractor advances their
 // assigned ticket WITHOUT signing in. The magic-link token IS the authorisation —
@@ -65,6 +65,7 @@ export async function advanceRepairAsContractor(
   const { repairRequestId, contractorId } = verified;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: ContractorAdvanceState = deny('This repair could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -103,6 +104,7 @@ export async function advanceRepairAsContractor(
       entityId: repairRequestId,
       diff: { status: { from, to: step.to } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

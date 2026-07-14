@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { requestPasswordReset } from '../../lib/password-reset.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 import { FORGOT_PASSWORD_CONSENT_TEXT } from './consent-text.js';
 
@@ -60,6 +60,7 @@ export async function submitForgotPassword(
   const { email } = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (CLAUDE.md §9): verify the Turnstile token BEFORE any side effect.
   const turnstileToken = formData.get('cf-turnstile-response');
@@ -97,6 +98,7 @@ export async function submitForgotPassword(
       entity: 'user',
       diff: { requested: true },
       ip,
+      userAgent,
     });
   });
 

@@ -14,7 +14,7 @@ import type { FormErrorItem } from '@estate/ui';
 import { contractorLinkSecret, verifyContractorLink } from '../../../../lib/contractor-access.js';
 import { getDb } from '../../../../lib/db.js';
 import { getStorageBackend, storageSigningSecret } from '../../../../lib/storage.js';
-import { getCurrentTenantId, getRequestIp } from '../../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../../lib/tenant.js';
 
 // EPIC-G contractor portal (FR-G-8) — completion-photo upload, WITHOUT signing in.
 // Same shape as the tenant's repair-file upload (B70) but the magic-link token is
@@ -135,6 +135,7 @@ export async function finalizeContractorRepairFiles(
 
   const { tenantId, repairRequestId, contractorId } = auth;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   const prefix = `tenants/${tenantId}/repairs/${repairRequestId}/`;
   if (files.some((file) => !file.key.startsWith(prefix))) {
@@ -174,6 +175,7 @@ export async function finalizeContractorRepairFiles(
         entity: 'repair_file',
         entityId: created.id,
         ip,
+        userAgent,
       });
     }
     result = { ok: true };

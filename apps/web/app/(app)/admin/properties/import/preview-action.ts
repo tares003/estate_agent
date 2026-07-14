@@ -18,6 +18,7 @@ import {
   type ImportColumn,
   type ImportMode,
   type PlannedRow,
+  type RowError,
   type ValidRow,
 } from './csv-import-core.js';
 import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js';
@@ -34,7 +35,10 @@ import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js'
 // pure planner as the real import: it echoes the mode and reports what the confirmed
 // run WOULD do (wouldCreate / wouldUpdate / wouldSkip). In an upsert mode that takes
 // ONE tenant-scoped READ of the existing property identities; create-only needs no
-// read at all.
+// read at all. A row the planner REJECTS (it repeats a match key an earlier row of the
+// same file mints — importing both would create a duplicate pair) is surfaced like a
+// validation failure: counted as invalid and listed in the error report, so the admin
+// fixes the CSV before committing rather than after.
 //
 // A dry run creates NOTHING. No property insert, no `import_logs` write and NO audit —
 // reading + validating a file is not a state change, so the G4 audit rule does not
@@ -228,6 +232,20 @@ export async function previewPropertyImport(
     wouldSkip: plan.filter((planned) => planned.action === 'skip').length,
   };
 
+  // FR-X-4 / FR-X-5 — rows the PLANNER rejects (an in-file duplicate of a match key an
+  // earlier row already mints — inserting both would create the duplicate pair) are
+  // shown as REJECTED, exactly like a validation failure: they are counted as invalid,
+  // listed in the error report, and excluded from the valid tally + the quota
+  // projection. The admin sees the problem in the dry run instead of after the run.
+  const planRowErrors: RowError[] = plan.flatMap((planned) =>
+    planned.action === 'fail'
+      ? [{ rowNumber: planned.row.rowNumber, errors: [planned.error] }]
+      : [],
+  );
+  const rowErrors = [...parseResult.errors, ...planRowErrors].sort(
+    (a, b) => a.rowNumber - b.rowNumber,
+  );
+
   // FR-X-10 — surface the plan-quota outcome so the admin sees whether the upload
   // fits BEFORE committing. Only rows the run would CREATE as PUBLISHED consume the
   // ACTIVE cap (matching the real import's check — drafts are not active and upsert
@@ -256,11 +274,13 @@ export async function previewPropertyImport(
   const preview: ImportPreview = {
     counts: {
       input: parseResult.recordsInput,
-      valid: parseResult.valid.length,
-      invalid: parseResult.errors.length,
+      // A row the planner rejects passed schema validation but would NOT be imported —
+      // it counts as invalid, not valid, so the tally matches what the run will do.
+      valid: parseResult.valid.length - planRowErrors.length,
+      invalid: rowErrors.length,
     },
     sample: parseResult.valid.slice(0, PREVIEW_SAMPLE_LIMIT).map(toSampleRow),
-    errors: parseResult.errors.map(formatRowError),
+    errors: rowErrors.map(formatRowError),
     recognisedColumns: parseResult.recognisedColumns,
     ignoredColumns: parseResult.ignoredColumns,
     detectedPreset,
