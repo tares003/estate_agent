@@ -55,22 +55,50 @@ console.log(`[dev-db] waiting for Postgres at ${DATABASE_URL.replace(/:[^:@/]+@/
 const client = await connectWithRetry();
 console.log('[dev-db] connected');
 
-// 1) Full Prisma schema via db push (idempotent — no-op when current).
-console.log('[dev-db] prisma db push ...');
-execFileSync('pnpm', ['exec', 'prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'], {
-  cwd: DB_PKG,
-  env: { ...process.env, DATABASE_URL },
-  stdio: 'inherit',
-  shell: process.platform === 'win32',
-});
-
-// 2) Raw migrations in numeric order, ledgered for idempotency (the files
-//    themselves are not re-runnable: CREATE POLICY etc. fail on a second pass).
+// 0) The migration ledger lives in a SEPARATE schema. `prisma db push
+//    --accept-data-loss` drops any table in `public` that is not in the Prisma
+//    schema — including a ledger kept there — which would make re-runs replay the
+//    non-idempotent RLS migrations (CREATE POLICY fails on a second pass). A
+//    `_dev_meta` schema is outside Prisma's management, so the ledger survives.
+await client.query('CREATE SCHEMA IF NOT EXISTS _dev_meta');
 await client.query(
-  'CREATE TABLE IF NOT EXISTS _dev_migrations (file text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())',
+  'CREATE TABLE IF NOT EXISTS _dev_meta.migrations (file text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())',
 );
+// One-time move of any legacy public ledger into the safe schema, then drop it
+// (the INSERT throws harmlessly on a fresh install where the legacy table is absent).
+await client
+  .query(
+    `INSERT INTO _dev_meta.migrations (file)
+       SELECT file FROM public._dev_migrations ON CONFLICT DO NOTHING`,
+  )
+  .catch(() => {});
+await client.query('DROP TABLE IF EXISTS public._dev_migrations').catch(() => {});
+
+// 1) Full Prisma schema via db push — but ONLY on a fresh database. Once the
+//    PostGIS raw migration (0004) has run, `db push --accept-data-loss` sees the
+//    extension-managed objects (spatial_ref_sys, the geography column) as "not in
+//    the Prisma schema" and errors trying to drop them. The integration suite
+//    avoids this by pushing exactly once on a fresh container; we mirror that.
+//    A Prisma-schema (column) change therefore needs a volume reset:
+//      docker compose -f infrastructure/dev/docker-compose.yml down -v && up -d
+const fresh =
+  (await client.query("SELECT to_regclass('public.properties') AS t")).rows[0].t === null;
+if (fresh) {
+  console.log('[dev-db] prisma db push (fresh database) ...');
+  execFileSync('pnpm', ['exec', 'prisma', 'db', 'push', '--skip-generate', '--accept-data-loss'], {
+    cwd: DB_PKG,
+    env: { ...process.env, DATABASE_URL },
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+} else {
+  console.log('[dev-db] schema already present — skipping db push (reset the volume for schema changes)');
+}
+
+// 2) Raw migrations in numeric order, ledgered for idempotency in `_dev_meta`
+//    (the files themselves are not re-runnable: CREATE POLICY etc. fail twice).
 const applied = new Set(
-  (await client.query('SELECT file FROM _dev_migrations')).rows.map((row) => row.file),
+  (await client.query('SELECT file FROM _dev_meta.migrations')).rows.map((row) => row.file),
 );
 const files = readdirSync(RAW)
   .filter((file) => file.endsWith('.sql'))
@@ -79,7 +107,7 @@ for (const file of files) {
   if (applied.has(file)) continue;
   console.log(`[dev-db] applying ${file} ...`);
   await client.query(readFileSync(join(RAW, file), 'utf8'));
-  await client.query('INSERT INTO _dev_migrations (file) VALUES ($1)', [file]);
+  await client.query('INSERT INTO _dev_meta.migrations (file) VALUES ($1)', [file]);
 }
 
 // 3) Deterministic dev seed (idempotent). The compose superuser bypasses RLS.
