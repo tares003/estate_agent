@@ -75,6 +75,35 @@ describe('insertPropertyRow — externalId (FR-X-4)', () => {
   });
 });
 
+// §F specification — "Internal size in square feet and square metres". Square feet is the
+// CAPTURED unit; the admin editor shows "size (sqft + auto-converted sqm)", so the write
+// path derives the square-metre column rather than asking for it twice.
+describe('coreData — internal size (§F specification)', () => {
+  it('persists internalSqft and the auto-converted internalSqm on create', async () => {
+    const { tx, propertyCreate } = fakeTx();
+    await insertPropertyRow(tx, CTX, input({ internalSqft: 1450 }), new Set());
+    const data = propertyCreate.mock.calls[0]![0].data;
+    expect(data['internalSqft']).toBe(1450);
+    expect(data['internalSqm']).toBe(135); // 1450 × 0.09290304 = 134.7 → 135
+  });
+
+  it('writes neither size column when the listing carries no measured size', async () => {
+    const { tx, propertyCreate } = fakeTx();
+    await insertPropertyRow(tx, CTX, input(), new Set());
+    const data = propertyCreate.mock.calls[0]![0].data;
+    expect('internalSqft' in data).toBe(false);
+    expect('internalSqm' in data).toBe(false);
+  });
+
+  it('carries the size through the import upsert update path too', async () => {
+    const { tx, propertyUpdate } = fakeTx();
+    await updatePropertyRow(tx, CTX, input({ internalSqft: 900 }), { id: 'p-1' }, 'reference');
+    const data = propertyUpdate.mock.calls[0]![0].data;
+    expect(data['internalSqft']).toBe(900);
+    expect(data['internalSqm']).toBe(84); // 900 × 0.09290304 = 83.6 → 84
+  });
+});
+
 describe('updatePropertyRow (FR-X-4)', () => {
   it('updates the matched row by id with the imported columns (price in pence)', async () => {
     const { tx, propertyUpdate } = fakeTx();

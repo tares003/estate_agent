@@ -128,6 +128,40 @@ describe('PropertyDetailPage', () => {
     );
   });
 
+  // §C.11 — the facts strip carries the square footage; §O.3 / FR-O-5 — the same size is
+  // emitted as the RealEstateListing's `floorSize`. One row, both surfaces.
+  it('renders the square footage in the facts strip and emits it as floorSize', async () => {
+    findFirst.mockResolvedValue({ ...saleRow, internalSqft: 1450 });
+
+    const { container } = render(
+      await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }),
+    );
+
+    expect(screen.getByText('Size')).toBeInTheDocument();
+    expect(screen.getByText('1,450 sq ft')).toBeInTheDocument();
+
+    const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
+    const listing = JSON.parse(ldScripts[0]?.textContent ?? '{}');
+    expect(listing.floorSize).toEqual({
+      '@type': 'QuantitativeValue',
+      value: 1450,
+      unitCode: 'FTK',
+    });
+  });
+
+  it('omits the size fact and floorSize when the listing has no measured size', async () => {
+    findFirst.mockResolvedValue(saleRow);
+
+    const { container } = render(
+      await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }),
+    );
+
+    expect(screen.queryByText('Size')).not.toBeInTheDocument();
+    const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
+    const listing = JSON.parse(ldScripts[0]?.textContent ?? '{}');
+    expect(listing).not.toHaveProperty('floorSize');
+  });
+
   it('renders a minimal property with no description or stats', async () => {
     findFirst.mockResolvedValue({
       id: '22222222-2222-2222-2222-222222222222',
