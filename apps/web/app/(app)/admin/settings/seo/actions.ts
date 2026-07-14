@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-O FR-O-4 — the audited, RBAC-gated upsert + delete for a tenant's per-entity
 // SEO overrides (the admin meta-title / description / canonical / OG-image / noindex
@@ -128,6 +128,7 @@ export async function upsertSeoMetadata(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SeoMetadataActionState = deny('The SEO override could not be saved.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -157,6 +158,7 @@ export async function upsertSeoMetadata(
           to: columns,
         },
         ip,
+        userAgent,
       });
     } else {
       const created = await tx.seoMetadata.create({
@@ -170,6 +172,7 @@ export async function upsertSeoMetadata(
         entityId: created.id,
         diff: { scope: input.scope, scopeId: scopeIdValue, ...columns },
         ip,
+        userAgent,
       });
     }
     result = { ok: true };
@@ -197,6 +200,7 @@ export async function deleteSeoMetadata(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SeoMetadataActionState = deny('This SEO override could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -221,6 +225,7 @@ export async function deleteSeoMetadata(
         noFollow: existing.noFollow,
       },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

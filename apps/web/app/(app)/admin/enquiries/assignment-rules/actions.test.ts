@@ -92,6 +92,7 @@ describe('createAssignmentRule (FR-H-4)', () => {
         position: 3,
       },
       ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

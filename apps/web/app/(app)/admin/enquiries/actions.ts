@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-I CRM (FR-I-2/7): a staff member moves an enquiry through the status
 // workflow. RBAC-gated on `enquiry.write` (fail-closed before any read/write); the
@@ -76,6 +76,7 @@ export async function updateEnquiryStatus(
   const changedByAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: EnquiryStatusState = { ok: false, errors: [{ message: 'Enquiry not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -104,6 +105,7 @@ export async function updateEnquiryStatus(
       entityId: enquiryId,
       diff: reason ? { status: { from, to }, reason } : { status: { from, to } },
       ip,
+      userAgent,
     });
     result = { ok: true, status: to };
   });

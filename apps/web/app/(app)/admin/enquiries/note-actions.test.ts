@@ -81,6 +81,7 @@ describe('addEnquiryNote', () => {
       entityId: ENQ,
       diff: { note: { id: NOTE, isInternal: true } },
       ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

@@ -38,6 +38,11 @@ export interface PropertyInsertContext {
   createdByUserId: string | null;
   /** Originating IP for the audit row, when known. */
   ip: string | null;
+  /**
+   * Originating User-Agent for the audit row (FR-H-17), when known. Optional so
+   * batch callers without a meaningful UA (e.g. the EPIC-X import) may omit it.
+   */
+  userAgent?: string | null;
 }
 
 /**
@@ -134,6 +139,7 @@ export async function insertPropertyRow(
     entityId: created.id,
     diff: { reference: input.reference, slug, listingType: input.listingType },
     ip: ctx.ip,
+    userAgent: ctx.userAgent ?? null,
   });
   // Reserve the minted slug so a following row in the same batch disambiguates past it.
   taken.add(slug);

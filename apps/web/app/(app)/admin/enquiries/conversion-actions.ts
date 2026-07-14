@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-I CRM (FR-I-6): converting an enquiry produces a Contact record (one of the
 // four party types) linked back to the originating enquiry, and moves the enquiry
@@ -84,6 +84,7 @@ export async function convertEnquiry(
   const changedByAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: EnquiryConversionState = { ok: false, errors: [{ message: 'Enquiry not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -125,6 +126,7 @@ export async function convertEnquiry(
         contact: { id: contact.id, type: contactType },
       },
       ip,
+      userAgent,
     });
     result = { ok: true, contactId: contact.id };
   });

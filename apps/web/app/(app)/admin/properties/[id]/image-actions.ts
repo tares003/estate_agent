@@ -14,7 +14,7 @@ import type { FormErrorItem } from '@estate/ui';
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
 import { getStorageBackend, storageSigningSecret } from '../../../lib/storage.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-F property images (FR-F-6) — the two halves of the direct-upload flow.
 // 1) createPropertyImageUpload: RBAC `property.write` (fail-closed) → tenant-
@@ -133,6 +133,7 @@ export async function finalizePropertyImage(input: {
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // The key must sit under THIS tenant+listing prefix — a signed token for some
   // other listing (or tenant) cannot be grafted onto this one.
@@ -176,6 +177,7 @@ export async function finalizePropertyImage(input: {
       entityId: created.id,
       diff: { url: { from: null, to: input.key } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -220,6 +222,7 @@ export async function setPrimaryPropertyImage(input: {
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PropertyImageFinalizeState = {
     ok: false,
@@ -246,6 +249,7 @@ export async function setPrimaryPropertyImage(input: {
       entityId: ref.imageId,
       diff: { isPrimary: { from: image.isPrimary, to: true } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -277,6 +281,7 @@ export async function deletePropertyImage(input: {
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let removedKey: string | null = null;
   let result: PropertyImageFinalizeState = {
@@ -309,6 +314,7 @@ export async function deletePropertyImage(input: {
       entityId: ref.imageId,
       diff: { url: { from: image.url, to: null } },
       ip,
+      userAgent,
     });
     removedKey = image.url;
     result = { ok: true };

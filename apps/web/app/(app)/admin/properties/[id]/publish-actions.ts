@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-H property management (FR-H-2): the UNPUBLISH half of the listing
 // lifecycle — unpublishing returns a live listing to draft. PUBLISHING is only
@@ -70,6 +70,7 @@ export async function setPropertyPublished(
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PublishState = { ok: false, errors: [{ message: 'Property not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -89,6 +90,7 @@ export async function setPropertyPublished(
       entity: 'property',
       entityId: id,
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

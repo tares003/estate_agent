@@ -84,6 +84,7 @@ describe('updateEnquiryStatus', () => {
       entityId: ENQ,
       diff: { status: { from: 'new', to: 'contacted' } },
       ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

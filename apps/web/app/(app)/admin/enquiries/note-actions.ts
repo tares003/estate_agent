@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-I CRM (FR-I-5): a staff member adds a threaded note to an enquiry. A note is
 // staff-internal by default (surfaces in client-facing comms only when explicitly
@@ -71,6 +71,7 @@ export async function addEnquiryNote(
   const authorAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: EnquiryNoteState = { ok: false, errors: [{ message: 'Enquiry not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -97,6 +98,7 @@ export async function addEnquiryNote(
       entityId: enquiryId,
       diff: { note: { id: created.id, isInternal: internal } },
       ip,
+      userAgent,
     });
     result = { ok: true, noteId: created.id };
   });

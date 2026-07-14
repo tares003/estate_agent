@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-H FR-H-4 (master spec §H.6): a staff member composes a no-code enquiry
 // assignment rule (IF <conditions> THEN assign to <agent|branch>). RBAC-gated on
@@ -79,6 +79,7 @@ export async function createAssignmentRule(
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: AssignmentRuleState = deny('The assignment rule could not be created.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -107,6 +108,7 @@ export async function createAssignmentRule(
         position,
       },
       ip,
+      userAgent,
     });
     result = { ok: true, ruleId: created.id };
   });

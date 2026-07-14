@@ -12,7 +12,12 @@ import {
   getStaffUserId,
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp, getRequestOrigin } from '../../../lib/tenant.js';
+import {
+  getCurrentTenantId,
+  getRequestIp,
+  getRequestOrigin,
+  getRequestUserAgent,
+} from '../../../lib/tenant.js';
 
 // EPIC-G repair triage (master spec §G.5/§G.6, FR-G-8): a staff member assigns a
 // repair ticket to a contractor. RBAC-gated on `repair_request.write` (fail-closed).
@@ -86,6 +91,7 @@ export async function assignContractor(
   const actorUserId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
   const origin = await getRequestOrigin();
   const secret = contractorLinkSecret();
 
@@ -129,6 +135,7 @@ export async function assignContractor(
       entityId: repairId,
       diff: { assignedContractorId: { from: null, to: contractorId } },
       ip,
+      userAgent,
     });
 
     // FR-G-8: the contractor's no-sign-in magic-link to this one ticket, queued

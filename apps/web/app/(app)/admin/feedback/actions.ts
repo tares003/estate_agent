@@ -10,7 +10,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-AC FR-AC-5 — a staff member moderates a publishable feedback entry: publish
 // it (→ flows to testimonials) or reject it WITH a reason. RBAC fail-closed before
@@ -74,6 +74,7 @@ export async function moderateFeedback(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: FeedbackModerateState = deny('This feedback could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -98,6 +99,7 @@ export async function moderateFeedback(
       entityId: feedbackId,
       diff: { status: { from: 'pending', to: status }, reason },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -142,6 +144,7 @@ export async function editFeedback(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: FeedbackModerateState = deny('This feedback could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -166,6 +169,7 @@ export async function editFeedback(
       entityId: feedbackId,
       diff: { comment: { from: existing.comment, to: nextComment } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

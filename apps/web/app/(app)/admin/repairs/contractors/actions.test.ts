@@ -142,7 +142,12 @@ describe('FR-H-17 audit user-agent', () => {
   it('captures the request user-agent in every audit row', async () => {
     await createContractor(
       { ok: false },
-      form({ name: 'Ace Plumbing', email: 'ace@example.com', phone: '07700900000', trade: 'Plumbing' }),
+      form({
+        name: 'Ace Plumbing',
+        email: 'ace@example.com',
+        phone: '07700900000',
+        trade: 'Plumbing',
+      }),
     );
     await setContractorActive({ ok: false }, form({ id: ID, active: 'false' }));
 

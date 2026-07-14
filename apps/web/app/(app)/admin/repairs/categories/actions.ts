@@ -7,7 +7,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-G repair categories admin (FR-G-4, master spec §G.3) — the audited,
 // RBAC-gated mutations for the category catalogue. Both gate on
@@ -54,6 +54,7 @@ export async function seedRepairCategories(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: CategoryActionState = deny('The catalogue already has categories.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -78,6 +79,7 @@ export async function seedRepairCategories(
       entityId: tenantId,
       diff: { seeded: { from: 0, to: DEFAULT_REPAIR_CATEGORIES.length } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -112,6 +114,7 @@ export async function setRepairCategoryVisibility(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: CategoryActionState = deny('That category could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -129,6 +132,7 @@ export async function setRepairCategoryVisibility(
       entityId: category.id,
       diff: { visible: { from: category.visible, to: visible } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
