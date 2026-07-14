@@ -119,7 +119,7 @@ describe('PropertyImagesManager', () => {
       key: 'tenants/t/p/abc.png',
       alt: 'The front elevation',
     });
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
   it('asks for a file and alt text before starting an upload', async () => {

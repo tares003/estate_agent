@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the control behaviour; layout is the
 // admin-routes Playwright pass.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const setPropertyPublished = vi.fn();
@@ -41,6 +41,6 @@ describe('PublishControl', () => {
     await user.click(screen.getByRole('button', { name: 'Publish' }));
 
     expect(setPropertyPublished).toHaveBeenCalledTimes(1);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });

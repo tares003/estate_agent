@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — asserts the form pre-fill + submit/refresh +
 // error states; layout is the admin-routes Playwright pass.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const updateProperty = vi.fn();
@@ -54,7 +54,7 @@ describe('PropertyEditForm', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     expect(updateProperty).toHaveBeenCalledTimes(1);
-    expect(refresh).toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(await screen.findByText('Changes saved.')).toBeInTheDocument();
   });
 
