@@ -216,7 +216,10 @@ describe('importPropertiesFromCsv — upsert mode (FR-X-2 / FR-X-4)', () => {
   it('skips a row without an external id in external-id mode and records it (never blind-creates)', async () => {
     const res = await importPropertiesFromCsv(
       { ok: false },
-      csvForm(`${HEADER}\n${csvRow('REF-001', 'EXT-1')}\n${csvRow('REF-002')}\n`, 'upsert_external_id'),
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-1')}\n${csvRow('REF-002')}\n`,
+        'upsert_external_id',
+      ),
     );
     expect(res.ok).toBe(true);
     // Row 1 has an external id (no match → created); row 2 has none → skipped.

@@ -111,7 +111,11 @@ describe('planImportRows (FR-X-2 / FR-X-4 / FR-X-5)', () => {
   it('SKIPS a row without an external id value in external-id mode (never blind-creates)', () => {
     // Creating an unmatchable row would mint a duplicate on every re-run, violating the
     // acceptance criterion — the planner skips it with a reason instead.
-    const plan = planImportRows([row(1, 'REF-001'), row(2, 'REF-002', 'EXT-2')], 'externalId', new Map());
+    const plan = planImportRows(
+      [row(1, 'REF-001'), row(2, 'REF-002', 'EXT-2')],
+      'externalId',
+      new Map(),
+    );
     expect(plan[0]).toMatchObject({ action: 'skip' });
     expect(plan[0]!.action === 'skip' && plan[0]!.reason).toMatch(/external/i);
     expect(plan[1]).toMatchObject({ action: 'create' });

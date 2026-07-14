@@ -1,12 +1,12 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Badge, Button, FormError, FormSuccess } from '@estate/ui';
+import { Badge, Button, FormError, FormSuccess, Radio, RadioGroup } from '@estate/ui';
 import type { ColumnMapping } from '@estate/validators';
 
 import { importPropertiesFromCsv, type ImportActionState } from './actions.js';
 import { previewPropertyImport, type ImportPreviewState } from './preview-action.js';
-import { IMPORT_COLUMNS } from './csv-import-core.js';
+import { IMPORT_COLUMNS, type ImportMode } from './csv-import-core.js';
 import { ColumnMappingEditor } from './ColumnMappingEditor.js';
 
 // EPIC-X FR-X-1 / FR-X-2 / FR-X-3 — the admin CSV bulk-import form with a DRY-RUN preview
@@ -22,6 +22,13 @@ import { ColumnMappingEditor } from './ColumnMappingEditor.js';
 // and the audited import, so the confirmed run parses identically to what was previewed.
 // Only when the admin presses "Confirm and import" does the SAME file + mapping post to
 // the audited `importPropertiesFromCsv` action. "Cancel" discards the preview.
+//
+// FR-X-2 / FR-X-4 — an import MODE chooser travels with every submission (the checked
+// radio posts `mode` to both actions): create only, upsert matching on reference, or
+// upsert matching on external id. The preview echoes the mode it simulated and reports
+// what the confirmed run WOULD do (created vs updated vs skipped); like a mapping
+// change, a mode change should be re-previewed before confirming (the confirmed run
+// always executes the CURRENTLY-selected mode).
 //
 // All submissions share one file input inside one form: the primary submit button
 // triggers the preview action, the confirm button (a `formAction` override) triggers the
@@ -40,6 +47,13 @@ const PRESET_LABELS: Record<string, string> = {
   rex: 'Rex',
 };
 
+/** Friendly labels for the previewed mode notice (FR-X-2). */
+const MODE_LABELS: Record<ImportMode, string> = {
+  create_only: 'Create only',
+  upsert_reference: 'Upsert — match on reference',
+  upsert_external_id: 'Upsert — match on external id',
+};
+
 export function PropertyImportForm() {
   const [previewState, previewAction, previewPending] = useActionState(
     previewPropertyImport,
@@ -55,6 +69,9 @@ export function PropertyImportForm() {
   // The admin's chosen column mapping (preset or hand-mapped). Serialised into a hidden
   // field so it travels with the file to both the preview and the import actions (FR-X-3).
   const [mapping, setMapping] = useState<ColumnMapping>({});
+  // FR-X-2 / FR-X-4 — the import mode. The checked radio posts `mode` with the form,
+  // so the same choice reaches both the preview and the confirmed import.
+  const [mode, setMode] = useState<ImportMode>('create_only');
 
   const preview = previewState.ok ? previewState.preview : undefined;
   const showPreview = preview !== undefined && !cancelled && !importState.ok;
@@ -89,6 +106,31 @@ export function PropertyImportForm() {
           to 5&nbsp;MB — larger catalogues use a scheduled feed.
         </span>
       </div>
+
+      {/* FR-X-2 / FR-X-4 — the import-mode chooser. Previewing is always the dry run. */}
+      <RadioGroup
+        name="mode"
+        label="Import mode"
+        value={mode}
+        onChange={(value) => setMode(value as ImportMode)}
+        helpText="Previewing is always a dry run — nothing is written until you confirm. Changed the mode after previewing? Preview again before confirming."
+      >
+        <Radio
+          value="create_only"
+          label="Create only"
+          description="Every row becomes a new listing. A row whose reference already exists fails."
+        />
+        <Radio
+          value="upsert_reference"
+          label="Upsert — match on reference"
+          description="A row whose reference matches an existing listing updates it; anything else is created."
+        />
+        <Radio
+          value="upsert_external_id"
+          label="Upsert — match on external id"
+          description="A row whose external id matches an existing listing updates it; new external ids are created; rows without one are skipped."
+        />
+      </RadioGroup>
 
       {!importState.ok ? (
         <div className="flex flex-wrap items-center gap-3">
@@ -165,6 +207,31 @@ export function PropertyImportForm() {
             </div>
           </dl>
 
+          {/* FR-X-2 / FR-X-4 — what the confirmed run WOULD do, per the previewed mode. */}
+          <p className="t-body-sm text-text-secondary">
+            Previewed as <span className="font-semibold">{MODE_LABELS[preview.mode]}</span>.
+          </p>
+          <dl className="flex flex-wrap items-center gap-3" aria-label="Preview outcome">
+            <div className="flex items-center gap-2">
+              <dt className="t-body-sm text-text-secondary">Would create</dt>
+              <dd>
+                <Badge tone="success">{preview.outcome.wouldCreate}</Badge>
+              </dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <dt className="t-body-sm text-text-secondary">Would update</dt>
+              <dd>
+                <Badge tone="neutral">{preview.outcome.wouldUpdate}</Badge>
+              </dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <dt className="t-body-sm text-text-secondary">Would skip</dt>
+              <dd>
+                <Badge tone="neutral">{preview.outcome.wouldSkip}</Badge>
+              </dd>
+            </div>
+          </dl>
+
           {preview.sample.length > 0 ? (
             <div className="flex flex-col gap-2">
               <h3 className="t-body-md font-semibold">Sample (first {preview.sample.length})</h3>
@@ -224,6 +291,12 @@ export function PropertyImportForm() {
               </dd>
             </div>
             <div className="flex items-center gap-2">
+              <dt className="t-body-sm text-text-secondary">Updated</dt>
+              <dd>
+                <Badge tone="success">{importState.counts.updated}</Badge>
+              </dd>
+            </div>
+            <div className="flex items-center gap-2">
               <dt className="t-body-sm text-text-secondary">Skipped</dt>
               <dd>
                 <Badge tone="neutral">{importState.counts.skipped}</Badge>
@@ -250,6 +323,19 @@ export function PropertyImportForm() {
               <h3 className="t-body-md font-semibold">Rows that could not be imported</h3>
               <ul className="border-divider flex flex-col gap-1 rounded-lg border p-4">
                 {importState.errorSummary.map((line, index) => (
+                  <li key={index} className="t-body-sm text-text-secondary">
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {importState.skippedSummary && importState.skippedSummary.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <h3 className="t-body-md font-semibold">Rows skipped (nothing to match on)</h3>
+              <ul className="border-divider flex flex-col gap-1 rounded-lg border p-4">
+                {importState.skippedSummary.map((line, index) => (
                   <li key={index} className="t-body-sm text-text-secondary">
                     {line}
                   </li>

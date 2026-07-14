@@ -110,7 +110,10 @@ describe('previewPropertyImport — per-mode outcome (FR-X-2)', () => {
   it('previews the skipped rows of an external-id upsert (rows with no external id)', async () => {
     const res = await previewPropertyImport(
       { ok: false },
-      csvForm(`${HEADER}\n${csvRow('REF-001', 'EXT-1')}\n${csvRow('REF-002')}\n`, 'upsert_external_id'),
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-1')}\n${csvRow('REF-002')}\n`,
+        'upsert_external_id',
+      ),
     );
     expect(res.ok).toBe(true);
     expect(res.preview!.outcome).toEqual({ wouldCreate: 1, wouldUpdate: 0, wouldSkip: 1 });
