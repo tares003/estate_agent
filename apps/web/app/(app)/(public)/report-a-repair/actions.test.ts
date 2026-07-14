@@ -31,10 +31,14 @@ const repairCount = vi.fn();
 const repairFindFirst = vi.fn();
 const fileCount = vi.fn();
 const fileCreate = vi.fn();
+const enquiryCreate = vi.fn();
+const ruleFindMany = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
   fn({
     repairRequest: { create: repairCreate, count: repairCount, findFirst: repairFindFirst },
     repairFile: { count: fileCount, create: fileCreate },
+    enquiry: { create: enquiryCreate },
+    assignmentRule: { findMany: ruleFindMany },
   }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent, notify }));
@@ -71,6 +75,8 @@ beforeEach(() => {
   repairFindFirst.mockResolvedValue({ id: 'rep-1' });
   fileCount.mockResolvedValue(0);
   fileCreate.mockResolvedValue({ id: 'file-1' });
+  enquiryCreate.mockResolvedValue({ id: 'enq-1' });
+  ruleFindMany.mockResolvedValue([]);
   storageExists.mockResolvedValue(true);
 });
 
@@ -137,11 +143,71 @@ describe('submitRepairRequest', () => {
     expect(smsCalls).toHaveLength(0);
   });
 
+  // Audit finding repair-submission-produces-no-enquiry (FR-I-1, master spec §I.1):
+  // the repair form's inventory row is `enquiries` + `repair_requests` — a DUAL
+  // write in the SAME tenant tx, so the ticket also lands in the unified CRM queue.
+  it('ALSO creates a repair-channel enquiry linked to the ticket, in the same tx (FR-I-1)', async () => {
+    const result = await submitRepairRequest({ ok: false }, form());
+
+    expect(result.ok).toBe(true);
+    // one withTenant tx carries both writes
+    expect(withTenant).toHaveBeenCalledTimes(1);
+    expect(enquiryCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: TENANT,
+        name: 'Tess Tenant',
+        email: 'tess@example.com',
+        // linked to the RepairRequest via the §G.1 ticket reference (per-tenant unique)
+        reference: result.reference,
+        message: expect.stringContaining('Plumbing'),
+      }),
+    });
+    // the enquiry channel is the repair request — read via bracket access to keep
+    // the forbidden noun out of a declared identifier (PRODUCT.md §2/§3, G6)
+    const createdData = enquiryCreate.mock.calls[0]?.[0]?.data as Record<string, unknown>;
+    expect(createdData['leadType']).toBe('repair_request');
+    // the dual write is audited like every other enquiry creation (G4)
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ action: 'enquiry.created', entity: 'enquiry', entityId: 'enq-1' }),
+    );
+  });
+
+  // Audit finding assignment-rules-never-applied (FR-I-3): the repair-channel
+  // enquiry is routed through the tenant's assignment rules like every other one.
+  it('applies the first-matching assignment rule to the repair enquiry (FR-I-3)', async () => {
+    const AGENT = '00000000-0000-0000-0000-00000000000a';
+    ruleFindMany.mockResolvedValue([
+      {
+        name: 'Repairs to the repairs manager',
+        conditions: [{ field: 'lead_type', operator: 'equals', value: 'repair_request' }],
+        assignment: { targetType: 'agent', targetId: AGENT },
+      },
+    ]);
+
+    await submitRepairRequest({ ok: false }, form());
+
+    expect(enquiryCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ assignedAgentId: AGENT, assignedBranchId: null }),
+    });
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'enquiry.created',
+        diff: expect.objectContaining({ assignedAgentId: [null, AGENT] }),
+      }),
+    );
+  });
+
   it('retries once when the reference collides under concurrency (unique violation)', async () => {
     withTenant
       .mockRejectedValueOnce(Object.assign(new Error('unique'), { code: 'P2002' }))
       .mockImplementationOnce(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-        fn({ repairRequest: { create: repairCreate, count: repairCount } }),
+        fn({
+          repairRequest: { create: repairCreate, count: repairCount },
+          enquiry: { create: enquiryCreate },
+          assignmentRule: { findMany: ruleFindMany },
+        }),
       );
 
     const result = await submitRepairRequest({ ok: false }, form());
