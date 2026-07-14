@@ -29,6 +29,7 @@ import { PropertyImagesManager } from './PropertyImagesManager.js';
 import { PropertyTimeline } from './PropertyTimeline.js';
 import { PublishControl } from './PublishControl.js';
 import { PublishPreflight } from './PublishPreflight.js';
+import { SoftDeleteControl } from './SoftDeleteControl.js';
 
 // EPIC-H property management (FR-H-2) — the admin detail + editor for one listing
 // (drafts included). Gates on `property.read` (RBAC fail-closed; the edit/publish
@@ -163,6 +164,16 @@ export default async function AdminPropertyDetailPage({
           Status history
         </h2>
         <PropertyTimeline events={events} />
+      </section>
+
+      {/* FR-F-10 — soft-deletion: a confirm-step control posting to the audited
+          softDeleteProperty action. The deleted listing disappears from every
+          public surface (all reads filter deletedAt). */}
+      <section aria-labelledby="delete-heading" className="flex flex-col gap-3">
+        <h2 id="delete-heading" className="t-heading-sm">
+          Delete listing
+        </h2>
+        <SoftDeleteControl propertyId={property.id} />
       </section>
     </div>
   );
