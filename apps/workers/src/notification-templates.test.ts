@@ -56,6 +56,41 @@ describe('renderNotification', () => {
     expect(renderNotification('mystery.event', {})).toBeNull();
   });
 
+  // Audit finding repair-emergency-internal-notifications-missing (FR-G-3, §G.7
+  // `repair_new_internal`): the staff/branch-repairs-queue alert for every new ticket.
+  it('renders the FR-G-3 internal staff alert with the ticket details', () => {
+    const message = renderNotification('repair_request.received_internal', {
+      reference: 'RPR-2026-00042',
+      name: 'Tess Tenant',
+      category: 'Plumbing',
+      urgency: 'emergency',
+      propertyReference: 'Flat 2, 14 Palatine Road',
+      description: 'The kitchen tap is leaking steadily under the sink.',
+    });
+
+    expect(message).not.toBeNull();
+    expect(message!.subject).toContain('RPR-2026-00042');
+    expect(message!.html).toContain('Tess Tenant');
+    expect(message!.html).toContain('Plumbing');
+    expect(message!.html).toContain('emergency');
+    expect(message!.html).toContain('Flat 2, 14 Palatine Road');
+    expect(message!.html).toContain('The kitchen tap is leaking steadily under the sink.');
+  });
+
+  it('HTML-escapes the internal-alert payload values that land in markup', () => {
+    const message = renderNotification('repair_request.received_internal', {
+      reference: 'RPR-2026-00001',
+      name: '<script>alert(1)</script>',
+      category: 'Doors & locks',
+      urgency: 'standard',
+      propertyReference: '1 High St',
+      description: 'x',
+    });
+    expect(message!.html).not.toContain('<script>');
+    expect(message!.html).toContain('&lt;script&gt;');
+    expect(message!.html).toContain('Doors &amp; locks');
+  });
+
   it('renders the EPIC-N magic-link sign-in email with the link url', () => {
     const message = renderNotification('auth.magic_link', {
       url: 'https://acme.test/api/auth/magic-link/verify?token=abc.def',
