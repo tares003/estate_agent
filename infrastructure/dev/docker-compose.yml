@@ -1,0 +1,49 @@
+# Local development stack — PostgreSQL 16 + PostGIS and Redis, matching the
+# committed production stack (CLAUDE.md §9). Ports are non-default so this
+# coexists with other projects' containers on the same machine.
+#
+#   docker compose -f infrastructure/dev/docker-compose.yml up -d
+#   node infrastructure/dev/setup-dev-db.mjs        # push schema + RLS + seed
+#
+# Connection strings (see .env.example at the repo root):
+#   DATABASE_URL=postgresql://estate:estate@localhost:5461/estate
+#   REDIS_URL=redis://localhost:6380
+
+name: estate-dev
+
+services:
+  db:
+    # Same image the Testcontainers integration suite runs against.
+    image: postgis/postgis:16-3.4
+    container_name: estate-dev-db
+    environment:
+      POSTGRES_USER: estate
+      POSTGRES_PASSWORD: estate
+      POSTGRES_DB: estate
+    ports:
+      - '5461:5432'
+    volumes:
+      - estate-dev-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U estate -d estate']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    # BullMQ queue + Next.js cache share one Redis (CLAUDE.md §9).
+    image: redis:7-alpine
+    container_name: estate-dev-redis
+    ports:
+      - '6380:6379'
+    volumes:
+      - estate-dev-redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  estate-dev-pgdata:
+  estate-dev-redisdata:
