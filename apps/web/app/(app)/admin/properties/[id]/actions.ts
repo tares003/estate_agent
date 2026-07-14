@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-H property management (FR-H-2): a staff member edits a listing's core details.
 // RBAC-gated on `property.write` (fail-closed before any read/write); the change is
@@ -78,6 +78,7 @@ export async function updateProperty(
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PropertyEditState = { ok: false, errors: [{ message: 'Property not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -105,6 +106,7 @@ export async function updateProperty(
       entityId: update.id,
       diff: { to: data },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

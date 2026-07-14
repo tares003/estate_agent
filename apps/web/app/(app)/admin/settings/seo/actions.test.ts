@@ -14,9 +14,11 @@ vi.mock('../../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -52,6 +54,7 @@ beforeEach(() => {
   getStaffActor.mockResolvedValue('agent:settings');
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   findFirst.mockResolvedValue(null);
   create.mockResolvedValue({ id: SEO_ID });
   update.mockResolvedValue({});
@@ -190,5 +193,32 @@ describe('deleteSeoMetadata', () => {
       entity: 'seo_metadata',
       entityId: SEO_ID,
     });
+  });
+});
+
+// FR-H-17 — the audit trail records actor, diff, IP AND user-agent; every admin
+// state-change audit row must carry the request user-agent (audit finding
+// audit-log-user-agent-never-captured).
+describe('FR-H-17 audit user-agent', () => {
+  it('captures the request user-agent in every audit row', async () => {
+    await upsertSeoMetadata({ ok: false }, upsertForm());
+    findFirst.mockResolvedValue({
+      id: SEO_ID,
+      metaTitle: 'Title',
+      metaDescription: null,
+      canonicalUrl: null,
+      ogImage: null,
+      noIndex: false,
+      noFollow: false,
+      structuredData: null,
+    });
+    const fd = new FormData();
+    fd.set('id', SEO_ID);
+    await deleteSeoMetadata({ ok: false }, fd);
+
+    expect(audit.mock.calls.length).toBeGreaterThanOrEqual(2);
+    for (const call of audit.mock.calls) {
+      expect(call[1]).toMatchObject({ userAgent: 'Mozilla/5.0 (Test)' });
+    }
   });
 });

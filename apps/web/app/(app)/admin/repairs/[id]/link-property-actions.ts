@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-G repair triage (master spec §G.6): a staff member matches a ticket to a
 // catalogue property ("property_id … matched by admin"), or unmatches it.
@@ -73,6 +73,7 @@ export async function setRepairProperty(
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: RepairMatchState = { ok: false, errors: [{ message: 'Repair not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -98,6 +99,7 @@ export async function setRepairProperty(
       entityId: repairId,
       diff: { propertyId: { from: existing.propertyId, to } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

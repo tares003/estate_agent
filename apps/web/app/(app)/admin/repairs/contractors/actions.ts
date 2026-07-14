@@ -7,7 +7,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-G contractor directory admin (FR-G-8, master spec §G.6) — the audited,
 // RBAC-gated mutations. Both gate on `repair_request.manage` (fail-closed before
@@ -85,6 +85,7 @@ export async function createContractor(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: ContractorActionState = deny('The contractor could not be created.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -99,6 +100,7 @@ export async function createContractor(
       entity: 'contractor',
       entityId: created.id,
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -132,6 +134,7 @@ export async function setContractorActive(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: ContractorActionState = deny('That contractor could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -149,6 +152,7 @@ export async function setContractorActive(
       entityId: id,
       diff: { active: { from: contractor.active, to: active } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

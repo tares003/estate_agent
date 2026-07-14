@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Real @estate/validators (propertyUpdateSchema) drives the rules; the data layer,
-// request context, and staff-session seam are doubled.
+// EPIC-F FR-F-10 — the audited soft-delete Server Action (audit finding
+// property-soft-delete-action-missing). Every public read already filters
+// `deletedAt: null`; this action is the one WRITE path that sets it. The data
+// layer, request context and staff session are doubled so the action is
+// exercised in isolation.
+
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
 const getRequestUserAgent = vi.fn();
@@ -27,21 +31,14 @@ const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => u
 );
 vi.mock('@estate/db', () => ({ withTenant, audit }));
 
-const { updateProperty } = await import('./actions.js');
+const { softDeleteProperty } = await import('./soft-delete-actions.js');
 
 const PROP = '11111111-1111-1111-1111-111111111111';
 const TENANT = '00000000-0000-0000-0000-000000000001';
 
 function form(over: Record<string, string> = {}): FormData {
   const fd = new FormData();
-  const base: Record<string, string> = {
-    id: PROP,
-    displayAddress: '1 Palatine Road',
-    postcode: 'M20 6RE',
-    price: '525000',
-    bedrooms: '4',
-    ...over,
-  };
+  const base: Record<string, string> = { id: PROP, ...over };
   for (const [k, v] of Object.entries(base)) fd.set(k, v);
   return fd;
 }
@@ -57,71 +54,58 @@ beforeEach(() => {
   update.mockResolvedValue({});
 });
 
-describe('updateProperty', () => {
-  it('updates the listing (£→pence) and audits it (G4)', async () => {
-    const result = await updateProperty({ ok: false }, form());
+describe('softDeleteProperty', () => {
+  it('soft-deletes the listing (sets deletedAt) and audits it in the same tenant transaction (FR-F-10, G4)', async () => {
+    const result = await softDeleteProperty({ ok: false }, form());
 
     expect(result).toEqual({ ok: true });
     expect(requireStaffPermission).toHaveBeenCalledWith('property.write');
+    expect(withTenant).toHaveBeenCalledWith({}, TENANT, expect.any(Function));
+    // only a live (not-yet-deleted) row qualifies — deleting twice is a not-found
+    expect(findFirst).toHaveBeenCalledWith({ where: { id: PROP, deletedAt: null } });
     expect(update).toHaveBeenCalledWith({
       where: { id: PROP },
-      data: expect.objectContaining({
-        displayAddress: '1 Palatine Road',
-        postcode: 'M20 6RE',
-        price: 52_500_000, // 525,000 pounds → pence
-        bedrooms: 4,
-        title: null,
-        description: null,
-      }),
+      data: { deletedAt: expect.any(Date) },
     });
     expect(audit).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ action: 'property.updated', entity: 'property', entityId: PROP }),
+      expect.objectContaining({
+        action: 'property.soft_deleted',
+        entity: 'property',
+        entityId: PROP,
+        ip: '203.0.113.7',
+        userAgent: 'Mozilla/5.0 (Test)',
+      }),
     );
   });
 
-  it('stores POA (null price) when the price is blank', async () => {
-    await updateProperty({ ok: false }, form({ price: '' }));
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ price: null }) }),
-    );
+  it('records the deletion timestamp in the audit diff', async () => {
+    await softDeleteProperty({ ok: false }, form());
+    const diff = audit.mock.calls[0]![1].diff as { deletedAt: { from: null; to: string } };
+    expect(diff.deletedAt.from).toBeNull();
+    expect(typeof diff.deletedAt.to).toBe('string');
   });
 
-  it('rejects an invalid update before any write', async () => {
-    const result = await updateProperty({ ok: false }, form({ postcode: 'nope' }));
+  it('rejects a non-uuid id before any read/write', async () => {
+    const result = await softDeleteProperty({ ok: false }, form({ id: 'nope' }));
     expect(result.ok).toBe(false);
-    expect(result.errors).toEqual(
-      expect.arrayContaining([expect.objectContaining({ field: 'postcode' })]),
-    );
     expect(withTenant).not.toHaveBeenCalled();
   });
 
-  it('is RBAC-gated — denies without property.write, before withTenant', async () => {
+  it('is RBAC-gated on property.write — denies before withTenant (fail-closed)', async () => {
     requireStaffPermission.mockRejectedValue(new Error('PermissionError'));
-    const result = await updateProperty({ ok: false }, form());
+    const result = await softDeleteProperty({ ok: false }, form());
     expect(result.ok).toBe(false);
     expect(withTenant).not.toHaveBeenCalled();
-  });
-
-  it('returns not-found and writes nothing when the listing is absent', async () => {
-    findFirst.mockResolvedValue(null);
-    const result = await updateProperty({ ok: false }, form());
-    expect(result.ok).toBe(false);
     expect(update).not.toHaveBeenCalled();
     expect(audit).not.toHaveBeenCalled();
   });
-});
 
-// FR-H-17 — the audit trail records actor, diff, IP AND user-agent; every admin
-// state-change audit row must carry the request user-agent (audit finding
-// audit-log-user-agent-never-captured).
-describe('FR-H-17 audit user-agent', () => {
-  it('captures the request user-agent in every audit row', async () => {
-    await updateProperty({ ok: false }, form());
-
-    expect(audit.mock.calls.length).toBeGreaterThanOrEqual(1);
-    for (const call of audit.mock.calls) {
-      expect(call[1]).toMatchObject({ userAgent: 'Mozilla/5.0 (Test)' });
-    }
+  it('returns not-found and writes nothing when the listing is absent or already deleted', async () => {
+    findFirst.mockResolvedValue(null);
+    const result = await softDeleteProperty({ ok: false }, form());
+    expect(result.ok).toBe(false);
+    expect(update).not.toHaveBeenCalled();
+    expect(audit).not.toHaveBeenCalled();
   });
 });

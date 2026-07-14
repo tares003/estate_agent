@@ -4,7 +4,8 @@ import { auditQuery } from './audit-params.js';
 // EPIC-H audit-log viewer (FR-H-17) — the audit trail table. Presentational + pure;
 // token-driven (G7). The filter is a server-rendered GET form (no JS — the URL is
 // the single source of truth). The table is semantic (`<th scope="col">`). Every
-// state-changing action shows its actor, target, full diff, IP and time.
+// state-changing action shows its actor, target, full diff, IP, user-agent and time
+// (audit finding audit-log-user-agent-never-captured).
 
 const WHEN = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -69,15 +70,17 @@ export function AuditLogTable({
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-divider border-b">
-              {['When', 'Action', 'Actor', 'Target', 'IP', 'Change'].map((heading) => (
-                <th
-                  key={heading}
-                  scope="col"
-                  className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
-                >
-                  {heading}
-                </th>
-              ))}
+              {['When', 'Action', 'Actor', 'Target', 'IP', 'User agent', 'Change'].map(
+                (heading) => (
+                  <th
+                    key={heading}
+                    scope="col"
+                    className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
+                  >
+                    {heading}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
@@ -93,6 +96,9 @@ export function AuditLogTable({
                   {entry.entityId ? ` · ${entry.entityId}` : ''}
                 </td>
                 <td className="t-body-sm py-3 pr-4">{entry.ip ?? '—'}</td>
+                <td className="t-caption text-text-secondary py-3 pr-4 break-all">
+                  {entry.userAgent ?? '—'}
+                </td>
                 <td className="py-3">
                   <code className="t-caption text-text-secondary break-all">
                     {formatDiff(entry.diff)}

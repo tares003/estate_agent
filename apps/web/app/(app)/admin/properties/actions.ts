@@ -13,7 +13,7 @@ import type { FormErrorItem } from '@estate/ui';
 import { getDb } from '../../lib/db.js';
 import { isListingTypePermitted } from '../../lib/packs.js';
 import { getStaffActor, getStaffUserId, requireStaffPermission } from '../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 import {
   coreData,
   disambiguateSlug,
@@ -213,6 +213,7 @@ export async function createProperty(
   const actor = await getStaffActor();
   const createdByUserId = await getStaffUserId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PropertyWriteState = deny('The property could not be created.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -221,7 +222,7 @@ export async function createProperty(
     const taken = new Set(existing.map((row) => row.slug));
     const { id, slug } = await insertPropertyRow(
       tx,
-      { tenantId, actor, createdByUserId, ip },
+      { tenantId, actor, createdByUserId, ip, userAgent },
       input,
       taken,
     );
@@ -272,6 +273,7 @@ export async function updateProperty(
   const actor = await getStaffActor();
   const updatedByUserId = await getStaffUserId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PropertyWriteState = deny('Property not found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -338,6 +340,7 @@ export async function updateProperty(
       entityId: input.id,
       diff: slugChanged ? { slug: { from: existing.slug, to: nextSlug } } : { to: data },
       ip,
+      userAgent,
     });
 
     // FR-F-5 / FR-O-12 — the slug moved: keep the old URL alive with a managed 301.
@@ -358,6 +361,7 @@ export async function updateProperty(
           entityId: redirect.id,
           diff: { sourcePath, destinationPath, type: 'r301', reason: 'property_slug_changed' },
           ip,
+          userAgent,
         });
       }
     }

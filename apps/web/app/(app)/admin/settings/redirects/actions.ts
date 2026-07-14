@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-O FR-O-11 — the audited, RBAC-gated CRUD for a tenant's managed redirect rules
 // (the admin 301/302 list of old→new path). Each action gates fail-closed BEFORE any
@@ -79,6 +79,7 @@ export async function createRedirect(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: RedirectActionState = deny('The redirect could not be saved.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -108,6 +109,7 @@ export async function createRedirect(
         type: input.type,
       },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -140,6 +142,7 @@ export async function updateRedirect(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: RedirectActionState = deny('This redirect could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -175,6 +178,7 @@ export async function updateRedirect(
         type: { from: existing.type, to: input.type },
       },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -200,6 +204,7 @@ export async function deleteRedirect(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: RedirectActionState = deny('This redirect could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -221,6 +226,7 @@ export async function deleteRedirect(
         type: existing.type,
       },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

@@ -14,7 +14,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-F FR-F-8 — publish a listing through the §H.5 Tab 9 pre-flight checklist. A
 // property is publishable only when the checklist is all-green, OR when the staff
@@ -113,6 +113,7 @@ export async function publishWithPreflight(
   const actor = await getStaffActor();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: PublishPreflightState = deny('Property not found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -184,6 +185,7 @@ export async function publishWithPreflight(
       entityId: id,
       diff: override ? { override: true, reason, unmet } : { override: false },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

@@ -10,7 +10,7 @@ import {
   getStaffUserId,
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-H property management (FR-H-2, master spec §J.3): a staff member changes a
 // listing's market status. RBAC-gated on `property.write` (fail-closed before any
@@ -78,6 +78,7 @@ export async function setPropertyMarketStatus(
   const changedByAgentId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: MarketStatusState = { ok: false, errors: [{ message: 'Property not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -109,6 +110,7 @@ export async function setPropertyMarketStatus(
       entityId: id,
       diff: { marketStatus: { from, to: marketStatus } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

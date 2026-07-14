@@ -11,7 +11,12 @@ import {
   getStaffUserId,
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp, getRequestOrigin } from '../../../lib/tenant.js';
+import {
+  getCurrentTenantId,
+  getRequestIp,
+  getRequestOrigin,
+  getRequestUserAgent,
+} from '../../../lib/tenant.js';
 import { shouldRequestRepairFeedback } from './feedback-trigger.js';
 
 // EPIC-G repair triage (master spec §G.5, FR-G-6/FR-G-7): a staff member advances a
@@ -87,6 +92,7 @@ export async function setRepairStatus(
   const actorUserId = await getStaffUserId();
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: RepairStatusState = { ok: false, errors: [{ message: 'Repair not found.' }] };
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -126,6 +132,7 @@ export async function setRepairStatus(
       entityId: repairId,
       diff: { status: { from, to } },
       ip,
+      userAgent,
     });
 
     // EPIC-AC FR-AC-1/12: a transition INTO `completed` queues a post-repair

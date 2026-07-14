@@ -47,6 +47,13 @@ vi.mock('./MarketStatusControl.js', () => ({
     <div data-testid="market-status-control">{`${current}:${options.join(',')}`}</div>
   ),
 }));
+// FR-F-10 — the confirm-step soft-delete control (audit finding
+// property-soft-delete-action-missing).
+vi.mock('./SoftDeleteControl.js', () => ({
+  SoftDeleteControl: ({ propertyId }: { propertyId: string }) => (
+    <div data-testid="soft-delete-control">{propertyId}</div>
+  ),
+}));
 vi.mock('./PropertyImagesManager.js', () => ({
   PropertyImagesManager: ({ images }: { images: Array<{ id: string; thumbUrl: string }> }) => (
     <div data-testid="property-images-manager">
@@ -183,6 +190,12 @@ describe('AdminPropertyDetailPage', () => {
     // A LIVE listing needs no checklist to unpublish — the simple control remains.
     expect(screen.getByTestId('publish-control')).toHaveTextContent('published');
     expect(screen.queryByTestId('publish-preflight')).not.toBeInTheDocument();
+  });
+
+  it('offers the soft-delete control for the listing (FR-F-10)', async () => {
+    render(await AdminPropertyDetailPage(props()));
+    expect(screen.getByRole('heading', { level: 2, name: 'Delete listing' })).toBeInTheDocument();
+    expect(screen.getByTestId('soft-delete-control')).toHaveTextContent('p1');
   });
 
   it('404s an unknown listing', async () => {

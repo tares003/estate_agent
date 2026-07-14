@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../lib/db.js';
 import { getStaffActor, requireStaffPermission } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 
 // EPIC-W FR-W-7 — the audited, RBAC-gated save of a tenant's mortgage-default config.
 // RBAC fail-closed before any write (requireStaffPermission('calculator_config.manage')
@@ -74,6 +74,7 @@ export async function saveMortgageRateConfig(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: MortgageRateConfigActionState = deny('The configuration could not be saved.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -92,6 +93,7 @@ export async function saveMortgageRateConfig(
       entityId: tenantId,
       diff: { config: { from: existing?.config ?? null, to: config } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
