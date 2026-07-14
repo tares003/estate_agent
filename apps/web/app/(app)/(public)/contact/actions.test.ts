@@ -19,8 +19,9 @@ vi.mock('../../lib/turnstile.js', () => ({
 const audit = vi.fn();
 const recordConsent = vi.fn();
 const enquiryCreate = vi.fn();
+const ruleFindMany = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
-  fn({ enquiry: { create: enquiryCreate } }),
+  fn({ enquiry: { create: enquiryCreate }, assignmentRule: { findMany: ruleFindMany } }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent }));
 
@@ -47,6 +48,7 @@ beforeEach(() => {
   getRequestIp.mockResolvedValue('203.0.113.7');
   verifyTurnstile.mockResolvedValue(true);
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
+  ruleFindMany.mockResolvedValue([]);
 });
 
 describe('submitContact', () => {
@@ -74,6 +76,55 @@ describe('submitContact', () => {
       expect.anything(),
       expect.objectContaining({ action: 'enquiry.created', entity: 'enquiry', entityId: 'enq-1' }),
     );
+  });
+
+  // Audit finding assignment-rules-never-applied (FR-I-3): the enquiry-creation
+  // action evaluates the tenant's assignment rules top-down first-match-wins and
+  // PERSISTS the winning target on the enquiry, in the same audited tx.
+  it('applies the first-matching assignment rule and persists the target (FR-I-3)', async () => {
+    const AGENT = '00000000-0000-0000-0000-00000000000a';
+    ruleFindMany.mockResolvedValue([
+      {
+        name: 'General contact to Alex',
+        conditions: [{ field: 'lead_type', operator: 'equals', value: 'general_contact' }],
+        assignment: { targetType: 'agent', targetId: AGENT },
+      },
+    ]);
+
+    const result = await submitContact({ ok: false }, form());
+
+    expect(result).toEqual({ ok: true });
+    expect(ruleFindMany).toHaveBeenCalledWith({
+      where: { isEnabled: true },
+      orderBy: { position: 'asc' },
+    });
+    expect(enquiryCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ assignedAgentId: AGENT, assignedBranchId: null }),
+    });
+    // G4 — the audit diff records the routing outcome
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'enquiry.created',
+        diff: expect.objectContaining({ assignedAgentId: [null, AGENT] }),
+      }),
+    );
+  });
+
+  it('leaves the enquiry unassigned when no rule matches (FR-I-3)', async () => {
+    ruleFindMany.mockResolvedValue([
+      {
+        name: 'Valuations only',
+        conditions: [{ field: 'lead_type', operator: 'equals', value: 'valuation_request' }],
+        assignment: { targetType: 'agent', targetId: '00000000-0000-0000-0000-00000000000a' },
+      },
+    ]);
+
+    await submitContact({ ok: false }, form());
+
+    expect(enquiryCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ assignedAgentId: null, assignedBranchId: null }),
+    });
   });
 
   it('rejects an invalid submission before any write', async () => {

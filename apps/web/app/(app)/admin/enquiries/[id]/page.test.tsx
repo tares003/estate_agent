@@ -38,12 +38,16 @@ vi.mock('./ConvertForm.js', () => ({
 const findFirst = vi.fn();
 const noteFindMany = vi.fn();
 const eventFindMany = vi.fn();
+const agentFindFirst = vi.fn();
+const branchFindFirst = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
     fn({
       enquiry: { findFirst },
       note: { findMany: noteFindMany },
       enquiryStatusEvent: { findMany: eventFindMany },
+      agent: { findFirst: agentFindFirst },
+      branch: { findFirst: branchFindFirst },
     }),
 }));
 
@@ -56,6 +60,8 @@ const enquiry = {
   phone: '07700900000',
   message: 'Interested in the Didsbury semi.',
   status: 'new',
+  assignedAgentId: null,
+  assignedBranchId: null,
   createdAt: new Date('2026-06-09T11:00:00.000Z'),
 };
 
@@ -116,6 +122,35 @@ describe('EnquiryDetailPage', () => {
     expect(screen.getByRole('region', { name: 'Activity' })).toBeInTheDocument();
     // a `new` enquiry cannot yet be converted, so no convert form is offered
     expect(screen.queryByTestId('convert-form')).not.toBeInTheDocument();
+  });
+
+  // FR-I-3 (audit finding assignment-rules-never-applied): the routing outcome
+  // is surfaced on the detail summary — the resolved assignee, or unassigned.
+  it('shows the assigned agent resolved tenant-scoped (FR-I-3)', async () => {
+    findFirst.mockResolvedValue({ ...enquiry, assignedAgentId: 'agent-1' });
+    agentFindFirst.mockResolvedValue({ name: 'Alex Agent' });
+
+    render(await EnquiryDetailPage(props()));
+
+    expect(agentFindFirst).toHaveBeenCalledWith({
+      where: { id: 'agent-1' },
+      select: { name: true },
+    });
+    expect(screen.getByText('Assigned to')).toBeInTheDocument();
+    expect(screen.getByText('Alex Agent')).toBeInTheDocument();
+  });
+
+  it('shows an assigned branch and marks an unassigned enquiry with a dash', async () => {
+    findFirst.mockResolvedValue({ ...enquiry, assignedBranchId: 'branch-1' });
+    branchFindFirst.mockResolvedValue({ name: 'Didsbury' });
+
+    render(await EnquiryDetailPage(props()));
+    expect(screen.getByText('Didsbury (branch)')).toBeInTheDocument();
+
+    findFirst.mockResolvedValue(enquiry);
+    render(await EnquiryDetailPage(props()));
+    // unassigned: no lookup runs and the summary shows the em-dash placeholder
+    expect(agentFindFirst).not.toHaveBeenCalled();
   });
 
   it('offers the convert form once the enquiry can reach converted', async () => {

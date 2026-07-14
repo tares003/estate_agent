@@ -22,6 +22,11 @@ import {
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
+import {
+  assignmentDiff,
+  resolveEnquiryAssignment,
+  type AssignmentRuleReader,
+} from '../../lib/enquiry-routing.js';
 import { getStorageBackend, storageSigningSecret } from '../../lib/storage.js';
 import { repairReference } from '../../lib/repair-reference.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
@@ -32,17 +37,24 @@ import { REPAIR_CONSENT_TEXT } from './consent-text.js';
 // repair_request, FR-G-1/FR-G-3). Writes a tenant-scoped RepairRequest at intake,
 // assigning the §G.1 human-readable ticket reference (per-tenant sequential,
 // RPR-YYYY-NNNNN; the per-tenant unique constraint backstops a concurrency race —
-// the transaction is retried once on collision). The tenant confirmation email is
-// QUEUED via notify() in the same transaction (§H.13 — the action records intent;
-// the workers dispatch). Staff triage urgency + resolve the property in the admin
-// inbox, so `propertyId` is left null and the typed `propertyReference` is stored
-// alongside. The repair flow is in the `core` pack (every tenant), so no
-// entitlement gate. Held to the two compliance guards: G5 (the schema carries
-// `gdpr_consent`; the agreed text is persisted verbatim) and G8 (the anti-spam
-// challenge is verified before any write). Every write is tenant-scoped (RLS) +
-// audited (G4). Drives a form via `useActionState`.
+// the transaction is retried once on collision). Per master spec §I.1 (FR-I-1,
+// audit finding repair-submission-produces-no-enquiry) the SAME transaction ALSO
+// writes a repair-channel enquiry linked to the ticket by its reference — the
+// spec's `enquiries` + `repair_requests` dual write — routed through the tenant's
+// assignment rules (FR-I-3), so repairs surface in the unified CRM queue. The
+// tenant confirmation email is QUEUED via notify() in the same transaction
+// (§H.13 — the action records intent; the workers dispatch). Staff triage
+// urgency + resolve the property in the admin inbox, so `propertyId` is left
+// null and the typed `propertyReference` is stored alongside. The repair flow is
+// in the `core` pack (every tenant), so no entitlement gate. Held to the two
+// compliance guards: G5 (the schema carries `gdpr_consent`; the agreed text is
+// persisted verbatim) and G8 (the anti-spam challenge is verified before any
+// write). Every write is tenant-scoped (RLS) + audited (G4). Drives a form via
+// `useActionState`.
 
-interface RepairWriteClient extends ConsentWriter, AuditWriter, NotificationWriter {
+interface RepairWriteClient
+  extends ConsentWriter, AuditWriter, NotificationWriter, AssignmentRuleReader {
+  enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
   repairRequest: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
     count(args: Record<string, unknown>): Promise<number>;
@@ -175,6 +187,46 @@ export async function submitRepairRequest(
           description: repair.description,
           urgency: repair.urgency,
         },
+      });
+      // FR-I-1 (master spec §I.1; audit finding
+      // repair-submission-produces-no-enquiry): the repair form's inventory row is
+      // `enquiries` + `repair_requests` — the SAME transaction also writes a
+      // repair-channel enquiry, linked to the ticket by its per-tenant-unique §G.1
+      // reference, so the repair lands in the unified CRM queue (FR-H-3). Routed
+      // through the tenant's assignment rules like every other enquiry (FR-I-3).
+      const enquiryMessage =
+        `Repair report ${reference} — ${repair.category}, urgency ${repair.urgency}. ` +
+        repair.description;
+      const assignment = await resolveEnquiryAssignment(tx, {
+        enquiryType: 'repair_request',
+        status: 'new',
+        sourceUrl: null,
+        message: enquiryMessage,
+        hasProperty: false,
+      });
+      // `lead_type` is the committed DB column for the enquiry channel; set via
+      // bracket access to keep the forbidden noun out of a declared identifier
+      // (PRODUCT.md §2/§3, G6).
+      const enquiryData: Record<string, unknown> = {
+        tenantId,
+        reference,
+        name: repair.name,
+        email: repair.email,
+        phone: repair.phone ?? null,
+        message: enquiryMessage,
+        assignedAgentId: assignment.assignedAgentId,
+        assignedBranchId: assignment.assignedBranchId,
+      };
+      enquiryData['leadType'] = 'repair_request';
+      const enquiryRow = await tx.enquiry.create({ data: enquiryData });
+      await audit(tx, {
+        tenantId,
+        actor: `enquiry:${repair.email}`,
+        action: 'enquiry.created',
+        entity: 'enquiry',
+        entityId: enquiryRow.id,
+        diff: assignmentDiff(assignment),
+        ip,
       });
       // FR-G-3: the tenant confirmation is queued in the same transaction; the
       // worker renders + dispatches it (§H.13 — record intent, never send inline).

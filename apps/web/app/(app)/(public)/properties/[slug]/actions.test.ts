@@ -19,8 +19,9 @@ vi.mock('../../../lib/turnstile.js', () => ({
 const recordConsent = vi.fn();
 const audit = vi.fn();
 const enquiryCreate = vi.fn();
+const ruleFindMany = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
-  fn({ enquiry: { create: enquiryCreate } }),
+  fn({ enquiry: { create: enquiryCreate }, assignmentRule: { findMany: ruleFindMany } }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent }));
 
@@ -50,6 +51,7 @@ beforeEach(() => {
   getRequestIp.mockResolvedValue('203.0.113.7');
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
   verifyTurnstile.mockResolvedValue(true);
+  ruleFindMany.mockResolvedValue([]);
 });
 
 describe('submitEnquiry', () => {
@@ -67,8 +69,37 @@ describe('submitEnquiry', () => {
         email: 'penelope@example.com',
         phone: '07700 900123',
         message: 'Is the Palatine Road semi still available to view?',
+        assignedAgentId: null,
+        assignedBranchId: null,
       },
     });
+  });
+
+  // Audit finding assignment-rules-never-applied (FR-I-3): the buyer enquiry is
+  // routed through the tenant's assignment rules at creation — here a
+  // property-presence rule (§I.4's "buyer_enquiry with related property" example).
+  it('applies the first-matching assignment rule and persists the target (FR-I-3)', async () => {
+    const AGENT = '00000000-0000-0000-0000-00000000000a';
+    ruleFindMany.mockResolvedValue([
+      {
+        name: 'Property enquiries to the negotiator',
+        conditions: [{ field: 'property', operator: 'is_not_empty' }],
+        assignment: { targetType: 'agent', targetId: AGENT },
+      },
+    ]);
+
+    await submitEnquiry({ ok: false }, form(validFields));
+
+    expect(enquiryCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({ assignedAgentId: AGENT, assignedBranchId: null }),
+    });
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'enquiry.created',
+        diff: expect.objectContaining({ assignedAgentId: [null, AGENT] }),
+      }),
+    );
   });
 
   it('records the exact consent affirmation against the subject (G5)', async () => {
@@ -92,6 +123,8 @@ describe('submitEnquiry', () => {
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: 'enq-1',
+      // G4 — the diff records the FR-I-3 routing outcome (unassigned here)
+      diff: { assignedAgentId: [null, null], assignedBranchId: [null, null] },
       ip: '203.0.113.7',
     });
   });

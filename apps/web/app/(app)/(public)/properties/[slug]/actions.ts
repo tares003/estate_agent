@@ -4,6 +4,11 @@ import { buyerEnquirySchema } from '@estate/validators';
 import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 import { getDb } from '../../../lib/db.js';
+import {
+  assignmentDiff,
+  resolveEnquiryAssignment,
+  type AssignmentRuleReader,
+} from '../../../lib/enquiry-routing.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../lib/turnstile.js';
 import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
@@ -12,10 +17,11 @@ import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
  * The slice of the tenant-scoped Prisma client this action writes through.
  * `withTenant` hands the callback a deliberately minimal structural client, so
  * we widen it to the write surfaces actually used: the consent + audit helpers'
- * structural inputs, plus the `enquiry.create` delegate. RLS still constrains
- * every write to the current tenant.
+ * structural inputs, the assignment-rule read surface (FR-I-3 routing), plus the
+ * `enquiry.create` delegate. RLS still constrains every write to the current
+ * tenant.
  */
-interface EnquiryWriteClient extends ConsentWriter, AuditWriter {
+interface EnquiryWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleReader {
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
@@ -100,6 +106,15 @@ export async function submitEnquiry(
       consentText: ENQUIRY_CONSENT_TEXT,
       ipAddress: ip,
     });
+    // FR-I-3: route through the tenant's assignment rules (first-match-wins);
+    // the winning agent/branch target is persisted, unmatched stays unassigned.
+    const assignment = await resolveEnquiryAssignment(tx, {
+      enquiryType: 'buyer_enquiry',
+      status: 'new',
+      sourceUrl: null,
+      message: enquiry.message,
+      hasProperty: enquiry.propertyId != null,
+    });
     // `leadType` defaults to `buyer_enquiry` at the database layer, so it is not
     // set here — this is the buyer-enquiry surface, and the default keeps the
     // forbidden 'lead' noun out of application code (PRODUCT.md §2/§3, G6).
@@ -111,6 +126,8 @@ export async function submitEnquiry(
         email: enquiry.email,
         phone: enquiry.phone ?? null,
         message: enquiry.message,
+        assignedAgentId: assignment.assignedAgentId,
+        assignedBranchId: assignment.assignedBranchId,
       },
     });
     await audit(tx, {
@@ -119,6 +136,7 @@ export async function submitEnquiry(
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: created.id,
+      diff: assignmentDiff(assignment),
       ip,
     });
   });
