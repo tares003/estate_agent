@@ -37,6 +37,9 @@ interface EnquiryDetailRow {
   phone: string | null;
   message: string;
   status: string;
+  /** FR-I-3 routing outcome — soft references; at most one is set. */
+  assignedAgentId?: string | null;
+  assignedBranchId?: string | null;
   createdAt: Date;
 }
 
@@ -46,6 +49,46 @@ interface EnquiryDetailClient {
   };
   note: NoteListReader['note'];
   enquiryStatusEvent: StatusEventReader['enquiryStatusEvent'];
+  agent: {
+    findFirst(args: {
+      where: Record<string, unknown>;
+      select: Record<string, unknown>;
+    }): Promise<{ name: string } | null>;
+  };
+  branch: {
+    findFirst(args: {
+      where: Record<string, unknown>;
+      select: Record<string, unknown>;
+    }): Promise<{ name: string } | null>;
+  };
+}
+
+/**
+ * Resolve the assignee label for the summary (FR-I-3): the assigned agent's
+ * name, the assigned branch's name (suffixed like the rule composer's picker),
+ * or null when the enquiry is unassigned — no lookup runs in that case. The
+ * soft reference may point at a removed assignee; the id is shown as a last
+ * resort so the routing outcome stays visible.
+ */
+async function resolveAssigneeLabel(
+  tx: EnquiryDetailClient,
+  enquiry: EnquiryDetailRow,
+): Promise<string | null> {
+  if (enquiry.assignedAgentId) {
+    const agent = await tx.agent.findFirst({
+      where: { id: enquiry.assignedAgentId },
+      select: { name: true },
+    });
+    return agent?.name ?? enquiry.assignedAgentId;
+  }
+  if (enquiry.assignedBranchId) {
+    const branch = await tx.branch.findFirst({
+      where: { id: enquiry.assignedBranchId },
+      select: { name: true },
+    });
+    return branch ? `${branch.name} (branch)` : enquiry.assignedBranchId;
+  }
+  return null;
 }
 
 const RECEIVED = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
@@ -59,15 +102,16 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
     const tx = rawTx as unknown as EnquiryDetailClient;
     const enquiry = await tx.enquiry.findFirst({ where: { id } });
     if (!enquiry) return null;
-    const [notes, events] = await Promise.all([
+    const [notes, events, assignee] = await Promise.all([
       listEnquiryNotes({ note: tx.note }, id, { includeInternal: true }),
       listEnquiryStatusEvents({ enquiryStatusEvent: tx.enquiryStatusEvent }, id),
+      resolveAssigneeLabel(tx, enquiry),
     ]);
-    return { enquiry, notes, events };
+    return { enquiry, notes, events, assignee };
   });
 
   if (!data) notFound();
-  const { enquiry, notes, events } = data;
+  const { enquiry, notes, events, assignee } = data;
   const status = statusDisplay(enquiry.status);
 
   return (
@@ -93,6 +137,8 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
           <dd>{enquiry.phone ?? '—'}</dd>
           <dt className="text-text-secondary">Received</dt>
           <dd>{RECEIVED.format(enquiry.createdAt)}</dd>
+          <dt className="text-text-secondary">Assigned to</dt>
+          <dd>{assignee ?? '—'}</dd>
         </dl>
         <p className="t-body-md whitespace-pre-wrap">{enquiry.message}</p>
       </section>

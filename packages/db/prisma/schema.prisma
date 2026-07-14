@@ -612,20 +612,27 @@ model Property {
 }
 
 /// The unifying inbound-lead record (master spec §J.4). NEVER named Lead/Inquiry.
+/// `assignedAgentId` / `assignedBranchId` (FR-I-3, §I.2/§I.4) persist the routing
+/// outcome: the first-match assignment-rule target (an agent OR a branch — the
+/// committed AssignmentTarget union). SOFT references, matching
+/// Property.primaryAgentId — the enquiry survives an assignee being removed. At
+/// most one is set; both null while the enquiry is unassigned (no rule matched).
 model Enquiry {
-  id         String        @id @default(uuid()) @db.Uuid
-  tenantId   String        @map("tenant_id") @db.Uuid
-  propertyId String?       @map("property_id") @db.Uuid
-  reference  String?
-  leadType   LeadType      @default(buyer_enquiry) @map("lead_type")
-  name       String
-  email      String
-  phone      String?
-  message    String
-  status     EnquiryStatus @default(new)
-  sourceUrl  String?       @map("source_url")
-  createdAt  DateTime      @default(now()) @map("created_at")
-  updatedAt  DateTime      @updatedAt @map("updated_at")
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  propertyId       String?       @map("property_id") @db.Uuid
+  reference        String?
+  leadType         LeadType      @default(buyer_enquiry) @map("lead_type")
+  name             String
+  email            String
+  phone            String?
+  message          String
+  status           EnquiryStatus @default(new)
+  assignedAgentId  String?       @map("assigned_agent_id") @db.Uuid
+  assignedBranchId String?       @map("assigned_branch_id") @db.Uuid
+  sourceUrl        String?       @map("source_url")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   tenant   PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   property Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)

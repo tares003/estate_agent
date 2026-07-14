@@ -5,18 +5,24 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../../../lib/db.js';
+import {
+  assignmentDiff,
+  resolveEnquiryAssignment,
+  type AssignmentRuleReader,
+} from '../../../../lib/enquiry-routing.js';
 import { getCurrentTenantId, getRequestIp } from '../../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../../lib/turnstile.js';
 import { VIEWING_CONSENT_TEXT } from './consent-text.js';
 
 // EPIC-F / EPIC-I viewing-request submission (PRODUCT.md §4 — "Book a viewing"). The
 // canonical entity is the ENQUIRY: this produces a viewing-channel enquiry against a
-// specific property (master spec §I.1, FR-I-1). Held to the compliance guards: G5
-// (the schema carries `gdpr_consent`; the agreed text is persisted verbatim) and G8
-// (Turnstile verified before any write). Every write is tenant-scoped (RLS) + audited
-// (G4). Drives a form via `useActionState`.
+// specific property (master spec §I.1, FR-I-1), routed through the tenant's
+// assignment rules (FR-I-3 — first-match-wins; unmatched stays unassigned). Held to
+// the compliance guards: G5 (the schema carries `gdpr_consent`; the agreed text is
+// persisted verbatim) and G8 (Turnstile verified before any write). Every write is
+// tenant-scoped (RLS) + audited (G4). Drives a form via `useActionState`.
 
-interface ViewingWriteClient extends ConsentWriter, AuditWriter {
+interface ViewingWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleReader {
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
@@ -89,6 +95,15 @@ export async function submitViewing(
       consentText: VIEWING_CONSENT_TEXT,
       ipAddress: ip,
     });
+    // FR-I-3: route through the tenant's assignment rules (first-match-wins);
+    // the winning agent/branch target is persisted, unmatched stays unassigned.
+    const assignment = await resolveEnquiryAssignment(tx, {
+      enquiryType: 'viewing_request',
+      status: 'new',
+      sourceUrl: null,
+      message,
+      hasProperty: true,
+    });
     // This enquiry's channel is a viewing request for the property. `lead_type` is
     // the committed DB column for the enquiry channel (the schema is the source of
     // truth); it is set via bracket access to keep the forbidden noun out of a
@@ -100,6 +115,8 @@ export async function submitViewing(
       email: viewing.email,
       phone: viewing.phone,
       message,
+      assignedAgentId: assignment.assignedAgentId,
+      assignedBranchId: assignment.assignedBranchId,
     };
     data['leadType'] = 'viewing_request';
     const created = await tx.enquiry.create({ data });
@@ -109,6 +126,7 @@ export async function submitViewing(
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: created.id,
+      diff: assignmentDiff(assignment),
       ip,
     });
   });

@@ -5,19 +5,25 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
+import {
+  assignmentDiff,
+  resolveEnquiryAssignment,
+  type AssignmentRuleReader,
+} from '../../lib/enquiry-routing.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 import { VALUATION_CONSENT_TEXT } from './consent-text.js';
 
 // EPIC-C / EPIC-I valuation-request submission (PRODUCT.md §4 — "Get a free
 // valuation"). The canonical entity is the ENQUIRY: this produces an enquiry whose
-// channel is the valuation request (master spec §I.1, FR-I-1). Held to the two
-// compliance guards: G5 (the schema carries `gdpr_consent`; the agreed text is
-// persisted verbatim) and G8 (the anti-spam challenge is verified before any write).
-// Every write is tenant-scoped (RLS) + audited (G4). Drives a form via
-// `useActionState`.
+// channel is the valuation request (master spec §I.1, FR-I-1), routed through the
+// tenant's assignment rules (FR-I-3 — first-match-wins; unmatched stays
+// unassigned). Held to the two compliance guards: G5 (the schema carries
+// `gdpr_consent`; the agreed text is persisted verbatim) and G8 (the anti-spam
+// challenge is verified before any write). Every write is tenant-scoped (RLS) +
+// audited (G4). Drives a form via `useActionState`.
 
-interface ValuationWriteClient extends ConsentWriter, AuditWriter {
+interface ValuationWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleReader {
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
@@ -90,6 +96,15 @@ export async function submitValuation(
       consentText: VALUATION_CONSENT_TEXT,
       ipAddress: ip,
     });
+    // FR-I-3: route through the tenant's assignment rules (first-match-wins);
+    // the winning agent/branch target is persisted, unmatched stays unassigned.
+    const assignment = await resolveEnquiryAssignment(tx, {
+      enquiryType: 'valuation_request',
+      status: 'new',
+      sourceUrl: null,
+      message,
+      hasProperty: false,
+    });
     // This enquiry's channel is the valuation request. `lead_type` is the committed
     // DB column for the enquiry channel (the schema is the source of truth); it is
     // set via bracket access to keep the forbidden noun out of a declared
@@ -100,6 +115,8 @@ export async function submitValuation(
       email: valuation.email,
       phone: valuation.phone,
       message,
+      assignedAgentId: assignment.assignedAgentId,
+      assignedBranchId: assignment.assignedBranchId,
     };
     data['leadType'] = 'valuation_request';
     const created = await tx.enquiry.create({ data });
@@ -109,6 +126,7 @@ export async function submitValuation(
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: created.id,
+      diff: assignmentDiff(assignment),
       ip,
     });
   });

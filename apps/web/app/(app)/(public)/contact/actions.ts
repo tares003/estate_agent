@@ -5,18 +5,24 @@ import { audit, recordConsent, withTenant, type AuditWriter, type ConsentWriter 
 import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
+import {
+  assignmentDiff,
+  resolveEnquiryAssignment,
+  type AssignmentRuleReader,
+} from '../../lib/enquiry-routing.js';
 import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 import { CONTACT_CONSENT_TEXT } from './consent-text.js';
 
 // EPIC-C / EPIC-I general-contact submission (PRODUCT.md §4 — "Contact us"). The
 // canonical entity is the ENQUIRY: this produces a general-contact-channel enquiry
-// (master spec §I.1, FR-I-1). Held to the compliance guards: G5 (the schema carries
-// `gdpr_consent`; the agreed text is persisted verbatim) and G8 (Turnstile verified
-// before any write). Every write is tenant-scoped (RLS) + audited (G4). Drives a
-// form via `useActionState`.
+// (master spec §I.1, FR-I-1), routed through the tenant's assignment rules
+// (FR-I-3 — first-match-wins; unmatched stays unassigned). Held to the compliance
+// guards: G5 (the schema carries `gdpr_consent`; the agreed text is persisted
+// verbatim) and G8 (Turnstile verified before any write). Every write is
+// tenant-scoped (RLS) + audited (G4). Drives a form via `useActionState`.
 
-interface ContactWriteClient extends ConsentWriter, AuditWriter {
+interface ContactWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleReader {
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
@@ -81,6 +87,15 @@ export async function submitContact(
       consentText: CONTACT_CONSENT_TEXT,
       ipAddress: ip,
     });
+    // FR-I-3: route through the tenant's assignment rules (first-match-wins);
+    // the winning agent/branch target is persisted, unmatched stays unassigned.
+    const assignment = await resolveEnquiryAssignment(tx, {
+      enquiryType: 'general_contact',
+      status: 'new',
+      sourceUrl: null,
+      message: contact.message,
+      hasProperty: false,
+    });
     // The enquiry channel is a general contact. `lead_type` is the committed DB
     // column for the enquiry channel (the schema is the source of truth); it is set
     // via bracket access to keep the forbidden noun out of a declared identifier
@@ -91,6 +106,8 @@ export async function submitContact(
       email: contact.email,
       phone: contact.phone ?? null,
       message: contact.message,
+      assignedAgentId: assignment.assignedAgentId,
+      assignedBranchId: assignment.assignedBranchId,
     };
     data['leadType'] = 'general_contact';
     const created = await tx.enquiry.create({ data });
@@ -100,6 +117,7 @@ export async function submitContact(
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: created.id,
+      diff: assignmentDiff(assignment),
       ip,
     });
   });

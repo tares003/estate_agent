@@ -36,9 +36,7 @@ describe('Enquiry assignment columns (FR-I-3)', () => {
 
   it('persists a branch-target routing outcome as a nullable soft uuid reference', () => {
     const block = modelBlock('Enquiry');
-    expect(block).toMatch(
-      /assignedBranchId\s+String\?\s+@map\("assigned_branch_id"\)\s+@db\.Uuid/,
-    );
+    expect(block).toMatch(/assignedBranchId\s+String\?\s+@map\("assigned_branch_id"\)\s+@db\.Uuid/);
   });
 
   it('keeps both assignment references SOFT (no @relation binds an assignee)', () => {

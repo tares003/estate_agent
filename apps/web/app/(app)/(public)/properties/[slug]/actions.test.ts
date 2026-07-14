@@ -123,6 +123,8 @@ describe('submitEnquiry', () => {
       action: 'enquiry.created',
       entity: 'enquiry',
       entityId: 'enq-1',
+      // G4 — the diff records the FR-I-3 routing outcome (unassigned here)
+      diff: { assignedAgentId: [null, null], assignedBranchId: [null, null] },
       ip: '203.0.113.7',
     });
   });
