@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./lib/tenant.js', () => ({
+vi.mock('./(app)/lib/tenant.js', () => ({
   getCurrentTenantId: async () => 'tenant-1',
   getRequestOrigin: async () => 'https://acme.test',
 }));
-vi.mock('./lib/db.js', () => ({ getDb: () => ({}) }));
+vi.mock('./(app)/lib/db.js', () => ({ getDb: () => ({}) }));
 
 const findMany = vi.fn();
 const blogFindMany = vi.fn();
@@ -19,7 +19,7 @@ vi.mock('@estate/db', () => ({
 }));
 
 const listPublishedPages = vi.fn();
-vi.mock('./lib/cms.js', () => ({
+vi.mock('./(app)/lib/cms.js', () => ({
   listPublishedPages: (...args: unknown[]) => listPublishedPages(...args),
 }));
 
