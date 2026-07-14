@@ -1,6 +1,7 @@
 import { audit, notify } from '@estate/db';
 import type { AlertFrequency, PropertySearch } from '@estate/validators';
 
+import { alertAddressLine, alertTitle } from './alert-redaction.js';
 import { findNewMatches, type CandidateProperty } from './saved-search-match.js';
 
 // EPIC-U + EPIC-T FR-T-7/8 — the saved-search alert digest job (worker catalogue
@@ -123,16 +124,18 @@ export async function listDueSavedSearches(
 
 /**
  * The candidate properties for matching: published, non-deleted properties
- * published AFTER the saved search's previous-alert cutoff (so only genuinely new
- * listings are considered). A null cutoff (first run) reads every published,
- * non-deleted property. The matcher re-applies the same base gate in-memory, so
- * this query is a narrowing optimisation, not the source of truth.
+ * published in the (cutoff, now] window. The upper clamp keeps the read window
+ * equal to the advanced cursor window: a property published DURING the run (after
+ * `now` was captured) is left for the next run instead of being alerted now AND
+ * re-read next run. A null cutoff (first run) reads everything up to now. The
+ * matcher re-applies the same base gate in-memory.
  */
 export async function listCandidateProperties(
   tx: SavedSearchDigestClient,
   since: Date | null,
+  now: Date,
 ): Promise<CandidateProperty[]> {
-  const publishedAt = since === null ? { not: null } : { gt: since };
+  const publishedAt = since === null ? { not: null, lte: now } : { gt: since, lte: now };
   return tx.property.findMany({ where: { publishedAt, deletedAt: null } });
 }
 
@@ -154,11 +157,15 @@ export interface DigestProperty {
   href: string;
 }
 
-/** Map a matched §J property to the digest's render shape. */
+/**
+ * Map a matched §J property to the digest's render shape. Title/address go through
+ * the alert-redaction twin of the public rule, so a §F.5 confidential or §J
+ * hideExactAddress listing never leaks its name or exact address in an email.
+ */
 function toDigestProperty(property: CandidateProperty): DigestProperty {
   return {
-    title: property.title ?? property.displayAddress,
-    address: `${property.displayAddress}, ${property.postcode}`,
+    title: alertTitle(property),
+    address: alertAddressLine(property),
     price: formatPrice(property.price),
     href: `/properties/${property.slug}`,
   };
@@ -178,7 +185,9 @@ export async function processSavedSearchDigest(opts: {
 }): Promise<DigestOutcome> {
   const { tenantId, runTenant, search, now } = opts;
 
-  const candidates = await runTenant((tx) => listCandidateProperties(tx, search.lastAlertSentAt));
+  const candidates = await runTenant((tx) =>
+    listCandidateProperties(tx, search.lastAlertSentAt, now),
+  );
   const matches = findNewMatches(search.filters, candidates, search.lastAlertSentAt);
 
   if (matches.length === 0) {

@@ -270,7 +270,10 @@ describe('processSavedSearchDigest', () => {
 
     expect(outcome).toBe('emailed');
     expect(tx.property.findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { gt: new Date('2026-06-27T07:00:00Z') }, deletedAt: null },
+      where: {
+        publishedAt: { gt: new Date('2026-06-27T07:00:00Z'), lte: NOW },
+        deletedAt: null,
+      },
     });
   });
 
