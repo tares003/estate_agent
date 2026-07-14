@@ -81,7 +81,7 @@ vi.mock('../../../lib/storage.js', () => ({
 const { default: RepairDetailPage } = await import('./page.js');
 
 const repair = {
-  id: 'r1',
+  id: '11111111-1111-1111-1111-111111111111',
   name: 'Tess Tenant',
   email: 'tess@example.com',
   phone: '07700900000',
@@ -98,7 +98,7 @@ const repair = {
   updatedAt: new Date('2026-06-09T10:00:00.000Z'),
 };
 
-function props(id = 'r1') {
+function props(id = '11111111-1111-1111-1111-111111111111') {
   return { params: Promise.resolve({ id }) };
 }
 
@@ -180,7 +180,7 @@ describe('RepairDetailPage', () => {
     expect(screen.getByText('tess@example.com')).toBeInTheDocument();
     // the §G.5 allow-list for `new`
     expect(screen.getByTestId('repair-status-control')).toHaveTextContent(
-      'r1:triaged,awaiting_tenant,on_hold,rejected',
+      '11111111-1111-1111-1111-111111111111:triaged,awaiting_tenant,on_hold,rejected',
     );
     expect(screen.getByTestId('repair-timeline')).toHaveTextContent('1');
     // FR-G-2: the ticket attachments, served via signed links
@@ -194,9 +194,11 @@ describe('RepairDetailPage', () => {
     expect(screen.getByTestId('property-match-control')).toHaveTextContent('none:2');
     // FR-G-8: the assign control gets the ACTIVE contractors (1 of 2) + no assignee
     expect(screen.getByTestId('assign-contractor-control')).toHaveTextContent('none:1');
-    expect(repairFindFirst).toHaveBeenCalledWith({ where: { id: 'r1' } });
+    expect(repairFindFirst).toHaveBeenCalledWith({
+      where: { id: '11111111-1111-1111-1111-111111111111' },
+    });
     expect(eventFindMany).toHaveBeenCalledWith({
-      where: { repairRequestId: 'r1' },
+      where: { repairRequestId: '11111111-1111-1111-1111-111111111111' },
       orderBy: { createdAt: 'desc' },
     });
   });
@@ -225,5 +227,15 @@ describe('RepairDetailPage', () => {
   it('404s an unknown ticket', async () => {
     repairFindFirst.mockResolvedValue(null);
     await expect(RepairDetailPage(props('nope'))).rejects.toThrow('NEXT_NOT_FOUND');
+  });
+
+  // A `[id]` segment that is not a uuid can never name a row, and handing it to a uuid
+  // column throws P2023 — an unhandled 500 — rather than returning nothing. Every one of
+  // these routes did exactly that (verified live: /admin/.../not-a-uuid returned 500).
+  // It must 404, and it must not reach the database to find that out.
+  it('renders 404 for a malformed id, without querying the database', async () => {
+    await expect(RepairDetailPage(props('not-a-uuid'))).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(notFound).toHaveBeenCalled();
+    expect(repairFindFirst).not.toHaveBeenCalled();
   });
 });

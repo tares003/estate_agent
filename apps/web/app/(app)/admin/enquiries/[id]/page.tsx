@@ -19,6 +19,7 @@ import { EnquiryTimeline } from './EnquiryTimeline.js';
 import { nextStatusOptions } from './next-statuses.js';
 import { NoteComposer } from './NoteComposer.js';
 import { StatusChanger } from './StatusChanger.js';
+import { isUuid } from '../../../lib/uuid.js';
 
 // EPIC-H enquiry detail (FR-H-3) — a single enquiry: its summary, the status
 // workflow control, and the note thread. Gates on `enquiry.read` (RBAC
@@ -97,6 +98,10 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
   await requireStaffPermission('enquiry.read');
 
   const { id } = await params;
+  // A segment that is not a uuid can never name a row — and handing it to a uuid column
+  // throws P2023 (an unhandled 500) rather than returning nothing. Answer 404 instead,
+  // without touching the database.
+  if (!isUuid(id)) notFound();
   const tenantId = await getCurrentTenantId();
   const data = await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as EnquiryDetailClient;

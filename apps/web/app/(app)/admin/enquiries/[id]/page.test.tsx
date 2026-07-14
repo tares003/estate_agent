@@ -54,7 +54,7 @@ vi.mock('@estate/db', () => ({
 const { default: EnquiryDetailPage } = await import('./page.js');
 
 const enquiry = {
-  id: 'e1',
+  id: '22222222-2222-2222-2222-222222222222',
   name: 'Sam Buyer',
   email: 'sam@example.com',
   phone: '07700900000',
@@ -65,7 +65,7 @@ const enquiry = {
   createdAt: new Date('2026-06-09T11:00:00.000Z'),
 };
 
-function props(id = 'e1') {
+function props(id = '22222222-2222-2222-2222-222222222222') {
   return { params: Promise.resolve({ id }) };
 }
 
@@ -115,8 +115,12 @@ describe('EnquiryDetailPage', () => {
     expect(screen.getByText('Interested in the Didsbury semi.')).toBeInTheDocument();
     // "New" appears as the summary status badge (and again in the timeline)
     expect(screen.getAllByText('New').length).toBeGreaterThan(0);
-    expect(screen.getByTestId('status-changer')).toHaveTextContent('e1');
-    expect(screen.getByTestId('note-composer')).toHaveTextContent('e1');
+    expect(screen.getByTestId('status-changer')).toHaveTextContent(
+      '22222222-2222-2222-2222-222222222222',
+    );
+    expect(screen.getByTestId('note-composer')).toHaveTextContent(
+      '22222222-2222-2222-2222-222222222222',
+    );
     expect(screen.getByText('Left a voicemail.')).toBeInTheDocument();
     // the status activity timeline renders under its own section
     expect(screen.getByRole('region', { name: 'Activity' })).toBeInTheDocument();
@@ -156,13 +160,29 @@ describe('EnquiryDetailPage', () => {
   it('offers the convert form once the enquiry can reach converted', async () => {
     findFirst.mockResolvedValue({ ...enquiry, status: 'contacted' });
     render(await EnquiryDetailPage(props()));
-    expect(screen.getByTestId('convert-form')).toHaveTextContent('e1');
+    expect(screen.getByTestId('convert-form')).toHaveTextContent(
+      '22222222-2222-2222-2222-222222222222',
+    );
   });
 
   it('reads the enquiry + notes tenant-scoped and 404s a missing enquiry', async () => {
+    // A WELL-FORMED id that names no row: the query runs and returns nothing, and the
+    // page 404s on the result — distinct from the malformed-id case below, which 404s
+    // without querying at all.
+    const absent = '44444444-4444-4444-4444-444444444444';
     findFirst.mockResolvedValue(null);
-    await expect(EnquiryDetailPage(props('missing'))).rejects.toThrow('NEXT_NOT_FOUND');
-    expect(findFirst).toHaveBeenCalledWith({ where: { id: 'missing' } });
+    await expect(EnquiryDetailPage(props(absent))).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(findFirst).toHaveBeenCalledWith({ where: { id: absent } });
     expect(noteFindMany).not.toHaveBeenCalled();
+  });
+
+  // A `[id]` segment that is not a uuid can never name a row, and handing it to a uuid
+  // column throws P2023 — an unhandled 500 — rather than returning nothing. Every one of
+  // these routes did exactly that (verified live: /admin/.../not-a-uuid returned 500).
+  // It must 404, and it must not reach the database to find that out.
+  it('renders 404 for a malformed id, without querying the database', async () => {
+    await expect(EnquiryDetailPage(props('not-a-uuid'))).rejects.toThrow('NEXT_NOT_FOUND');
+    expect(notFound).toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 });
