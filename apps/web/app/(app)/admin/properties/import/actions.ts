@@ -24,9 +24,9 @@ import { readImportCsv, readImportMapping } from './read-csv.js';
 
 // EPIC-X FR-X-1 / FR-X-5 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
 //
-// RBAC fail-closed on `property.write` BEFORE any read/write (the same permission the
-// property create action gates on — `property.import` is not yet in the catalogue, and
-// this slice reuses the create path verbatim). The uploaded CSV is parsed + validated by
+// RBAC fail-closed on `property.import` BEFORE any read/write (FR-X-1 — the dedicated
+// bulk-import capability from the @estate/auth catalogue, granted to the same roles
+// that hold `property.write`). The uploaded CSV is parsed + validated by
 // the pure core; the EPIC-AD / G12 pack gate then fails any row authoring a vertical the
 // tenant has not enabled (row-isolated, like a validation failure); every remaining row
 // is created through the SHARED `insertPropertyRow` path (identical slug disambiguation,
@@ -131,9 +131,9 @@ export async function importPropertiesFromCsv(
   _prevState: ImportActionState,
   formData: FormData,
 ): Promise<ImportActionState> {
-  // RBAC gate — fail closed BEFORE reading the upload or touching the DB.
+  // RBAC gate (FR-X-1) — fail closed BEFORE reading the upload or touching the DB.
   try {
-    await requireStaffPermission('property.write');
+    await requireStaffPermission('property.import');
   } catch {
     return deny('You do not have permission to import listings.');
   }

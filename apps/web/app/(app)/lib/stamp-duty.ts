@@ -106,21 +106,27 @@ export function computeStampDuty(input: StampDutyInput, config: SdltConfig): Sta
  * Illustrative England + Northern Ireland residential defaults (FR-W-2). NOT
  * authoritative — the operator MUST verify against current HMRC rates and edit
  * via the admin (FR-W-3); these exist so the calculator works out of the box.
+ *
+ * The figures below are the rules that took effect on 2025-04-01, when the
+ * temporary 2022 nil-rate uplift ended (audit finding stale-default-sdlt-bands):
+ * the 2% band over 125k returned, first-time-buyer relief reverted to a 300k
+ * nil-rate band capped at 500k, and the additional-property surcharge is 5%.
  */
 export const DEFAULT_SDLT_CONFIG: SdltConfig = {
   standardBands: [
-    { upTo: 250_000, ratePercent: 0 },
+    { upTo: 125_000, ratePercent: 0 },
+    { upTo: 250_000, ratePercent: 2 },
     { upTo: 925_000, ratePercent: 5 },
     { upTo: 1_500_000, ratePercent: 10 },
     { upTo: null, ratePercent: 12 },
   ],
   firstTimeBuyer: {
-    maxPrice: 625_000,
+    maxPrice: 500_000,
     bands: [
-      { upTo: 425_000, ratePercent: 0 },
+      { upTo: 300_000, ratePercent: 0 },
       { upTo: null, ratePercent: 5 },
     ],
   },
-  additionalPropertySurchargePercent: 3,
-  lastUpdated: '2024-04-01',
+  additionalPropertySurchargePercent: 5,
+  lastUpdated: '2025-04-01',
 };

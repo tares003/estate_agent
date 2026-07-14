@@ -17,12 +17,14 @@
 /**
  * The canonical permission catalogue. Every entry is `<canonical_noun>.<verb>`
  * (G6). Verbs: `read` (view), `write` (create/edit/archive), `publish`
- * (workflow-gated publish), `manage` (full control incl. delete/config).
+ * (workflow-gated publish), `import` (bulk file import), `manage` (full
+ * control incl. delete/config).
  */
 export const PERMISSIONS = [
-  // Property catalogue (EPIC-F)
+  // Property catalogue (EPIC-F) + bulk import (EPIC-X, FR-X-1)
   'property.read',
   'property.write',
+  'property.import',
   'property.publish',
   // CRM / enquiries (EPIC-I)
   'enquiry.read',
@@ -126,6 +128,7 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'property.read',
       'property.write',
+      'property.import',
       'property.publish',
       'enquiry.read',
       'enquiry.write',
@@ -156,6 +159,7 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'property.read',
       'property.write',
+      'property.import',
       'enquiry.read',
       'enquiry.write',
       'viewing_request.read',
@@ -178,6 +182,7 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'property.read',
       'property.write',
+      'property.import',
       'enquiry.read',
       'enquiry.write',
       'viewing_request.read',
@@ -197,6 +202,7 @@ export const ROLES: Readonly<Record<StaffRole, RoleDefinition>> = {
     permissions: [
       'property.read',
       'property.write',
+      'property.import',
       'enquiry.read',
       'enquiry.write',
       'viewing_request.read',
