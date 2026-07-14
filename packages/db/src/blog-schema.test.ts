@@ -90,7 +90,10 @@ describe('BlogPostTag — schema (blog_post_tags, master spec §J)', () => {
     expect(model).toMatch(/name\s+String/);
     expect(model).toMatch(/slug\s+String/);
     expect(model).toContain('@@unique([tenantId, slug])');
-    expect(model).toMatch(/posts\s+BlogPost\[\]/);
+    // The m-n goes through the EXPLICIT, tenant-scoped join model (see
+    // blog-post-tag-link.test.ts) — never Prisma's implicit join table, which
+    // carries no tenant_id and no composite FK.
+    expect(model).toMatch(/posts\s+BlogPostTagLink\[\]/);
   });
 
   it('cascades from the tenant', () => {
@@ -138,7 +141,7 @@ describe('BlogPost — schema (blog_posts, master spec §J)', () => {
     expect(model).toMatch(/authorId\s+String\?\s+@map\("author_id"\)\s+@db\.Uuid/);
     expect(model).toMatch(/category\s+BlogCategory\?\s+@relation\([^)]*onDelete:\s*SetNull/);
     expect(model).toMatch(/author\s+BlogAuthor\?\s+@relation\([^)]*onDelete:\s*SetNull/);
-    expect(model).toMatch(/tags\s+BlogPostTag\[\]/);
+    expect(model).toMatch(/tags\s+BlogPostTagLink\[\]/);
   });
 
   it('cascades from the tenant and indexes the status lookup', () => {

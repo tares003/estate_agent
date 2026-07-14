@@ -28,7 +28,9 @@ const row: BlogPostRow = {
   metaDescription: 'What to expect this spring.',
   category: { name: 'Market insight', slug: 'market-insight' },
   author: { name: 'Jo Bloggs', slug: 'jo-bloggs' },
-  tags: [{ name: 'Sales', slug: 'sales' }],
+  // The posts <-> tags m-n runs through the EXPLICIT, tenant-scoped join model
+  // (blog_post_tag_links), so a row's tags arrive as link rows wrapping the tag.
+  tags: [{ tag: { name: 'Sales', slug: 'sales' } }],
 };
 
 /** A structural reader backed by vi fns, returning the supplied rows / count. */
@@ -80,14 +82,16 @@ describe('listPublishedPosts', () => {
     );
   });
 
-  it('filters by tag slug via a some-relation predicate', async () => {
+  it('filters by tag slug via a some-relation predicate through the join model', async () => {
     const { db, findMany } = makeReader([row], 1);
 
     await listPublishedPosts(db, { tag: 'sales' });
 
+    // The predicate traverses the explicit join (link -> tag), not the old
+    // implicit m-n, so it reads `some: { tag: { slug } }`.
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+        where: { status: 'published', tags: { some: { tag: { slug: 'sales' } } } },
       }),
     );
   });
@@ -121,6 +125,8 @@ describe('getPublishedPostBySlug', () => {
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({ where: { slug: 'spring-market-2026', status: 'published' } }),
     );
+    // The link rows are flattened back to plain tag terms for the view model —
+    // the join table is an isolation detail, never part of the read contract.
     expect(post).toMatchObject({
       id: 'p1',
       slug: 'spring-market-2026',
@@ -244,7 +250,7 @@ describe('listPublishedPostsByTag', () => {
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+        where: { status: 'published', tags: { some: { tag: { slug: 'sales' } } } },
         orderBy: { publishedAt: 'desc' },
       }),
     );
@@ -257,7 +263,7 @@ describe('listPublishedPostsByTag', () => {
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { status: 'published', tags: { some: { slug: 'sales' } } },
+        where: { status: 'published', tags: { some: { tag: { slug: 'sales' } } } },
       }),
     );
   });
