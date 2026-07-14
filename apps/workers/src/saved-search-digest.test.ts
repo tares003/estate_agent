@@ -119,21 +119,62 @@ describe('listDueSavedSearches', () => {
 });
 
 describe('listCandidateProperties', () => {
-  it('reads published, non-deleted properties published after the cutoff', async () => {
+  it('reads published, non-deleted properties in the (cutoff, now] window', async () => {
     const tx = makeTx();
     const since = new Date('2026-06-27T07:00:00Z');
-    await listCandidateProperties(tx as unknown as SavedSearchDigestClient, since);
+    await listCandidateProperties(tx as unknown as SavedSearchDigestClient, since, NOW);
+    // Clamped to <= now: the cursor advances to `now`, so a property published
+    // during the run is left for the next run instead of alerting twice.
     expect(tx.property.findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { gt: since }, deletedAt: null },
+      where: { publishedAt: { gt: since, lte: NOW }, deletedAt: null },
     });
   });
 
-  it('reads all published, non-deleted properties when the cutoff is null', async () => {
+  it('reads all published, non-deleted properties up to now when the cutoff is null', async () => {
     const tx = makeTx();
-    await listCandidateProperties(tx as unknown as SavedSearchDigestClient, null);
+    await listCandidateProperties(tx as unknown as SavedSearchDigestClient, null, NOW);
     expect(tx.property.findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { not: null }, deletedAt: null },
+      where: { publishedAt: { not: null, lte: NOW }, deletedAt: null },
     });
+  });
+});
+
+describe('digest email redaction (§F.5 confidential / §J hideExactAddress)', () => {
+  it('redacts a confidential listing in the digest payload (title AND address)', async () => {
+    const tx = makeTx();
+    tx.property.findMany.mockResolvedValue([
+      property({ isConfidential: true, title: 'Thriving Didsbury Bakery' }),
+    ]);
+    await processSavedSearchDigest({
+      tenantId: TENANT,
+      runTenant: runnerFor(tx),
+      search: dueSearch(),
+      now: NOW,
+    });
+    const created = tx.notificationLog.create.mock.calls[0]![0].data as {
+      payload: { properties: Array<{ title: string; address: string }> };
+    };
+    const rendered = created.payload.properties[0]!;
+    expect(rendered.title).toBe('Didsbury, M20');
+    expect(rendered.address).toBe('Didsbury, M20');
+    expect(JSON.stringify(created.payload)).not.toContain('Bakery');
+    expect(JSON.stringify(created.payload)).not.toContain('M20 2AB');
+  });
+
+  it('redacts only the address for a hideExactAddress listing', async () => {
+    const tx = makeTx();
+    tx.property.findMany.mockResolvedValue([property({ hideExactAddress: true })]);
+    await processSavedSearchDigest({
+      tenantId: TENANT,
+      runTenant: runnerFor(tx),
+      search: dueSearch(),
+      now: NOW,
+    });
+    const created = tx.notificationLog.create.mock.calls[0]![0].data as {
+      payload: { properties: Array<{ title: string; address: string }> };
+    };
+    expect(created.payload.properties[0]!.title).toBe('A lovely flat');
+    expect(created.payload.properties[0]!.address).toBe('Didsbury, M20');
   });
 });
 
