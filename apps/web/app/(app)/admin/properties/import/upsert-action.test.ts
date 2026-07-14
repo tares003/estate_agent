@@ -26,9 +26,11 @@ vi.mock('../../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -59,7 +61,14 @@ const insertPropertyRow = vi.fn(
 );
 type UpdateRowArgs = [
   unknown,
-  { tenantId: string; actor: string; createdByUserId: string | null },
+  {
+    tenantId: string;
+    actor: string;
+    createdByUserId: string | null;
+    ip: string | null;
+    /** FR-H-17 — the request user-agent the row audit records. */
+    userAgent?: string | null;
+  },
   { reference: string },
   { id: string },
   string,
@@ -147,6 +156,7 @@ beforeEach(() => {
   getStaffUserId.mockResolvedValue(USER_ID);
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   seedExisting([]);
   propertyCount.mockResolvedValue(0);
   importLogCreate.mockResolvedValue({ id: LOG_ID });
@@ -307,6 +317,109 @@ describe('importPropertiesFromCsv — upsert mode (FR-X-2 / FR-X-4)', () => {
     );
     expect(updatePropertyRow).not.toHaveBeenCalled();
     expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('importPropertiesFromCsv — in-file duplicate match key (FR-X-4 / FR-X-5)', () => {
+  it('does NOT create a duplicate pair when two rows share a NEW external id on the FIRST run', async () => {
+    // The match index is a PRE-RUN snapshot: neither row matches an existing listing, so
+    // both used to plan as `create` and both inserted — a duplicate pair `external_id`
+    // has no unique constraint to stop (PR #156 verifier note). Row 1 creates; row 2 is
+    // recorded as a failed row instead.
+    const res = await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-DUP')}\n${csvRow('REF-002', 'EXT-DUP')}\n`,
+        'upsert_external_id',
+      ),
+    );
+    expect(res.ok).toBe(true);
+    expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+    expect(insertPropertyRow.mock.calls[0]![2].reference).toBe('REF-001');
+    expect(updatePropertyRow).not.toHaveBeenCalled();
+    expect(res.counts).toMatchObject({ input: 2, created: 1, updated: 0, skipped: 0, failed: 1 });
+    expect(res.errorSummary).toHaveLength(1);
+    expect(res.errorSummary![0]).toContain('Row 2');
+    expect(res.errorSummary![0]).toMatch(/duplicate/i);
+  });
+
+  it('audits the rejected in-file duplicate as a failed row (FR-X-9) and logs it (FR-X-6)', async () => {
+    await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-DUP')}\n${csvRow('REF-002', 'EXT-DUP')}\n`,
+        'upsert_external_id',
+      ),
+    );
+    const rowFailAudit = audit.mock.calls.find(
+      (call) => (call[1] as { action: string }).action === 'property.import_row_failed',
+    );
+    expect(rowFailAudit).toBeDefined();
+    expect((rowFailAudit![1] as { diff: { rowNumber: number } }).diff.rowNumber).toBe(2);
+    const data = importLogCreate.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data).toMatchObject({ recordsCreated: 1, recordsFailed: 1, recordsSkipped: 0 });
+  });
+
+  it('re-running that same file de-duplicates onto the ONE listing the first run created', async () => {
+    // The whole point of the fix: after the first run there is exactly ONE row carrying
+    // EXT-DUP, so the re-run updates it (twice, idempotently) and creates nothing.
+    seedExisting([{ id: 'p-1', reference: 'REF-001', externalId: 'EXT-DUP', slug: 'existing-1' }]);
+    const res = await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-DUP')}\n${csvRow('REF-002', 'EXT-DUP')}\n`,
+        'upsert_external_id',
+      ),
+    );
+    expect(res.ok).toBe(true);
+    expect(insertPropertyRow).not.toHaveBeenCalled();
+    expect(updatePropertyRow).toHaveBeenCalledTimes(2);
+    expect(res.counts).toMatchObject({ created: 0, updated: 2, failed: 0 });
+  });
+
+  it('rejects an in-file duplicate reference at plan time in upsert_reference mode (no DB round-trip)', async () => {
+    const res = await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(`${HEADER}\n${csvRow('REF-DUP')}\n${csvRow('REF-DUP')}\n`, 'upsert_reference'),
+    );
+    expect(res.ok).toBe(true);
+    expect(insertPropertyRow).toHaveBeenCalledTimes(1);
+    expect(res.counts).toMatchObject({ created: 1, failed: 1 });
+    // A plan-time failure performs no write at all — it never opens a row savepoint.
+    const savepoints = executeRawUnsafe.mock.calls.filter((call) =>
+      String(call[0]).startsWith('SAVEPOINT '),
+    );
+    expect(savepoints).toHaveLength(1);
+  });
+});
+
+describe('importPropertiesFromCsv — audit provenance (FR-H-17 / FR-N-14)', () => {
+  it('carries the request user-agent on the run audit, the per-row failure audits and the row writes', async () => {
+    seedExisting([{ id: 'p-1', reference: 'REF-001', externalId: null, slug: 'existing-1' }]);
+    await importPropertiesFromCsv(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001')}\n${csvRow('REF-NEW')}\n${csvRow('REF-NEW')}\n`,
+        'upsert_reference',
+      ),
+    );
+    const runAudit = audit.mock.calls.find(
+      (call) => (call[1] as { action: string }).action === 'property.imported',
+    );
+    expect(runAudit![1]).toMatchObject({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' });
+    const rowFailAudit = audit.mock.calls.find(
+      (call) => (call[1] as { action: string }).action === 'property.import_row_failed',
+    );
+    expect(rowFailAudit![1]).toMatchObject({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' });
+    // The shared write paths audit each row themselves — they need the UA on the context.
+    expect(insertPropertyRow.mock.calls[0]![1]).toMatchObject({
+      ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
+    });
+    expect(updatePropertyRow.mock.calls[0]![1]).toMatchObject({
+      ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
+    });
   });
 });
 

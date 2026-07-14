@@ -119,6 +119,37 @@ describe('previewPropertyImport — per-mode outcome (FR-X-2)', () => {
     expect(res.preview!.outcome).toEqual({ wouldCreate: 1, wouldUpdate: 0, wouldSkip: 1 });
   });
 
+  it('shows a row repeating a NEW external id already minted in the same file as REJECTED', async () => {
+    // The first run would otherwise create both rows — a duplicate pair (PR #156
+    // verifier note). The preview must warn about it BEFORE the admin commits.
+    const res = await previewPropertyImport(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-DUP')}\n${csvRow('REF-002', 'EXT-DUP')}\n`,
+        'upsert_external_id',
+      ),
+    );
+    expect(res.ok).toBe(true);
+    expect(res.preview!.outcome).toEqual({ wouldCreate: 1, wouldUpdate: 0, wouldSkip: 0 });
+    expect(res.preview!.counts).toEqual({ input: 2, valid: 1, invalid: 1 });
+    expect(res.preview!.errors).toHaveLength(1);
+    expect(res.preview!.errors[0]).toContain('Row 2');
+    expect(res.preview!.errors[0]).toMatch(/duplicate/i);
+  });
+
+  it('does not count a rejected in-file duplicate towards the quota projection (FR-X-10)', async () => {
+    readActiveListingUsage.mockResolvedValue({ limit: 100, existingActive: 0 });
+    const res = await previewPropertyImport(
+      { ok: false },
+      csvForm(
+        `${HEADER}\n${csvRow('REF-001', 'EXT-DUP', 'published')}\n${csvRow('REF-002', 'EXT-DUP', 'published')}\n`,
+        'upsert_external_id',
+      ),
+    );
+    expect(res.ok).toBe(true);
+    expect(res.preview!.quota).toMatchObject({ incoming: 1, wouldExceed: false });
+  });
+
   it('projects the quota over NET-NEW published rows only in upsert mode (FR-X-10)', async () => {
     // At the cap, but every published row in the file matches an existing listing —
     // the preview must show the re-run fits (incoming 0, no exceed warning).

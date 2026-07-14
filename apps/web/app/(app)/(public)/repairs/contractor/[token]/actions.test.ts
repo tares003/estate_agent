@@ -3,9 +3,11 @@ import { signContractorLink } from '../../../../lib/contractor-access.js';
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -50,6 +52,7 @@ beforeEach(() => {
   process.env['CONTRACTOR_LINK_SECRET'] = SECRET;
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   repairFindFirst.mockResolvedValue({
     id: REPAIR,
     status: 'contractor_assigned',
@@ -63,6 +66,16 @@ afterEach(() => {
 });
 
 describe('advanceRepairAsContractor', () => {
+  it('records the request user-agent alongside the IP on the audit row (FR-H-17 / FR-N-14)', async () => {
+    // The contractor portal is a public (magic-link) surface: PR #152 threaded the UA
+    // through the ADMIN actions only, so this audit row logged the IP alone.
+    await advanceRepairAsContractor({ ok: false }, form(token()));
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' }),
+    );
+  });
+
   it('advances contractor_assigned → work_in_progress, records the event + audit', async () => {
     const result = await advanceRepairAsContractor({ ok: false }, form(token()));
 

@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // isolation.
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -46,6 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   verifyTurnstile.mockResolvedValue(true);
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
   ruleFindMany.mockResolvedValue([]);
@@ -75,6 +78,16 @@ describe('submitContact', () => {
     expect(audit).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ action: 'enquiry.created', entity: 'enquiry', entityId: 'enq-1' }),
+    );
+  });
+
+  it('records the request user-agent alongside the IP on the audit row (FR-H-17 / FR-N-14)', async () => {
+    // PR #152 threaded getRequestUserAgent through the ADMIN actions only, leaving every
+    // public submission's audit row with user_agent = null. Provenance is IP + UA.
+    await submitContact({ ok: false }, form());
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' }),
     );
   });
 

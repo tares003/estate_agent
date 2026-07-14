@@ -5,9 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // isolation.
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -49,6 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   verifyTurnstile.mockResolvedValue(true);
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
   ruleFindMany.mockResolvedValue([]);
@@ -83,6 +86,16 @@ describe('submitViewing', () => {
 
   // Audit finding assignment-rules-never-applied (FR-I-3): the viewing-channel
   // enquiry is routed through the tenant's assignment rules at creation.
+  it('records the request user-agent alongside the IP on the audit row (FR-H-17 / FR-N-14)', async () => {
+    // PR #152 threaded getRequestUserAgent through the ADMIN actions only, leaving every
+    // public submission's audit row with user_agent = null. Provenance is IP + UA.
+    await submitViewing({ ok: false }, form({ alternativeDate: '2026-06-21' }));
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' }),
+    );
+  });
+
   it('applies the first-matching assignment rule and persists the target (FR-I-3)', async () => {
     const BRANCH = '00000000-0000-0000-0000-00000000000b';
     ruleFindMany.mockResolvedValue([
