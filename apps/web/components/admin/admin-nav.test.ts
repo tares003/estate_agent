@@ -19,6 +19,8 @@ describe('ADMIN_NAV', () => {
     expect(hrefs).toContain('/admin/settings/seo');
     expect(hrefs).toContain('/admin/settings/redirects');
     expect(hrefs).toContain('/admin/settings/repair-notifications');
+    // EPIC-G FR-G-5 / FR-G-9 — the per-tenant repair SLA targets + badge thresholds.
+    expect(hrefs).toContain('/admin/settings/repair-sla');
   });
 
   it('every item has a non-empty label and an /admin-rooted href', () => {

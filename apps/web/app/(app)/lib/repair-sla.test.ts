@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_REPAIR_SLA_CONFIG, type RepairSlaConfigInput } from '@estate/validators';
 
 import { addWorkingDays, slaDueAt, slaRisk } from './repair-sla.js';
 
 // §G.4 default SLA targets: emergency 4h, urgent 24h, standard 48h (acknowledged),
 // low 5 working days (acknowledged). FR-G-9 default thresholds: green ≤ 50%,
 // amber 50–75%, red > 75%, breached at 100%.
+//
+// FR-G-5 / FR-G-9 (audit finding repair-urgency-sla-not-configurable): both the
+// targets and the two thresholds are per-tenant configurable. Omitting the config
+// must reproduce the §G.4 / FR-G-9 defaults exactly (unchanged out of the box);
+// supplying one must move the due-at and the bands accordingly.
 
 const CREATED = new Date('2026-06-08T08:00:00.000Z'); // a Monday
 
 function at(hoursAfter: number): number {
   return CREATED.getTime() + hoursAfter * 3_600_000;
+}
+
+function config(over: Partial<RepairSlaConfigInput> = {}): RepairSlaConfigInput {
+  return { ...DEFAULT_REPAIR_SLA_CONFIG, ...over };
 }
 
 describe('addWorkingDays', () => {
@@ -26,7 +36,7 @@ describe('addWorkingDays', () => {
 });
 
 describe('slaDueAt', () => {
-  it('applies the §G.4 default target per urgency', () => {
+  it('applies the §G.4 default target per urgency when no config is supplied', () => {
     expect(slaDueAt(CREATED, 'emergency')).toEqual(new Date('2026-06-08T12:00:00.000Z'));
     expect(slaDueAt(CREATED, 'urgent')).toEqual(new Date('2026-06-09T08:00:00.000Z'));
     expect(slaDueAt(CREATED, 'standard')).toEqual(new Date('2026-06-10T08:00:00.000Z'));
@@ -36,6 +46,30 @@ describe('slaDueAt', () => {
 
   it('treats an unknown urgency like standard (defensive default)', () => {
     expect(slaDueAt(CREATED, 'whatever')).toEqual(new Date('2026-06-10T08:00:00.000Z'));
+  });
+
+  it('applies the tenant-configured target per urgency (FR-G-5)', () => {
+    const tenantConfig = config({
+      emergencyTargetHours: 2,
+      urgentTargetHours: 12,
+      standardTargetHours: 72,
+      lowTargetWorkingDays: 10,
+    });
+    expect(slaDueAt(CREATED, 'emergency', tenantConfig)).toEqual(
+      new Date('2026-06-08T10:00:00.000Z'),
+    );
+    expect(slaDueAt(CREATED, 'urgent', tenantConfig)).toEqual(new Date('2026-06-08T20:00:00.000Z'));
+    expect(slaDueAt(CREATED, 'standard', tenantConfig)).toEqual(
+      new Date('2026-06-11T08:00:00.000Z'),
+    );
+    // low: 10 working days from Monday = a fortnight of weekdays later
+    expect(slaDueAt(CREATED, 'low', tenantConfig)).toEqual(new Date('2026-06-22T08:00:00.000Z'));
+  });
+
+  it('falls back to the configured standard target for an unknown urgency', () => {
+    expect(slaDueAt(CREATED, 'whatever', config({ standardTargetHours: 72 }))).toEqual(
+      new Date('2026-06-11T08:00:00.000Z'),
+    );
   });
 });
 
@@ -55,5 +89,24 @@ describe('slaRisk', () => {
   it('does not band a closed ticket', () => {
     expect(slaRisk({ ...emergency, status: 'completed' }, at(40))).toBeNull();
     expect(slaRisk({ ...emergency, status: 'rejected' }, at(40))).toBeNull();
+  });
+
+  it('bands against the tenant-configured thresholds (FR-G-9)', () => {
+    // Thresholds moved to 25% / 50% of the 4h emergency target: 1h and 2h elapsed.
+    const strict = config({ dueSoonThresholdPercent: 25, atRiskThresholdPercent: 50 });
+    expect(slaRisk(emergency, at(0.5), strict)).toBe('on_track'); // 12.5%
+    expect(slaRisk(emergency, at(1), strict)).toBe('on_track'); // 25% — green ≤ 25%
+    expect(slaRisk(emergency, at(1.5), strict)).toBe('due_soon'); // 37.5%
+    expect(slaRisk(emergency, at(2), strict)).toBe('due_soon'); // 50% — amber 25–50%
+    expect(slaRisk(emergency, at(2.5), strict)).toBe('at_risk'); // 62.5% — red > 50%
+    expect(slaRisk(emergency, at(4), strict)).toBe('breached'); // 100% — breach is fixed
+  });
+
+  it('bands against the tenant-configured target (FR-G-5)', () => {
+    // An 8h emergency target: 4h elapsed is only 50% — still on track, not breached.
+    const relaxed = config({ emergencyTargetHours: 8 });
+    expect(slaRisk(emergency, at(4), relaxed)).toBe('on_track');
+    expect(slaRisk(emergency, at(7), relaxed)).toBe('at_risk'); // 87.5%
+    expect(slaRisk(emergency, at(8), relaxed)).toBe('breached');
   });
 });
