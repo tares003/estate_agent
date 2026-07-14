@@ -195,6 +195,28 @@ describe('IMPORT_COLUMNS', () => {
   });
 });
 
+// EPIC-X FR-X-4 — the upsert identity column: a CSV may carry the source CRM's
+// `externalId` so upsert mode can match existing records on it.
+describe('externalId column (FR-X-4)', () => {
+  it('recognises an externalId header and carries the value onto the valid row', () => {
+    const header = 'reference,externalId,listingType,saleType,displayAddress,postcode';
+    const row = 'REF-001,EXT-100,residential,sale,12 Acacia Ave,M21 9WN';
+    const result = parsePropertyImportCsv(`${header}\n${row}\n`);
+    expect(result.recognisedColumns).toContain('externalId');
+    expect(result.ignoredColumns).toHaveLength(0);
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]!.data.externalId).toBe('EXT-100');
+  });
+
+  it('treats an empty externalId cell as absent (the field stays optional)', () => {
+    const header = 'reference,externalId,listingType,saleType,displayAddress,postcode';
+    const row = 'REF-001,,residential,sale,12 Acacia Ave,M21 9WN';
+    const result = parsePropertyImportCsv(`${header}\n${row}\n`);
+    expect(result.valid).toHaveLength(1);
+    expect(result.valid[0]!.data.externalId).toBeUndefined();
+  });
+});
+
 describe('formatRowError', () => {
   it('renders the row number and each field reason on one line', () => {
     const line = formatRowError({

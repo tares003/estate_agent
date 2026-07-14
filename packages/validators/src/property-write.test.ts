@@ -95,6 +95,29 @@ describe('propertyCreateSchema', () => {
     expect(res.success).toBe(false);
   });
 
+  // EPIC-X FR-X-4 — an imported record may carry the source CRM's identifier so an
+  // upsert can match on `external_id`. Optional: a hand-authored listing has none.
+  it('accepts an optional externalId and trims it (FR-X-4)', () => {
+    const res = propertyCreateSchema.safeParse({ ...CORE, externalId: ' EXT-100 ' });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.externalId).toBe('EXT-100');
+    }
+  });
+
+  it('leaves externalId absent when not supplied (FR-X-4)', () => {
+    const res = propertyCreateSchema.safeParse(CORE);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.externalId).toBeUndefined();
+    }
+  });
+
+  it('rejects a blank externalId (FR-X-4)', () => {
+    const res = propertyCreateSchema.safeParse({ ...CORE, externalId: '   ' });
+    expect(res.success).toBe(false);
+  });
+
   it('rejects an unknown listing type', () => {
     const res = propertyCreateSchema.safeParse({ ...CORE, listingType: 'houseboat' });
     expect(res.success).toBe(false);

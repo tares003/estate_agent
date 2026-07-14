@@ -128,6 +128,10 @@ export async function insertPropertyRow(
       slug,
       createdByUserId: ctx.createdByUserId,
       updatedByUserId: ctx.createdByUserId,
+      // EPIC-X FR-X-4 — persist the source CRM's identifier so a later upsert run can
+      // match this record on external_id (a first import followed by a re-run must
+      // de-duplicate). Absent for hand-authored listings.
+      ...(input.externalId !== undefined ? { externalId: input.externalId } : {}),
       ...coreData(input),
     },
   });
@@ -144,4 +148,58 @@ export async function insertPropertyRow(
   // Reserve the minted slug so a following row in the same batch disambiguates past it.
   taken.add(slug);
   return { id: created.id, slug };
+}
+
+/** The minimal Property-update + audit write surface the upsert path needs. */
+export interface PropertyUpdateRowClient extends AuditWriter {
+  property: {
+    update(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<unknown>;
+  };
+}
+
+/**
+ * EPIC-X FR-X-4 — update ONE matched property from a validated import row, on an
+ * already-open tenant transaction. The upsert's update half of the SHARED write path:
+ * the imported columns go through the SAME `coreData` mapping as create (pounds →
+ * pence, per-vertical extensions, optional fields absent = column unchanged), plus the
+ * identity columns (`reference`, `externalId` when carried) and `updatedByUserId`.
+ *
+ * Deliberately NEVER rewritten: `slug` (URL stability — a slug change belongs to the
+ * admin edit flow with its FR-F-5 redirect), `tenantId` / `createdByUserId` (creation
+ * provenance) and `publishedAt` / `deletedAt` (publish + lifecycle are their own
+ * audited actions). Emits the `property.updated` audit event on the same transaction
+ * (G4), recording which identity field the row was matched on. NOT a Server Action —
+ * the first argument is a live transaction handle only the gated actions can supply.
+ */
+export async function updatePropertyRow(
+  tx: PropertyUpdateRowClient,
+  ctx: PropertyInsertContext,
+  input: PropertyCreate,
+  target: { id: string },
+  matchedOn: 'reference' | 'externalId',
+): Promise<void> {
+  const data: Record<string, unknown> = {
+    reference: input.reference,
+    listingType: input.listingType,
+    saleType: input.saleType,
+    updatedByUserId: ctx.createdByUserId,
+    ...(input.externalId !== undefined ? { externalId: input.externalId } : {}),
+    ...coreData(input),
+  };
+  await tx.property.update({ where: { id: target.id }, data });
+  await audit(tx, {
+    tenantId: ctx.tenantId,
+    actor: ctx.actor,
+    action: 'property.updated',
+    entity: 'property',
+    entityId: target.id,
+    // Compact by design: a bulk run updates hundreds of rows, so the diff names the
+    // matched identity + the columns written rather than duplicating their values.
+    diff: { reference: input.reference, matchedOn, fields: Object.keys(data) },
+    ip: ctx.ip,
+    userAgent: ctx.userAgent ?? null,
+  });
 }

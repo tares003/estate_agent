@@ -1,17 +1,26 @@
 'use server';
 
 import { detectCrmPreset, type PresetName } from '@estate/validators';
+import { withTenant } from '@estate/db';
 import type { FormErrorItem } from '@estate/ui';
 
+import { getDb } from '../../../lib/db.js';
 import { requireStaffPermission } from '../../../lib/staff-session.js';
+import { getCurrentTenantId } from '../../../lib/tenant.js';
 import { readActiveListingUsage } from '../../../lib/import-quota.js';
 import {
+  buildMatchIndex,
   formatRowError,
+  importMatchField,
   parsePropertyImportCsv,
+  planImportRows,
+  type ExistingPropertyKey,
   type ImportColumn,
+  type ImportMode,
+  type PlannedRow,
   type ValidRow,
 } from './csv-import-core.js';
-import { readImportCsv, readImportMapping } from './read-csv.js';
+import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js';
 
 // EPIC-X FR-X-2 — the DRY-RUN preview of a bulk CSV property import.
 //
@@ -21,12 +30,18 @@ import { readImportCsv, readImportMapping } from './read-csv.js';
 // counts, a sample of the first ten records mapped to canonical property attributes,
 // the per-row validation errors, and which columns were recognised vs ignored.
 //
-// A dry run creates NOTHING. It performs no tenant transaction, no property insert, no
-// `import_logs` write and NO audit — reading + validating a file is not a state change,
-// so the G4 audit rule does not apply here (the audited write happens later, when the
-// admin confirms and `importPropertiesFromCsv` runs). RBAC is still fail-closed on the
-// same `property.import` permission the real import gates on (FR-X-1), so a user who
-// could not import also cannot preview.
+// FR-X-2 / FR-X-4 — the preview also simulates the chosen import MODE with the SAME
+// pure planner as the real import: it echoes the mode and reports what the confirmed
+// run WOULD do (wouldCreate / wouldUpdate / wouldSkip). In an upsert mode that takes
+// ONE tenant-scoped READ of the existing property identities; create-only needs no
+// read at all.
+//
+// A dry run creates NOTHING. No property insert, no `import_logs` write and NO audit —
+// reading + validating a file is not a state change, so the G4 audit rule does not
+// apply here (the audited write happens later, when the admin confirms and
+// `importPropertiesFromCsv` runs). RBAC is still fail-closed on the same
+// `property.import` permission the real import gates on (FR-X-1), so a user who could
+// not import also cannot preview.
 
 // A `'use server'` module may only export async functions (Next 16 bundles it as a
 // server-action endpoint), so this module-local constant is NOT exported — an
@@ -67,12 +82,26 @@ export interface ImportPreviewQuota {
   limit: number;
   /** The tenant's current active (publicly live) listings. */
   existingActive: number;
-  /** Valid rows this upload imports as PUBLISHED (drafts never consume the ACTIVE cap). */
+  /**
+   * NET-NEW published rows: planned CREATES with publicationStatus=published. Drafts
+   * never consume the ACTIVE cap, and upsert UPDATES are never net-new (FR-X-10) —
+   * re-previewing an already-imported file shows zero incoming.
+   */
   incoming: number;
   /** Whether committing this upload would push the tenant past the cap. */
   wouldExceed: boolean;
   /** Headroom left after a within-quota import (0 when at/over the cap). */
   remainingAfterImport: number;
+}
+
+/** FR-X-2 / FR-X-4 — what the confirmed run WOULD do with the valid rows, per mode. */
+export interface ImportPreviewOutcome {
+  /** Valid rows that would CREATE a new listing. */
+  wouldCreate: number;
+  /** Valid rows that would UPDATE the listing they matched (upsert mode). */
+  wouldUpdate: number;
+  /** Valid rows that would be SKIPPED (upsert on external id, row carries none). */
+  wouldSkip: number;
 }
 
 /** The dry-run outcome surfaced to the admin. */
@@ -93,6 +122,10 @@ export interface ImportPreview {
    * still suggests a preset even when the current preview used a custom mapping.
    */
   detectedPreset: PresetName | null;
+  /** FR-X-2 — the import mode this preview simulated (echoed from the form). */
+  mode: ImportMode;
+  /** FR-X-2 / FR-X-4 — what the confirmed run WOULD do with the valid rows. */
+  outcome: ImportPreviewOutcome;
   /**
    * FR-X-10 — the plan-quota outcome for this upload, so the admin sees the cap, the
    * current active count and whether committing would exceed it BEFORE running the
@@ -157,13 +190,51 @@ export async function previewPropertyImport(
     ...parseResult.ignoredColumns,
   ]);
 
+  // FR-X-2 / FR-X-4 — simulate the chosen mode with the SAME pure planner the real
+  // import runs. Create-only needs no catalogue read; an upsert mode takes one
+  // tenant-scoped READ of the existing property identities to match against. Still a
+  // dry run: nothing is written and nothing is audited.
+  const mode = readImportMode(formData);
+  const matchField = importMatchField(mode);
+  let plan: PlannedRow[];
+  if (matchField === null) {
+    plan = planImportRows(parseResult.valid, null, new Map());
+  } else {
+    let existingKeys: ExistingPropertyKey[];
+    try {
+      const tenantId = await getCurrentTenantId();
+      existingKeys = await withTenant(getDb(), tenantId, async (rawTx) => {
+        const tx = rawTx as unknown as {
+          property: {
+            findMany(args: {
+              where?: Record<string, unknown>;
+              select?: Record<string, unknown>;
+            }): Promise<ExistingPropertyKey[]>;
+          };
+        };
+        return tx.property.findMany({
+          where: { deletedAt: null },
+          select: { id: true, reference: true, externalId: true },
+        });
+      });
+    } catch {
+      return deny('The existing listings could not be read to preview the upsert. Try again.');
+    }
+    plan = planImportRows(parseResult.valid, matchField, buildMatchIndex(existingKeys, matchField));
+  }
+  const outcome: ImportPreviewOutcome = {
+    wouldCreate: plan.filter((planned) => planned.action === 'create').length,
+    wouldUpdate: plan.filter((planned) => planned.action === 'update').length,
+    wouldSkip: plan.filter((planned) => planned.action === 'skip').length,
+  };
+
   // FR-X-10 — surface the plan-quota outcome so the admin sees whether the upload
-  // fits BEFORE committing. Only valid rows imported as PUBLISHED consume the ACTIVE
-  // cap (matching the real import's check — drafts are not active), so they are the
-  // "incoming" count. A read only — no insert, no import_logs write, no audit.
-  // Best-effort: a quota-read failure must not break the (read-only) dry run.
-  const incoming = parseResult.valid.filter(
-    (row) => row.data.publicationStatus === 'published',
+  // fits BEFORE committing. Only rows the run would CREATE as PUBLISHED consume the
+  // ACTIVE cap (matching the real import's check — drafts are not active and upsert
+  // updates are never net-new). A read only — no insert, no import_logs write, no
+  // audit. Best-effort: a quota-read failure must not break the (read-only) dry run.
+  const incoming = plan.filter(
+    (planned) => planned.action === 'create' && planned.row.data.publicationStatus === 'published',
   ).length;
   let quota: ImportPreviewQuota | undefined;
   try {
@@ -193,6 +264,8 @@ export async function previewPropertyImport(
     recognisedColumns: parseResult.recognisedColumns,
     ignoredColumns: parseResult.ignoredColumns,
     detectedPreset,
+    mode,
+    outcome,
     ...(quota !== undefined ? { quota } : {}),
   };
 

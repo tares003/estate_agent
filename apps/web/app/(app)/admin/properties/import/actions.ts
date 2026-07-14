@@ -12,15 +12,23 @@ import {
 } from '../../../lib/staff-session.js';
 import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
 import { activeListingWhere, getTenantActiveListingQuota } from '../../../lib/import-quota.js';
-import { insertPropertyRow, type PropertyCreateClient } from '../property-insert.js';
 import {
+  insertPropertyRow,
+  updatePropertyRow,
+  type PropertyCreateClient,
+} from '../property-insert.js';
+import {
+  buildMatchIndex,
   formatRowError,
+  importMatchField,
   parsePropertyImportCsv,
+  planImportRows,
+  type ExistingPropertyKey,
   type RowError,
   type RowFieldError,
   type ValidRow,
 } from './csv-import-core.js';
-import { readImportCsv, readImportMapping } from './read-csv.js';
+import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js';
 
 // EPIC-X FR-X-1 / FR-X-5 / FR-X-6 / FR-X-9 — the audited bulk CSV property-import action.
 //
@@ -45,10 +53,20 @@ import { readImportCsv, readImportMapping } from './read-csv.js';
 // audit and every surviving row still commit ATOMICALLY (and RLS's SET LOCAL tenant GUC
 // keeps applying to the whole run); a mid-run crash leaves nothing half-imported.
 //
+// FR-X-2 / FR-X-4 upsert: the form posts an import MODE (create_only | upsert_reference
+// | upsert_external_id; absent/unknown falls back to create_only). In an upsert mode the
+// action reads the tenant's existing property identities INSIDE the same transaction,
+// plans each row with the pure planner the dry-run preview also uses (create / update /
+// skip), UPDATES matched rows through the shared `updatePropertyRow` write path (same
+// coreData column mapping, `property.updated` audit; slug + provenance untouched) and
+// SKIPS rows that carry no external id in external-id mode — creating them would mint a
+// duplicate on every re-run, violating the FR-X acceptance criterion. Skipped rows are
+// recorded on the log (they are not failures: no per-row audit). The FR-X-10 quota
+// counts only NET-NEW published rows (planned creates) — updates are never net-new.
+//
 // This is an authenticated admin action over business data, not a public personal-data
 // form: no GDPR-consent affirmation (G5) and no Turnstile (G8). Deferred to later slices
-// of this epic: upsert + external-id matching (FR-X-4), image post-processing (FR-X-11)
-// and scheduled feeds (FR-X-7/8).
+// of this epic: image post-processing (FR-X-11) and scheduled feeds (FR-X-7/8).
 
 /** The import source identifier stored on the `import_logs` row (schema doc: "csv_upload"). */
 const IMPORT_SOURCE = 'csv_upload';
@@ -61,6 +79,11 @@ interface ImportLogClient extends PropertyCreateClient {
   property: PropertyCreateClient['property'] & {
     /** Count existing active listings for the FR-X-10 quota check (tenant-scoped). */
     count(args: { where?: Record<string, unknown> }): Promise<number>;
+    /** Update a matched row on the upsert path (FR-X-4, via `updatePropertyRow`). */
+    update(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<unknown>;
   };
   importLog: {
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
@@ -75,7 +98,10 @@ interface QuotaDecision {
   limit: number;
   /** Existing active (publicly live) listings before this run. */
   existingActive: number;
-  /** Rows this run imports as PUBLISHED (draft rows never consume the ACTIVE cap). */
+  /**
+   * NET-NEW published rows: planned CREATES with publicationStatus=published. Drafts
+   * never consume the ACTIVE cap, and upsert UPDATES are never net-new (FR-X-10).
+   */
   incoming: number;
 }
 
@@ -83,6 +109,9 @@ interface QuotaDecision {
 export interface ImportRunCounts {
   input: number;
   created: number;
+  /** Rows that UPDATED an existing listing (upsert mode; always 0 in create-only). */
+  updated: number;
+  /** Rows skipped unprocessed (upsert on external id, row carried none). */
   skipped: number;
   failed: number;
 }
@@ -96,6 +125,8 @@ export interface ImportActionState {
   counts?: ImportRunCounts;
   /** One human-readable line per failed source row (the downloadable-report seed). */
   errorSummary?: string[];
+  /** One human-readable line per SKIPPED source row (not failures; upsert mode only). */
+  skippedSummary?: string[];
   /** Headers present in the file the importer did not recognise (ignored). */
   ignoredColumns?: string[];
 }
@@ -110,12 +141,13 @@ function summariseErrors(rowErrors: RowError[]): string[] {
 }
 
 /**
- * Describe an insert failure as a row-level field error (FR-X-5). A P2002
- * unique-constraint violation is a duplicate `reference` (slugs are de-duplicated
- * in-run, so the reference unique index is the one a CSV can realistically hit);
- * anything else gets a generic per-row failure line.
+ * Describe a row write failure (insert OR upsert-update) as a row-level field error
+ * (FR-X-5). A P2002 unique-constraint violation is a duplicate `reference` (slugs are
+ * de-duplicated in-run, so the reference unique index is the one a CSV can
+ * realistically hit — on update, an external-id-matched row renaming its reference
+ * onto another listing's); anything else gets a generic per-row failure line.
  */
-function describeInsertError(error: unknown): RowFieldError {
+function describeWriteError(error: unknown): RowFieldError {
   const code =
     typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
   if (code === 'P2002') {
@@ -124,7 +156,7 @@ function describeInsertError(error: unknown): RowFieldError {
       message: 'a property with this reference already exists (duplicate)',
     };
   }
-  return { field: '', message: 'the row could not be inserted' };
+  return { field: '', message: 'the row could not be imported' };
 }
 
 export async function importPropertiesFromCsv(
@@ -183,19 +215,46 @@ export async function importPropertiesFromCsv(
     }
   }
 
+  // FR-X-2 / FR-X-4 — the import mode the admin chose (defaulting to create-only) and
+  // the identity field an upsert matches on (null = no matching).
+  const mode = readImportMode(formData);
+  const matchField = importMatchField(mode);
+
   // FR-X-10 — the tenant's plan-tier active-listing cap (Infinity for enterprise),
   // read from the operator registry BEFORE the transaction. The existing active
   // count is taken inside the tx (tenant-scoped/RLS) so the quota is enforced against
-  // live data at import time. Only rows imported as PUBLISHED consume the ACTIVE cap —
-  // drafts are not active, so a draft-only import is never blocked by it.
+  // live data at import time.
   const quotaLimit = await getTenantActiveListingQuota();
-  const incoming = importable.filter((row) => row.data.publicationStatus === 'published').length;
 
   const startedAt = new Date();
 
   let result: ImportActionState = deny('The import could not be completed.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
     const tx = rawTx as unknown as ImportLogClient;
+
+    // FR-X-4 — in an upsert mode, read the tenant's existing property identities
+    // (tenant-scoped/RLS; soft-deleted rows excluded — an import never resurrects a
+    // deleted listing) and plan every row with the SAME pure planner the dry-run
+    // preview used: create / update / skip. Create-only plans everything as a create.
+    // The runtime rows carry id+reference+externalId per the select; the structural
+    // client interface types findMany for the slug seed, hence the local cast.
+    let index = new Map<string, string>();
+    if (matchField !== null) {
+      const existingKeys = (await tx.property.findMany({
+        where: { deletedAt: null },
+        select: { id: true, reference: true, externalId: true },
+      })) as unknown as ExistingPropertyKey[];
+      index = buildMatchIndex(existingKeys, matchField);
+    }
+    const plan = planImportRows(importable, matchField, index);
+
+    // FR-X-10 — only rows this run would CREATE as PUBLISHED consume the ACTIVE cap:
+    // drafts are not active, and an upsert UPDATE is never net-new (the listing
+    // already exists), so re-running an already-imported file consumes no headroom.
+    const incoming = plan.filter(
+      (planned) =>
+        planned.action === 'create' && planned.row.data.publicationStatus === 'published',
+    ).length;
 
     // FR-X-10 — abort BEFORE any insert / import_logs write / audit when this run
     // would push the tenant past their active-listing quota. Nothing is created and
@@ -218,31 +277,50 @@ export async function importPropertiesFromCsv(
     const existing = await tx.property.findMany({ where: {}, select: { slug: true } });
     const taken = new Set(existing.map((row) => row.slug));
 
-    // FR-X-5 — per-row DB-error isolation. Each insert runs under a SAVEPOINT: a
-    // constraint failure (e.g. duplicate reference, P2002) rolls back ONLY that row
-    // (including its property.created audit) and the run continues; the surrounding
-    // tenant transaction — import_log + run audit + surviving rows — stays intact.
+    // FR-X-5 — per-row DB-error isolation. Each row WRITE (insert or upsert-update)
+    // runs under a SAVEPOINT: a constraint failure (e.g. duplicate reference, P2002)
+    // rolls back ONLY that row (including its property audit event) and the run
+    // continues; the surrounding tenant transaction — import_log + run audit +
+    // surviving rows — stays intact. Skipped rows perform no write at all.
+    const ctx = { tenantId, actor, createdByUserId: triggeredBy, ip };
     let created = 0;
-    const insertRowErrors: RowError[] = [];
-    for (const row of importable) {
+    let updated = 0;
+    const skippedSummary: string[] = [];
+    const writeRowErrors: RowError[] = [];
+    for (const planned of plan) {
+      if (planned.action === 'skip') {
+        skippedSummary.push(`Row ${planned.row.rowNumber} — skipped: ${planned.reason}`);
+        continue;
+      }
       await tx.$executeRawUnsafe(`SAVEPOINT ${ROW_SAVEPOINT}`);
       try {
-        await insertPropertyRow(
-          tx,
-          { tenantId, actor, createdByUserId: triggeredBy, ip },
-          row.data,
-          taken,
-        );
-        created += 1;
+        if (planned.action === 'create') {
+          await insertPropertyRow(tx, ctx, planned.row.data, taken);
+          created += 1;
+        } else {
+          // FR-X-4 — the matched row updates through the SHARED write path (same
+          // coreData column mapping + property.updated audit as the admin edit).
+          await updatePropertyRow(
+            tx,
+            ctx,
+            planned.row.data,
+            { id: planned.propertyId },
+            planned.matchedOn,
+          );
+          updated += 1;
+        }
       } catch (error) {
         await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${ROW_SAVEPOINT}`);
-        insertRowErrors.push({ rowNumber: row.rowNumber, errors: [describeInsertError(error)] });
+        writeRowErrors.push({
+          rowNumber: planned.row.rowNumber,
+          errors: [describeWriteError(error)],
+        });
       }
       await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${ROW_SAVEPOINT}`);
     }
 
     // Every failed row — validation, pack gate, or DB constraint — in source order.
-    const rowErrors = [...parseResult.errors, ...packRowErrors, ...insertRowErrors].sort(
+    const rowErrors = [...parseResult.errors, ...packRowErrors, ...writeRowErrors].sort(
       (a, b) => a.rowNumber - b.rowNumber,
     );
     const errorSummary = summariseErrors(rowErrors);
@@ -250,10 +328,11 @@ export async function importPropertiesFromCsv(
     const counts: ImportRunCounts = {
       input: parseResult.recordsInput,
       created,
-      // No row was skipped as a duplicate in this create-only slice; upsert de-dup
-      // (FR-X-4) is a later slice. Rows that failed validation, the pack gate or a
-      // DB constraint are `failed`, not skipped.
-      skipped: 0,
+      updated,
+      // Skipped = left unprocessed by design (upsert on external id, row carried
+      // none). Rows that failed validation, the pack gate or a DB constraint are
+      // `failed`, not skipped.
+      skipped: skippedSummary.length,
       failed: rowErrors.length,
     };
 
@@ -264,17 +343,24 @@ export async function importPropertiesFromCsv(
         triggeredBy,
         recordsInput: counts.input,
         recordsCreated: counts.created,
-        recordsUpdated: 0,
+        recordsUpdated: counts.updated,
         recordsSkipped: counts.skipped,
         recordsFailed: counts.failed,
-        errorSummary: errorSummary.length > 0 ? { rows: errorSummary } : null,
+        errorSummary:
+          errorSummary.length > 0 || skippedSummary.length > 0
+            ? {
+                rows: errorSummary,
+                ...(skippedSummary.length > 0 ? { skipped: skippedSummary } : {}),
+              }
+            : null,
         startedAt,
         finishedAt: new Date(),
       },
     });
 
     // FR-X-9 — one audit entry per import run (the run summary). Each created property
-    // additionally emits its own `property.created` row via `insertPropertyRow`.
+    // additionally emits its own `property.created` row via `insertPropertyRow`, and
+    // each updated property its own `property.updated` row via `updatePropertyRow`.
     await audit(tx, {
       tenantId,
       actor,
@@ -282,8 +368,9 @@ export async function importPropertiesFromCsv(
       entity: 'import_log',
       entityId: importLog.id,
       // FR-X-10 — the quota decision travels on the run audit so an import is traceable
-      // to the cap it was checked against and the headroom it consumed.
-      diff: { source: IMPORT_SOURCE, ...counts, quota },
+      // to the cap it was checked against and the headroom it consumed; `mode` records
+      // the FR-X-2 choice the run executed (the import_logs table carries no column).
+      diff: { source: IMPORT_SOURCE, mode, ...counts, quota },
       ip,
     });
 
@@ -308,6 +395,7 @@ export async function importPropertiesFromCsv(
       importLogId: importLog.id,
       counts,
       ...(errorSummary.length > 0 ? { errorSummary } : {}),
+      ...(skippedSummary.length > 0 ? { skippedSummary } : {}),
       ...(parseResult.ignoredColumns.length > 0
         ? { ignoredColumns: parseResult.ignoredColumns }
         : {}),

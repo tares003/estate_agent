@@ -20,6 +20,7 @@ import { z } from 'zod';
  */
 export const IMPORT_COLUMNS = [
   'reference',
+  'externalId',
   'listingType',
   'saleType',
   'slug',

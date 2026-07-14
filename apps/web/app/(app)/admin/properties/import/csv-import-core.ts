@@ -212,3 +212,86 @@ export function formatRowError(rowError: RowError): string {
     .join('; ');
   return `Row ${rowError.rowNumber} — ${reasons}`;
 }
+
+// ─── FR-X-2 / FR-X-4 — import modes + the pure upsert planner ────────────────────────
+//
+// The form posts ONE `mode` value (the design brief's chooser: create only, upsert
+// matching on reference, upsert matching on external id — the dry run is the preview
+// step itself). The planner below decides, per validated row, what the run WOULD do:
+// CREATE a new listing, UPDATE the matched one, or SKIP the row (external-id mode, row
+// carries no external id — blind-creating it would mint a duplicate on every re-run).
+// Shared verbatim by the dry-run preview and the audited import so they cannot drift.
+
+/** The import-mode choices the form may post (FR-X-2; create-only is the default). */
+export const IMPORT_MODES = ['create_only', 'upsert_reference', 'upsert_external_id'] as const;
+export type ImportMode = (typeof IMPORT_MODES)[number];
+
+/** The identity field an upsert matches existing properties on (FR-X-4). */
+export type ImportMatchField = 'reference' | 'externalId';
+
+/** Resolve the match field a mode implies — `null` for create-only (no matching). */
+export function importMatchField(mode: ImportMode): ImportMatchField | null {
+  if (mode === 'upsert_reference') return 'reference';
+  if (mode === 'upsert_external_id') return 'externalId';
+  return null;
+}
+
+/** One existing property's identity fields, as read from the tenant's catalogue. */
+export interface ExistingPropertyKey {
+  id: string;
+  reference: string;
+  externalId: string | null;
+}
+
+/**
+ * Index the tenant's existing properties by the chosen match field: match value →
+ * property id (FR-X-4). Rows without a usable value (null / empty external id) are
+ * never indexed. When two existing rows share a value (possible for `externalId`,
+ * which carries no unique constraint) the FIRST occurrence wins — deterministic, so
+ * a re-run always updates the same row.
+ */
+export function buildMatchIndex(
+  existing: readonly ExistingPropertyKey[],
+  matchField: ImportMatchField,
+): Map<string, string> {
+  const index = new Map<string, string>();
+  for (const row of existing) {
+    const key = matchField === 'reference' ? row.reference : row.externalId;
+    if (key === null || key === '' || index.has(key)) continue;
+    index.set(key, row.id);
+  }
+  return index;
+}
+
+/** The planner's per-row decision: what the run would do with one validated row. */
+export type PlannedRow =
+  | { action: 'create'; row: ValidRow }
+  | { action: 'update'; row: ValidRow; propertyId: string; matchedOn: ImportMatchField }
+  | { action: 'skip'; row: ValidRow; reason: string };
+
+/**
+ * Plan every validated row for the run (FR-X-2 / FR-X-4), in source order. With no
+ * match field (create-only mode) every row is a create. In an upsert mode a row whose
+ * match value appears in `index` becomes an UPDATE of that property; a row without a
+ * match value is SKIPPED with a reason (only reachable in external-id mode — the
+ * schema requires `reference`); anything else is a create. Matching runs against the
+ * catalogue snapshot the caller read, so in-file duplicate keys fall through to the
+ * DB constraint, where FR-X-5's per-row isolation records them as failed rows.
+ */
+export function planImportRows(
+  rows: readonly ValidRow[],
+  matchField: ImportMatchField | null,
+  index: ReadonlyMap<string, string>,
+): PlannedRow[] {
+  return rows.map((row): PlannedRow => {
+    if (matchField === null) return { action: 'create', row };
+    const key = row.data[matchField];
+    if (key === undefined || key === '') {
+      return { action: 'skip', row, reason: 'no externalId value to match on' };
+    }
+    const propertyId = index.get(key);
+    return propertyId === undefined
+      ? { action: 'create', row }
+      : { action: 'update', row, propertyId, matchedOn: matchField };
+  });
+}

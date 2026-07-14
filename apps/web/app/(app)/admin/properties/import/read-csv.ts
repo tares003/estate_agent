@@ -1,5 +1,7 @@
 import { mappingSchema, type ColumnMapping } from '@estate/validators';
 
+import { IMPORT_MODES, type ImportMode } from './csv-import-core.js';
+
 // EPIC-X FR-X-1 / FR-X-2 / FR-X-3 — the shared upload-reader for the bulk CSV property
 // import.
 //
@@ -32,6 +34,19 @@ export function readImportMapping(formData: FormData): ColumnMapping | undefined
   }
   const result = mappingSchema.safeParse(parsed);
   return result.success ? result.data : undefined;
+}
+
+/**
+ * Read the import MODE (FR-X-2) from the submission — the same way for the preview and
+ * the audited import, so the confirmed run always executes the mode that was previewed.
+ * Absent or unrecognised values fall back to `create_only`: the fail-safe default that
+ * never rewrites an existing listing.
+ */
+export function readImportMode(formData: FormData): ImportMode {
+  const raw = formData.get('mode');
+  return typeof raw === 'string' && (IMPORT_MODES as readonly string[]).includes(raw)
+    ? (raw as ImportMode)
+    : 'create_only';
 }
 
 /** Read the uploaded CSV file from the submission, or an error when absent/oversized/wrong-type. */

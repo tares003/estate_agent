@@ -352,6 +352,10 @@ export function validatePropertyVerticalFields(
 // conditionally on `listingType` by the write action.
 export const propertyCreateSchema = z.object({
   reference: nonEmptyString,
+  // EPIC-X FR-X-4 — the source CRM's identifier carried by an imported record, so an
+  // upsert can match existing rows on `external_id`. Optional: hand-authored listings
+  // and reference-keyed imports have none.
+  externalId: z.string().trim().min(1).max(200).optional(),
   listingType: z.enum(PROPERTY_LISTING_TYPES),
   saleType: z.enum(PROPERTY_SALE_TYPES),
   slug: slug.optional(),
