@@ -30,6 +30,14 @@ export interface CandidateProperty {
    * an absent value is treated as NOT a new home (the toggle fails conservatively).
    */
   isNewHome?: boolean;
+  /**
+   * §F.5 / §J address-redaction inputs (optional for fixture compatibility; the
+   * candidate reads return full rows). The alert renderer redacts when either
+   * flag is set — see alert-redaction.ts, the twin of the public rule.
+   */
+  isConfidential?: boolean;
+  hideExactAddress?: boolean;
+  postcodePrefix?: string | null;
   /** Null until first published; the catalogue base gate requires it to be set. */
   publishedAt: Date | null;
   /** Soft-delete marker; a deleted property is never public (catalogue base gate). */

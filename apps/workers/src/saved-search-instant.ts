@@ -1,6 +1,7 @@
 import { audit, notify } from '@estate/db';
 import type { AlertFrequency, PropertySearch } from '@estate/validators';
 
+import { alertAddressLine, alertTitle } from './alert-redaction.js';
 import { findNewMatches, type CandidateProperty } from './saved-search-match.js';
 
 // EPIC-U + EPIC-T FR-T-7/8 / FR-U — the INSTANT branch of saved-search alerts
@@ -132,15 +133,18 @@ export async function listInstantSavedSearches(
 
 /**
  * The candidate properties for matching: published, non-deleted properties published
- * AFTER the saved search's cursor (only genuinely new listings are considered). A
- * null cursor (first poll) reads every published, non-deleted property. The matcher
- * re-applies the same base gate in-memory, so this query is a narrowing optimisation.
+ * in the (cursor, now] window. The upper clamp matters: the cursor advances to
+ * `now`, so a property published DURING the tick (after `now` was captured) must be
+ * left for the NEXT tick — an unclamped read would alert it this tick and read it
+ * again next tick (duplicate email). A null cursor (first poll) reads everything up
+ * to now. The matcher re-applies the base gate in-memory.
  */
 export async function listCandidateProperties(
   tx: SavedSearchInstantClient,
   since: Date | null,
+  now: Date,
 ): Promise<CandidateProperty[]> {
-  const publishedAt = since === null ? { not: null } : { gt: since };
+  const publishedAt = since === null ? { not: null, lte: now } : { gt: since, lte: now };
   return tx.property.findMany({ where: { publishedAt, deletedAt: null } });
 }
 
@@ -174,11 +178,15 @@ export interface InstantAlertProperty {
   href: string;
 }
 
-/** Map a matched §J property to the alert's render shape. */
+/**
+ * Map a matched §J property to the alert's render shape. Title/address go through
+ * the alert-redaction twin of the public rule, so a §F.5 confidential or §J
+ * hideExactAddress listing never leaks its name or exact address in an email.
+ */
 function toAlertProperty(property: CandidateProperty): InstantAlertProperty {
   return {
-    title: property.title ?? property.displayAddress,
-    address: `${property.displayAddress}, ${property.postcode}`,
+    title: alertTitle(property),
+    address: alertAddressLine(property),
     price: formatPrice(property.price),
     href: `/properties/${property.slug}`,
   };
@@ -199,11 +207,17 @@ export async function processSavedSearchInstant(opts: {
 }): Promise<InstantOutcome> {
   const { tenantId, runTenant, search, now } = opts;
 
-  const candidates = await runTenant((tx) => listCandidateProperties(tx, search.lastAlertSentAt));
+  const candidates = await runTenant((tx) =>
+    listCandidateProperties(tx, search.lastAlertSentAt, now),
+  );
   const matches = processInstantMatches(search, candidates);
 
   if (matches.length === 0) {
     // No new matches — advance the cursor without emailing.
+    // audit-exempt: unlike the daily/weekly digest (which audits its no-match
+    // advance), this poll runs ~every minute per search; auditing every empty
+    // tick would flood audit_logs with no forensic value. The EMAILED branch is
+    // fully audited, and the cursor is recoverable from the audit trail there.
     await runTenant((tx) =>
       tx.savedSearch.update({ where: { id: search.id }, data: { lastAlertSentAt: now } }),
     );

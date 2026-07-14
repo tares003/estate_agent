@@ -146,7 +146,7 @@ describe('processInstantMatches', () => {
 });
 
 describe('listCandidateProperties (via processSavedSearchInstant read window)', () => {
-  it('reads published, non-deleted properties published after the cutoff', async () => {
+  it('reads published, non-deleted properties in the (cutoff, now] window', async () => {
     const tx = makeTx();
     await processSavedSearchInstant({
       tenantId: TENANT,
@@ -154,12 +154,18 @@ describe('listCandidateProperties (via processSavedSearchInstant read window)', 
       search: instantSearch({ lastAlertSentAt: new Date('2026-06-28T07:00:00Z') }),
       now: NOW,
     });
+    // The read is clamped to <= now: the cursor advances to `now`, so a property
+    // published DURING the tick (after `now` was captured) must be left for the
+    // next tick — an unclamped read would alert it now AND re-read it next tick.
     expect(tx.property.findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { gt: new Date('2026-06-28T07:00:00Z') }, deletedAt: null },
+      where: {
+        publishedAt: { gt: new Date('2026-06-28T07:00:00Z'), lte: NOW },
+        deletedAt: null,
+      },
     });
   });
 
-  it('reads all published, non-deleted properties when the cutoff is null (first poll)', async () => {
+  it('reads all published, non-deleted properties up to now when the cutoff is null', async () => {
     const tx = makeTx();
     await processSavedSearchInstant({
       tenantId: TENANT,
@@ -168,7 +174,7 @@ describe('listCandidateProperties (via processSavedSearchInstant read window)', 
       now: NOW,
     });
     expect(tx.property.findMany).toHaveBeenCalledWith({
-      where: { publishedAt: { not: null }, deletedAt: null },
+      where: { publishedAt: { not: null, lte: NOW }, deletedAt: null },
     });
   });
 });
@@ -420,5 +426,70 @@ describe('runInstantAlertsTick', () => {
       payload: Record<string, unknown>;
     };
     expect(created.payload).not.toHaveProperty('baseUrl');
+  });
+});
+
+describe('alert email redaction (§F.5 confidential / §J hideExactAddress)', () => {
+  async function emailedPayload(candidate: CandidateProperty) {
+    const tx = makeTx();
+    tx.savedSearch.findMany.mockResolvedValue([
+      {
+        id: 's1',
+        userId: 'u1',
+        name: 'Didsbury 2-beds',
+        filters: {},
+        lastAlertSentAt: new Date('2026-06-28T07:00:00Z'),
+        user: { email: 'tess@example.com' },
+      },
+    ]);
+    tx.property.findMany.mockResolvedValue([candidate]);
+    await processTenantInstantAlerts({ tenantId: TENANT, runTenant: runnerFor(tx), now: NOW });
+    return tx.notificationLog.create.mock.calls[0]![0].data as {
+      payload: { properties: Array<{ title: string; address: string }> };
+    };
+  }
+
+  it('redacts a confidential listing to town + postcode prefix (even over its title)', async () => {
+    const created = await emailedPayload(
+      property({ isConfidential: true, title: 'Thriving Didsbury Bakery' }),
+    );
+    const rendered = created.payload.properties[0]!;
+    expect(rendered.title).toBe('Didsbury, M20');
+    expect(rendered.address).toBe('Didsbury, M20');
+    expect(JSON.stringify(created.payload)).not.toContain('1 High Street');
+    expect(JSON.stringify(created.payload)).not.toContain('M20 2AB');
+    expect(JSON.stringify(created.payload)).not.toContain('Bakery');
+  });
+
+  it('redacts the address but keeps the title for a hideExactAddress listing', async () => {
+    const created = await emailedPayload(property({ hideExactAddress: true }));
+    const rendered = created.payload.properties[0]!;
+    expect(rendered.title).toBe('A lovely flat');
+    expect(rendered.address).toBe('Didsbury, M20');
+    expect(JSON.stringify(created.payload)).not.toContain('1 High Street');
+  });
+
+  it('renders the exact address for an unflagged listing', async () => {
+    const created = await emailedPayload(property());
+    expect(created.payload.properties[0]!.address).toBe('1 High Street, M20 2AB');
+  });
+});
+
+describe('failure path (at-least-once contract)', () => {
+  it('does not advance the cursor when queueing the alert fails', async () => {
+    const tx = makeTx();
+    tx.property.findMany.mockResolvedValue([property()]);
+    tx.notificationLog.create.mockRejectedValue(new Error('outbox unavailable'));
+
+    await expect(
+      processSavedSearchInstant({
+        tenantId: TENANT,
+        runTenant: runnerFor(tx),
+        search: instantSearch(),
+        now: NOW,
+      }),
+    ).rejects.toThrow('outbox unavailable');
+    // The cursor must NOT advance past an unqueued alert — the next tick retries.
+    expect(tx.savedSearch.update).not.toHaveBeenCalled();
   });
 });
