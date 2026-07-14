@@ -13,6 +13,7 @@ const DAILY: WorkerDefinition = {
   cadence: 'daily',
   schedule: '07:00 tenant-local',
   localHour: 7,
+  perTenant: true,
 };
 const INTERVAL: WorkerDefinition = {
   id: 'interval_job',
@@ -20,6 +21,7 @@ const INTERVAL: WorkerDefinition = {
   description: 'i',
   cadence: 'interval',
   schedule: 'every 15 seconds',
+  perTenant: false,
 };
 const CATALOGUE = [DAILY, INTERVAL];
 

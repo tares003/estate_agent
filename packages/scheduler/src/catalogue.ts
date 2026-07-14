@@ -36,6 +36,18 @@ export interface WorkerDefinition {
   localHour?: number;
   /** For weekly workers, the ISO weekday (1 = Monday … 7 = Sunday). */
   localWeekday?: number;
+  /**
+   * Whether the worker runs as a PER-TENANT loop — one decision, one run-log row and one
+   * pause flag per tenant. Those are the workers the console can genuinely control
+   * (FR-U-8) and report on (FR-U-7).
+   *
+   * The outbox dispatchers (email / SMS / images) are false: they drain one shared queue
+   * across every tenant, so there is no per-tenant run to record and no per-tenant pause
+   * to honour. The console lists them — a tenant should still see that they exist and
+   * what they do — but marks them continuous and offers no controls, rather than showing
+   * a Pause button that would silently do nothing.
+   */
+  perTenant: boolean;
 }
 
 /**
@@ -48,21 +60,24 @@ export const WORKER_CATALOGUE: readonly WorkerDefinition[] = [
     name: 'Email dispatch',
     description: 'Sends queued emails from the notification outbox.',
     cadence: 'interval',
-    schedule: 'every 15 seconds',
+    schedule: 'every 30 seconds',
+    perTenant: false,
   },
   {
     id: 'sms_send',
     name: 'SMS dispatch',
     description: 'Sends queued SMS messages (emergency repairs, 2FA fallback).',
     cadence: 'interval',
-    schedule: 'every 15 seconds',
+    schedule: 'every 30 seconds',
+    perTenant: false,
   },
   {
     id: 'image_processing',
     name: 'Image processing',
     description: 'Strips EXIF and builds the thumbnail / large renditions (FR-F-7).',
     cadence: 'interval',
-    schedule: 'every 30 seconds',
+    schedule: 'every 60 seconds',
+    perTenant: false,
   },
   {
     id: 'saved_search_instant',
@@ -70,6 +85,7 @@ export const WORKER_CATALOGUE: readonly WorkerDefinition[] = [
     description: 'Emails instant-cadence saved searches when a matching property is published.',
     cadence: 'interval',
     schedule: 'every minute',
+    perTenant: true,
   },
   {
     id: 'saved_search_daily',
@@ -78,6 +94,7 @@ export const WORKER_CATALOGUE: readonly WorkerDefinition[] = [
     cadence: 'daily',
     schedule: '07:00 tenant-local',
     localHour: 7,
+    perTenant: true,
   },
   {
     id: 'saved_search_weekly',
@@ -87,6 +104,7 @@ export const WORKER_CATALOGUE: readonly WorkerDefinition[] = [
     schedule: 'Monday 08:00 tenant-local',
     localHour: 8,
     localWeekday: 1,
+    perTenant: true,
   },
 ];
 

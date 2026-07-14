@@ -95,3 +95,36 @@ export async function getTenantName(
   const row = await reader.platformTenant.findUnique({ where: { id: tenantId } });
   return row?.name ?? null;
 }
+
+/**
+ * The zone a tenant's clock runs on — the schema default, matching `PlatformTenant.timezone`.
+ * Every tenant is a UK agency unless they say otherwise (EPIC-U FR-U-9).
+ */
+export const DEFAULT_TENANT_TIMEZONE = 'Europe/London';
+
+/** Structural reader for the tenant's zone; same un-RLS'd registry as above. */
+export interface PlatformTenantTimezoneReader {
+  platformTenant: {
+    findUnique(args: {
+      where: { id: string };
+      select?: Record<string, unknown>;
+    }): Promise<{ timezone: string } | null>;
+  };
+}
+
+/**
+ * EPIC-U FR-U-9 — the tenant's IANA time zone, which is what daily/weekly work is
+ * scheduled against ("the digest should arrive at 7am MY time") and what timestamps are
+ * rendered in. Falls back to the default rather than throwing: a missing registry row must
+ * not take the console down, and Europe/London is right for every tenant that never set one.
+ */
+export async function getTenantTimezone(
+  reader: PlatformTenantTimezoneReader,
+  tenantId: string,
+): Promise<string> {
+  const row = await reader.platformTenant.findUnique({
+    where: { id: tenantId },
+    select: { timezone: true },
+  });
+  return row?.timezone ?? DEFAULT_TENANT_TIMEZONE;
+}

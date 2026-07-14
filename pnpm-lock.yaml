@@ -35,6 +35,9 @@ importers:
       '@estate/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@estate/scheduler':
+        specifier: workspace:*
+        version: link:../../packages/scheduler
       '@estate/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -156,6 +159,9 @@ importers:
       '@estate/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@estate/scheduler':
+        specifier: workspace:*
+        version: link:../../packages/scheduler
       '@estate/sms':
         specifier: workspace:*
         version: link:../../packages/sms

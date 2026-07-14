@@ -16,6 +16,7 @@
     "@estate/db": "workspace:*",
     "@estate/email": "workspace:*",
     "@estate/observability": "workspace:*",
+    "@estate/scheduler": "workspace:*",
     "@estate/sms": "workspace:*",
     "@estate/storage": "workspace:*",
     "@estate/validators": "workspace:*",

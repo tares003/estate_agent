@@ -16,6 +16,7 @@ const DAILY: WorkerDefinition = {
   cadence: 'daily',
   schedule: '07:00 tenant-local',
   localHour: 7,
+  perTenant: true,
 };
 
 const WEEKLY: WorkerDefinition = {
@@ -26,6 +27,7 @@ const WEEKLY: WorkerDefinition = {
   schedule: 'Mon 08:00 tenant-local',
   localHour: 8,
   localWeekday: 1,
+  perTenant: true,
 };
 
 const INTERVAL: WorkerDefinition = {
@@ -34,6 +36,7 @@ const INTERVAL: WorkerDefinition = {
   description: 'e',
   cadence: 'interval',
   schedule: 'every 15 seconds',
+  perTenant: false,
 };
 
 describe('tenantLocalParts', () => {
