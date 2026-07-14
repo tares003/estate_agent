@@ -25,8 +25,8 @@ import { readImportCsv, readImportMapping } from './read-csv.js';
 // `import_logs` write and NO audit — reading + validating a file is not a state change,
 // so the G4 audit rule does not apply here (the audited write happens later, when the
 // admin confirms and `importPropertiesFromCsv` runs). RBAC is still fail-closed on the
-// same `property.write` permission the real import gates on, so a user who could not
-// import also cannot preview.
+// same `property.import` permission the real import gates on (FR-X-1), so a user who
+// could not import also cannot preview.
 
 /** How many mapped records the preview surfaces (FR-X-2: "the first ten records"). */
 export const PREVIEW_SAMPLE_LIMIT = 10;
@@ -123,10 +123,10 @@ export async function previewPropertyImport(
   _prevState: ImportPreviewState,
   formData: FormData,
 ): Promise<ImportPreviewState> {
-  // RBAC gate — fail closed BEFORE reading the upload (same permission as the real
-  // import, so a user who cannot import cannot preview either).
+  // RBAC gate (FR-X-1) — fail closed BEFORE reading the upload (same permission as the
+  // real import, so a user who cannot import cannot preview either).
   try {
-    await requireStaffPermission('property.write');
+    await requireStaffPermission('property.import');
   } catch {
     return deny('You do not have permission to import listings.');
   }

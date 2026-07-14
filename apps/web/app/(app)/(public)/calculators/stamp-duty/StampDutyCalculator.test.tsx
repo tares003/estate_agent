@@ -15,8 +15,9 @@ import { StampDutyCalculator } from './StampDutyCalculator.js';
 describe('StampDutyCalculator', () => {
   it('shows the indicative total for the default inputs (home mover, £300k)', () => {
     render(<StampDutyCalculator />);
-    // DEFAULT bands: 0% to £250k, 5% above → 5% of £50k = £2,500.
-    expect(screen.getByTestId('total-tax').textContent).toMatch(/£2,500\.00/);
+    // DEFAULT bands (2025-04-01 rules, FR-W-2): 0% of £125k + 2% of £125k
+    // (£2,500) + 5% of £50k (£2,500) = £5,000.
+    expect(screen.getByTestId('total-tax').textContent).toMatch(/£5,000\.00/);
   });
 
   it('renders the "not financial advice" disclosure and the bands last-updated date', () => {
@@ -28,7 +29,7 @@ describe('StampDutyCalculator', () => {
   it('applies first-time-buyer relief when the category changes', () => {
     render(<StampDutyCalculator />);
     fireEvent.change(screen.getByLabelText(/buyer/i), { target: { value: 'first_time_buyer' } });
-    // FTB relief: 0% to £425k → £0 on a £300k purchase.
+    // FTB relief (2025-04-01 rules): 0% to £300k → £0 on a £300k purchase.
     expect(screen.getByTestId('total-tax').textContent).toMatch(/£0\.00/);
   });
 
