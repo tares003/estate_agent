@@ -27,6 +27,23 @@ const REPAIR_RECEIVED: EmailTemplateInput = {
     '<p>The repairs team will be in touch about the next steps.</p>',
 };
 
+/** FR-G-3 / §G.7 `repair_new_internal` (audit finding
+ *  repair-emergency-internal-notifications-missing): the internal alert to the
+ *  property manager + branch repairs queue, queued on EVERY submission. */
+const REPAIR_NEW_INTERNAL: EmailTemplateInput = {
+  subject: 'New repair report — {{reference}} ({{urgency}})',
+  preheader: 'A new repair ticket needs triage.',
+  html:
+    '<p>A new repair report has been submitted.</p>' +
+    '<p>Reference: <strong>{{reference}}</strong><br />' +
+    'Reported by: {{name}}<br />' +
+    'Category: {{category}}<br />' +
+    'Urgency: {{urgency}}<br />' +
+    'Property: {{propertyReference}}</p>' +
+    '<p>{{description}}</p>' +
+    '<p>Triage the ticket from the repairs inbox.</p>',
+};
+
 /** FR-G-8: the contractor's no-sign-in magic-link to an assigned ticket. */
 const CONTRACTOR_ASSIGNED: EmailTemplateInput = {
   subject: 'You’ve been assigned a repair — {{reference}}',
@@ -80,6 +97,7 @@ const FEEDBACK_REQUESTED: EmailTemplateInput = {
 
 const TEMPLATES: Record<string, EmailTemplateInput> = {
   'repair_request.received': REPAIR_RECEIVED,
+  'repair_request.received_internal': REPAIR_NEW_INTERNAL,
   'repair.contractor_assigned': CONTRACTOR_ASSIGNED,
   'auth.magic_link': AUTH_MAGIC_LINK,
   'auth.password_reset': AUTH_PASSWORD_RESET,

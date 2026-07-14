@@ -183,6 +183,10 @@ export { DEFAULT_REPAIR_CATEGORIES, type DefaultRepairCategory } from './repair-
 export { mortgageInputSchema, type MortgageInput } from './mortgage.js';
 export { mortgageRateConfigSchema, type MortgageRateConfigInput } from './mortgage-rate-config.js';
 export {
+  repairNotificationConfigSchema,
+  type RepairNotificationConfigInput,
+} from './repair-notification-config.js';
+export {
   MORTGAGE_PRESET_LABEL_MAX,
   mortgageRatePresetSchema,
   mortgageRatePresetCreateSchema,

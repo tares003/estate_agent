@@ -58,6 +58,7 @@ model PlatformTenant {
   savedSearches        SavedSearch[]
   mortgageRateConfig   MortgageRateConfig?
   mortgageRatePresets  MortgageRatePreset[]
+  repairNotificationConfig RepairNotificationConfig?
   blogAuthors          BlogAuthor[]
   blogCategories       BlogCategory[]
   blogPostTags         BlogPostTag[]
@@ -981,6 +982,33 @@ model MortgageRatePreset {
 
   @@index([tenantId, sortOrder])
   @@map("mortgage_rate_presets")
+}
+
+/// EPIC-G FR-G-3 (audit finding repair-emergency-internal-notifications-missing) —
+/// the per-tenant repair notification routing: the INTERNAL recipients master spec
+/// §G.7 routes new-ticket notifications to. One row per tenant (the @unique on
+/// tenant_id): `repairsEmail` is the property-manager / branch-repairs-queue email
+/// alerted on EVERY submission (`repair_new_internal`); `onCallPhone` is the
+/// on-call manager's number paged by SMS on an EMERGENCY submission
+/// (`repair_emergency_internal`). Either channel may be unconfigured (null) — the
+/// submit action skips what has no recipient. The smallest spec-grounded slice of
+/// the §H.13 notification-rules matrix; the full matrix, the on-call rota and the
+/// Slack/Teams team-messaging channel are deferred to EPIC-H. Tenant-scoped,
+/// isolated by the tenant_isolation RLS policy in
+/// migrations/raw/0024_repair_notification_config_rls.sql.
+model RepairNotificationConfig {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @unique @map("tenant_id") @db.Uuid
+  /// Internal email alerted on every submission (§G.7 "Property manager + branch repairs queue").
+  repairsEmail String?  @map("repairs_email")
+  /// On-call manager's phone, paged by SMS on emergency submissions (§G.7).
+  onCallPhone  String?  @map("on_call_phone")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant PlatformTenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("repair_notification_config")
 }
 
 /// EPIC-J knowledge-hub author (master spec §J "Blog author"; §H Blog tab).
