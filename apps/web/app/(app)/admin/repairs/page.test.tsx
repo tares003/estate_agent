@@ -40,7 +40,12 @@ vi.mock('./RepairsInboxTable.js', () => ({
 
 const { default: RepairsInboxPage } = await import('./page.js');
 
-/** A ticket submitted `hoursAgo` hours ago — so its SLA band is deterministic. */
+/**
+ * A ticket submitted `hoursAgo` hours ago, relative to the REAL clock — which the page
+ * also reads. Its elapsed share is therefore a hair more than the nominal age, so a
+ * caller must pick an age that lands mid-band; an age that lands on a threshold is a
+ * millisecond race, not a fixture (see the configured-SLA test below).
+ */
 function ticket(hoursAgo: number) {
   return {
     id: 'r1',
@@ -114,11 +119,21 @@ describe('RepairsInboxPage', () => {
   });
 
   it('bands against the tenant-configured SLA when one exists', async () => {
-    // The same 3h-old urgent ticket is 75% of a configured 4h target — due soon.
+    // The same 3h-old urgent ticket is 60% of a configured 5h target — due soon
+    // (past the 50% due-soon threshold, short of the 75% at-risk one).
+    //
+    // The share must land in the MIDDLE of the band, never on a threshold. The page
+    // reads the clock itself, so the elapsed share is (renderTime - createdAt), a hair
+    // MORE than the fixture's nominal age — and slaRisk bands on a strict `>`. A ticket
+    // sitting exactly on a threshold therefore flips to the higher band as soon as one
+    // millisecond passes between building the fixture and rendering, which is a coin
+    // flip on a fast machine and a certainty on loaded CI. (The exactly-on-threshold
+    // semantics — which resolve to the LOWER band — are pinned deterministically in
+    // lib/repair-sla.test.ts, where `now` is injected rather than read.)
     findMany.mockResolvedValue([ticket(3)]);
     slaConfigFindFirst.mockResolvedValue({
-      emergencyTargetHours: 4,
-      urgentTargetHours: 4,
+      emergencyTargetHours: 5,
+      urgentTargetHours: 5,
       standardTargetHours: 48,
       lowTargetWorkingDays: 5,
       dueSoonThresholdPercent: 50,

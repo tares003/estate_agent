@@ -86,6 +86,18 @@ describe('slaRisk', () => {
     expect(slaRisk(emergency, at(40))).toBe('breached');
   });
 
+  it('resolves a share sitting EXACTLY on a threshold to the LOWER band', () => {
+    // slaRisk bands on a strict `>`, so a ticket exactly at a threshold has not yet
+    // crossed it: 50% is still green, 75% is still amber. Pinned here — with `now`
+    // INJECTED, so it is exact — because a test that reads the real clock cannot
+    // express a boundary at all (its share is always a hair over the nominal age, so
+    // it silently lands in the band above). Any caller banding against the wall clock
+    // must therefore stay mid-band.
+    expect(slaRisk(emergency, at(2))).toBe('on_track'); // exactly 50% — the due-soon edge
+    expect(slaRisk(emergency, at(3))).toBe('due_soon'); // exactly 75% — the at-risk edge
+    expect(slaRisk(emergency, at(4))).toBe('breached'); // exactly 100% — breach IS inclusive
+  });
+
   it('does not band a closed ticket', () => {
     expect(slaRisk({ ...emergency, status: 'completed' }, at(40))).toBeNull();
     expect(slaRisk({ ...emergency, status: 'rejected' }, at(40))).toBeNull();
