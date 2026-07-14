@@ -43,7 +43,10 @@ import { REPAIR_CONSENT_TEXT } from './consent-text.js';
 // spec's `enquiries` + `repair_requests` dual write — routed through the tenant's
 // assignment rules (FR-I-3), so repairs surface in the unified CRM queue. The
 // tenant confirmation email is QUEUED via notify() in the same transaction
-// (§H.13 — the action records intent; the workers dispatch). Staff triage
+// (§H.13 — the action records intent; the workers dispatch), and so are the
+// CONFIGURED internal notifications (FR-G-3/§G.7): the staff/branch-repairs
+// email on every submission plus the on-call manager SMS on emergency — see
+// repair_notification_config (admin settings surface). Staff triage
 // urgency + resolve the property in the admin inbox, so `propertyId` is left
 // null and the typed `propertyReference` is stored alongside. The repair flow is
 // in the `core` pack (every tenant), so no entitlement gate. Held to the two
@@ -63,6 +66,11 @@ interface RepairWriteClient
   repairFile: {
     count(args: { where?: Record<string, unknown> }): Promise<number>;
     create(args: { data: Record<string, unknown> }): Promise<{ id: string }>;
+  };
+  repairNotificationConfig: {
+    findFirst(args?: {
+      select?: Record<string, unknown>;
+    }): Promise<{ repairsEmail: string | null; onCallPhone: string | null } | null>;
   };
 }
 
@@ -251,6 +259,42 @@ export async function submitRepairRequest(
           channel: 'sms',
           recipient: repair.phone,
           payload: { reference },
+        });
+      }
+      // FR-G-3 / §G.7 (audit finding repair-emergency-internal-notifications-
+      // missing): the CONFIGURED internal notifications, queued in the same tx.
+      // Every submission alerts the property-manager / branch-repairs-queue email
+      // (`repair_new_internal`); an emergency submission additionally pages the
+      // on-call manager by SMS (`repair_emergency_internal`). A channel with no
+      // configured recipient is skipped — routing is best-effort and never blocks
+      // the ticket. §G.7's Slack/Teams team-messaging channel is deferred (EPIC-G
+      // defines no webhook mechanism; the §H.13 notification matrix is EPIC-H).
+      const internalRecipients = await tx.repairNotificationConfig.findFirst({
+        select: { repairsEmail: true, onCallPhone: true },
+      });
+      if (internalRecipients?.repairsEmail) {
+        await notify(tx, {
+          tenantId,
+          event: 'repair_request.received_internal',
+          channel: 'email',
+          recipient: internalRecipients.repairsEmail,
+          payload: {
+            reference,
+            name: repair.name,
+            category: repair.category,
+            urgency: repair.urgency,
+            propertyReference: repair.propertyReference,
+            description: repair.description,
+          },
+        });
+      }
+      if (repair.urgency === 'emergency' && internalRecipients?.onCallPhone) {
+        await notify(tx, {
+          tenantId,
+          event: 'repair_request.emergency_internal',
+          channel: 'sms',
+          recipient: internalRecipients.onCallPhone,
+          payload: { reference, category: repair.category },
         });
       }
       await audit(tx, {

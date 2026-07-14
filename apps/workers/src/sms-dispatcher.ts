@@ -57,6 +57,12 @@ const TEMPLATES: Record<string, (v: Record<string, string>) => string> = {
   'repair_request.emergency': (v) =>
     `Your emergency repair has been logged as ${v['reference'] ?? ''}. ` +
     `The team has been alerted and will be in touch urgently.`,
+  // FR-G-3 / §G.7 `repair_emergency_internal` (audit finding
+  // repair-emergency-internal-notifications-missing): the on-call manager's page
+  // for a new EMERGENCY ticket. One SMS segment; triage detail lives in the inbox.
+  'repair_request.emergency_internal': (v) =>
+    `EMERGENCY repair ${v['reference'] ?? ''} (${v['category'] ?? ''}) has been reported. ` +
+    `Review and dispatch from the repairs inbox.`,
 };
 
 /** Render the SMS text for a queued event, or null when no template exists. */

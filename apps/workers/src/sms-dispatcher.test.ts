@@ -46,6 +46,21 @@ describe('renderSms', () => {
   it('returns null for an event with no SMS template', () => {
     expect(renderSms('mystery.event', {})).toBeNull();
   });
+
+  // Audit finding repair-emergency-internal-notifications-missing (FR-G-3, §G.7
+  // `repair_emergency_internal`): the on-call manager's emergency page.
+  it('renders the internal on-call emergency text with the reference and category', () => {
+    const text = renderSms('repair_request.emergency_internal', {
+      reference: 'RPR-2026-00042',
+      category: 'Heating',
+    });
+    expect(text).not.toBeNull();
+    expect(text).toContain('RPR-2026-00042');
+    expect(text).toContain('Heating');
+    // a page, not the reporter acknowledgement — must read as an inbound alert
+    expect(text!.toLowerCase()).toContain('emergency');
+    expect(text!.length).toBeLessThanOrEqual(160); // one SMS segment
+  });
 });
 
 describe('listQueuedSms', () => {

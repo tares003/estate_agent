@@ -33,12 +33,14 @@ const fileCount = vi.fn();
 const fileCreate = vi.fn();
 const enquiryCreate = vi.fn();
 const ruleFindMany = vi.fn();
+const notificationConfigFindFirst = vi.fn();
 const withTenant = vi.fn(async (_db: unknown, _t: string, fn: (tx: unknown) => unknown) =>
   fn({
     repairRequest: { create: repairCreate, count: repairCount, findFirst: repairFindFirst },
     repairFile: { count: fileCount, create: fileCreate },
     enquiry: { create: enquiryCreate },
     assignmentRule: { findMany: ruleFindMany },
+    repairNotificationConfig: { findFirst: notificationConfigFindFirst },
   }),
 );
 vi.mock('@estate/db', () => ({ withTenant, audit, recordConsent, notify }));
@@ -77,6 +79,7 @@ beforeEach(() => {
   fileCreate.mockResolvedValue({ id: 'file-1' });
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
   ruleFindMany.mockResolvedValue([]);
+  notificationConfigFindFirst.mockResolvedValue(null);
   storageExists.mockResolvedValue(true);
 });
 
@@ -207,6 +210,7 @@ describe('submitRepairRequest', () => {
           repairRequest: { create: repairCreate, count: repairCount },
           enquiry: { create: enquiryCreate },
           assignmentRule: { findMany: ruleFindMany },
+          repairNotificationConfig: { findFirst: notificationConfigFindFirst },
         }),
       );
 
@@ -259,6 +263,114 @@ describe('submitRepairRequest', () => {
   it('passes the verified Turnstile token to the anti-spam check', async () => {
     await submitRepairRequest({ ok: false }, form());
     expect(verifyTurnstile).toHaveBeenCalledWith('turnstile-token', '203.0.113.7');
+  });
+});
+
+// Audit finding repair-emergency-internal-notifications-missing (FR-G-3, §G.7):
+// every submission ALSO queues the configured INTERNAL staff notification (the
+// property-manager / branch-repairs-queue email), and an emergency submission
+// additionally queues an SMS to the configured on-call manager — alongside the
+// existing reporter-facing confirmation, in the SAME transaction. §G.7's Slack
+// team-messaging channel is deferred (no webhook mechanism is defined in EPIC-G).
+describe('submitRepairRequest — internal staff notifications (FR-G-3, §G.7)', () => {
+  const CONFIGURED = {
+    repairsEmail: 'repairs@agency.example',
+    onCallPhone: '07700900555',
+  };
+
+  it('queues the internal staff email alongside the reporter confirmation', async () => {
+    notificationConfigFindFirst.mockResolvedValue(CONFIGURED);
+
+    const result = await submitRepairRequest({ ok: false }, form());
+
+    expect(result.ok).toBe(true);
+    // the reporter confirmation still goes out
+    expect(notify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        event: 'repair_request.received',
+        channel: 'email',
+        recipient: 'tess@example.com',
+      }),
+    );
+    // AND the internal staff/branch email is queued in the same tx
+    expect(withTenant).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: TENANT,
+        event: 'repair_request.received_internal',
+        channel: 'email',
+        recipient: 'repairs@agency.example',
+        payload: expect.objectContaining({
+          reference: result.reference,
+          name: 'Tess Tenant',
+          category: 'Plumbing',
+          urgency: 'urgent',
+          propertyReference: 'Flat 2, 14 Palatine Road',
+        }),
+      }),
+    );
+  });
+
+  it('additionally queues the on-call manager SMS for an emergency ticket', async () => {
+    notificationConfigFindFirst.mockResolvedValue(CONFIGURED);
+
+    const result = await submitRepairRequest({ ok: false }, form({ urgency: 'emergency' }));
+
+    expect(result.ok).toBe(true);
+    expect(notify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: TENANT,
+        event: 'repair_request.emergency_internal',
+        channel: 'sms',
+        recipient: '07700900555',
+        payload: expect.objectContaining({ reference: result.reference }),
+      }),
+    );
+  });
+
+  it('does not queue the on-call SMS for a non-emergency ticket', async () => {
+    notificationConfigFindFirst.mockResolvedValue(CONFIGURED);
+
+    await submitRepairRequest({ ok: false }, form({ urgency: 'standard' }));
+
+    const internalSms = notify.mock.calls.filter(
+      (call) => (call[1] as { event?: string }).event === 'repair_request.emergency_internal',
+    );
+    expect(internalSms).toHaveLength(0);
+  });
+
+  it('skips the internal notifications when none are configured (nothing to send to)', async () => {
+    notificationConfigFindFirst.mockResolvedValue(null);
+
+    const result = await submitRepairRequest({ ok: false }, form({ urgency: 'emergency' }));
+
+    // the submission itself still succeeds — internal routing is best-effort
+    expect(result.ok).toBe(true);
+    const internal = notify.mock.calls.filter((call) =>
+      String((call[1] as { event?: string }).event).endsWith('_internal'),
+    );
+    expect(internal).toHaveLength(0);
+  });
+
+  it('queues the internal email but no on-call SMS when only the email is configured', async () => {
+    notificationConfigFindFirst.mockResolvedValue({
+      repairsEmail: 'repairs@agency.example',
+      onCallPhone: null,
+    });
+
+    await submitRepairRequest({ ok: false }, form({ urgency: 'emergency' }));
+
+    expect(notify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ event: 'repair_request.received_internal' }),
+    );
+    const internalSms = notify.mock.calls.filter(
+      (call) => (call[1] as { event?: string }).event === 'repair_request.emergency_internal',
+    );
+    expect(internalSms).toHaveLength(0);
   });
 });
 
