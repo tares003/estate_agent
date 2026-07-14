@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { signInCustomer } from '../../lib/customer-sign-in.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 
 // EPIC-T FR-T-3 — the customer sign-in submission (`/sign-in`). A registered
@@ -86,6 +86,7 @@ export async function submitSignIn(
   const credentials = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (CLAUDE.md §9, G8): verify the Turnstile token BEFORE
   // authenticating or writing anything — matching register/forgot-password.
@@ -126,6 +127,7 @@ export async function submitSignIn(
       entityId: signedIn.userId,
       diff: { email: credentials.email },
       ip,
+      userAgent,
     });
   });
 

@@ -10,9 +10,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -58,6 +60,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   verifyTurnstile.mockResolvedValue(true);
   registerCustomer.mockResolvedValue({ ok: true, userId: USER });
 });
@@ -123,6 +126,9 @@ describe('submitRegister', () => {
       action: 'customer.registered',
       entity: 'user',
       entityId: USER,
+      // FR-H-17 / FR-N-14 — the audit row carries the request USER-AGENT as well as
+      // the IP: provenance for a public submission is IP + UA, not IP alone.
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

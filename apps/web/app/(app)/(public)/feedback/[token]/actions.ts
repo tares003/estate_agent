@@ -10,7 +10,7 @@ import {
   verifyFeedbackToken,
 } from '../../../lib/feedback-access.js';
 import { getDb } from '../../../lib/db.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../lib/turnstile.js';
 import { FEEDBACK_CONSENT_TEXT } from '../consent-text.js';
 
@@ -111,6 +111,7 @@ export async function submitFeedback(
     return deny('This feedback link is invalid or has expired.');
   }
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (G8): verify the Turnstile token server-side BEFORE any write.
   const turnstileToken = formData.get('cf-turnstile-response');
@@ -176,6 +177,7 @@ export async function submitFeedback(
         entityId: created.id,
         diff: { rating, publishAsTestimonial, needsResponse, consentAffirmed: true },
         ip,
+        userAgent,
       });
     });
   } catch (error) {

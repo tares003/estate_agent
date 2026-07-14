@@ -8,9 +8,11 @@ import {
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -79,6 +81,7 @@ beforeEach(() => {
   process.env['FEEDBACK_LINK_SECRET'] = SECRET;
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   feedbackCreate.mockResolvedValue({ id: 'fb-1' });
   feedbackFindFirst.mockResolvedValue(null);
   verifyTurnstile.mockResolvedValue(true);
@@ -135,6 +138,9 @@ describe('submitFeedback', () => {
     expect(audit.mock.calls[0]![1]).toMatchObject({
       action: 'feedback.submitted',
       entity: 'feedback',
+      // FR-H-17 / FR-N-14 — the audit row carries the request USER-AGENT as well as
+      // the IP: provenance for a public submission is IP + UA, not IP alone.
+      userAgent: 'Mozilla/5.0 (Test)',
     });
     // The audit diff records that consent was affirmed (G5 audit trail).
     expect(audit.mock.calls[0]![1].diff).toMatchObject({ consentAffirmed: true });

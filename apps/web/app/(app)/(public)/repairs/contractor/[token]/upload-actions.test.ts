@@ -4,9 +4,11 @@ import { verifyObjectToken } from '@estate/storage';
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -53,6 +55,7 @@ beforeEach(() => {
   process.env['CONTRACTOR_LINK_SECRET'] = LINK_SECRET;
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   repairFindFirst.mockResolvedValue({ id: REPAIR, assignedContractorId: CONTRACTOR });
   fileCount.mockResolvedValue(0);
   fileCreate.mockResolvedValue({ id: 'file-1' });
@@ -94,6 +97,14 @@ describe('issueContractorUploadGrants', () => {
 describe('finalizeContractorRepairFiles', () => {
   const KEY = `tenants/${TENANT}/repairs/${REPAIR}/abc.jpg`;
   const file = { key: KEY, name: 'done.jpg', contentType: 'image/jpeg', sizeBytes: 2048 };
+
+  it('records the request user-agent alongside the IP on the audit row (FR-H-17 / FR-N-14)', async () => {
+    await finalizeContractorRepairFiles(token(), [file]);
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' }),
+    );
+  });
 
   it('records each landed file as a CONTRACTOR upload and audits (G4)', async () => {
     const result = await finalizeContractorRepairFiles(token(), [file]);

@@ -13,9 +13,11 @@ vi.mock('../../lib/customer-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -55,6 +57,7 @@ beforeEach(() => {
   });
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   findFirst.mockResolvedValue(EXISTING);
   update.mockResolvedValue({});
 });

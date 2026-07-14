@@ -15,10 +15,11 @@ import {
 // errors}. No I/O, no session, no DB — the audited action layer feeds this a string (and
 // a mapping) and persists the result; this module is exhaustively unit-tested.
 //
-// V1 slice: this CREATES properties (FR-X-1) and now applies a configurable / preset
-// column mapping (FR-X-3). The dry-run preview (FR-X-2), upsert / external-id matching
-// (FR-X-4/5), quota enforcement (FR-X-10) and image post-processing (FR-X-11) are later
-// slices of this epic.
+// Shipped in this module: parse + validate (FR-X-1), the configurable / preset column
+// mapping (FR-X-3) and the pure UPSERT PLANNER (FR-X-2 / FR-X-4 — see the second half of
+// the file) that both the dry-run preview and the audited import run. Quota enforcement
+// (FR-X-10) lives on the action side; image post-processing (FR-X-11) and the scheduled
+// feeds (FR-X-7/8) are later slices of this epic.
 
 /**
  * The canonical column set the importer understands, re-exported from `@estate/validators`
@@ -267,31 +268,97 @@ export function buildMatchIndex(
 export type PlannedRow =
   | { action: 'create'; row: ValidRow }
   | { action: 'update'; row: ValidRow; propertyId: string; matchedOn: ImportMatchField }
-  | { action: 'skip'; row: ValidRow; reason: string };
+  | { action: 'skip'; row: ValidRow; reason: string }
+  | { action: 'fail'; row: ValidRow; error: RowFieldError };
+
+/** How the rejected in-file duplicate reads in the error report, per match field. */
+const MATCH_FIELD_LABEL: Record<ImportMatchField, string> = {
+  reference: 'reference',
+  externalId: 'external id',
+};
+
+/** An absent or blank identity value is "no value" (never a usable key). */
+function keyOf(value: string | undefined): string | null {
+  return value === undefined || value === '' ? null : value;
+}
 
 /**
  * Plan every validated row for the run (FR-X-2 / FR-X-4), in source order. With no
  * match field (create-only mode) every row is a create. In an upsert mode a row whose
  * match value appears in `index` becomes an UPDATE of that property; a row without a
  * match value is SKIPPED with a reason (only reachable in external-id mode — the
- * schema requires `reference`); anything else is a create. Matching runs against the
- * catalogue snapshot the caller read, so in-file duplicate keys fall through to the
- * DB constraint, where FR-X-5's per-row isolation records them as failed rows.
+ * schema requires `reference`); anything else is a create.
+ *
+ * `index` is the caller's PRE-RUN catalogue snapshot, so the planner additionally
+ * tracks the keys the run itself MINTS: a second row repeating a key an earlier row in
+ * the SAME file already creates is planned as a FAILED row (FR-X-5), never a second
+ * create. Two guards, because they back-stop different things:
+ *
+ * - **`external_id` — guarded in EVERY mode, including create-only.** It has NO unique
+ *   constraint, yet `insertPropertyRow` persists it on every create whatever the mode.
+ *   An in-file duplicate would therefore mint a permanently-ORPHANED pair: `buildMatchIndex`
+ *   is first-occurrence-wins, so a later upsert can only ever reach the first of the two.
+ * - **the match key of an upsert mode** — so a repeated NEW key creates once, not twice.
+ *
+ * A key that matches an EXISTING listing is exempt: both rows simply update the same
+ * property (idempotent — nothing new is inserted). `reference` needs no create-only
+ * guard of its own: `@@unique([tenantId, reference])` back-stops it, and FR-X-5's
+ * per-row savepoint isolation records the constraint failure as a failed row.
  */
 export function planImportRows(
   rows: readonly ValidRow[],
   matchField: ImportMatchField | null,
   index: ReadonlyMap<string, string>,
 ): PlannedRow[] {
+  /** Match keys this run mints (upsert modes only — create-only does no matching). */
+  const mintedMatchKeys = new Set<string>();
+  /** External ids this run mints, in ANY mode (the field with no DB back-stop). */
+  const mintedExternalIds = new Set<string>();
+
+  const duplicate = (row: ValidRow, field: ImportMatchField, key: string): PlannedRow => ({
+    action: 'fail',
+    row,
+    error: {
+      field,
+      message: `an earlier row in this file already imports the ${MATCH_FIELD_LABEL[field]} "${key}" (duplicate)`,
+    },
+  });
+
   return rows.map((row): PlannedRow => {
-    if (matchField === null) return { action: 'create', row };
-    const key = row.data[matchField];
-    if (key === undefined || key === '') {
+    const externalId = keyOf(row.data.externalId);
+
+    // Create-only (the DEFAULT mode): no matching, so every row is a create — but the
+    // external id it carries is still persisted, so an in-file duplicate is rejected.
+    if (matchField === null) {
+      if (externalId !== null && mintedExternalIds.has(externalId)) {
+        return duplicate(row, 'externalId', externalId);
+      }
+      if (externalId !== null) mintedExternalIds.add(externalId);
+      return { action: 'create', row };
+    }
+
+    const key = keyOf(row.data[matchField]);
+    if (key === null) {
       return { action: 'skip', row, reason: 'no externalId value to match on' };
     }
     const propertyId = index.get(key);
-    return propertyId === undefined
-      ? { action: 'create', row }
-      : { action: 'update', row, propertyId, matchedOn: matchField };
+    if (propertyId !== undefined) {
+      // Matches an EXISTING listing — an update, so it mints nothing.
+      return { action: 'update', row, propertyId, matchedOn: matchField };
+    }
+    if (mintedMatchKeys.has(key)) {
+      return duplicate(row, matchField, key);
+    }
+    // A create in `upsert_reference` mode still persists its external id, so the
+    // no-back-stop guard applies to it too.
+    if (matchField === 'reference' && externalId !== null) {
+      if (mintedExternalIds.has(externalId)) {
+        return duplicate(row, 'externalId', externalId);
+      }
+      mintedExternalIds.add(externalId);
+    }
+    mintedMatchKeys.add(key);
+    if (matchField === 'externalId') mintedExternalIds.add(key);
+    return { action: 'create', row };
   });
 }

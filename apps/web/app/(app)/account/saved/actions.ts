@@ -5,7 +5,7 @@ import { savedPropertyToggleSchema } from '@estate/validators';
 
 import { getDb } from '../../lib/db.js';
 import { getCustomerSession } from '../../lib/customer-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-T FR-T-5/6 — a registered customer saves / unsaves a property to favourites.
 // Gated FAIL-CLOSED on a signed-in, EMAIL-VERIFIED customer (FR-T-2 — an unverified
@@ -51,6 +51,7 @@ export async function toggleSavedProperty(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SaveToggleState = DENY;
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -66,6 +67,7 @@ export async function toggleSavedProperty(
         entityId: propertyId,
         diff: { userId },
         ip,
+        userAgent,
       });
       result = { ok: true, saved: false };
       return;
@@ -79,6 +81,7 @@ export async function toggleSavedProperty(
       entityId: propertyId,
       diff: { userId },
       ip,
+      userAgent,
     });
     result = { ok: true, saved: true };
   });

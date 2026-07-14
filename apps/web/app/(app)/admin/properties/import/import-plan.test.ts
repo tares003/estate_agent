@@ -140,3 +140,110 @@ describe('planImportRows (FR-X-2 / FR-X-4 / FR-X-5)', () => {
     expect(plan.filter((planned) => planned.action === 'update')).toHaveLength(2);
   });
 });
+
+describe('planImportRows — in-file duplicate match keys (FR-X-4 / FR-X-5)', () => {
+  // The match index is built from a PRE-RUN catalogue snapshot, so two rows in the SAME
+  // file that share a key NOT yet in the catalogue both used to plan as `create` — the
+  // first run minted a duplicate pair (PR #156 verifier note). `external_id` has no DB
+  // unique constraint to back-stop it, so the planner must track the keys the run itself
+  // mints and reject the second row rather than blind-create it.
+
+  it('FAILS the second row that repeats a NEW external id already minted earlier in the same file', () => {
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-DUP'), row(2, 'REF-002', 'EXT-DUP')],
+      'externalId',
+      new Map(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('externalId');
+    expect(failed.error.message).toMatch(/duplicate/i);
+  });
+
+  it('FAILS the second row that repeats a NEW reference already minted earlier in the same file', () => {
+    // `reference` has a DB unique constraint, so this row always failed — but only at
+    // insert time. Planning it as a failure makes the preview and the run agree.
+    const plan = planImportRows(
+      [row(1, 'REF-DUP'), row(2, 'REF-DUP')],
+      'reference',
+      new Map<string, string>(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('reference');
+  });
+
+  it('creates exactly ONE row per distinct new key (the first-run duplicate is gone)', () => {
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-A'), row(2, 'REF-002', 'EXT-DUP'), row(3, 'REF-003', 'EXT-DUP')],
+      'externalId',
+      new Map(),
+    );
+    expect(plan.filter((planned) => planned.action === 'create')).toHaveLength(2);
+    expect(plan.filter((planned) => planned.action === 'fail')).toHaveLength(1);
+  });
+
+  it('still UPDATES both rows when the repeated key MATCHES an existing listing (no duplicate minted)', () => {
+    // Only a key the run itself would CREATE can duplicate. A key already in the
+    // catalogue updates the same listing twice — idempotent, nothing new is inserted.
+    const index = buildMatchIndex([existing('p-1', 'REF-OLD', 'EXT-1')], 'externalId');
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-1'), row(2, 'REF-002', 'EXT-1')],
+      'externalId',
+      index,
+    );
+    expect(plan[0]).toMatchObject({ action: 'update', propertyId: 'p-1' });
+    expect(plan[1]).toMatchObject({ action: 'update', propertyId: 'p-1' });
+  });
+
+  it('FAILS a repeated external id in CREATE-ONLY mode too (the default mode has no DB back-stop)', () => {
+    // The regression the PR #160 review caught: create-only does no MATCHING, but
+    // `insertPropertyRow` still persists `external_id` on every create, and that column
+    // has NO unique constraint. Two rows sharing one would mint a permanently-orphaned
+    // duplicate (buildMatchIndex is first-wins, so a later upsert only ever reaches the
+    // first). It must be rejected here, in the DEFAULT mode, not just in upsert modes.
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-DUP'), row(2, 'REF-002', 'EXT-DUP')],
+      null,
+      new Map(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('externalId');
+    expect(failed.error.message).toMatch(/duplicate/i);
+  });
+
+  it('still creates every create-only row that carries NO external id (nothing to duplicate)', () => {
+    const plan = planImportRows([row(1, 'REF-001'), row(2, 'REF-002')], null, new Map());
+    expect(plan.every((planned) => planned.action === 'create')).toBe(true);
+  });
+
+  it('leaves a repeated create-only REFERENCE to the DB constraint (it has one; external id does not)', () => {
+    // `reference` is back-stopped by @@unique([tenantId, reference]), and FR-X-5's
+    // per-row savepoint isolation records that constraint failure as a failed row — so
+    // create-only deliberately does not plan-reject it.
+    const plan = planImportRows([row(1, 'REF-DUP'), row(2, 'REF-DUP')], null, new Map());
+    expect(plan.every((planned) => planned.action === 'create')).toBe(true);
+  });
+
+  it('also rejects a duplicate external id among the CREATES of upsert-on-reference mode', () => {
+    // Matching on reference, but both rows are new — and both would persist the same
+    // external id. Same no-back-stop hazard.
+    const plan = planImportRows(
+      [row(1, 'REF-001', 'EXT-DUP'), row(2, 'REF-002', 'EXT-DUP')],
+      'reference',
+      new Map(),
+    );
+    expect(plan[0]).toMatchObject({ action: 'create' });
+    expect(plan[1]).toMatchObject({ action: 'fail' });
+    const failed = plan[1];
+    if (failed?.action !== 'fail') throw new Error('row 2 must be planned as a failure');
+    expect(failed.error.field).toBe('externalId');
+  });
+});

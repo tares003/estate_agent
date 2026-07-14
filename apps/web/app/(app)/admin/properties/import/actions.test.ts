@@ -22,9 +22,11 @@ vi.mock('../../../lib/staff-session.js', () => ({
 
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -128,6 +130,7 @@ beforeEach(() => {
   getStaffUserId.mockResolvedValue(USER_ID);
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   propertyFindMany.mockResolvedValue([]);
   propertyCount.mockResolvedValue(0);
   importLogCreate.mockResolvedValue({ id: LOG_ID });
@@ -219,6 +222,10 @@ describe('importPropertiesFromCsv', () => {
       action: 'property.imported',
       entity: 'import_log',
       entityId: LOG_ID,
+      // FR-H-17 / FR-N-14 — the run audit carries the full request provenance, not the
+      // IP alone (the admin audit viewer surfaces both).
+      ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

@@ -10,7 +10,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { getCustomerSession } from '../../lib/customer-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-T FR-T-7/8 — a registered customer saves the active /properties filter
 // combination as a named saved search, then views / renames / re-cadences /
@@ -101,6 +101,7 @@ export async function createSavedSearch(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SavedSearchActionState = deny('That search could not be saved. Please try again.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -121,6 +122,7 @@ export async function createSavedSearch(
       entityId: created.id,
       diff: { userId, name, alertFrequency },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -158,6 +160,7 @@ export async function renameSavedSearch(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SavedSearchActionState = deny('That saved search could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -182,6 +185,7 @@ export async function renameSavedSearch(
       entityId: id,
       diff: { name: { from: existing.name, to: name } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -213,6 +217,7 @@ export async function updateSavedSearchFrequency(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SavedSearchActionState = deny('That saved search could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -228,6 +233,7 @@ export async function updateSavedSearchFrequency(
       entityId: id,
       diff: { alertFrequency: { from: existing.alertFrequency, to: alertFrequency } },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });
@@ -251,6 +257,7 @@ export async function deleteSavedSearch(
   const tenantId = await getCurrentTenantId();
   const { userId, actor } = session;
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   let result: SavedSearchActionState = deny('That saved search could not be found.');
   await withTenant(getDb(), tenantId, async (rawTx) => {
@@ -266,6 +273,7 @@ export async function deleteSavedSearch(
       entityId: id,
       diff: { userId, name: existing.name },
       ip,
+      userAgent,
     });
     result = { ok: true };
   });

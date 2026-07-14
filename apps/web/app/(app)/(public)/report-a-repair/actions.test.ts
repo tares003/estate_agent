@@ -6,9 +6,11 @@ import { verifyObjectToken } from '@estate/storage';
 // isolation.
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -71,6 +73,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   verifyTurnstile.mockResolvedValue(true);
   repairCreate.mockResolvedValue({ id: 'rep-1' });
   repairCount.mockResolvedValue(41);
@@ -272,6 +275,19 @@ describe('submitRepairRequest', () => {
 // additionally queues an SMS to the configured on-call manager — alongside the
 // existing reporter-facing confirmation, in the SAME transaction. §G.7's Slack
 // team-messaging channel is deferred (no webhook mechanism is defined in EPIC-G).
+describe('submitRepairRequest — audit provenance (FR-H-17 / FR-N-14)', () => {
+  it('records the request user-agent alongside the IP on EVERY audit row it writes', async () => {
+    // PR #152 threaded getRequestUserAgent through the ADMIN actions only, leaving the
+    // public repair form's audit rows (the ticket AND the dual-written enquiry) with
+    // user_agent = null. Provenance is IP + UA.
+    await submitRepairRequest({ ok: false }, form());
+    expect(audit).toHaveBeenCalled();
+    for (const call of audit.mock.calls) {
+      expect(call[1]).toMatchObject({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' });
+    }
+  });
+});
+
 describe('submitRepairRequest — internal staff notifications (FR-G-3, §G.7)', () => {
   const CONFIGURED = {
     repairsEmail: 'repairs@agency.example',
@@ -413,6 +429,14 @@ describe('submitRepairRequest — upload grants (FR-G-2)', () => {
 describe('finalizeRepairFiles', () => {
   const KEY = `tenants/${TENANT}/repairs/${REP}/abc.jpg`;
   const file = { key: KEY, name: 'leak.jpg', contentType: 'image/jpeg', sizeBytes: 2048 };
+
+  it('records the request user-agent alongside the IP on the file audit row (FR-H-17)', async () => {
+    await finalizeRepairFiles({ repairRequestId: REP, files: [file] });
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ ip: '203.0.113.7', userAgent: 'Mozilla/5.0 (Test)' }),
+    );
+  });
 
   it('records each landed file against the ticket and audits (G4)', async () => {
     const result = await finalizeRepairFiles({ repairRequestId: REP, files: [file] });

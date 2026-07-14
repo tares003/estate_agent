@@ -29,7 +29,7 @@ import {
 } from '../../lib/enquiry-routing.js';
 import { getStorageBackend, storageSigningSecret } from '../../lib/storage.js';
 import { repairReference } from '../../lib/repair-reference.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 import { verifyTurnstile } from '../../lib/turnstile.js';
 import { REPAIR_CONSENT_TEXT } from './consent-text.js';
 
@@ -155,6 +155,7 @@ export async function submitRepairRequest(
   const repair = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (CLAUDE.md §9): verify the Turnstile token BEFORE any write.
   const turnstileToken = formData.get('cf-turnstile-response');
@@ -235,6 +236,7 @@ export async function submitRepairRequest(
         entityId: enquiryRow.id,
         diff: assignmentDiff(assignment),
         ip,
+        userAgent,
       });
       // FR-G-3: the tenant confirmation is queued in the same transaction; the
       // worker renders + dispatches it (§H.13 — record intent, never send inline).
@@ -304,6 +306,7 @@ export async function submitRepairRequest(
         entity: 'repair_request',
         entityId: created.id,
         ip,
+        userAgent,
       });
       return { id: created.id, reference };
     });
@@ -375,6 +378,7 @@ export async function finalizeRepairFiles(input: {
 
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Structural authorisation: every key under THIS ticket's tenant prefix.
   const prefix = `tenants/${tenantId}/repairs/${input.repairRequestId}/`;
@@ -423,6 +427,7 @@ export async function finalizeRepairFiles(input: {
         entity: 'repair_file',
         entityId: created.id,
         ip,
+        userAgent,
       });
     }
     result = { ok: true };

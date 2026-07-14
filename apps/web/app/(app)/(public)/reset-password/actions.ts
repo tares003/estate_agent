@@ -6,7 +6,7 @@ import type { FormErrorItem } from '@estate/ui';
 
 import { getDb } from '../../lib/db.js';
 import { resetPassword } from '../../lib/password-reset.js';
-import { getCurrentTenantId, getRequestIp } from '../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../lib/tenant.js';
 
 // EPIC-N FR-N-5 — the password-reset CONSUME submission (`/reset-password`). The
 // visitor sets a NEW password, carrying the opaque, single-use token from the email.
@@ -50,6 +50,7 @@ export async function submitResetPassword(
   const { token, password } = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Consume the token (verifies + expires it, re-hashes the password). Fail-closed:
   // an invalid/expired token (or auth disabled) denies the reset and writes nothing.
@@ -74,6 +75,7 @@ export async function submitResetPassword(
       entityId: result.userId,
       diff: { passwordReset: true },
       ip,
+      userAgent,
     });
   });
 

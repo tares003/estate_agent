@@ -10,7 +10,7 @@ import {
   getStaffUserId,
   requireStaffPermission,
 } from '../../../lib/staff-session.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 import { activeListingWhere, getTenantActiveListingQuota } from '../../../lib/import-quota.js';
 import {
   insertPropertyRow,
@@ -63,6 +63,17 @@ import { readImportCsv, readImportMapping, readImportMode } from './read-csv.js'
 // duplicate on every re-run, violating the FR-X acceptance criterion. Skipped rows are
 // recorded on the log (they are not failures: no per-row audit). The FR-X-10 quota
 // counts only NET-NEW published rows (planned creates) — updates are never net-new.
+//
+// The match index is a PRE-RUN snapshot, so the planner also rejects a row repeating a
+// key an EARLIER row of the same file mints: it is recorded as a failed row (no write at
+// all — no savepoint needed), because inserting it would mint a duplicate pair. This
+// applies to `external_id` in EVERY mode, INCLUDING the default create-only: create-only
+// does no matching, but `insertPropertyRow` still persists the external id it carries,
+// and that column has no unique constraint to back-stop it (a duplicate there would be
+// permanently orphaned — `buildMatchIndex` is first-occurrence-wins, so a later upsert
+// only ever reaches the first of the pair). A repeated `reference` needs no plan-time
+// guard: `@@unique([tenantId, reference])` back-stops it and the per-row savepoint
+// isolation records the constraint failure as a failed row.
 //
 // This is an authenticated admin action over business data, not a public personal-data
 // form: no GDPR-consent affirmation (G5) and no Turnstile (G8). Deferred to later slices
@@ -187,7 +198,11 @@ export async function importPropertiesFromCsv(
   const tenantId = await getCurrentTenantId();
   const actor = await getStaffActor();
   const triggeredBy = await getStaffUserId();
+  // FR-H-17 / FR-N-14 — provenance for every audit row this run writes (the run event,
+  // the per-failed-row events, and the per-property events the shared write paths emit)
+  // is IP + USER-AGENT, not the IP alone.
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // EPIC-AD / G12 — pack entitlement, enforced SERVER-SIDE on the import path exactly
   // like createProperty: a row authoring a pack-gated vertical the tenant has not
@@ -282,7 +297,7 @@ export async function importPropertiesFromCsv(
     // rolls back ONLY that row (including its property audit event) and the run
     // continues; the surrounding tenant transaction — import_log + run audit +
     // surviving rows — stays intact. Skipped rows perform no write at all.
-    const ctx = { tenantId, actor, createdByUserId: triggeredBy, ip };
+    const ctx = { tenantId, actor, createdByUserId: triggeredBy, ip, userAgent };
     let created = 0;
     let updated = 0;
     const skippedSummary: string[] = [];
@@ -290,6 +305,14 @@ export async function importPropertiesFromCsv(
     for (const planned of plan) {
       if (planned.action === 'skip') {
         skippedSummary.push(`Row ${planned.row.rowNumber} — skipped: ${planned.reason}`);
+        continue;
+      }
+      // FR-X-4 / FR-X-5 — a row the planner already rejected (it repeats a match key an
+      // earlier row in the SAME file mints, which would insert a duplicate) is a FAILED
+      // row: no write, no savepoint, but the full error-report + per-row audit treatment
+      // a DB-constraint failure gets below.
+      if (planned.action === 'fail') {
+        writeRowErrors.push({ rowNumber: planned.row.rowNumber, errors: [planned.error] });
         continue;
       }
       await tx.$executeRawUnsafe(`SAVEPOINT ${ROW_SAVEPOINT}`);
@@ -372,6 +395,7 @@ export async function importPropertiesFromCsv(
       // the FR-X-2 choice the run executed (the import_logs table carries no column).
       diff: { source: IMPORT_SOURCE, mode, ...counts, quota },
       ip,
+      userAgent,
     });
 
     // FR-X-9 — PLUS one audit entry per FAILED row (validation, pack gate or DB
@@ -387,6 +411,7 @@ export async function importPropertiesFromCsv(
         entityId: importLog.id,
         diff: { rowNumber: rowError.rowNumber, error: formatRowError(rowError) },
         ip,
+        userAgent,
       });
     }
 

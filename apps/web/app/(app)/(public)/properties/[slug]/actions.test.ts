@@ -5,9 +5,11 @@ import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
 // layer + request context are doubled so the action is exercised in isolation.
 const getCurrentTenantId = vi.fn();
 const getRequestIp = vi.fn();
+const getRequestUserAgent = vi.fn();
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: () => getCurrentTenantId(),
   getRequestIp: () => getRequestIp(),
+  getRequestUserAgent: () => getRequestUserAgent(),
 }));
 vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 
@@ -49,6 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentTenantId.mockResolvedValue(TENANT);
   getRequestIp.mockResolvedValue('203.0.113.7');
+  getRequestUserAgent.mockResolvedValue('Mozilla/5.0 (Test)');
   enquiryCreate.mockResolvedValue({ id: 'enq-1' });
   verifyTurnstile.mockResolvedValue(true);
   ruleFindMany.mockResolvedValue([]);
@@ -125,7 +128,10 @@ describe('submitEnquiry', () => {
       entityId: 'enq-1',
       // G4 — the diff records the FR-I-3 routing outcome (unassigned here)
       diff: { assignedAgentId: [null, null], assignedBranchId: [null, null] },
+      // FR-H-17 / FR-N-14 — provenance is IP + USER-AGENT (PR #152 threaded the UA
+      // through the admin actions only; a public submission logged the IP alone).
       ip: '203.0.113.7',
+      userAgent: 'Mozilla/5.0 (Test)',
     });
   });
 

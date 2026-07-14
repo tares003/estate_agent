@@ -10,7 +10,7 @@ import {
   resolveEnquiryAssignment,
   type AssignmentRuleReader,
 } from '../../../../lib/enquiry-routing.js';
-import { getCurrentTenantId, getRequestIp } from '../../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../../lib/turnstile.js';
 import { VIEWING_CONSENT_TEXT } from './consent-text.js';
 
@@ -67,6 +67,7 @@ export async function submitViewing(
   const viewing = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate (CLAUDE.md §9): verify the Turnstile token BEFORE any write.
   const turnstileToken = formData.get('cf-turnstile-response');
@@ -128,6 +129,7 @@ export async function submitViewing(
       entityId: created.id,
       diff: assignmentDiff(assignment),
       ip,
+      userAgent,
     });
   });
 

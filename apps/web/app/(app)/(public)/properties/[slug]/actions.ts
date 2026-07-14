@@ -9,7 +9,7 @@ import {
   resolveEnquiryAssignment,
   type AssignmentRuleReader,
 } from '../../../lib/enquiry-routing.js';
-import { getCurrentTenantId, getRequestIp } from '../../../lib/tenant.js';
+import { getCurrentTenantId, getRequestIp, getRequestUserAgent } from '../../../lib/tenant.js';
 import { verifyTurnstile } from '../../../lib/turnstile.js';
 import { ENQUIRY_CONSENT_TEXT } from './consent-text.js';
 
@@ -81,6 +81,7 @@ export async function submitEnquiry(
   const enquiry = parsed.data;
   const tenantId = await getCurrentTenantId();
   const ip = await getRequestIp();
+  const userAgent = await getRequestUserAgent();
 
   // Anti-spam gate: verify the Cloudflare Turnstile token BEFORE any write
   // (CLAUDE.md §9). On failure nothing is persisted — no consent, enquiry or
@@ -138,6 +139,7 @@ export async function submitEnquiry(
       entityId: created.id,
       diff: assignmentDiff(assignment),
       ip,
+      userAgent,
     });
   });
 
