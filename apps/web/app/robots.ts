@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { getRequestOrigin } from './lib/tenant.js';
+import { getRequestOrigin } from './(app)/lib/tenant.js';
 
 // EPIC-O robots (FR-O-9): allow the public site, disallow the admin / account /
 // API / preview surfaces, and point crawlers at the sitemap. Dynamic so the

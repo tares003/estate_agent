@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('./lib/tenant.js', () => ({ getRequestOrigin: async () => 'https://acme.test' }));
+vi.mock('./(app)/lib/tenant.js', () => ({ getRequestOrigin: async () => 'https://acme.test' }));
 
 const { default: robots } = await import('./robots.js');
 

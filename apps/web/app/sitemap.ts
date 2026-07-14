@@ -1,10 +1,10 @@
 import type { MetadataRoute } from 'next';
 import { withTenant } from '@estate/db';
-import { listAreaGuidesForSitemap, type AreaGuideSitemapReader } from './lib/area-guides.js';
-import { listPublishedPostsForSitemap, type BlogPostSitemapReader } from './lib/blog.js';
-import { listPublishedPages } from './lib/cms.js';
-import { getDb } from './lib/db.js';
-import { listPropertiesForSitemap, type PropertySitemapReader } from './lib/properties.js';
+import { listAreaGuidesForSitemap, type AreaGuideSitemapReader } from './(app)/lib/area-guides.js';
+import { listPublishedPostsForSitemap, type BlogPostSitemapReader } from './(app)/lib/blog.js';
+import { listPublishedPages } from './(app)/lib/cms.js';
+import { getDb } from './(app)/lib/db.js';
+import { listPropertiesForSitemap, type PropertySitemapReader } from './(app)/lib/properties.js';
 import {
   areaGuideSitemapEntries,
   blogPostSitemapEntries,
@@ -14,8 +14,8 @@ import {
   sitemapIds,
   staticSitemapEntries,
   type SitemapChildId,
-} from './lib/sitemap-entries.js';
-import { getCurrentTenantId, getRequestOrigin } from './lib/tenant.js';
+} from './(app)/lib/sitemap-entries.js';
+import { getCurrentTenantId, getRequestOrigin } from './(app)/lib/tenant.js';
 
 // EPIC-O sitemap (FR-O-8). `/sitemap.xml` is served as a sitemap *index* (via
 // Next's generateSitemaps) pointing at five per-tenant child sitemaps at
