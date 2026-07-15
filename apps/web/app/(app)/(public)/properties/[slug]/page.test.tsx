@@ -2,7 +2,7 @@
 // and the 404 path; the responsive two-column layout is covered by the
 // page-level Playwright e2e pass (design-requirements §3).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 vi.mock('../../../lib/tenant.js', () => ({
   getCurrentTenantId: async () => 'tenant-1',
@@ -126,13 +126,14 @@ describe('PropertyDetailPage', () => {
       where: { slug: 'palatine-road-m20', publishedAt: { not: null }, deletedAt: null },
     });
 
-    // the gallery: the hero leads, every image alt-texted (G9), signed paths
-    expect(screen.getByAltText('The front elevation')).toHaveAttribute(
+    // the gallery: the hero leads, every image alt-texted (G9), signed paths.
+    // Each photo is dual-rendered (mobile carousel + desktop grid), so match all.
+    expect(screen.getAllByAltText('The front elevation')[0]).toHaveAttribute(
       'src',
       '/api/storage/object?token=tok:tenants/t1/properties/p1/a.large.jpg',
     );
     // an unprocessed image still serves its original
-    expect(screen.getByAltText('The kitchen')).toHaveAttribute(
+    expect(screen.getAllByAltText('The kitchen')[0]).toHaveAttribute(
       'src',
       '/api/storage/object?token=tok:tenants/t1/properties/p1/b.jpg',
     );
@@ -158,8 +159,34 @@ describe('PropertyDetailPage', () => {
     expect(form).toHaveAttribute('data-property-id', '11111111-1111-1111-1111-111111111111');
     expect(form).toHaveTextContent('Edwardian semi · 4 bed');
 
-    // a "Book a viewing" link to the per-property viewing route
-    expect(screen.getByRole('link', { name: 'Book a viewing' })).toHaveAttribute(
+    // a "Book a viewing" link to the per-property viewing route (aside + sticky bar)
+    expect(screen.getAllByRole('link', { name: 'Book a viewing' })[0]).toHaveAttribute(
+      'href',
+      '/properties/palatine-road-m20/viewing',
+    );
+  });
+
+  // design-requirements §3 mobile adaptations: a swipeable photo carousel and a sticky
+  // bottom action bar. Both are dual-rendered with the desktop layout; CSS hides the
+  // inactive one per breakpoint (jsdom renders both, so we scope the queries).
+  it('renders the mobile photo carousel and a sticky Save + Book-a-viewing bar', async () => {
+    findFirst.mockResolvedValue(saleRow);
+    const { container } = render(
+      await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }),
+    );
+
+    // the swipeable carousel — a scroll-snap list of every photo
+    const carousel = screen.getByRole('list', { name: 'Property photos' });
+    expect(carousel.className).toContain('snap-x');
+    expect(carousel.className).toContain('overflow-x-auto');
+    expect(within(carousel).getAllByRole('img')).toHaveLength(2);
+
+    // the sticky action bar — fixed, hidden from lg, carrying Save + Book a viewing
+    const bar = container.querySelector('.fixed.lg\\:hidden');
+    expect(bar).not.toBeNull();
+    const barEl = bar as HTMLElement;
+    expect(within(barEl).getByTestId('save-button')).toBeInTheDocument();
+    expect(within(barEl).getByRole('link', { name: 'Book a viewing' })).toHaveAttribute(
       'href',
       '/properties/palatine-road-m20/viewing',
     );
@@ -172,7 +199,7 @@ describe('PropertyDetailPage', () => {
 
     render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
 
-    const save = screen.getByTestId('save-button');
+    const save = screen.getAllByTestId('save-button')[0] as HTMLElement;
     expect(save).toHaveAttribute('data-property-id', saleRow.id);
     expect(save).toHaveAttribute('data-signed-in', 'false');
     expect(save).toHaveAttribute('data-current-path', '/properties/palatine-road-m20');
@@ -193,7 +220,7 @@ describe('PropertyDetailPage', () => {
 
     render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
 
-    const save = screen.getByTestId('save-button');
+    const save = screen.getAllByTestId('save-button')[0] as HTMLElement;
     expect(save).toHaveAttribute('data-signed-in', 'true');
     expect(save).toHaveAttribute('data-initial-saved', 'true');
     expect(savedFindMany).toHaveBeenCalledWith(
