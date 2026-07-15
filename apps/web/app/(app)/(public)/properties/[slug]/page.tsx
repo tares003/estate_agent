@@ -24,7 +24,10 @@ import { getCurrentTenantId, getRequestOrigin } from '../../../lib/tenant.js';
 import { breadcrumbJsonLd, propertyListingJsonLd, truncate } from '../../../lib/seo.js';
 import { resolveSeoMetadata, type SeoMetadataReader } from '../../../lib/seo-metadata.js';
 import { applySeoOverride } from '../../../lib/seo-override.js';
+import { getCustomerSession } from '../../../lib/customer-session.js';
+import { savedPropertyIdsFor, type SavedPropertyReader } from '../../../lib/saved-properties.js';
 import { EnquiryForm } from './EnquiryForm.js';
+import { SavePropertyButton } from '../../../account/saved/SavePropertyButton.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -167,6 +170,23 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   }
 
   const { property, images } = data;
+
+  // EPIC-T FR-T-5/6 — the save-to-favourites control. A verified customer sees a
+  // toggle reflecting the persisted state; a signed-out or unverified visitor sees a
+  // sign-in link carrying this page as the return path (the toggle action is the
+  // fail-closed gate). Only a verified customer can hold a favourite, so the
+  // saved-state read runs tenant-scoped (RLS) for them alone.
+  const session = await getCustomerSession();
+  const canSave = Boolean(session?.emailVerified);
+  let initialSaved = false;
+  if (canSave && session) {
+    const tenantId = await getCurrentTenantId();
+    const savedIds = await withTenant(getDb(), tenantId, (tx) =>
+      savedPropertyIdsFor(tx as unknown as SavedPropertyReader, session.userId, [property.id]),
+    );
+    initialSaved = savedIds.has(property.id);
+  }
+
   // The gallery leads with the hero, then sort order; signed render-time paths
   // (CLAUDE.md §9), every image alt-texted (G9).
   const galleryExpiry = Date.now() + 60 * 60_000;
@@ -263,6 +283,14 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 {rentFrequency ? ` · ${rentFrequency}` : ''}
               </span>
             </p>
+            <div className="mt-2">
+              <SavePropertyButton
+                propertyId={property.id}
+                signedIn={canSave}
+                initialSaved={initialSaved}
+                currentPath={`/properties/${property.slug}`}
+              />
+            </div>
           </header>
 
           {facts.length > 0 ? (

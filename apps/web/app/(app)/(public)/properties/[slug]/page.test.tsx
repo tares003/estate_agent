@@ -13,17 +13,25 @@ vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 const findFirst = vi.fn();
 const imageFindMany = vi.fn();
 const seoFindFirst = vi.fn();
+const savedFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
     fn({
       property: { findFirst },
       propertyImage: { findMany: imageFindMany },
       seoMetadata: { findFirst: seoFindFirst },
+      savedProperty: { findMany: savedFindMany },
     }),
 }));
 vi.mock('../../../lib/storage.js', () => ({
   signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
 }));
+
+// EPIC-T FR-T-5/6 — the detail page resolves the customer session to decide the
+// save-to-favourites affordance; default to signed-out so the existing detail
+// assertions are unaffected.
+const getCustomerSession = vi.fn();
+vi.mock('../../../lib/customer-session.js', () => ({ getCustomerSession }));
 
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
@@ -35,6 +43,31 @@ vi.mock('./EnquiryForm.js', () => ({
     <div data-testid="enquiry-form" data-property-id={propertyId}>
       {propertyTitle}
     </div>
+  ),
+}));
+
+// The client save/remove toggle is exercised in its own test; stub it here so the
+// detail-page test asserts the WIRING (property id, verified-customer flag, saved
+// state, return path) without pulling in the client-only hooks.
+vi.mock('../../../account/saved/SavePropertyButton.js', () => ({
+  SavePropertyButton: ({
+    propertyId,
+    signedIn,
+    initialSaved,
+    currentPath,
+  }: {
+    propertyId: string;
+    signedIn: boolean;
+    initialSaved: boolean;
+    currentPath?: string;
+  }) => (
+    <div
+      data-testid="save-button"
+      data-property-id={propertyId}
+      data-signed-in={String(signedIn)}
+      data-initial-saved={String(initialSaved)}
+      data-current-path={currentPath}
+    />
   ),
 }));
 
@@ -58,6 +91,10 @@ const saleRow = {
 beforeEach(() => {
   vi.clearAllMocks();
   seoFindFirst.mockResolvedValue(null);
+  // Default: a signed-out visitor with no saved rows — the save control renders as
+  // a sign-in prompt and the saved-state read is skipped.
+  getCustomerSession.mockResolvedValue(null);
+  savedFindMany.mockResolvedValue([]);
   imageFindMany.mockResolvedValue([
     {
       id: 'i1',
@@ -125,6 +162,45 @@ describe('PropertyDetailPage', () => {
     expect(screen.getByRole('link', { name: 'Book a viewing' })).toHaveAttribute(
       'href',
       '/properties/palatine-road-m20/viewing',
+    );
+  });
+
+  // EPIC-T FR-T-5 — the detail page carries the save-to-favourites control, wired to
+  // this property and to the return path for a signed-out visitor (no saved-state read).
+  it('wires the save-to-favourites control to the property (signed out)', async () => {
+    findFirst.mockResolvedValue(saleRow);
+
+    render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
+
+    const save = screen.getByTestId('save-button');
+    expect(save).toHaveAttribute('data-property-id', saleRow.id);
+    expect(save).toHaveAttribute('data-signed-in', 'false');
+    expect(save).toHaveAttribute('data-current-path', '/properties/palatine-road-m20');
+    // signed out → the persisted saved-state read is never issued
+    expect(savedFindMany).not.toHaveBeenCalled();
+  });
+
+  // EPIC-T FR-T-6 — for a verified customer the control reflects the persisted saved
+  // state, read tenant-scoped and scoped to their own rows + this property.
+  it('reflects the persisted saved state for a verified customer', async () => {
+    findFirst.mockResolvedValue(saleRow);
+    getCustomerSession.mockResolvedValue({
+      userId: 'c1',
+      emailVerified: true,
+      actor: 'customer:c1',
+    });
+    savedFindMany.mockResolvedValue([{ propertyId: saleRow.id }]);
+
+    render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
+
+    const save = screen.getByTestId('save-button');
+    expect(save).toHaveAttribute('data-signed-in', 'true');
+    expect(save).toHaveAttribute('data-initial-saved', 'true');
+    expect(savedFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'c1', propertyId: { in: [saleRow.id] } },
+        select: { propertyId: true },
+      }),
     );
   });
 
