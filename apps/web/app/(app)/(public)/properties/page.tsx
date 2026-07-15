@@ -122,7 +122,10 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
 
   return (
     <main id="main" className="container py-12">
-      <h1 className="t-display-sm">{heading}</h1>
+      <header className="mb-8 flex flex-col gap-2">
+        <p className="t-caption text-brand-accent">Property search</p>
+        <h1 className="t-display-sm">{heading}</h1>
+      </header>
 
       <PropertyFilters current={search} />
 
