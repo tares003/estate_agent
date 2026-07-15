@@ -104,72 +104,74 @@ export function RepairsInboxTable({
           No repairs match this view. Reports from the tenant repair form land here.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Ticket
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Reporter
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Property
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Category
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Urgency
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Status
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                SLA
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-                Submitted
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((repair) => {
-              const urgency = repairUrgencyDisplay(repair.urgency);
-              const status = repairStatusDisplay(repair.status);
-              const risk = repair.slaRisk === null ? null : slaRiskDisplay(repair.slaRisk);
-              return (
-                <tr key={repair.id} className="border-divider border-b">
-                  <td className="t-body-sm text-text-secondary py-3 pr-4">
-                    {repair.reference ?? '—'}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Link
-                      href={`/admin/repairs/${repair.id}`}
-                      className="t-body-md text-brand-primary"
-                    >
-                      {repair.name}
-                    </Link>
-                  </td>
-                  <td className="t-body-md py-3 pr-4">{repair.propertyReference ?? '—'}</td>
-                  <td className="t-body-md py-3 pr-4">{repair.category}</td>
-                  <td className="py-3 pr-4">
-                    <Badge tone={urgency.tone}>{urgency.label}</Badge>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Badge tone={status.tone}>{status.label}</Badge>
-                  </td>
-                  <td className="py-3 pr-4">
-                    {risk ? <Badge tone={risk.tone}>{risk.label}</Badge> : '—'}
-                  </td>
-                  <td className="t-body-sm text-text-secondary py-3">
-                    {SUBMITTED.format(repair.createdAt)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Ticket
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Reporter
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Property
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Category
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Urgency
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Status
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  SLA
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+                  Submitted
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((repair) => {
+                const urgency = repairUrgencyDisplay(repair.urgency);
+                const status = repairStatusDisplay(repair.status);
+                const risk = repair.slaRisk === null ? null : slaRiskDisplay(repair.slaRisk);
+                return (
+                  <tr key={repair.id} className="border-divider border-b">
+                    <td className="t-body-sm text-text-secondary py-3 pr-4">
+                      {repair.reference ?? '—'}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Link
+                        href={`/admin/repairs/${repair.id}`}
+                        className="t-body-md text-brand-primary"
+                      >
+                        {repair.name}
+                      </Link>
+                    </td>
+                    <td className="t-body-md py-3 pr-4">{repair.propertyReference ?? '—'}</td>
+                    <td className="t-body-md py-3 pr-4">{repair.category}</td>
+                    <td className="py-3 pr-4">
+                      <Badge tone={urgency.tone}>{urgency.label}</Badge>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                    <td className="py-3 pr-4">
+                      {risk ? <Badge tone={risk.tone}>{risk.label}</Badge> : '—'}
+                    </td>
+                    <td className="t-body-sm text-text-secondary py-3">
+                      {SUBMITTED.format(repair.createdAt)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 ? (

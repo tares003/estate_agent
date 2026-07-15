@@ -30,6 +30,22 @@ describe('PropertyFilters', () => {
     expect(screen.getByRole('button', { name: /Search near me/i })).toBeInTheDocument();
   });
 
+  it('lays the two actions full-width on mobile and right-aligned auto-width above sm', () => {
+    render(<PropertyFilters current={empty} />);
+    const nearMe = screen.getByRole('button', { name: /Search near me/i });
+    const apply = screen.getByRole('button', { name: /Apply filters/i });
+    // Both actions stack and fill the width on a phone, then shrink to their label
+    // and sit inline once there is room — never squeezed into one cramped grid cell.
+    for (const button of [nearMe, apply]) {
+      expect(button.className).toContain('w-full');
+      expect(button.className).toContain('sm:w-auto');
+    }
+    // The pair share one row spanning the whole filter grid, right-aligned above sm.
+    const row = nearMe.closest('div');
+    expect(row?.className).toContain('sm:justify-end');
+    expect(row?.className).toContain('lg:col-span-4');
+  });
+
   it('pre-fills each control from the current filters', () => {
     render(
       <PropertyFilters

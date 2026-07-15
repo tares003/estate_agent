@@ -39,73 +39,75 @@ export function AdminPropertiesTable({ result }: { result: AdminPropertyResult }
           No listings yet. Properties you add — including unpublished drafts — appear here.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              {['Address', 'Type', 'Price', 'Status', 'Visibility'].map((heading) => (
-                <th
-                  key={heading}
-                  scope="col"
-                  className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
-                >
-                  {heading}
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                {['Address', 'Type', 'Price', 'Status', 'Visibility'].map((heading) => (
+                  <th
+                    key={heading}
+                    scope="col"
+                    className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
+                  >
+                    {heading}
+                  </th>
+                ))}
+                <th scope="col" className="py-2">
+                  <span className="sr-only">Actions</span>
                 </th>
-              ))}
-              <th scope="col" className="py-2">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((property) => {
-              // Destructure into locals so the figure is rendered as a plain value
-              // alongside its qualifier + frequency (the trust-marker pattern — G8).
-              const qualifier = priceQualifier(property.marketStatus);
-              const priceText = formatPrice(property.price);
-              const frequency = rentFrequency(property.saleType);
-              return (
-                <tr key={property.id} className="border-divider border-b align-top">
-                  <td className="py-3 pr-4">
-                    <Link
-                      href={`/admin/properties/${property.id}`}
-                      className="t-body-md text-brand-primary block"
-                    >
-                      {property.displayAddress}
-                    </Link>
-                    {property.title ? (
-                      <span className="t-body-sm text-text-secondary">{property.title}</span>
-                    ) : null}
-                  </td>
-                  <td className="t-body-md py-3 pr-4">{saleTypeLabel(property.saleType)}</td>
-                  <td className="py-3 pr-4">
-                    <span className="t-caption text-text-secondary block">{qualifier}</span>
-                    <span className="t-body-md">
-                      {priceText}
-                      {frequency ? ` ${frequency}` : ''}
-                    </span>
-                  </td>
-                  <td className="t-body-md py-3 pr-4">{humanise(property.marketStatus)}</td>
-                  <td className="py-3 pr-4">
-                    {property.publishedAt ? (
-                      <Badge tone="success">Published</Badge>
-                    ) : (
-                      <Badge tone="neutral">Draft</Badge>
-                    )}
-                  </td>
-                  <td className="py-3 text-right">
-                    <Link
-                      href={`/admin/properties/${property.id}/edit`}
-                      className="t-body-sm text-brand-primary"
-                      aria-label={`Edit ${property.displayAddress}`}
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((property) => {
+                // Destructure into locals so the figure is rendered as a plain value
+                // alongside its qualifier + frequency (the trust-marker pattern — G8).
+                const qualifier = priceQualifier(property.marketStatus);
+                const priceText = formatPrice(property.price);
+                const frequency = rentFrequency(property.saleType);
+                return (
+                  <tr key={property.id} className="border-divider border-b align-top">
+                    <td className="py-3 pr-4">
+                      <Link
+                        href={`/admin/properties/${property.id}`}
+                        className="t-body-md text-brand-primary block"
+                      >
+                        {property.displayAddress}
+                      </Link>
+                      {property.title ? (
+                        <span className="t-body-sm text-text-secondary">{property.title}</span>
+                      ) : null}
+                    </td>
+                    <td className="t-body-md py-3 pr-4">{saleTypeLabel(property.saleType)}</td>
+                    <td className="py-3 pr-4">
+                      <span className="t-caption text-text-secondary block">{qualifier}</span>
+                      <span className="t-body-md">
+                        {priceText}
+                        {frequency ? ` ${frequency}` : ''}
+                      </span>
+                    </td>
+                    <td className="t-body-md py-3 pr-4">{humanise(property.marketStatus)}</td>
+                    <td className="py-3 pr-4">
+                      {property.publishedAt ? (
+                        <Badge tone="success">Published</Badge>
+                      ) : (
+                        <Badge tone="neutral">Draft</Badge>
+                      )}
+                    </td>
+                    <td className="py-3 text-right">
+                      <Link
+                        href={`/admin/properties/${property.id}/edit`}
+                        className="t-body-sm text-brand-primary"
+                        aria-label={`Edit ${property.displayAddress}`}
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 ? (

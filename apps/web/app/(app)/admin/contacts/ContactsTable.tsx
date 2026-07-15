@@ -66,36 +66,38 @@ export function ContactsTable({
           No contacts match this view. Converting an enquiry creates a contact here.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Name
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Type
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Email
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-                Phone
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((contact) => (
-              <tr key={contact.id} className="border-divider border-b">
-                <td className="t-body-md py-3 pr-4">{contact.name}</td>
-                <td className="py-3 pr-4">
-                  <Badge tone="neutral">{titleCase(contact.type)}</Badge>
-                </td>
-                <td className="t-body-md py-3 pr-4">{contact.email ?? '—'}</td>
-                <td className="t-body-md py-3">{contact.phone ?? '—'}</td>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Name
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Type
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Email
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+                  Phone
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((contact) => (
+                <tr key={contact.id} className="border-divider border-b">
+                  <td className="t-body-md py-3 pr-4">{contact.name}</td>
+                  <td className="py-3 pr-4">
+                    <Badge tone="neutral">{titleCase(contact.type)}</Badge>
+                  </td>
+                  <td className="t-body-md py-3 pr-4">{contact.email ?? '—'}</td>
+                  <td className="t-body-md py-3">{contact.phone ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 ? (

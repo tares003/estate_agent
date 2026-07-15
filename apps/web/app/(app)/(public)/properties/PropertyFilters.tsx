@@ -149,9 +149,12 @@ export function PropertyFilters({ current }: PropertyFiltersProps) {
       <input type="hidden" name="lat" defaultValue={current.lat ?? ''} />
       <input type="hidden" name="lng" defaultValue={current.lng ?? ''} />
 
-      <div className="flex items-end gap-2">
-        <NearMeButton />
-        <Button type="submit" className="w-full">
+      {/* Action row spans the full grid width so the two distinct actions (geolocation
+          search vs apply-filters) are not starved into one cramped cell. Stacked and
+          full-width on mobile for easy tapping; a right-aligned auto-width row above sm. */}
+      <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center sm:justify-end lg:col-span-4">
+        <NearMeButton className="w-full sm:w-auto" />
+        <Button type="submit" className="w-full sm:w-auto">
           Apply filters
         </Button>
       </div>

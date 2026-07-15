@@ -61,6 +61,20 @@ describe('AdminPropertiesTable', () => {
     expect(screen.getByText('No listings')).toBeInTheDocument();
   });
 
+  it('keeps the wide table legible on narrow screens via a horizontal-scroll container', () => {
+    render(<AdminPropertiesTable result={result()} />);
+    const table = screen.getByRole('table');
+    // the table holds a readable minimum width rather than cramming its six columns…
+    expect(table.className).toContain('min-w-[48rem]');
+    // …inside an overflow-x-auto ancestor, so a phone scrolls it instead of squeezing.
+    const scroller = table.closest('.overflow-x-auto');
+    expect(scroller).not.toBeNull();
+    // …and that ancestor is a positioned containing block, so the absolutely-positioned
+    // sr-only "Actions" header is clipped by the scroller instead of escaping and
+    // widening the whole page (the mobile page-overflow fix).
+    expect(scroller?.className).toContain('relative');
+  });
+
   it('builds pagination links', () => {
     render(
       <AdminPropertiesTable

@@ -49,43 +49,45 @@ export default async function FeedbackModerationPage() {
           publish their feedback as a testimonial.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Rating
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Comment
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Trigger
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-                Decision
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row: FeedbackQueueRow) => (
-              <tr key={row.id} className="border-divider border-b align-top">
-                <td className="t-body-md py-3 pr-4 whitespace-nowrap">{row.rating} / 5</td>
-                <td className="t-body-md py-3 pr-4">
-                  <div className="flex flex-col gap-2 max-w-[40ch]">
-                    <span>{row.comment ?? '—'}</span>
-                    {row.needsResponse ? <Badge tone="warning">Needs response</Badge> : null}
-                  </div>
-                </td>
-                <td className="t-body-md py-3 pr-4 whitespace-nowrap">
-                  {triggerLabel(row.triggerType)}
-                </td>
-                <td className="py-3">
-                  <FeedbackModerationControls feedbackId={row.id} comment={row.comment} />
-                </td>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Rating
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Comment
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Trigger
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+                  Decision
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row: FeedbackQueueRow) => (
+                <tr key={row.id} className="border-divider border-b align-top">
+                  <td className="t-body-md py-3 pr-4 whitespace-nowrap">{row.rating} / 5</td>
+                  <td className="t-body-md py-3 pr-4">
+                    <div className="flex flex-col gap-2 max-w-[40ch]">
+                      <span>{row.comment ?? '—'}</span>
+                      {row.needsResponse ? <Badge tone="warning">Needs response</Badge> : null}
+                    </div>
+                  </td>
+                  <td className="t-body-md py-3 pr-4 whitespace-nowrap">
+                    {triggerLabel(row.triggerType)}
+                  </td>
+                  <td className="py-3">
+                    <FeedbackModerationControls feedbackId={row.id} comment={row.comment} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -87,49 +87,51 @@ export function EnquiryQueueTable({
           No enquiries match this view. New enquiries from the public forms land here.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Name
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Email
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Status
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-                Response
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => {
-              const status = statusDisplay(item.status);
-              const age = ageBandDisplay(item.ageBand);
-              return (
-                <tr key={item.id} className="border-divider border-b">
-                  <td className="py-3 pr-4">
-                    <Link
-                      href={`/admin/enquiries/${item.id}`}
-                      className="t-body-md text-brand-primary"
-                    >
-                      {item.name}
-                    </Link>
-                  </td>
-                  <td className="t-body-md py-3 pr-4">{item.email}</td>
-                  <td className="py-3 pr-4">
-                    <Badge tone={status.tone}>{status.label}</Badge>
-                  </td>
-                  <td className="py-3">
-                    <Badge tone={age.tone}>{age.label}</Badge>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Name
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Email
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Status
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+                  Response
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const status = statusDisplay(item.status);
+                const age = ageBandDisplay(item.ageBand);
+                return (
+                  <tr key={item.id} className="border-divider border-b">
+                    <td className="py-3 pr-4">
+                      <Link
+                        href={`/admin/enquiries/${item.id}`}
+                        className="t-body-md text-brand-primary"
+                      >
+                        {item.name}
+                      </Link>
+                    </td>
+                    <td className="t-body-md py-3 pr-4">{item.email}</td>
+                    <td className="py-3 pr-4">
+                      <Badge tone={status.tone}>{status.label}</Badge>
+                    </td>
+                    <td className="py-3">
+                      <Badge tone={age.tone}>{age.label}</Badge>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 ? (

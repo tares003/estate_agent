@@ -48,6 +48,17 @@ describe('NearMeButton', () => {
     requestSubmit.mockRestore();
   });
 
+  it('forwards a className so the filter bar can size it responsively', () => {
+    render(
+      <form>
+        <NearMeButton className="w-full sm:w-auto" />
+      </form>,
+    );
+    const button = screen.getByRole('button', { name: /Search near me/i });
+    expect(button.className).toContain('w-full');
+    expect(button.className).toContain('sm:w-auto');
+  });
+
   it('is inert when geolocation is unavailable', async () => {
     vi.stubGlobal('navigator', {});
     const requestSubmit = vi
