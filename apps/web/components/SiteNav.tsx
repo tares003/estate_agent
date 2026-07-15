@@ -26,8 +26,13 @@ function pathOf(href: string): string {
 // VISIBLE indicator (brand colour + underline), not only aria-current, so sighted
 // and assistive-tech users have parity (WCAG 1.4.1 / 1.3.1), matching the design
 // canvas's `a[aria-current]` accent treatment.
-const LINK_BASE = 't-body-md text-text-primary hover:text-brand-primary';
-const LINK_ACTIVE = 't-body-md text-brand-primary underline underline-offset-4';
+//
+// Each link is a ≥44px tap target (WCAG 2.2 SC 2.5.8 / --size-touch-target-min): the
+// bare text was ~21px tall on mobile, below the minimum. `inline-flex items-center`
+// makes min-height apply and centres the label.
+const LINK_TAP = 'inline-flex items-center min-h-[var(--size-touch-target-min)]';
+const LINK_BASE = `t-body-md text-text-primary hover:text-brand-primary ${LINK_TAP}`;
+const LINK_ACTIVE = `t-body-md text-brand-primary underline underline-offset-4 ${LINK_TAP}`;
 
 function NavLink({ item, currentPath }: { item: NavItem; currentPath?: string | undefined }) {
   const current = currentPath !== undefined && pathOf(item.href) === currentPath;

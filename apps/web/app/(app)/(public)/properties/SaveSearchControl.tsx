@@ -49,7 +49,10 @@ export function SaveSearchControl({ filtersJson, signedIn, currentPath }: SaveSe
   if (!signedIn) {
     const next = encodeURIComponent(currentPath ?? '/properties');
     return (
-      <a href={`/sign-in?next=${next}`} className="t-body-sm text-brand-accent underline">
+      <a
+        href={`/sign-in?next=${next}`}
+        className="t-body-sm text-brand-accent inline-flex min-h-[var(--size-touch-target-min)] items-center underline"
+      >
         Sign in to save this search
       </a>
     );

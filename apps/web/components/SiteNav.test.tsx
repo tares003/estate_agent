@@ -53,6 +53,17 @@ describe('SiteNav', () => {
     expect(inactive.className).not.toContain('underline');
   });
 
+  // WCAG 2.2 SC 2.5.8 — every nav link is a ≥44px tap target. The bare text was
+  // ~21px tall on mobile; the min-height token class keeps it a comfortable target.
+  it('sizes each nav link as a 44px tap target', () => {
+    render(<SiteNav items={DEFAULT_NAV} />);
+    for (const label of ['Buy', 'Rent', 'Sell', 'Calculators', 'Contact']) {
+      const link = screen.getByRole('link', { name: label });
+      expect(link.className).toContain('min-h-[var(--size-touch-target-min)]');
+      expect(link.className).toContain('inline-flex');
+    }
+  });
+
   it('renders child items as a nested list', () => {
     const items: NavItem[] = [
       {
