@@ -46,18 +46,15 @@ test('PropertyCard is responsive and accessible at every breakpoint', async ({ m
     expect(saveBox!.width).toBeGreaterThanOrEqual(44);
     expect(saveBox!.height).toBeGreaterThanOrEqual(44);
 
-    // The status badge fails AA colour-contrast (white text on the saturated
-    // --colour-status-* fills, e.g. white on the available green ≈ 2:1). That is
-    // a DESIGN.md token-level gap (the canvas specifies white-on-status badges;
-    // tokens are owner-owned, do-not-touch) tracked as audit-report D-010 — the
-    // status is still conveyed by text + aria-label (G9 holds). Contrast is
-    // enforced on every other element; the badge is excluded pending D-010.
-    // Scope to the component subtree (.include) so page-level rules about the
-    // bare CT harness page (document-title, html-has-lang, landmark/region) don't
-    // apply — those belong to real routes, not a mounted component.
+    // The status badge is now contrast-checked (previously excluded: it used
+    // white text on a saturated --colour-status-* fill, ~2.5:1, failing AA). It
+    // now renders dark hued text on a pale tint of the same tone token, so the
+    // whole card must pass colour-contrast. Scope to the component subtree
+    // (.include) so page-level rules about the bare CT harness page
+    // (document-title, html-has-lang, landmark/region) don't apply — those belong
+    // to real routes, not a mounted component.
     const axe = await new AxeBuilder({ page })
       .include('.pcard')
-      .exclude('.badge')
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
     expect(
