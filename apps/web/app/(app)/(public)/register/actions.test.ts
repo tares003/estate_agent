@@ -156,9 +156,7 @@ describe('submitRegister', () => {
     );
 
     expect(res.ok).toBe(false);
-    expect(res.values).toEqual(
-      expect.objectContaining({ name: 'Penny Pomeroy', email: 'nope' }),
-    );
+    expect(res.values).toEqual(expect.objectContaining({ name: 'Penny Pomeroy', email: 'nope' }));
     // SECURITY — the password must never round-trip back to the client.
     expect(res.values).not.toHaveProperty('password');
     expect(JSON.stringify(res.values ?? {})).not.toContain('correct horse battery');
