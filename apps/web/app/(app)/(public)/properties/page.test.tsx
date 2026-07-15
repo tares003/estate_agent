@@ -67,6 +67,8 @@ describe('CataloguePage', () => {
     render(await CataloguePage(params({})));
 
     expect(screen.getByRole('heading', { level: 1, name: 'Properties' })).toBeInTheDocument();
+    // Editorial page header: an accent eyebrow above the title (site-wide cohesion).
+    expect(screen.getByText('Property search')).toBeInTheDocument();
     expect(screen.getByText('£525,000')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Edwardian semi · 4 bed' })).toBeInTheDocument();
     expect(screen.getByText('1 property')).toBeInTheDocument();
