@@ -27,6 +27,19 @@ export interface PropertyRow {
    */
   internalSqft?: number | null;
   description?: string | null;
+  // ── §F Material Information (Property Ombudsman Parts A/B/C). Present on the detail
+  //    read; the catalogue card ignores them. Surfaced in the detail's Material
+  //    Information panel (PRODUCT.md compliance rule #4). ────────────────────────────
+  shortDescription?: string | null;
+  areaDescription?: string | null;
+  keyFeatures?: unknown;
+  tenure?: string | null;
+  councilTaxBand?: string | null;
+  epcRating?: string | null;
+  epcScore?: number | null;
+  groundRent?: number | null;
+  serviceCharge?: number | null;
+  furnishedStatus?: string | null;
   town?: string | null;
   /** §J location — stored outward code ("M20"); derived from `postcode` when absent. */
   postcodePrefix?: string | null;
@@ -107,6 +120,17 @@ export interface PropertyDetail extends PropertyCardProps {
   id: string;
   slug: string;
   description: string | null;
+  /** §F Material Information for the detail panel (compliance rule #4). */
+  shortDescription: string | null;
+  areaDescription: string | null;
+  keyFeatures: string[];
+  tenure: string | null;
+  councilTaxBand: string | null;
+  epcRating: string | null;
+  epcScore: number | null;
+  groundRent: number | null;
+  serviceCharge: number | null;
+  furnishedStatus: string | null;
   receptions: number | null;
   /** §F specification — internal size in square feet; null when the listing is unmeasured. */
   internalSqft: number | null;
@@ -484,6 +508,19 @@ export async function getPropertyBySlug(
     id: row.id,
     slug: row.slug,
     description: row.description ?? null,
+    shortDescription: row.shortDescription ?? null,
+    // The area guide is a location signal; suppress it when the exact address is masked.
+    areaDescription: redacted ? null : (row.areaDescription ?? null),
+    keyFeatures: Array.isArray(row.keyFeatures)
+      ? row.keyFeatures.filter((f): f is string => typeof f === 'string')
+      : [],
+    tenure: row.tenure ?? null,
+    councilTaxBand: row.councilTaxBand ?? null,
+    epcRating: row.epcRating ?? null,
+    epcScore: row.epcScore ?? null,
+    groundRent: row.groundRent ?? null,
+    serviceCharge: row.serviceCharge ?? null,
+    furnishedStatus: row.furnishedStatus ?? null,
     receptions: row.receptions,
     internalSqft: row.internalSqft ?? null,
     displayAddress: redacted ? redactedAddressLine(row) : row.displayAddress,
