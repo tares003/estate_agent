@@ -29,7 +29,10 @@ export async function SiteHeader() {
   return (
     <header className="bg-surface-base border-border border-b">
       <div className="container flex items-center justify-between py-4">
-        <Link href="/" className="font-display t-heading-sm text-text-primary">
+        <Link
+          href="/"
+          className="font-display t-heading-sm text-text-primary inline-flex min-h-[var(--size-touch-target-min)] items-center"
+        >
           Estate
         </Link>
         <SiteNav items={items} currentPath={currentPath} />
