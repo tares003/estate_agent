@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = await getRequestOrigin();
   const url = `${origin}/testimonials`;
   const title = 'Testimonials';
-  const description = 'What our clients say — verified feedback from buyers, sellers and tenants.';
+  const description = 'What our clients say: verified feedback from buyers, sellers and tenants.';
   return {
     title,
     description,

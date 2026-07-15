@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const url = `${origin}/properties`;
   const title = 'Property search';
   const description =
-    'Browse properties for sale and to rent — filter by location, price, bedrooms, and search by radius.';
+    'Browse properties for sale and to rent: filter by location, price, bedrooms, and search by radius.';
   return {
     title,
     description,

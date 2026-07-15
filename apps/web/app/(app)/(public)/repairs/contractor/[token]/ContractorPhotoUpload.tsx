@@ -69,7 +69,7 @@ export function ContractorPhotoUpload({ token }: { token: string }) {
     <div className="flex max-w-[28rem] flex-col gap-3">
       {failed ? (
         <FormError
-          errors={[{ message: 'Some photos could not be uploaded — please try again.' }]}
+          errors={[{ message: 'Some photos could not be uploaded. Please try again.' }]}
         />
       ) : null}
       {uploaded > 0 ? (

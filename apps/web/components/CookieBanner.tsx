@@ -87,7 +87,7 @@ export function CookieBanner({ initialDecision }: CookieBannerProps) {
             <Checkbox
               name="necessary"
               label="Necessary"
-              description="Required for the site to work — always on."
+              description="Required for the site to work. Always on."
               checked
               disabled
               readOnly

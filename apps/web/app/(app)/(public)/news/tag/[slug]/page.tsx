@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: TagArchiveProps): Promise<Met
 
   const origin = await getRequestOrigin();
   const url = `${origin}/news/tag/${tag.slug}`;
-  const title = `${tag.name} — Knowledge hub`;
+  const title = `${tag.name}: Knowledge hub`;
   const description = `Articles tagged ${tag.name} from our knowledge hub.`;
   return {
     title,

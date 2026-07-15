@@ -27,11 +27,11 @@ import { FEEDBACK_CONSENT_TEXT } from '../consent-text.js';
 const INITIAL_STATE: FeedbackFormState = { ok: false };
 
 const RATINGS = [
-  { value: '5', label: '5 — Excellent' },
-  { value: '4', label: '4 — Good' },
-  { value: '3', label: '3 — Okay' },
-  { value: '2', label: '2 — Poor' },
-  { value: '1', label: '1 — Very poor' },
+  { value: '5', label: '5 · Excellent' },
+  { value: '4', label: '4 · Good' },
+  { value: '3', label: '3 · Okay' },
+  { value: '2', label: '2 · Poor' },
+  { value: '1', label: '1 · Very poor' },
 ];
 
 export function FeedbackForm({ token }: { token: string }) {
@@ -55,7 +55,7 @@ export function FeedbackForm({ token }: { token: string }) {
     return (
       <FormSuccess
         title="Your feedback has already been received"
-        message="This link has already been used to share feedback — thank you. Each feedback link can only be used once."
+        message="This link has already been used to share feedback. Thank you. Each feedback link can only be used once."
       />
     );
   }
@@ -81,7 +81,7 @@ export function FeedbackForm({ token }: { token: string }) {
         id="comment"
         name="comment"
         label="Anything you’d like to add?"
-        hint="Optional — a short comment"
+        hint="Optional: a short comment"
         error={errorFor('comment')}
       />
       <Checkbox

@@ -12,5 +12,5 @@
  * component (the form) and the server action.
  */
 export const FEEDBACK_CONSENT_TEXT =
-  'I agree that the agent may use my feedback — including publishing it as a ' +
-  'testimonial where I have allowed it — in line with their privacy policy.';
+  'I agree that the agent may use my feedback, including publishing it as a ' +
+  'testimonial where I have allowed it, in line with their privacy policy.';
