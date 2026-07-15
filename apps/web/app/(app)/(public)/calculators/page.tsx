@@ -41,10 +41,11 @@ const CALCULATORS = [
 export default function CalculatorsPage() {
   return (
     <main id="main" className="container py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="t-display-sm">Calculators</h1>
+      <header className="flex flex-col gap-3">
+        <p className="t-caption text-brand-accent">Plan your move</p>
+        <h1 className="t-display-md">Calculators</h1>
         <p className="t-body-lg text-text-secondary max-w-[55ch]">
-          Indicative tools to help you plan — for guidance only, not financial advice.
+          Indicative tools to help you plan. For guidance only, not financial advice.
         </p>
       </header>
       <ul className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">

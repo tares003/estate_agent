@@ -16,6 +16,8 @@ describe('CalculatorsPage (hub)', () => {
     expect(screen.getByRole('link', { name: /stamp duty/i }).getAttribute('href')).toBe(
       '/calculators/stamp-duty',
     );
+    // The editorial page header carries an accent eyebrow above the title.
+    expect(screen.getByText('Plan your move')).toBeInTheDocument();
   });
 
   it('builds canonical metadata for the calculators hub', async () => {

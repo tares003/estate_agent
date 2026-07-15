@@ -61,6 +61,8 @@ describe('LocationsPage', () => {
     );
     expect(screen.getByText('A bohemian quarter of south Manchester.')).toBeInTheDocument();
     expect(screen.getByText('2 area guides')).toBeInTheDocument();
+    // The editorial page header carries an accent eyebrow above the title.
+    expect(screen.getByText('Where we work')).toBeInTheDocument();
   });
 
   it('serves the hero image via a render-time signed path', async () => {

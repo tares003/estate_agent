@@ -47,6 +47,8 @@ describe('TestimonialsPage', () => {
     );
     expect(screen.getByText(/They found us the perfect home\./)).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: /testimonials/i })).toBeInTheDocument();
+    // The editorial page header carries an accent eyebrow above the title.
+    expect(screen.getByText('In their words')).toBeInTheDocument();
   });
 
   it('never exposes sensitive fields (respondent, trigger, agent) in the DOM', async () => {

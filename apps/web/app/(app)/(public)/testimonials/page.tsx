@@ -81,8 +81,9 @@ export default async function TestimonialsPage({ searchParams }: TestimonialsPag
 
   return (
     <main id="main" className="container py-12">
-      <header className="mb-10 flex flex-col gap-2">
-        <h1 className="t-display-sm">Testimonials</h1>
+      <header className="mb-12 flex flex-col gap-3">
+        <p className="t-caption text-brand-accent">In their words</p>
+        <h1 className="t-display-md">Testimonials</h1>
         <p className="t-body-lg text-text-secondary max-w-[60ch]">
           Verified feedback from clients we have helped buy, sell, let and rent.
         </p>
