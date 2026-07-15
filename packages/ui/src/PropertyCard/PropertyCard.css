@@ -76,32 +76,50 @@
   color: var(--colour-brand-primary-on);
   box-shadow: var(--shadow-xs);
 }
+/* Status tags: dark-on-tint for WCAG 2.2 AA. A pale tint of the tone colour with
+ * dark hued text and a hued hairline border — not white text on a saturated fill,
+ * which failed AA (white on the available green was ~2.5:1; needs 4.5:1). All
+ * three values derive from the SAME `--colour-status-*` tokens via `color-mix`
+ * (the file's existing house pattern — no token change). The tag sits over the
+ * media, so the near-opaque pale tint + shadow keep it legible over any photo,
+ * and the hued border carries the status colour at a glance. Each tone sets only
+ * `--_tone`; the shared rule turns it into the chip. Verified in
+ * PropertyCard.spec.tsx (axe, real browser, every breakpoint). */
 .b-available {
-  background: var(--colour-status-available);
+  --_tone: var(--colour-status-available);
 }
 .b-under-offer {
-  background: var(--colour-status-under-offer);
-  color: var(--colour-brand-accent-on);
+  --_tone: var(--colour-status-under-offer);
 }
 .b-sold-stc {
-  background: var(--colour-status-sold-stc);
+  --_tone: var(--colour-status-sold-stc);
 }
 .b-sold {
-  background: var(--colour-status-sold);
+  --_tone: var(--colour-status-sold);
 }
 .b-let-agreed {
-  background: var(--colour-status-let-agreed);
-  color: var(--colour-brand-accent-on);
+  --_tone: var(--colour-status-let-agreed);
 }
 .b-let {
-  background: var(--colour-status-let);
+  --_tone: var(--colour-status-let);
 }
 .b-withdrawn {
-  background: var(--colour-status-withdrawn);
+  --_tone: var(--colour-status-withdrawn);
 }
 .b-new {
-  background: var(--colour-brand-accent);
-  color: var(--colour-brand-accent-on);
+  --_tone: var(--colour-brand-accent);
+}
+.b-available,
+.b-under-offer,
+.b-sold-stc,
+.b-sold,
+.b-let-agreed,
+.b-let,
+.b-withdrawn,
+.b-new {
+  background: color-mix(in srgb, var(--_tone) 15%, var(--colour-surface-base));
+  color: color-mix(in srgb, var(--_tone) 32%, var(--colour-text-primary));
+  border: 1px solid color-mix(in srgb, var(--_tone) 40%, var(--colour-border));
 }
 
 .photos {
