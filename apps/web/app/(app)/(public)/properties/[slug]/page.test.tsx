@@ -214,7 +214,8 @@ describe('PropertyDetailPage', () => {
     );
 
     expect(screen.getByText('Size')).toBeInTheDocument();
-    expect(screen.getByText('1,450 sq ft')).toBeInTheDocument();
+    // The size shows in the facts strip AND the Material Information panel (both surfaces).
+    expect(screen.getAllByText('1,450 sq ft').length).toBeGreaterThanOrEqual(1);
 
     const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
     const listing = JSON.parse(ldScripts[0]?.textContent ?? '{}');
@@ -236,6 +237,46 @@ describe('PropertyDetailPage', () => {
     const ldScripts = container.querySelectorAll('script[type="application/ld+json"]');
     const listing = JSON.parse(ldScripts[0]?.textContent ?? '{}');
     expect(listing).not.toHaveProperty('floorSize');
+  });
+
+  // §F Material Information (Property Ombudsman Parts A/B/C; PRODUCT.md rule #4) — the
+  // detail surfaces EPC, council tax, tenure and size, the key features, and the area.
+  it('renders the Material Information panel, key features and area when populated', async () => {
+    findFirst.mockResolvedValue({
+      ...saleRow,
+      epcRating: 'd',
+      epcScore: 62,
+      councilTaxBand: 'e',
+      tenure: 'freehold',
+      internalSqft: 1680,
+      keyFeatures: ['South-facing garden', 'Off-street parking'],
+      shortDescription: 'A handsome four-bed semi near the village.',
+      areaDescription: 'Didsbury has a village high street of independent cafes.',
+    });
+
+    render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
+
+    expect(screen.getByRole('heading', { name: 'Material information' })).toBeInTheDocument();
+    expect(screen.getByText('EPC rating')).toBeInTheDocument();
+    expect(screen.getByText('D · 62')).toBeInTheDocument();
+    expect(screen.getByText('Council tax band')).toBeInTheDocument();
+    expect(screen.getByText('Freehold')).toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { name: 'Key features' })).toBeInTheDocument();
+    expect(screen.getByText('South-facing garden')).toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { name: 'The area' })).toBeInTheDocument();
+    expect(screen.getByText('A handsome four-bed semi near the village.')).toBeInTheDocument();
+  });
+
+  it('omits Material Information, key features and area when the listing populates none', async () => {
+    findFirst.mockResolvedValue(saleRow);
+
+    render(await PropertyDetailPage({ params: Promise.resolve({ slug: 'palatine-road-m20' }) }));
+
+    expect(screen.queryByRole('heading', { name: 'Material information' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Key features' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'The area' })).not.toBeInTheDocument();
   });
 
   it('renders a minimal property with no description or stats', async () => {

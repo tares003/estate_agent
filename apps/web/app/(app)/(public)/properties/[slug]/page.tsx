@@ -6,6 +6,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Badge, type BadgeTone } from '@estate/ui';
 import { withTenant } from '@estate/db';
 import { getDb } from '../../../lib/db.js';
 import {
@@ -107,6 +108,60 @@ function humaniseFact(value: string): string {
 /** Render a whole-pound money value as a GBP string ("£12,500"). */
 function money(value: number): string {
   return `£${value.toLocaleString('en-GB')}`;
+}
+
+/** Render a PENCE money value (ground rent / service charge columns) as GBP. */
+function moneyFromPence(pence: number): string {
+  return `£${Math.round(pence / 100).toLocaleString('en-GB')}`;
+}
+
+/** An EPC band's efficiency tone (A–C efficient, D–E middling, F–G poor). */
+function epcTone(rating: string): 'success' | 'warning' | 'danger' | 'neutral' {
+  const band = rating.toLowerCase();
+  if (['a', 'b', 'c'].includes(band)) return 'success';
+  if (['d', 'e'].includes(band)) return 'warning';
+  if (['f', 'g'].includes(band)) return 'danger';
+  return 'neutral';
+}
+
+/** One Material Information row (Property Ombudsman Parts A/B/C, compliance rule #4). */
+interface MaterialRow {
+  label: string;
+  value: string;
+  /** An EPC-style tone chip, when the value carries an efficiency signal. */
+  tone?: 'success' | 'warning' | 'danger' | 'neutral';
+}
+
+/** Market-status display: the public label + the matching badge tone. */
+function marketStatusDisplay(status: string): { label: string; tone: BadgeTone } {
+  const map: Record<string, { label: string; tone: BadgeTone }> = {
+    for_sale: { label: 'For sale', tone: 'available' },
+    to_let: { label: 'To rent', tone: 'available' },
+    under_offer: { label: 'Under offer', tone: 'under-offer' },
+    sold_stc: { label: 'Sold STC', tone: 'sold-stc' },
+    let_agreed: { label: 'Let agreed', tone: 'let-agreed' },
+    sold: { label: 'Sold', tone: 'sold' },
+    let: { label: 'Let', tone: 'let' },
+    withdrawn: { label: 'Withdrawn', tone: 'withdrawn' },
+  };
+  return map[status] ?? { label: humaniseFact(status), tone: 'neutral' };
+}
+
+/** A minimal house glyph for the no-photo gallery placeholder. */
+function HouseGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.25}
+      aria-hidden="true"
+    >
+      <path d="M3 11 12 4l9 7" />
+      <path d="M5 10v9h14v-9" />
+      <path d="M9 19v-5h6v5" />
+    </svg>
+  );
 }
 
 /**
@@ -218,6 +273,43 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     });
   }
 
+  // §F Material Information (Property Ombudsman Parts A/B/C, PRODUCT.md rule #4) — only
+  // the rows the listing actually populates are shown; nothing is invented.
+  const material: MaterialRow[] = [];
+  if (property.epcRating) {
+    material.push({
+      label: 'EPC rating',
+      value:
+        property.epcRating.toUpperCase() + (property.epcScore ? ` · ${property.epcScore}` : ''),
+      tone: epcTone(property.epcRating),
+    });
+  }
+  if (property.councilTaxBand) {
+    material.push({ label: 'Council tax band', value: property.councilTaxBand.toUpperCase() });
+  }
+  if (property.tenure) material.push({ label: 'Tenure', value: humaniseFact(property.tenure) });
+  if (property.internalSqft != null && property.internalSqft > 0) {
+    material.push({
+      label: 'Internal size',
+      value: `${property.internalSqft.toLocaleString('en-GB')} sq ft`,
+    });
+  }
+  if (property.furnishedStatus) {
+    material.push({ label: 'Furnishing', value: humaniseFact(property.furnishedStatus) });
+  }
+  if (property.groundRent != null) {
+    material.push({
+      label: 'Ground rent',
+      value: `${moneyFromPence(property.groundRent)} per year`,
+    });
+  }
+  if (property.serviceCharge != null) {
+    material.push({
+      label: 'Service charge',
+      value: `${moneyFromPence(property.serviceCharge)} per year`,
+    });
+  }
+
   // FR-F-3 — the per-vertical extension facts, discriminated by listing type.
   const extraFacts = verticalFacts(property.vertical);
   const cqcUrl =
@@ -238,6 +330,9 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     ]),
   ];
 
+  const status = marketStatusDisplay(property.marketStatus);
+  const summary = property.shortDescription;
+
   return (
     <main id="main" className="container py-12">
       {jsonLd.map((ld, index) => (
@@ -249,41 +344,64 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
           dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
         />
       ))}
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.6fr_1fr]">
-        <article>
-          {heroImage ? (
-            <div className="mb-8 flex flex-col gap-3">
-              <img
-                src={heroImage.src}
-                alt={heroImage.alt}
-                className="border-divider aspect-[4/3] w-full rounded-lg border object-cover"
-              />
-              {gallery.length > 1 ? (
-                <ul className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {gallery.slice(1).map((image) => (
-                    <li key={image.src}>
-                      <img
-                        src={image.src}
-                        alt={image.alt}
-                        className="border-divider aspect-[4/3] w-full rounded-md border object-cover"
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
+      {/* Gallery leads full-bleed within the container: hero + strip, or a graceful
+          placeholder so the page always opens on a visual anchor. */}
+      {heroImage ? (
+        <div className="mb-10 grid gap-3 sm:grid-cols-[2fr_1fr]">
+          <img
+            src={heroImage.src}
+            alt={heroImage.alt}
+            className="border-border aspect-[4/3] w-full rounded-lg border object-cover sm:aspect-auto sm:h-full"
+          />
+          {gallery.length > 1 ? (
+            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-1 sm:grid-rows-3">
+              {gallery.slice(1, 4).map((image) => (
+                <li key={image.src} className="h-full">
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    className="border-border aspect-[4/3] h-full w-full rounded-md border object-cover"
+                  />
+                </li>
+              ))}
+            </ul>
           ) : null}
-          <header className="flex flex-col gap-2">
-            <p className="t-body-md text-text-secondary">{address}</p>
-            <h1 className="t-display-sm">{title}</h1>
-            <p className="flex items-baseline gap-3">
-              <span className="t-heading-md">{price}</span>
+        </div>
+      ) : (
+        <div className="bg-surface-sunken border-border text-text-muted mb-10 flex aspect-[16/6] w-full flex-col items-center justify-center gap-3 rounded-lg border">
+          <span className="[&>svg]:h-10 [&>svg]:w-10">
+            <HouseGlyph />
+          </span>
+          <p className="t-body-sm">Photography for this property is on its way.</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.7fr_1fr] lg:gap-16">
+        <article className="flex flex-col gap-12">
+          <header className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Badge tone={status.tone}>{status.label}</Badge>
+              <span className="t-body-sm text-text-secondary">{address}</span>
+            </div>
+            <h1 className="t-display-sm max-w-[20ch]">{title}</h1>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="t-heading-lg">{price}</span>
               <span className="t-body-sm text-text-secondary">
                 {priceQualifier}
                 {rentFrequency ? ` · ${rentFrequency}` : ''}
               </span>
-            </p>
-            <div className="mt-2">
+            </div>
+            {facts.length > 0 ? (
+              <dl className="border-border mt-4 flex flex-wrap gap-x-10 gap-y-4 border-y py-5">
+                {facts.map((fact) => (
+                  <div key={fact.label} className="flex flex-col gap-1">
+                    <dt className="t-caption text-text-muted">{fact.label}</dt>
+                    <dd className="t-heading-sm">{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+            <div className="mt-1">
               <SavePropertyButton
                 propertyId={property.id}
                 signedIn={canSave}
@@ -293,62 +411,127 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
             </div>
           </header>
 
-          {facts.length > 0 ? (
-            <dl className="mt-8 flex flex-wrap gap-8">
-              {facts.map((fact) => (
-                <div key={fact.label} className="flex flex-col">
-                  <dt className="t-caption text-text-secondary">{fact.label}</dt>
-                  <dd className="t-heading-sm">{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-
-          {/* FR-F-3 — the per-vertical facts strip, below the core spec strip. */}
-          {extraFacts.length > 0 || cqcUrl ? (
-            <dl className="border-divider mt-8 flex flex-wrap gap-8 border-t pt-8">
-              {extraFacts.map((fact) => (
-                <div key={fact.label} className="flex flex-col">
-                  <dt className="t-caption text-text-secondary">{fact.label}</dt>
-                  <dd className="t-heading-sm">{fact.value}</dd>
-                </div>
-              ))}
-              {cqcUrl ? (
-                <div className="flex flex-col">
-                  <dt className="t-caption text-text-secondary">Inspection</dt>
-                  <dd className="t-heading-sm">
-                    <a
-                      href={cqcUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="text-brand-primary underline underline-offset-4"
-                    >
-                      CQC inspection
-                    </a>
-                  </dd>
-                </div>
+          {summary || property.description ? (
+            <section aria-labelledby="about-heading" className="flex flex-col gap-4">
+              <h2 id="about-heading" className="t-heading-md">
+                About this property
+              </h2>
+              {summary ? <p className="t-body-lg max-w-[62ch]">{summary}</p> : null}
+              {property.description ? (
+                <p className="t-body-md text-text-secondary max-w-[62ch] whitespace-pre-line">
+                  {property.description}
+                </p>
               ) : null}
-            </dl>
+            </section>
           ) : null}
 
-          {property.description ? (
-            <p className="t-body-lg mt-8 max-w-[60ch] whitespace-pre-line">
-              {property.description}
-            </p>
+          {property.keyFeatures.length > 0 ? (
+            <section aria-labelledby="features-heading" className="flex flex-col gap-4">
+              <h2 id="features-heading" className="t-heading-md">
+                Key features
+              </h2>
+              <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                {property.keyFeatures.map((feature) => (
+                  <li key={feature} className="t-body-md flex items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="text-brand-accent mt-1 [&>svg]:h-4 [&>svg]:w-4"
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path d="m5 10 3.5 3.5L15 6" />
+                      </svg>
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {material.length > 0 ? (
+            <section aria-labelledby="material-heading" className="flex flex-col gap-4">
+              <h2 id="material-heading" className="t-heading-md">
+                Material information
+              </h2>
+              <p className="t-body-sm text-text-muted max-w-[62ch]">
+                The facts every buyer needs up front, in line with Trading Standards guidance.
+              </p>
+              <dl className="border-border grid grid-cols-1 overflow-hidden rounded-lg border sm:grid-cols-2">
+                {material.map((row, index) => (
+                  <div
+                    key={row.label}
+                    className={`border-divider flex items-center justify-between gap-4 px-5 py-4 ${
+                      index % 2 === 0 ? 'sm:border-r' : ''
+                    } ${index >= 2 ? 'border-t' : ''} sm:[&:nth-child(-n+2)]:border-t-0`}
+                  >
+                    <dt className="t-body-sm text-text-secondary">{row.label}</dt>
+                    <dd className="t-body-md flex items-center gap-2 font-medium">
+                      {row.tone ? <Badge tone={row.tone}>{row.value}</Badge> : row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
+
+          {/* FR-F-3 — the per-vertical facts strip. */}
+          {extraFacts.length > 0 || cqcUrl ? (
+            <section aria-labelledby="vertical-heading" className="flex flex-col gap-4">
+              <h2 id="vertical-heading" className="t-heading-md">
+                Additional details
+              </h2>
+              <dl className="flex flex-wrap gap-x-10 gap-y-4">
+                {extraFacts.map((fact) => (
+                  <div key={fact.label} className="flex flex-col gap-1">
+                    <dt className="t-caption text-text-muted">{fact.label}</dt>
+                    <dd className="t-heading-sm">{fact.value}</dd>
+                  </div>
+                ))}
+                {cqcUrl ? (
+                  <div className="flex flex-col gap-1">
+                    <dt className="t-caption text-text-muted">Inspection</dt>
+                    <dd className="t-heading-sm">
+                      <a
+                        href={cqcUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="text-brand-primary underline underline-offset-4"
+                      >
+                        CQC inspection
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+              </dl>
+            </section>
+          ) : null}
+
+          {property.areaDescription ? (
+            <section aria-labelledby="area-heading" className="flex flex-col gap-4">
+              <h2 id="area-heading" className="t-heading-md">
+                The area
+              </h2>
+              <p className="t-body-md text-text-secondary max-w-[62ch]">
+                {property.areaDescription}
+              </p>
+              <p className="t-body-sm text-text-muted">{address}</p>
+            </section>
           ) : null}
         </article>
 
-        <aside aria-label="Enquire about this property">
-          <EnquiryForm propertyId={property.id} propertyTitle={title} />
-          <p className="t-body-sm text-text-secondary mt-4">
-            Prefer to see it in person?{' '}
-            <a
-              href={`/properties/${property.slug}/viewing`}
-              className="text-brand-primary underline underline-offset-4"
-            >
-              Book a viewing
-            </a>
-          </p>
+        <aside aria-label="Enquire about this property" className="self-start lg:sticky lg:top-8">
+          <div className="border-border bg-surface-raised flex flex-col gap-4 rounded-lg border p-6">
+            <EnquiryForm propertyId={property.id} propertyTitle={title} />
+            <p className="border-divider t-body-sm text-text-secondary border-t pt-4">
+              Prefer to see it in person?{' '}
+              <a
+                href={`/properties/${property.slug}/viewing`}
+                className="text-brand-primary font-medium underline underline-offset-4"
+              >
+                Book a viewing
+              </a>
+            </p>
+          </div>
         </aside>
       </div>
     </main>
