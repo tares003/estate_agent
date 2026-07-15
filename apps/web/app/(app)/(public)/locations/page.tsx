@@ -45,8 +45,9 @@ export default async function LocationsPage() {
 
   return (
     <main id="main" className="container py-12">
-      <header className="mb-10 flex flex-col gap-2">
-        <h1 className="t-display-sm">Area guides</h1>
+      <header className="mb-12 flex flex-col gap-3">
+        <p className="t-caption text-brand-accent">Where we work</p>
+        <h1 className="t-display-md">Area guides</h1>
         <p className="t-body-lg text-text-secondary max-w-[60ch]">
           Explore the areas we cover: local insight and the latest properties in each.
         </p>
