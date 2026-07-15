@@ -13,23 +13,34 @@ vi.mock('../../../lib/db.js', () => ({ getDb: () => ({}) }));
 const findFirst = vi.fn();
 const imageFindMany = vi.fn();
 const seoFindFirst = vi.fn();
+const savedFindMany = vi.fn();
 vi.mock('@estate/db', () => ({
   withTenant: async (_db: unknown, _tenantId: string, fn: (tx: unknown) => unknown) =>
     fn({
       property: { findFirst },
       propertyImage: { findMany: imageFindMany },
       seoMetadata: { findFirst: seoFindFirst },
+      savedProperty: { findMany: savedFindMany },
     }),
 }));
 vi.mock('../../../lib/storage.js', () => ({
   signedObjectPath: (key: string) => `/api/storage/object?token=tok:${key}`,
 }));
+// EPIC-T FR-T-5/6 — the detail page resolves the customer session for the
+// save-to-favourites control; these facts tests are signed-out, so the control
+// renders as a sign-in prompt and the saved-state read is skipped.
+const getCustomerSession = vi.fn(async () => null);
+vi.mock('../../../lib/customer-session.js', () => ({ getCustomerSession }));
 const notFound = vi.fn(() => {
   throw new Error('NEXT_NOT_FOUND');
 });
 vi.mock('next/navigation', () => ({ notFound }));
 vi.mock('./EnquiryForm.js', () => ({
   EnquiryForm: () => <div data-testid="enquiry-form" />,
+}));
+// Stub the client save/remove toggle (its own test exercises the hooks).
+vi.mock('../../../account/saved/SavePropertyButton.js', () => ({
+  SavePropertyButton: () => <div data-testid="save-button" />,
 }));
 
 const { default: PropertyDetailPage } = await import('./page.js');
