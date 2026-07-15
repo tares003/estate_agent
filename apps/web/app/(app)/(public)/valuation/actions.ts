@@ -27,10 +27,28 @@ interface ValuationWriteClient extends ConsentWriter, AuditWriter, AssignmentRul
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
+/**
+ * The safe subset of a valuation submission that is echoed back on an error so the
+ * form can re-fill itself rather than wiping the user's input. The `gdpr_consent`
+ * affirmation and the single-use Turnstile token are DELIBERATELY excluded — see
+ * `submitValuation`. `bedrooms` is the raw string as typed (re-filled verbatim).
+ */
+export interface ValuationFormValues {
+  name?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  addressLine1?: string | undefined;
+  postcode?: string | undefined;
+  propertyType?: string | undefined;
+  bedrooms?: string | undefined;
+}
+
 /** The result of a valuation submission, consumed by `useActionState`. */
 export interface ValuationFormState {
   ok: boolean;
   errors?: FormErrorItem[];
+  /** The submitted safe fields, returned on an error so the form can re-fill them. */
+  values?: ValuationFormValues;
 }
 
 function field(formData: FormData, name: string): string | undefined {
@@ -44,15 +62,22 @@ export async function submitValuation(
   _prevState: ValuationFormState,
   formData: FormData,
 ): Promise<ValuationFormState> {
-  const bedroomsRaw = field(formData, 'bedrooms');
-  const parsed = valuationRequestSchema.safeParse({
+  // Preserve the user's safe input so any error return re-fills the form instead
+  // of wiping it. Consent is NOT echoed — it must be a fresh affirmative act every
+  // submit (G5) — and the Turnstile token is NOT echoed (single-use; G8).
+  const values: ValuationFormValues = {
     name: field(formData, 'name'),
     email: field(formData, 'email'),
     phone: field(formData, 'phone'),
     addressLine1: field(formData, 'addressLine1'),
     postcode: field(formData, 'postcode'),
     propertyType: field(formData, 'propertyType'),
-    bedrooms: bedroomsRaw === undefined ? undefined : Number(bedroomsRaw),
+    bedrooms: field(formData, 'bedrooms'),
+  };
+
+  const parsed = valuationRequestSchema.safeParse({
+    ...values,
+    bedrooms: values.bedrooms === undefined ? undefined : Number(values.bedrooms),
     gdpr_consent: formData.get('gdpr_consent') === 'on',
   });
 
@@ -63,7 +88,7 @@ export async function submitValuation(
         ? { message: issue.message }
         : { field: fieldKey, message: issue.message };
     });
-    return { ok: false, errors };
+    return { ok: false, errors, values };
   }
 
   const valuation = parsed.data;
@@ -81,6 +106,7 @@ export async function submitValuation(
     return {
       ok: false,
       errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+      values,
     };
   }
 

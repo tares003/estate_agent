@@ -21,10 +21,26 @@ import { REGISTER_CONSENT_TEXT } from './consent-text.js';
 
 interface RegisterWriteClient extends ConsentWriter, AuditWriter {}
 
+/**
+ * The safe subset of a registration submission that is echoed back on an error so
+ * the form can re-fill itself rather than wiping the user's input. Only `name` and
+ * `email` are safe. The `password` is DELIBERATELY excluded — a password must never
+ * round-trip back to the client, so a lost password on error is correct (the user
+ * re-types it). The `gdpr_consent` affirmation, the `marketingOptIn` flag, and the
+ * single-use Turnstile token are likewise excluded (G5 — consent is re-affirmed
+ * every submit).
+ */
+export interface RegisterFormValues {
+  name?: string | undefined;
+  email?: string | undefined;
+}
+
 /** The result of a registration submission, consumed by `useActionState`. */
 export interface RegisterFormState {
   ok: boolean;
   errors?: FormErrorItem[];
+  /** The submitted safe fields (name/email only — never the password), for re-fill. */
+  values?: RegisterFormValues;
 }
 
 function field(formData: FormData, name: string): string | undefined {
@@ -38,9 +54,16 @@ export async function submitRegister(
   _prevState: RegisterFormState,
   formData: FormData,
 ): Promise<RegisterFormState> {
-  const parsed = customerRegistrationSchema.safeParse({
+  // Preserve ONLY the safe fields so an error return re-fills them. The password
+  // is never echoed (a lost password on error is correct), and consent is never
+  // echoed (G5 — it must be re-affirmed every submit).
+  const values: RegisterFormValues = {
     name: field(formData, 'name'),
     email: field(formData, 'email'),
+  };
+
+  const parsed = customerRegistrationSchema.safeParse({
+    ...values,
     // Password is intentionally read raw (NOT trimmed) — surrounding spaces are
     // legitimate in a passphrase.
     password: typeof formData.get('password') === 'string' ? formData.get('password') : undefined,
@@ -55,7 +78,7 @@ export async function submitRegister(
         ? { message: issue.message }
         : { field: fieldKey, message: issue.message };
     });
-    return { ok: false, errors };
+    return { ok: false, errors, values };
   }
 
   const registration = parsed.data;
@@ -73,6 +96,7 @@ export async function submitRegister(
     return {
       ok: false,
       errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+      values,
     };
   }
 
@@ -89,7 +113,7 @@ export async function submitRegister(
       created.reason === 'email_taken'
         ? 'An account with that email already exists — try signing in instead.'
         : 'We couldn’t create your account just now. Please try again.';
-    return { ok: false, errors: [{ message }] };
+    return { ok: false, errors: [{ message }], values };
   }
 
   await withTenant(getDb(), tenantId, async (rawTx) => {

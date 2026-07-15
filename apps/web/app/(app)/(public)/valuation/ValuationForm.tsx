@@ -18,15 +18,23 @@ import { VALUATION_CONSENT_TEXT } from './consent-text.js';
 
 const INITIAL_STATE: ValuationFormState = { ok: false };
 
+export interface ValuationFormProps {
+  /** Seed state — used by tests to render the error/pre-fill branch; defaults to not-submitted. */
+  initialState?: ValuationFormState;
+}
+
 /**
  * EPIC-C valuation-request form (PRODUCT.md §4). A client component driven by
  * `useActionState(submitValuation, …)`: a failed submit shows a field-linked error
- * summary plus inline field errors; success swaps to a calm confirmation. The
- * consent checkbox carries the exact affirmation the action persists (master spec
- * §S.7).
+ * summary plus inline field errors; success swaps to a calm confirmation. On an
+ * error the safe fields are re-filled from the returned `state.values` (React
+ * resets the uncontrolled form to its current `defaultValue`s after the action),
+ * so a single mistyped field no longer wipes the whole form. The consent checkbox
+ * carries the exact affirmation the action persists (master spec §S.7) and is
+ * never re-checked from state (G5).
  */
-export function ValuationForm() {
-  const [state, formAction, pending] = useActionState(submitValuation, INITIAL_STATE);
+export function ValuationForm({ initialState = INITIAL_STATE }: ValuationFormProps = {}) {
+  const [state, formAction, pending] = useActionState(submitValuation, initialState);
 
   const [turnstileToken, setTurnstileToken] = useState('');
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
@@ -54,6 +62,7 @@ export function ValuationForm() {
         label="Your name"
         autoComplete="name"
         required
+        defaultValue={state.values?.name ?? ''}
         error={errorFor('name')}
       />
       <EmailField
@@ -62,6 +71,7 @@ export function ValuationForm() {
         label="Email"
         autoComplete="email"
         required
+        defaultValue={state.values?.email ?? ''}
         error={errorFor('email')}
       />
       <PhoneField
@@ -70,6 +80,7 @@ export function ValuationForm() {
         label="Phone"
         autoComplete="tel"
         required
+        defaultValue={state.values?.phone ?? ''}
         error={errorFor('phone')}
       />
       <TextField
@@ -78,6 +89,7 @@ export function ValuationForm() {
         label="Property address"
         autoComplete="address-line1"
         required
+        defaultValue={state.values?.addressLine1 ?? ''}
         error={errorFor('addressLine1')}
       />
       <TextField
@@ -86,6 +98,7 @@ export function ValuationForm() {
         label="Postcode"
         autoComplete="postal-code"
         required
+        defaultValue={state.values?.postcode ?? ''}
         error={errorFor('postcode')}
       />
       <TextField
@@ -94,6 +107,7 @@ export function ValuationForm() {
         label="Property type"
         hint="e.g. terraced house, flat, bungalow"
         required
+        defaultValue={state.values?.propertyType ?? ''}
         error={errorFor('propertyType')}
       />
       <NumberField
@@ -101,8 +115,11 @@ export function ValuationForm() {
         name="bedrooms"
         label="Bedrooms"
         hint="Optional"
+        defaultValue={state.values?.bedrooms ?? ''}
         error={errorFor('bedrooms')}
       />
+      {/* G5 / GDPR: consent is a fresh affirmative act every submit — it is never
+          echoed back from state, so it always renders UNCHECKED on a re-render. */}
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

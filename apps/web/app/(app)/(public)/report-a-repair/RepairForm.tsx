@@ -119,6 +119,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         label="Your name"
         autoComplete="name"
         required
+        defaultValue={state.values?.name ?? ''}
         error={errorFor('name')}
       />
       <EmailField
@@ -127,6 +128,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         label="Email"
         autoComplete="email"
         required
+        defaultValue={state.values?.email ?? ''}
         error={errorFor('email')}
       />
       <PhoneField
@@ -135,6 +137,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         label="Phone"
         autoComplete="tel"
         required
+        defaultValue={state.values?.phone ?? ''}
         error={errorFor('phone')}
       />
       <TextField
@@ -143,6 +146,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         label="Property reference or address"
         hint="The address or reference of the property that needs the repair"
         required
+        defaultValue={state.values?.propertyReference ?? ''}
         error={errorFor('propertyReference')}
       />
       <Select
@@ -151,6 +155,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         label="What needs repairing?"
         placeholder="Choose a category"
         options={categories}
+        defaultValue={state.values?.category ?? ''}
         error={errorFor('category')}
       />
       <label htmlFor="description" className="flex flex-col gap-1">
@@ -160,6 +165,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
           name="description"
           required
           rows={4}
+          defaultValue={state.values?.description ?? ''}
           className="border-divider rounded-md border px-3 py-2"
         />
       </label>
@@ -168,7 +174,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
         name="urgency"
         label="How urgent is it?"
         options={URGENCY_OPTIONS}
-        defaultValue="standard"
+        defaultValue={state.values?.urgency ?? 'standard'}
         error={errorFor('urgency')}
       />
       <FileDropzone
@@ -178,6 +184,8 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
       />
       <input type="hidden" name="filesMeta" value={filesMeta} />
 
+      {/* G5 / GDPR: consent is a fresh affirmative act every submit — it is never
+          echoed back from state, so it always renders UNCHECKED on a re-render. */}
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

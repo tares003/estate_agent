@@ -26,10 +26,25 @@ interface ContactWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleR
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
+/**
+ * The safe subset of a contact submission that is echoed back on an error so the
+ * form can re-fill itself rather than wiping the user's input. The `gdpr_consent`
+ * affirmation and the single-use Turnstile token are DELIBERATELY excluded — see
+ * `submitContact`.
+ */
+export interface ContactFormValues {
+  name?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  message?: string | undefined;
+}
+
 /** The result of a contact submission, consumed by `useActionState`. */
 export interface ContactFormState {
   ok: boolean;
   errors?: FormErrorItem[];
+  /** The submitted safe fields, returned on an error so the form can re-fill them. */
+  values?: ContactFormValues;
 }
 
 function field(formData: FormData, name: string): string | undefined {
@@ -43,11 +58,18 @@ export async function submitContact(
   _prevState: ContactFormState,
   formData: FormData,
 ): Promise<ContactFormState> {
-  const parsed = buyerEnquirySchema.safeParse({
+  // Preserve the user's safe input so any error return re-fills the form instead
+  // of wiping it. Consent is NOT echoed — it must be a fresh affirmative act every
+  // submit (G5) — and the Turnstile token is NOT echoed (single-use; G8).
+  const values: ContactFormValues = {
     name: field(formData, 'name'),
     email: field(formData, 'email'),
     phone: field(formData, 'phone'),
     message: field(formData, 'message'),
+  };
+
+  const parsed = buyerEnquirySchema.safeParse({
+    ...values,
     gdpr_consent: formData.get('gdpr_consent') === 'on',
   });
 
@@ -58,7 +80,7 @@ export async function submitContact(
         ? { message: issue.message }
         : { field: fieldKey, message: issue.message };
     });
-    return { ok: false, errors };
+    return { ok: false, errors, values };
   }
 
   const contact = parsed.data;
@@ -76,6 +98,7 @@ export async function submitContact(
     return {
       ok: false,
       errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+      values,
     };
   }
 
