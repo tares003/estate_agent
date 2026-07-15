@@ -81,7 +81,7 @@ export function RegisterForm({ initialState = INITIAL_STATE }: RegisterFormProps
         type="password"
         label="Password"
         autoComplete="new-password"
-        hint="Use at least 12 characters — a memorable passphrase works well."
+        hint="Use at least 12 characters. A memorable passphrase works well."
         required
         error={errorFor('password')}
       />
@@ -98,7 +98,7 @@ export function RegisterForm({ initialState = INITIAL_STATE }: RegisterFormProps
       <Checkbox
         id="marketingOptIn"
         name="marketingOptIn"
-        label="Email me occasional updates and new-property alerts (optional — you can change this anytime)."
+        label="Email me occasional updates and new-property alerts (optional; you can change this anytime)."
       />
 
       {turnstileSiteKey ? (

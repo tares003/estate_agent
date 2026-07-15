@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
   const url = `${origin}/properties/${property.slug}`;
   const title = truncate(property.title, 60);
   const description = truncate(
-    property.description ?? `${property.title} — ${property.address}.`,
+    property.description ?? `${property.title}, ${property.address}.`,
     160,
   );
 

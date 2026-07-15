@@ -111,7 +111,7 @@ export async function submitRegister(
   if (!created.ok) {
     const message =
       created.reason === 'email_taken'
-        ? 'An account with that email already exists — try signing in instead.'
+        ? 'An account with that email already exists. Try signing in instead.'
         : 'We couldn’t create your account just now. Please try again.';
     return { ok: false, errors: [{ message }], values };
   }

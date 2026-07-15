@@ -81,7 +81,7 @@ export function EnquiryForm({ propertyId, propertyTitle }: EnquiryFormProps) {
         id="phone"
         name="phone"
         label="Phone"
-        hint="Optional — add a number if you'd prefer a call back."
+        hint="Optional. Add a number if you'd prefer a call back."
         autoComplete="tel"
         error={errorFor('phone')}
       />

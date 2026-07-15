@@ -95,7 +95,7 @@ export function RepairForm({ categories }: { categories: SelectOption[] }) {
   if (state.ok) {
     const referenceNote = state.reference ? ` Your ticket reference is ${state.reference}.` : '';
     const attachmentNote = uploadError
-      ? ' Some attachments could not be uploaded — the team may ask you to resend them.'
+      ? ' Some attachments could not be uploaded. The team may ask you to resend them.'
       : '';
     return (
       <FormSuccess

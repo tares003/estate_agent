@@ -55,7 +55,7 @@ export function ResetPasswordForm({ token, initialState = INITIAL_STATE }: Reset
         type="password"
         label="New password"
         autoComplete="new-password"
-        hint="Use at least 12 characters — a memorable passphrase works well."
+        hint="Use at least 12 characters. A memorable passphrase works well."
         required
         error={errorFor('password')}
       />

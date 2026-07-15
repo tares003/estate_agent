@@ -139,7 +139,7 @@ describe('CategoryArchivePage', () => {
 
       const meta = await generateMetadata({ params: Promise.resolve({ slug: 'market-insight' }) });
 
-      expect(meta.title).toBe('Market insight — Knowledge hub');
+      expect(meta.title).toBe('Market insight: Knowledge hub');
       expect(meta.alternates?.canonical).toBe('https://acme.test/news/category/market-insight');
       expect(meta.openGraph?.url).toBe('https://acme.test/news/category/market-insight');
       expect(meta.twitter).toMatchObject({ card: 'summary_large_image' });

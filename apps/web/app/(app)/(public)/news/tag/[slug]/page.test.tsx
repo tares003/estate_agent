@@ -139,7 +139,7 @@ describe('TagArchivePage', () => {
 
       const meta = await generateMetadata({ params: Promise.resolve({ slug: 'sales' }) });
 
-      expect(meta.title).toBe('Sales — Knowledge hub');
+      expect(meta.title).toBe('Sales: Knowledge hub');
       expect(meta.alternates?.canonical).toBe('https://acme.test/news/tag/sales');
       expect(meta.openGraph?.url).toBe('https://acme.test/news/tag/sales');
       expect(meta.twitter).toMatchObject({ card: 'summary_large_image' });

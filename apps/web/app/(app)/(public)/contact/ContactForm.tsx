@@ -34,7 +34,7 @@ export function ContactForm() {
     return (
       <FormSuccess
         title="Your message has been sent"
-        message="Thanks for getting in touch — the agent will reply shortly."
+        message="Thanks for getting in touch. The agent will reply shortly."
       />
     );
   }
@@ -69,7 +69,7 @@ export function ContactForm() {
         id="phone"
         name="phone"
         label="Phone"
-        hint="Optional — add a number if you’d prefer a call back."
+        hint="Optional. Add a number if you’d prefer a call back."
         autoComplete="tel"
         defaultValue={state.values?.phone ?? ''}
         error={errorFor('phone')}

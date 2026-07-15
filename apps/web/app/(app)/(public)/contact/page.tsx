@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const origin = await getRequestOrigin();
   const url = `${origin}/contact`;
   const title = 'Contact us';
-  const description = 'Get in touch with our team — we’ll reply as soon as we can.';
+  const description = 'Get in touch with our team. We’ll reply as soon as we can.';
   return {
     title,
     description,

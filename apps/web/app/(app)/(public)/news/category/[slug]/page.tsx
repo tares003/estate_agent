@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: CategoryArchiveProps): Promis
 
   const origin = await getRequestOrigin();
   const url = `${origin}/news/category/${category.slug}`;
-  const title = `${category.name} — Knowledge hub`;
+  const title = `${category.name}: Knowledge hub`;
   const description = `Articles filed under ${category.name} from our knowledge hub.`;
   return {
     title,

@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const url = `${origin}/locations`;
   const title = 'Area guides';
   const description =
-    'Explore the areas we cover — local insight, transport, schools and the latest properties in each.';
+    'Explore the areas we cover: local insight, transport, schools and the latest properties in each.';
   return {
     title,
     description,
@@ -48,7 +48,7 @@ export default async function LocationsPage() {
       <header className="mb-10 flex flex-col gap-2">
         <h1 className="t-display-sm">Area guides</h1>
         <p className="t-body-lg text-text-secondary max-w-[60ch]">
-          Explore the areas we cover — local insight and the latest properties in each.
+          Explore the areas we cover: local insight and the latest properties in each.
         </p>
       </header>
 
