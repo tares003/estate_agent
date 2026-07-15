@@ -76,6 +76,22 @@ describe('listCustomerViewings', () => {
     expect(row!.propertySlug).toBeNull();
   });
 
+  it('falls back to a neutral label when a property has neither a title nor a display address', async () => {
+    const { r } = historyReader([
+      {
+        id: 'v1',
+        status: 'new',
+        createdAt: new Date('2026-06-01T09:00:00Z'),
+        property: { title: '  ', slug: 'blank', displayAddress: '  ' },
+      },
+    ]);
+
+    const [row] = await listCustomerViewings(r, EMAIL);
+
+    expect(row!.propertyLabel).toBe('Property');
+    expect(row!.propertySlug).toBe('blank');
+  });
+
   it('returns an empty list when the customer has no viewing requests', async () => {
     const { r } = historyReader([]);
     expect(await listCustomerViewings(r, EMAIL)).toEqual([]);

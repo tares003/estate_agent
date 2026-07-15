@@ -73,6 +73,19 @@ describe('ViewingsHistoryPage', () => {
     expect(within(items[1]!).getByText('New')).toBeInTheDocument();
   });
 
+  it('renders a removed property as plain text (no link) while still showing its status', async () => {
+    enquiryFindMany.mockResolvedValue([
+      { id: 'v1', status: 'new', createdAt: new Date('2026-06-01T09:00:00Z'), property: null },
+    ]);
+
+    render(await ViewingsHistoryPage());
+
+    const item = screen.getByRole('listitem');
+    expect(within(item).queryByRole('link')).toBeNull();
+    expect(within(item).getByText('Property no longer available')).toBeInTheDocument();
+    expect(within(item).getByText('New')).toBeInTheDocument();
+  });
+
   it('shows a friendly empty state with a browse CTA when there are no viewing requests', async () => {
     enquiryFindMany.mockResolvedValue([]);
 
