@@ -6,7 +6,7 @@
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Badge, type BadgeTone } from '@estate/ui';
+import { Badge, buttonClassName, type BadgeTone } from '@estate/ui';
 import { withTenant } from '@estate/db';
 import { getDb } from '../../../lib/db.js';
 import {
@@ -334,7 +334,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   const summary = property.shortDescription;
 
   return (
-    <main id="main" className="container py-12">
+    <main id="main" className="container pt-12 pb-24 lg:pb-12">
       {jsonLd.map((ld, index) => (
         <script
           key={index}
@@ -347,26 +347,46 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
       {/* Gallery leads full-bleed within the container: hero + strip, or a graceful
           placeholder so the page always opens on a visual anchor. */}
       {heroImage ? (
-        <div className="mb-10 grid gap-3 sm:grid-cols-[2fr_1fr]">
-          <img
-            src={heroImage.src}
-            alt={heroImage.alt}
-            className="border-border aspect-[4/3] w-full rounded-lg border object-cover sm:aspect-auto sm:h-full"
-          />
-          {gallery.length > 1 ? (
-            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-1 sm:grid-rows-3">
-              {gallery.slice(1, 4).map((image) => (
-                <li key={image.src} className="h-full">
-                  <img
-                    src={image.src}
-                    alt={image.alt}
-                    className="border-border aspect-[4/3] h-full w-full rounded-md border object-cover"
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
+        <>
+          {/* Mobile (design-requirements §3): every photo in a full-width, swipeable
+              scroll-snap carousel — native horizontal scroll, no JS, keyboard-scrollable.
+              A partial peek of the next image signals there is more to swipe. */}
+          <ul
+            aria-label="Property photos"
+            className="mb-10 flex snap-x snap-mandatory gap-3 overflow-x-auto sm:hidden"
+          >
+            {gallery.map((image) => (
+              <li key={image.src} className="w-[88%] shrink-0 snap-center">
+                <img
+                  src={image.src}
+                  alt={image.alt}
+                  className="border-border aspect-[4/3] w-full rounded-lg border object-cover"
+                />
+              </li>
+            ))}
+          </ul>
+          {/* Desktop: the hero + thumbnail strip (unchanged). */}
+          <div className="mb-10 hidden gap-3 sm:grid sm:grid-cols-[2fr_1fr]">
+            <img
+              src={heroImage.src}
+              alt={heroImage.alt}
+              className="border-border w-full rounded-lg border object-cover sm:aspect-auto sm:h-full"
+            />
+            {gallery.length > 1 ? (
+              <ul className="grid grid-cols-1 grid-rows-3 gap-3">
+                {gallery.slice(1, 4).map((image) => (
+                  <li key={image.src} className="h-full">
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      className="border-border aspect-[4/3] h-full w-full rounded-md border object-cover"
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </>
       ) : (
         <div className="bg-surface-sunken border-border text-text-muted mb-10 flex aspect-[16/6] w-full flex-col items-center justify-center gap-3 rounded-lg border">
           <span className="[&>svg]:h-10 [&>svg]:w-10">
@@ -401,7 +421,9 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 ))}
               </dl>
             ) : null}
-            <div className="mt-1">
+            {/* Save lives inline on desktop; on mobile it moves to the sticky action
+                bar below, so only one instance is ever visible (no state divergence). */}
+            <div className="mt-1 hidden lg:block">
               <SavePropertyButton
                 propertyId={property.id}
                 signedIn={canSave}
@@ -533,6 +555,27 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
             </p>
           </div>
         </aside>
+      </div>
+
+      {/* Mobile (design-requirements §3): a sticky bottom action bar keeps the primary
+          actions reachable while scrolling a long listing — Save + Book a viewing. Hidden
+          from lg, where the enquiry panel is a sticky sidebar instead. (A "Call" action is
+          deferred until tenant phone data is wired, as with the header tel icon.) */}
+      <div className="border-border bg-surface-base fixed inset-x-0 bottom-0 z-40 border-t shadow-md lg:hidden">
+        <div className="container flex items-center gap-3 py-3">
+          <SavePropertyButton
+            propertyId={property.id}
+            signedIn={canSave}
+            initialSaved={initialSaved}
+            currentPath={`/properties/${property.slug}`}
+          />
+          <a
+            href={`/properties/${property.slug}/viewing`}
+            className={`${buttonClassName({ variant: 'primary', size: 'md' })} flex-1`}
+          >
+            Book a viewing
+          </a>
+        </div>
       </div>
     </main>
   );
