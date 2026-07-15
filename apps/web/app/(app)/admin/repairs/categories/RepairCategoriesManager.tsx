@@ -51,53 +51,55 @@ export function RepairCategoriesManager({ categories }: { categories: ManagedCat
   }
 
   return (
-    <table className="w-full border-collapse text-left">
-      <thead>
-        <tr className="border-divider border-b">
-          <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-            Category
-          </th>
-          <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-            Default urgency
-          </th>
-          <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-            Shown
-          </th>
-          <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-            <span className="sr-only">Actions</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {categories.map((category) => {
-          const urgency = repairUrgencyDisplay(category.defaultUrgency);
-          return (
-            <tr key={category.id} className="border-divider border-b">
-              <td className="t-body-md py-3 pr-4">{category.label}</td>
-              <td className="py-3 pr-4">
-                <Badge tone={urgency.tone}>{urgency.label}</Badge>
-              </td>
-              <td className="py-3 pr-4">
-                {category.visible ? (
-                  <Badge tone="success">Shown</Badge>
-                ) : (
-                  <Badge tone="neutral">Hidden</Badge>
-                )}
-              </td>
-              <td className="py-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void toggle(category.slug, !category.visible)}
-                >
-                  {category.visible ? 'Hide' : 'Show'}
-                </Button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="relative overflow-x-auto">
+      <table className="w-full min-w-[48rem] border-collapse text-left">
+        <thead>
+          <tr className="border-divider border-b">
+            <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+              Category
+            </th>
+            <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+              Default urgency
+            </th>
+            <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+              Shown
+            </th>
+            <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map((category) => {
+            const urgency = repairUrgencyDisplay(category.defaultUrgency);
+            return (
+              <tr key={category.id} className="border-divider border-b">
+                <td className="t-body-md py-3 pr-4">{category.label}</td>
+                <td className="py-3 pr-4">
+                  <Badge tone={urgency.tone}>{urgency.label}</Badge>
+                </td>
+                <td className="py-3 pr-4">
+                  {category.visible ? (
+                    <Badge tone="success">Shown</Badge>
+                  ) : (
+                    <Badge tone="neutral">Hidden</Badge>
+                  )}
+                </td>
+                <td className="py-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void toggle(category.slug, !category.visible)}
+                  >
+                    {category.visible ? 'Hide' : 'Show'}
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

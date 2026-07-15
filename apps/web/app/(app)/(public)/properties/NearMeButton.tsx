@@ -11,7 +11,7 @@ import { Button } from '@estate/ui';
  * server-side with `?lat=…&lng=…&radius=…`. Progressive: if geolocation is
  * unavailable the button is simply inert.
  */
-export function NearMeButton() {
+export function NearMeButton({ className }: { className?: string }) {
   function handleClick(event: MouseEvent<HTMLButtonElement>): void {
     const form = event.currentTarget.form;
     if (!form || typeof navigator === 'undefined' || !navigator.geolocation) return;
@@ -35,7 +35,12 @@ export function NearMeButton() {
   }
 
   return (
-    <Button type="button" variant="secondary" onClick={handleClick}>
+    <Button
+      type="button"
+      variant="secondary"
+      onClick={handleClick}
+      {...(className ? { className } : {})}
+    >
       Search near me
     </Button>
   );

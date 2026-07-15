@@ -72,53 +72,55 @@ export function ContractorsManager({ contractors }: { contractors: ManagedContra
       {contractors.length === 0 ? (
         <p className="t-body-sm text-text-secondary">No contractors yet.</p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Name
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Trade
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Email
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
-                Status
-              </th>
-              <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {contractors.map((contractor) => (
-              <tr key={contractor.id} className="border-divider border-b">
-                <td className="t-body-md py-3 pr-4">{contractor.name}</td>
-                <td className="t-body-md py-3 pr-4">{contractor.trade ?? '—'}</td>
-                <td className="t-body-md py-3 pr-4">{contractor.email}</td>
-                <td className="py-3 pr-4">
-                  {contractor.active ? (
-                    <Badge tone="success">Active</Badge>
-                  ) : (
-                    <Badge tone="neutral">Inactive</Badge>
-                  )}
-                </td>
-                <td className="py-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => void toggle(contractor.id, !contractor.active)}
-                  >
-                    {contractor.active ? 'Deactivate' : 'Activate'}
-                  </Button>
-                </td>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Name
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Trade
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Email
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 pr-4 font-semibold">
+                  Status
+                </th>
+                <th scope="col" className="t-body-sm text-text-secondary py-2 font-semibold">
+                  <span className="sr-only">Actions</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {contractors.map((contractor) => (
+                <tr key={contractor.id} className="border-divider border-b">
+                  <td className="t-body-md py-3 pr-4">{contractor.name}</td>
+                  <td className="t-body-md py-3 pr-4">{contractor.trade ?? '—'}</td>
+                  <td className="t-body-md py-3 pr-4">{contractor.email}</td>
+                  <td className="py-3 pr-4">
+                    {contractor.active ? (
+                      <Badge tone="success">Active</Badge>
+                    ) : (
+                      <Badge tone="neutral">Inactive</Badge>
+                    )}
+                  </td>
+                  <td className="py-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void toggle(contractor.id, !contractor.active)}
+                    >
+                      {contractor.active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -67,47 +67,49 @@ export function AuditLogTable({
           No audit entries match this view. Every state-changing action is recorded here.
         </p>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-divider border-b">
-              {['When', 'Action', 'Actor', 'Target', 'IP', 'User agent', 'Change'].map(
-                (heading) => (
-                  <th
-                    key={heading}
-                    scope="col"
-                    className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
-                  >
-                    {heading}
-                  </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((entry) => (
-              <tr key={entry.id} className="border-divider border-b align-top">
-                <td className="t-body-sm py-3 pr-4 whitespace-nowrap">
-                  {WHEN.format(entry.createdAt)}
-                </td>
-                <td className="t-body-sm py-3 pr-4 font-medium">{entry.action}</td>
-                <td className="t-body-sm py-3 pr-4">{entry.actor}</td>
-                <td className="t-body-sm py-3 pr-4">
-                  {entry.entity}
-                  {entry.entityId ? ` · ${entry.entityId}` : ''}
-                </td>
-                <td className="t-body-sm py-3 pr-4">{entry.ip ?? '—'}</td>
-                <td className="t-caption text-text-secondary py-3 pr-4 break-all">
-                  {entry.userAgent ?? '—'}
-                </td>
-                <td className="py-3">
-                  <code className="t-caption text-text-secondary break-all">
-                    {formatDiff(entry.diff)}
-                  </code>
-                </td>
+        <div className="relative overflow-x-auto">
+          <table className="w-full min-w-[48rem] border-collapse text-left">
+            <thead>
+              <tr className="border-divider border-b">
+                {['When', 'Action', 'Actor', 'Target', 'IP', 'User agent', 'Change'].map(
+                  (heading) => (
+                    <th
+                      key={heading}
+                      scope="col"
+                      className="t-body-sm text-text-secondary py-2 pr-4 font-semibold"
+                    >
+                      {heading}
+                    </th>
+                  ),
+                )}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((entry) => (
+                <tr key={entry.id} className="border-divider border-b align-top">
+                  <td className="t-body-sm py-3 pr-4 whitespace-nowrap">
+                    {WHEN.format(entry.createdAt)}
+                  </td>
+                  <td className="t-body-sm py-3 pr-4 font-medium">{entry.action}</td>
+                  <td className="t-body-sm py-3 pr-4">{entry.actor}</td>
+                  <td className="t-body-sm py-3 pr-4">
+                    {entry.entity}
+                    {entry.entityId ? ` · ${entry.entityId}` : ''}
+                  </td>
+                  <td className="t-body-sm py-3 pr-4">{entry.ip ?? '—'}</td>
+                  <td className="t-caption text-text-secondary py-3 pr-4 break-all">
+                    {entry.userAgent ?? '—'}
+                  </td>
+                  <td className="py-3">
+                    <code className="t-caption text-text-secondary break-all">
+                      {formatDiff(entry.diff)}
+                    </code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {totalPages > 1 ? (
