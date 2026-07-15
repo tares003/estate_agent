@@ -19,58 +19,79 @@
   color: var(--colour-brand-primary-on);
 }
 
-/* leading status dot (market-status tones only) — decorative, inherits fill */
+/* leading status dot (market-status tones only) — carries the FULL-strength tone
+ * hue so the status stays colour-coded at a glance, while the label sits in dark
+ * text on a pale tint (see the tone rules below). */
 .badge .dot {
   width: var(--space-2);
   height: var(--space-2);
   flex: 0 0 auto;
   border-radius: var(--radius-circle);
-  background: currentColor;
+  background: var(--_tone, currentColor);
 }
 
-/* ---- Semantic tones ------------------------------------------------------ */
-/* `neutral` is the soft default per the canvas `.badge.soft`: quiet surface +
- * secondary text, so it reads as a low-emphasis chip rather than a status. */
+/* ---- Toned badges: dark-on-tint for WCAG 2.2 AA -------------------------- *
+ * Every toned badge renders as a PALE TINT of its tone colour with DARK, hued
+ * text and a hued hairline border — not white text on a saturated fill, which
+ * failed AA badly (white on the available green was ~2.5:1; needs 4.5:1). The
+ * three values are derived from the SAME `--colour-status-*` / `--colour-*`
+ * tokens via `color-mix` (the house pattern — no token change, no new token,
+ * so the owner-owned palette is untouched). Each tone sets only `--_tone`; the
+ * shared rule below turns it into an accessible, on-brand chip. Contrast is
+ * verified in PropertyCard.spec.tsx / Badge.spec.tsx (axe, real browser). */
+.badge.success {
+  --_tone: var(--colour-success);
+}
+.badge.warning {
+  --_tone: var(--colour-warning);
+}
+.badge.danger {
+  --_tone: var(--colour-danger);
+}
+.badge.info {
+  --_tone: var(--colour-info);
+}
+.badge.available {
+  --_tone: var(--colour-status-available);
+}
+.badge.under-offer {
+  --_tone: var(--colour-status-under-offer);
+}
+.badge.sold-stc {
+  --_tone: var(--colour-status-sold-stc);
+}
+.badge.sold {
+  --_tone: var(--colour-status-sold);
+}
+.badge.let-agreed {
+  --_tone: var(--colour-status-let-agreed);
+}
+.badge.let {
+  --_tone: var(--colour-status-let);
+}
+.badge.withdrawn {
+  --_tone: var(--colour-status-withdrawn);
+}
+.badge.success,
+.badge.warning,
+.badge.danger,
+.badge.info,
+.badge.available,
+.badge.under-offer,
+.badge.sold-stc,
+.badge.sold,
+.badge.let-agreed,
+.badge.let,
+.badge.withdrawn {
+  background: color-mix(in srgb, var(--_tone) 15%, var(--colour-surface-base));
+  color: color-mix(in srgb, var(--_tone) 32%, var(--colour-text-primary));
+  border: 1px solid color-mix(in srgb, var(--_tone) 40%, var(--colour-border));
+}
+
+/* ---- Semantic default ---------------------------------------------------- */
+/* `neutral` stays the quiet surface chip per the canvas `.badge.soft`: a
+ * low-emphasis chip that reads as a label, not a status. Already AA-compliant. */
 .badge.neutral {
   background: var(--colour-surface-sunken);
   color: var(--colour-text-secondary);
-}
-.badge.success {
-  background: var(--colour-success);
-}
-.badge.warning {
-  /* warning fill is light; pair with the dark accent-on text for contrast */
-  background: var(--colour-warning);
-  color: var(--colour-brand-accent-on);
-}
-.badge.danger {
-  background: var(--colour-danger);
-}
-.badge.info {
-  background: var(--colour-info);
-}
-
-/* ---- Market-status tones (1:1 with the market_status enum) --------------- */
-.badge.available {
-  background: var(--colour-status-available);
-}
-.badge.under-offer {
-  background: var(--colour-status-under-offer);
-  color: var(--colour-brand-accent-on);
-}
-.badge.sold-stc {
-  background: var(--colour-status-sold-stc);
-}
-.badge.sold {
-  background: var(--colour-status-sold);
-}
-.badge.let-agreed {
-  background: var(--colour-status-let-agreed);
-  color: var(--colour-brand-accent-on);
-}
-.badge.let {
-  background: var(--colour-status-let);
-}
-.badge.withdrawn {
-  background: var(--colour-status-withdrawn);
 }
