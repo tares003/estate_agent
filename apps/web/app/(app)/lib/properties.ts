@@ -351,6 +351,23 @@ export function toCardProps(row: PropertyRow): PropertyCardProps {
 }
 
 /**
+ * The homepage's featured strip (§C acquisition surface): the newest published,
+ * non-deleted properties flagged `isFeatured`, mapped to card props. Tenant-scoped
+ * (RLS) via withTenant in the route; the reader is structural so it is DB-free to test.
+ */
+export async function listFeaturedProperties(
+  db: PropertyListReader,
+  limit = 6,
+): Promise<CatalogueItem[]> {
+  const rows = await db.property.findMany({
+    where: { isFeatured: true, publishedAt: { not: null }, deletedAt: null },
+    orderBy: { publishedAt: 'desc' },
+    take: limit,
+  });
+  return rows.map((row) => ({ id: row.id, ...toCardProps(row) }));
+}
+
+/**
  * Search the catalogue: published, non-deleted properties matching the filters,
  * ordered by the chosen sort, one page at a time. Returns the mapped cards plus
  * the totals the UI paginates with. The query runs tenant-scoped (RLS) via
