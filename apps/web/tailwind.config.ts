@@ -24,6 +24,8 @@ const config: Config = {
         'text-primary': 'var(--colour-text-primary)',
         'text-secondary': 'var(--colour-text-secondary)',
         'text-muted': 'var(--colour-text-muted)',
+        'text-inverse': 'var(--colour-text-inverse)',
+        'text-on-dark': 'var(--colour-text-on-dark)',
         'surface-base': 'var(--colour-surface-base)',
         'surface-raised': 'var(--colour-surface-raised)',
         'surface-sunken': 'var(--colour-surface-sunken)',
