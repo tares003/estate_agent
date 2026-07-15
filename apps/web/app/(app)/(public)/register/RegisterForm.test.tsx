@@ -50,4 +50,28 @@ describe('RegisterForm', () => {
     render(<RegisterForm initialState={{ ok: true }} />);
     expect(screen.getByText(/check your (email|inbox)|verify your email/i)).toBeInTheDocument();
   });
+
+  // Regression: a validation error used to wipe the whole form. The form now
+  // pre-fills the safe fields (name/email) from the returned state, but the
+  // password must NEVER be pre-filled (a lost password on error is correct) and
+  // consent must NEVER be pre-checked (G5 — re-affirming it is the point).
+  it('pre-fills name and email from state after an error, but never the password and never pre-checks consent', () => {
+    render(
+      <RegisterForm
+        initialState={{
+          ok: false,
+          errors: [{ field: 'password', message: 'Use at least 12 characters.' }],
+          values: { name: 'Penny Pomeroy', email: 'penny@example.invalid' },
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('textbox', { name: /your name/i })).toHaveValue('Penny Pomeroy');
+    expect(screen.getByRole('textbox', { name: /^email/i })).toHaveValue('penny@example.invalid');
+    // SECURITY — the password input must start empty; it is never echoed back.
+    const password = document.getElementById('password');
+    expect(password).toHaveValue('');
+    // G5 / GDPR — consent must NOT be pre-checked.
+    expect(screen.getByRole('checkbox', { name: /agree/i })).not.toBeChecked();
+  });
 });

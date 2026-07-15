@@ -144,4 +144,48 @@ describe('submitRegister', () => {
     await submitRegister({ ok: false }, form({ marketingOptIn: 'on' }));
     expect(registerCustomer.mock.calls[0]![0]).toMatchObject({ marketingOptIn: true });
   });
+
+  // Regression: a validation error used to wipe the whole form. The action now
+  // echoes the safe fields (name/email) so the form can re-fill them. The password
+  // is NEVER echoed (a lost password on error is correct — the user re-types it),
+  // and consent is NEVER echoed (G5 — it must be re-affirmed every submit).
+  it('returns name and email on a validation error but NEVER the password or the consent flag', async () => {
+    const res = await submitRegister(
+      { ok: false },
+      form({ email: 'nope', password: 'correct horse battery' }),
+    );
+
+    expect(res.ok).toBe(false);
+    expect(res.values).toEqual(
+      expect.objectContaining({ name: 'Penny Pomeroy', email: 'nope' }),
+    );
+    // SECURITY — the password must never round-trip back to the client.
+    expect(res.values).not.toHaveProperty('password');
+    expect(JSON.stringify(res.values ?? {})).not.toContain('correct horse battery');
+    // G5 / GDPR — the consent (and marketing) flags are never echoed back.
+    expect(res.values).not.toHaveProperty('gdpr_consent');
+    expect(res.values).not.toHaveProperty('marketingOptIn');
+  });
+
+  it('echoes name and email on an anti-spam failure too, still without the password', async () => {
+    verifyTurnstile.mockResolvedValue(false);
+    const res = await submitRegister({ ok: false }, form());
+
+    expect(res.ok).toBe(false);
+    expect(res.values).toEqual(
+      expect.objectContaining({ name: 'Penny Pomeroy', email: 'penny@example.invalid' }),
+    );
+    expect(res.values).not.toHaveProperty('password');
+  });
+
+  it('echoes name and email when account creation fails (e.g. email already in use)', async () => {
+    registerCustomer.mockResolvedValue({ ok: false, reason: 'email_taken' });
+    const res = await submitRegister({ ok: false }, form());
+
+    expect(res.ok).toBe(false);
+    expect(res.values).toEqual(
+      expect.objectContaining({ name: 'Penny Pomeroy', email: 'penny@example.invalid' }),
+    );
+    expect(res.values).not.toHaveProperty('password');
+  });
 });

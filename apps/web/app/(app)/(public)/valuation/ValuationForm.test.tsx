@@ -53,4 +53,37 @@ describe('ValuationForm', () => {
     const link = await screen.findByRole('link', { name: /Enter a valid UK postcode/i });
     expect(link).toHaveAttribute('href', '#postcode');
   });
+
+  // Regression: mistyping one field (a postcode) used to wipe every other field.
+  // The form now pre-fills the safe fields from the returned state — but NEVER
+  // pre-checks the GDPR consent (G5 — the user must re-affirm it every submit).
+  it('pre-fills the safe fields from returned state after a validation error', () => {
+    render(
+      <ValuationForm
+        initialState={{
+          ok: false,
+          errors: [{ field: 'postcode', message: 'Enter a valid UK postcode.' }],
+          values: {
+            name: 'Olive Owner',
+            email: 'olive@example.com',
+            phone: '07700900000',
+            addressLine1: '1 Palatine Road',
+            postcode: 'NOT A POSTCODE',
+            propertyType: 'Terraced house',
+            bedrooms: '3',
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText(/Your name/i)).toHaveValue('Olive Owner');
+    expect(screen.getByLabelText(/Email/i)).toHaveValue('olive@example.com');
+    expect(screen.getByLabelText(/Phone/i)).toHaveValue('07700900000');
+    expect(screen.getByLabelText(/Property address/i)).toHaveValue('1 Palatine Road');
+    expect(screen.getByLabelText(/Postcode/i)).toHaveValue('NOT A POSTCODE');
+    expect(screen.getByLabelText(/Property type/i)).toHaveValue('Terraced house');
+    expect(screen.getByLabelText(/Bedrooms/i)).toHaveValue(3);
+    // G5 / GDPR — consent must NOT be pre-checked; re-affirming it is the point.
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
 });
