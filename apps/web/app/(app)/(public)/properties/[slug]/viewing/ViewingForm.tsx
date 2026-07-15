@@ -64,6 +64,7 @@ export function ViewingForm({ propertyId, propertyTitle }: ViewingFormProps) {
         label="Your name"
         autoComplete="name"
         required
+        defaultValue={state.values?.name ?? ''}
         error={errorFor('name')}
       />
       <EmailField
@@ -72,6 +73,7 @@ export function ViewingForm({ propertyId, propertyTitle }: ViewingFormProps) {
         label="Email"
         autoComplete="email"
         required
+        defaultValue={state.values?.email ?? ''}
         error={errorFor('email')}
       />
       <PhoneField
@@ -80,6 +82,7 @@ export function ViewingForm({ propertyId, propertyTitle }: ViewingFormProps) {
         label="Phone"
         autoComplete="tel"
         required
+        defaultValue={state.values?.phone ?? ''}
         error={errorFor('phone')}
       />
       <label htmlFor="preferredDate" className="flex flex-col gap-1">
@@ -89,20 +92,30 @@ export function ViewingForm({ propertyId, propertyTitle }: ViewingFormProps) {
           type="date"
           name="preferredDate"
           required
+          defaultValue={state.values?.preferredDate ?? ''}
           className={dateInputClass}
         />
       </label>
       <label htmlFor="alternativeDate" className="flex flex-col gap-1">
         <span className="t-body-sm text-text-secondary">Alternative date (optional)</span>
-        <input id="alternativeDate" type="date" name="alternativeDate" className={dateInputClass} />
+        <input
+          id="alternativeDate"
+          type="date"
+          name="alternativeDate"
+          defaultValue={state.values?.alternativeDate ?? ''}
+          className={dateInputClass}
+        />
       </label>
       <TextField
         id="message"
         name="message"
         label="Anything else?"
         hint="Optional"
+        defaultValue={state.values?.message ?? ''}
         error={errorFor('message')}
       />
+      {/* G5 / GDPR: consent is a fresh affirmative act every submit — it is never
+          echoed back from state, so it always renders UNCHECKED on a re-render. */}
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

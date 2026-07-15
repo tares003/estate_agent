@@ -26,10 +26,28 @@ interface ViewingWriteClient extends ConsentWriter, AuditWriter, AssignmentRuleR
   enquiry: { create(args: { data: Record<string, unknown> }): Promise<{ id: string }> };
 }
 
+/**
+ * The safe subset of a viewing submission that is echoed back on an error so the
+ * form can re-fill itself rather than wiping the user's input. The `gdpr_consent`
+ * affirmation and the single-use Turnstile token are DELIBERATELY excluded — see
+ * `submitViewing`. `propertyId` is not echoed here: the form re-renders it from
+ * its own hidden field, driven by the page's props.
+ */
+export interface ViewingFormValues {
+  name?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  preferredDate?: string | undefined;
+  alternativeDate?: string | undefined;
+  message?: string | undefined;
+}
+
 /** The result of a viewing submission, consumed by `useActionState`. */
 export interface ViewingFormState {
   ok: boolean;
   errors?: FormErrorItem[];
+  /** The submitted safe fields, returned on an error so the form can re-fill them. */
+  values?: ViewingFormValues;
 }
 
 function field(formData: FormData, name: string): string | undefined {
@@ -43,14 +61,21 @@ export async function submitViewing(
   _prevState: ViewingFormState,
   formData: FormData,
 ): Promise<ViewingFormState> {
-  const parsed = viewingRequestSchema.safeParse({
+  // Preserve the user's safe input so any error return re-fills the form instead
+  // of wiping it. Consent is NOT echoed — it must be a fresh affirmative act every
+  // submit (G5) — and the Turnstile token is NOT echoed (single-use; G8).
+  const values: ViewingFormValues = {
     name: field(formData, 'name'),
     email: field(formData, 'email'),
     phone: field(formData, 'phone'),
-    propertyId: field(formData, 'propertyId'),
     preferredDate: field(formData, 'preferredDate'),
     alternativeDate: field(formData, 'alternativeDate'),
     message: field(formData, 'message'),
+  };
+
+  const parsed = viewingRequestSchema.safeParse({
+    ...values,
+    propertyId: field(formData, 'propertyId'),
     gdpr_consent: formData.get('gdpr_consent') === 'on',
   });
 
@@ -61,7 +86,7 @@ export async function submitViewing(
         ? { message: issue.message }
         : { field: fieldKey, message: issue.message };
     });
-    return { ok: false, errors };
+    return { ok: false, errors, values };
   }
 
   const viewing = parsed.data;
@@ -79,6 +104,7 @@ export async function submitViewing(
     return {
       ok: false,
       errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+      values,
     };
   }
 

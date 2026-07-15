@@ -145,4 +145,29 @@ describe('submitValuation', () => {
     expect(withTenant).not.toHaveBeenCalled();
     expect(enquiryCreate).not.toHaveBeenCalled();
   });
+
+  // Regression (confirmed live on /valuation): a bad postcode wiped name, email,
+  // phone, address, type and consent. The action now echoes the safe fields back
+  // so the form can re-fill them — but NEVER the consent flag (G5).
+  it('returns the submitted safe values on a validation error so the form can re-fill them', async () => {
+    const result = await submitValuation(
+      { ok: false },
+      form({ postcode: 'NOT A POSTCODE', bedrooms: '3' }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.values).toEqual(
+      expect.objectContaining({
+        name: 'Olive Owner',
+        email: 'olive@example.com',
+        phone: '07700900000',
+        addressLine1: '1 Palatine Road',
+        postcode: 'NOT A POSTCODE',
+        propertyType: 'Terraced house',
+        bedrooms: '3',
+      }),
+    );
+    // G5 / GDPR — the consent affirmation is never echoed back.
+    expect(result.values).not.toHaveProperty('gdpr_consent');
+  });
 });

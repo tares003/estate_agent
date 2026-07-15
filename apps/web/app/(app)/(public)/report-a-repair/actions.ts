@@ -84,6 +84,22 @@ export interface RepairUploadGrant {
   name: string;
 }
 
+/**
+ * The safe subset of a repair submission that is echoed back on an error so the
+ * form can re-fill itself rather than wiping the user's input. The `gdpr_consent`
+ * affirmation and the single-use Turnstile token are DELIBERATELY excluded — see
+ * `submitRepairRequest`.
+ */
+export interface RepairFormValues {
+  name?: string | undefined;
+  email?: string | undefined;
+  phone?: string | undefined;
+  propertyReference?: string | undefined;
+  category?: string | undefined;
+  description?: string | undefined;
+  urgency?: string | undefined;
+}
+
 /** The result of a repair submission, consumed by `useActionState`. */
 export interface RepairFormState {
   ok: boolean;
@@ -94,6 +110,8 @@ export interface RepairFormState {
   /** One grant per declared attachment (issued AFTER the verified submit). */
   uploadGrants?: RepairUploadGrant[];
   errors?: FormErrorItem[];
+  /** The submitted safe fields, returned on an error so the form can re-fill them. */
+  values?: RepairFormValues;
 }
 
 function field(formData: FormData, name: string): string | undefined {
@@ -113,7 +131,10 @@ export async function submitRepairRequest(
   _prevState: RepairFormState,
   formData: FormData,
 ): Promise<RepairFormState> {
-  const parsed = repairRequestSchema.safeParse({
+  // Preserve the user's safe input so any error return re-fills the form instead
+  // of wiping it. Consent is NOT echoed — it must be a fresh affirmative act every
+  // submit (G5) — and the Turnstile token is NOT echoed (single-use; G8).
+  const values: RepairFormValues = {
     name: field(formData, 'name'),
     email: field(formData, 'email'),
     phone: field(formData, 'phone'),
@@ -121,6 +142,10 @@ export async function submitRepairRequest(
     category: field(formData, 'category'),
     description: field(formData, 'description'),
     urgency: field(formData, 'urgency'),
+  };
+
+  const parsed = repairRequestSchema.safeParse({
+    ...values,
     gdpr_consent: formData.get('gdpr_consent') === 'on',
   });
 
@@ -131,7 +156,7 @@ export async function submitRepairRequest(
         ? { message: issue.message }
         : { field: fieldKey, message: issue.message };
     });
-    return { ok: false, errors };
+    return { ok: false, errors, values };
   }
 
   // FR-G-2: the declared attachments (validated BEFORE any write; grants are
@@ -143,11 +168,11 @@ export async function submitRepairRequest(
     try {
       parsedMeta = JSON.parse(filesMetaRaw);
     } catch {
-      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }] };
+      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }], values };
     }
     const metaResult = repairFilesMetaSchema.safeParse(parsedMeta);
     if (!metaResult.success) {
-      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }] };
+      return { ok: false, errors: [{ message: 'Those attachments cannot be uploaded.' }], values };
     }
     filesMeta = metaResult.data;
   }
@@ -167,6 +192,7 @@ export async function submitRepairRequest(
     return {
       ok: false,
       errors: [{ message: 'We couldn’t verify the security challenge. Please try again.' }],
+      values,
     };
   }
 

@@ -60,6 +60,7 @@ export function RegisterForm({ initialState = INITIAL_STATE }: RegisterFormProps
         label="Your name"
         autoComplete="name"
         required
+        defaultValue={state.values?.name ?? ''}
         error={errorFor('name')}
       />
       <EmailField
@@ -68,8 +69,12 @@ export function RegisterForm({ initialState = INITIAL_STATE }: RegisterFormProps
         label="Email"
         autoComplete="email"
         required
+        defaultValue={state.values?.email ?? ''}
         error={errorFor('email')}
       />
+      {/* SECURITY: the password is intentionally NOT given a defaultValue — a
+          password must never round-trip back to the client, so it always renders
+          empty on a re-render and the user re-types it. */}
       <TextField
         id="password"
         name="password"
@@ -81,6 +86,8 @@ export function RegisterForm({ initialState = INITIAL_STATE }: RegisterFormProps
         error={errorFor('password')}
       />
 
+      {/* G5 / GDPR: consent is a fresh affirmative act every submit — it is never
+          echoed back from state, so it always renders UNCHECKED on a re-render. */}
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

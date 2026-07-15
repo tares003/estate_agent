@@ -158,4 +158,38 @@ describe('submitContact', () => {
     expect(withTenant).not.toHaveBeenCalled();
     expect(enquiryCreate).not.toHaveBeenCalled();
   });
+
+  // Regression: a validation error used to wipe the whole form because the action
+  // returned no values and the inputs had no defaultValue. The action now echoes
+  // the safe fields back so the form can re-fill them — but NEVER the consent flag
+  // (G5 — consent is a fresh affirmative act every submit).
+  it('returns the submitted safe values on a validation error so the form can re-fill them', async () => {
+    const result = await submitContact(
+      { ok: false },
+      form({ email: 'not-an-email', phone: '07700900000' }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.values).toEqual(
+      expect.objectContaining({
+        name: 'Casey Caller',
+        email: 'not-an-email',
+        phone: '07700900000',
+        message: 'Do you cover the Didsbury area?',
+      }),
+    );
+    // G5 / GDPR — the consent affirmation is never echoed back.
+    expect(result.values).not.toHaveProperty('gdpr_consent');
+  });
+
+  it('echoes the safe values on an anti-spam failure too (no consent echoed)', async () => {
+    verifyTurnstile.mockResolvedValue(false);
+    const result = await submitContact({ ok: false }, form({ phone: '07700900000' }));
+
+    expect(result.ok).toBe(false);
+    expect(result.values).toEqual(
+      expect.objectContaining({ name: 'Casey Caller', email: 'casey@example.com' }),
+    );
+    expect(result.values).not.toHaveProperty('gdpr_consent');
+  });
 });

@@ -53,6 +53,7 @@ export function ContactForm() {
         label="Your name"
         autoComplete="name"
         required
+        defaultValue={state.values?.name ?? ''}
         error={errorFor('name')}
       />
       <EmailField
@@ -61,6 +62,7 @@ export function ContactForm() {
         label="Email"
         autoComplete="email"
         required
+        defaultValue={state.values?.email ?? ''}
         error={errorFor('email')}
       />
       <PhoneField
@@ -69,9 +71,19 @@ export function ContactForm() {
         label="Phone"
         hint="Optional — add a number if you’d prefer a call back."
         autoComplete="tel"
+        defaultValue={state.values?.phone ?? ''}
         error={errorFor('phone')}
       />
-      <TextField id="message" name="message" label="Message" required error={errorFor('message')} />
+      <TextField
+        id="message"
+        name="message"
+        label="Message"
+        required
+        defaultValue={state.values?.message ?? ''}
+        error={errorFor('message')}
+      />
+      {/* G5 / GDPR: consent is a fresh affirmative act every submit — it is never
+          echoed back from state, so it always renders UNCHECKED on a re-render. */}
       <Checkbox
         id="gdpr_consent"
         name="gdpr_consent"

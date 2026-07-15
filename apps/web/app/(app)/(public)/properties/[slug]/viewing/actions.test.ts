@@ -138,4 +138,28 @@ describe('submitViewing', () => {
     expect(withTenant).not.toHaveBeenCalled();
     expect(enquiryCreate).not.toHaveBeenCalled();
   });
+
+  // Regression: a validation error used to wipe the whole form. The action now
+  // echoes the safe fields back so the form can re-fill them — but NEVER the
+  // consent flag (G5 — consent is a fresh affirmative act every submit).
+  it('returns the submitted safe values on a validation error so the form can re-fill them', async () => {
+    const result = await submitViewing(
+      { ok: false },
+      form({ email: 'not-an-email', alternativeDate: '2026-06-21', message: 'Please call first.' }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.values).toEqual(
+      expect.objectContaining({
+        name: 'Vera Viewer',
+        email: 'not-an-email',
+        phone: '07700900000',
+        preferredDate: '2026-06-20',
+        alternativeDate: '2026-06-21',
+        message: 'Please call first.',
+      }),
+    );
+    // G5 / GDPR — the consent affirmation is never echoed back.
+    expect(result.values).not.toHaveProperty('gdpr_consent');
+  });
 });
