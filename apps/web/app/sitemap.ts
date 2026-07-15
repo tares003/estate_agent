@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { withTenant } from '@estate/db';
+
 import { listAreaGuidesForSitemap, type AreaGuideSitemapReader } from './(app)/lib/area-guides.js';
 import { listPublishedPostsForSitemap, type BlogPostSitemapReader } from './(app)/lib/blog.js';
 import { listPublishedPages } from './(app)/lib/cms.js';
@@ -8,74 +9,76 @@ import { listPropertiesForSitemap, type PropertySitemapReader } from './(app)/li
 import {
   areaGuideSitemapEntries,
   blogPostSitemapEntries,
-  isSitemapChildId,
   pageSitemapEntries,
   propertySitemapEntries,
-  sitemapIds,
   staticSitemapEntries,
-  type SitemapChildId,
 } from './(app)/lib/sitemap-entries.js';
 import { getCurrentTenantId, getRequestOrigin } from './(app)/lib/tenant.js';
 
-// EPIC-O sitemap (FR-O-8). `/sitemap.xml` is served as a sitemap *index* (via
-// Next's generateSitemaps) pointing at five per-tenant child sitemaps at
-// `/sitemap/<id>.xml`: the public static routes, every published property, every
-// published CMS page, every published knowledge-hub post (`/news/[slug]`), and
-// every published area guide (`/locations/[slug]`) — drafts never appear
-// (FR-D-4). Each child carries last-modified for crawler freshness. Dynamic so it
-// reflects the catalogue + CMS at request time and resolves the tenant from the
-// request host.
+// EPIC-O sitemap (FR-O-8). `/sitemap.xml` lists every public URL for the current
+// tenant: the static routes, every published property, every published CMS page, every
+// published knowledge-hub post (`/news/[slug]`) and every published area guide
+// (`/locations/[slug]`) — drafts never appear (FR-D-4). Each entry carries last-modified
+// for crawler freshness. Dynamic so it reflects the catalogue + CMS at request time and
+// resolves the tenant from the request host.
+//
+// This is ONE flat sitemap, deliberately NOT split via Next's `generateSitemaps`. A root
+// `sitemap.ts` that exports `generateSitemaps` serves ONLY the children at
+// `/sitemap/<id>.xml` — Next 16 emits no bare `/sitemap.xml` route for it (confirmed
+// against a production build: the route manifest has `/sitemap/[__metadata_id__]` but no
+// `/sitemap.xml`, and `next start` returns 500 for `/sitemap.xml` as it falls through to
+// the CMS catch-all). That is the exact URL `robots.ts` advertises to crawlers, so the
+// split form left the advertised sitemap broken. A single default export IS served at
+// `/sitemap.xml`. The 50k-URL sitemap limit is far off at the current tenant scale; if a
+// tenant ever approaches it, reintroduce `generateSitemaps` together with a real index
+// route so `/sitemap.xml` keeps serving.
 export const dynamic = 'force-dynamic';
 
-/** Declares the child sitemaps the index lists, served at `/sitemap/<id>.xml`. */
-export function generateSitemaps(): Array<{ id: SitemapChildId }> {
-  return sitemapIds();
-}
-
-/** Load + build one child sitemap. Only the data the requested child needs is read. */
-async function buildChild(id: SitemapChildId): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = await getRequestOrigin();
+  // The static public routes need no tenant or DB and must always be present.
+  const entries: MetadataRoute.Sitemap = [...staticSitemapEntries(origin)];
 
-  if (id === 'static') {
-    return staticSitemapEntries(origin);
+  // Everything below is tenant-scoped and best-effort: a failure (an unresolved tenant, a
+  // transient DB error, a dormant Payload) omits that section rather than 500ing the whole
+  // file. A crawler treats a 500 sitemap as a hard failure, so a partial sitemap — the
+  // static routes plus whatever else loaded — is strictly better than none.
+  let tenantId: string;
+  try {
+    tenantId = await getCurrentTenantId();
+  } catch {
+    // No tenant resolved for this request — serve the static routes only.
+    return entries;
   }
 
-  const tenantId = await getCurrentTenantId();
-
-  if (id === 'properties') {
-    const properties = await withTenant(getDb(), tenantId, (tx) =>
-      listPropertiesForSitemap(tx as unknown as PropertySitemapReader),
-    );
-    return propertySitemapEntries(properties, origin);
+  const db = getDb();
+  try {
+    const [properties, posts, guides] = await Promise.all([
+      withTenant(db, tenantId, (tx) =>
+        listPropertiesForSitemap(tx as unknown as PropertySitemapReader),
+      ),
+      withTenant(db, tenantId, (tx) =>
+        listPublishedPostsForSitemap(tx as unknown as BlogPostSitemapReader),
+      ),
+      withTenant(db, tenantId, (tx) =>
+        listAreaGuidesForSitemap(tx as unknown as AreaGuideSitemapReader),
+      ),
+    ]);
+    entries.push(...propertySitemapEntries(properties, origin));
+    entries.push(...blogPostSitemapEntries(posts, origin));
+    entries.push(...areaGuideSitemapEntries(guides, origin));
+  } catch {
+    // DB unavailable — keep the static routes already collected.
   }
 
-  if (id === 'blog') {
-    const posts = await withTenant(getDb(), tenantId, (tx) =>
-      listPublishedPostsForSitemap(tx as unknown as BlogPostSitemapReader),
-    );
-    return blogPostSitemapEntries(posts, origin);
+  // CMS pages come from Payload's Local API, guarded separately because Payload is dormant
+  // in local dev (PAYLOAD_SECRET unset) and would otherwise fail the whole file.
+  try {
+    const pages = await listPublishedPages(tenantId);
+    entries.push(...pageSitemapEntries(pages, origin));
+  } catch {
+    // Payload unavailable — omit the CMS pages, keep everything else.
   }
 
-  if (id === 'areas') {
-    const guides = await withTenant(getDb(), tenantId, (tx) =>
-      listAreaGuidesForSitemap(tx as unknown as AreaGuideSitemapReader),
-    );
-    return areaGuideSitemapEntries(guides, origin);
-  }
-
-  // id === 'pages'
-  const pages = await listPublishedPages(tenantId);
-  return pageSitemapEntries(pages, origin);
-}
-
-export default async function sitemap(props: {
-  id: Promise<string>;
-}): Promise<MetadataRoute.Sitemap> {
-  const id = await props.id;
-  // Next routes `/sitemap/<id>.xml` here; guard against any unknown id rather
-  // than throwing so a stray request yields an empty (valid) sitemap.
-  if (!isSitemapChildId(id)) {
-    return [];
-  }
-  return buildChild(id);
+  return entries;
 }
