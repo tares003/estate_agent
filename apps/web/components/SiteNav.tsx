@@ -52,6 +52,10 @@ function NavLink({
   const base = current ? LINK_ACTIVE : LINK_BASE;
   const className = block ? `${base} w-full` : base;
 
+  // `onClick` is spread only when provided — passing `undefined` to an optional
+  // prop is rejected under exactOptionalPropertyTypes (matches NearMeButton).
+  const navHandler = onNavigate ? { onClick: onNavigate } : {};
+
   if (item.target === 'new') {
     return (
       <a
@@ -60,14 +64,14 @@ function NavLink({
         rel="noopener noreferrer"
         className={className}
         aria-current={ariaCurrent}
-        onClick={onNavigate}
+        {...navHandler}
       >
         {item.label}
       </a>
     );
   }
   return (
-    <Link href={item.href} className={className} aria-current={ariaCurrent} onClick={onNavigate}>
+    <Link href={item.href} className={className} aria-current={ariaCurrent} {...navHandler}>
       {item.label}
     </Link>
   );
