@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getMenu } from '../app/(app)/lib/cms.js';
 import { getCurrentPathname, getCurrentTenantId } from '../app/(app)/lib/tenant.js';
 import { filterPublicNav, type NavItem } from '../app/(app)/lib/menu-mapper.js';
+import { MobileNav } from './MobileNav.js';
 import { DEFAULT_NAV, SiteNav } from './SiteNav.js';
 
 // EPIC-D FR-D-7 (B24): the public header. Async server-component GLUE — it fetches
@@ -27,7 +28,8 @@ export async function SiteHeader() {
   const items = await resolveHeaderItems();
   const currentPath = (await getCurrentPathname()) ?? undefined;
   return (
-    <header className="bg-surface-base border-border border-b">
+    // `relative` anchors the mobile menu panel, which drops from `top-full`.
+    <header className="bg-surface-base border-border relative border-b">
       <div className="container flex items-center justify-between py-4">
         <Link
           href="/"
@@ -35,7 +37,12 @@ export async function SiteHeader() {
         >
           Estate
         </Link>
-        <SiteNav items={items} currentPath={currentPath} />
+        {/* Desktop: the horizontal bar. Below md it collapses to the hamburger
+            (design-requirements §3) so the five links never overflow a phone. */}
+        <div className="hidden md:block">
+          <SiteNav items={items} currentPath={currentPath} />
+        </div>
+        <MobileNav items={items} currentPath={currentPath} />
       </div>
     </header>
   );

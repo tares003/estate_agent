@@ -42,6 +42,29 @@
   }
 }
 
+/* design-requirements.md §3: the mobile header menu reveals as a dropdown from the
+ * masthead. Per motion-spec a dropdown reveal uses the motion-duration-base token
+ * with the standard easing (fade + short downward slide). Token-driven (G7) — no
+ * raw ms/easing literals; disabled under reduced motion. */
+@keyframes mobile-nav-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-2)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mobile-nav-enter {
+  animation: mobile-nav-reveal var(--motion-duration-base) var(--motion-ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav-enter {
+    animation: none;
+  }
+}
+
 /* EPIC-O design brief: the SEO meta-title / description character counter shifts
  * colour from neutral to warning to danger as the input nears / exceeds its limit.
  * The colour change transitions over the motion-duration-fast token. Token-driven

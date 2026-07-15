@@ -1,7 +1,7 @@
 // responsive-coverage: opt-out all — nav structure/landmark/a11y test; the
 // responsive header layout is the design-canvas / page-level e2e concern.
-import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import { DEFAULT_NAV, SiteNav } from './SiteNav.js';
 import type { NavItem } from '../app/(app)/lib/menu-mapper.js';
@@ -62,6 +62,27 @@ describe('SiteNav', () => {
       expect(link.className).toContain('min-h-[var(--size-touch-target-min)]');
       expect(link.className).toContain('inline-flex');
     }
+  });
+
+  it('stacks the links full-width in vertical orientation (the mobile menu)', () => {
+    const { container } = render(<SiteNav items={DEFAULT_NAV} orientation="vertical" />);
+    // the list stacks instead of sitting in a horizontal row…
+    expect(container.querySelector('nav > ul')?.className).toContain('flex-col');
+    // …and each row fills the width so the whole strip is a tap target.
+    expect(screen.getByRole('link', { name: 'Buy' }).className).toContain('w-full');
+  });
+
+  it('calls onNavigate when a link is activated (lets the mobile menu close)', () => {
+    const onNavigate = vi.fn();
+    // an external link renders a plain <a>, so the click needs no router in the test.
+    render(
+      <SiteNav
+        items={[{ label: 'Brochure', href: 'https://example.test/b.pdf', target: 'new' }]}
+        onNavigate={onNavigate}
+      />,
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Brochure' }));
+    expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
   it('renders child items as a nested list', () => {

@@ -34,10 +34,27 @@ const LINK_TAP = 'inline-flex items-center min-h-[var(--size-touch-target-min)]'
 const LINK_BASE = `t-body-md text-text-primary hover:text-brand-primary ${LINK_TAP}`;
 const LINK_ACTIVE = `t-body-md text-brand-primary underline underline-offset-4 ${LINK_TAP}`;
 
-function NavLink({ item, currentPath }: { item: NavItem; currentPath?: string | undefined }) {
+function NavLink({
+  item,
+  currentPath,
+  onNavigate,
+  block = false,
+}: {
+  item: NavItem;
+  currentPath?: string | undefined;
+  /** Called when the link is activated — lets the mobile menu close on navigate. */
+  onNavigate?: (() => void) | undefined;
+  /** Full-width row (the stacked mobile menu) vs inline (the desktop bar). */
+  block?: boolean;
+}) {
   const current = currentPath !== undefined && pathOf(item.href) === currentPath;
   const ariaCurrent = current ? ('page' as const) : undefined;
-  const className = current ? LINK_ACTIVE : LINK_BASE;
+  const base = current ? LINK_ACTIVE : LINK_BASE;
+  const className = block ? `${base} w-full` : base;
+
+  // `onClick` is spread only when provided — passing `undefined` to an optional
+  // prop is rejected under exactOptionalPropertyTypes (matches NearMeButton).
+  const navHandler = onNavigate ? { onClick: onNavigate } : {};
 
   if (item.target === 'new') {
     return (
@@ -47,13 +64,14 @@ function NavLink({ item, currentPath }: { item: NavItem; currentPath?: string | 
         rel="noopener noreferrer"
         className={className}
         aria-current={ariaCurrent}
+        {...navHandler}
       >
         {item.label}
       </a>
     );
   }
   return (
-    <Link href={item.href} className={className} aria-current={ariaCurrent}>
+    <Link href={item.href} className={className} aria-current={ariaCurrent} {...navHandler}>
       {item.label}
     </Link>
   );
@@ -62,22 +80,39 @@ function NavLink({ item, currentPath }: { item: NavItem; currentPath?: string | 
 export function SiteNav({
   items,
   currentPath,
+  orientation = 'horizontal',
+  onNavigate,
 }: {
   items: NavItem[];
   currentPath?: string | undefined;
+  /** `horizontal` is the desktop bar; `vertical` stacks the links for the mobile menu. */
+  orientation?: 'horizontal' | 'vertical';
+  /** Forwarded to every link's onClick — the mobile menu passes a close handler. */
+  onNavigate?: (() => void) | undefined;
 }) {
+  const vertical = orientation === 'vertical';
   return (
     <nav aria-label="Primary">
-      <ul className="flex gap-6">
+      <ul className={vertical ? 'flex flex-col gap-1' : 'flex gap-6'}>
         {items.map((item, index) => (
           // index keeps the key unique even if an author duplicates label+href.
           <li key={`${item.href}-${index}`}>
-            <NavLink item={item} currentPath={currentPath} />
+            <NavLink
+              item={item}
+              currentPath={currentPath}
+              onNavigate={onNavigate}
+              block={vertical}
+            />
             {item.children && item.children.length > 0 ? (
               <ul className="mt-2 flex flex-col gap-2">
                 {item.children.map((child, childIndex) => (
                   <li key={`${child.href}-${childIndex}`}>
-                    <NavLink item={child} currentPath={currentPath} />
+                    <NavLink
+                      item={child}
+                      currentPath={currentPath}
+                      onNavigate={onNavigate}
+                      block={vertical}
+                    />
                   </li>
                 ))}
               </ul>
